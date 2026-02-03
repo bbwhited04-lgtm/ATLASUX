@@ -8,155 +8,17 @@ import {
 export function MediaProcessing() {
   const [processing, setProcessing] = useState(false);
 
-  const videoProjects = [
-    {
-      id: 1,
-      name: 'Product Demo - Final Cut',
-      status: 'completed',
-      duration: '3:45',
-      edits: '23 cuts, 5 transitions',
-      created: '2 hours ago'
-    },
-    {
-      id: 2,
-      name: 'Team Meeting Recording',
-      status: 'processing',
-      duration: '45:22',
-      edits: 'AI analyzing pauses...',
-      created: '30 mins ago'
-    },
-    {
-      id: 3,
-      name: 'Tutorial Series - Episode 4',
-      status: 'queued',
-      duration: '12:18',
-      edits: 'Pending',
-      created: '1 hour ago'
-    },
-  ];
+  const videoProjects: any[] = [];
 
-  const imageJobs = [
-    {
-      id: 1,
-      name: 'Product Photos - Batch 1',
-      count: 247,
-      operation: 'Background Removal',
-      status: 'completed',
-      time: '15 mins ago'
-    },
-    {
-      id: 2,
-      name: 'Social Media Assets',
-      count: 89,
-      operation: 'Resize & Watermark',
-      status: 'processing',
-      progress: 67,
-      time: 'In progress'
-    },
-    {
-      id: 3,
-      name: 'Website Images',
-      count: 156,
-      operation: 'Compress & Optimize',
-      status: 'queued',
-      time: 'Waiting'
-    },
-  ];
+  const imageJobs: any[] = [];
 
-  const pdfJobs = [
-    {
-      id: 1,
-      name: 'Q4 Reports Merge',
-      files: 12,
-      operation: 'Merge PDFs',
-      pages: 156,
-      status: 'completed'
-    },
-    {
-      id: 2,
-      name: 'Contract Pages Extract',
-      files: 1,
-      operation: 'Extract Pages 5-20',
-      pages: 15,
-      status: 'completed'
-    },
-    {
-      id: 3,
-      name: 'Marketing Materials Compress',
-      files: 34,
-      operation: 'Compress',
-      pages: 428,
-      status: 'processing',
-      progress: 45
-    },
-  ];
+  const pdfJobs: any[] = [];
 
-  const ocrQueue = [
-    {
-      id: 1,
-      name: 'Business Cards - Conference',
-      type: 'images',
-      count: 47,
-      extracted: '47 contacts',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      name: 'Scanned Documents',
-      type: 'pdf',
-      count: 23,
-      extracted: '234 pages',
-      status: 'processing',
-      progress: 78
-    },
-    {
-      id: 3,
-      name: 'Receipt Archive 2024',
-      type: 'images',
-      count: 156,
-      extracted: 'Pending',
-      status: 'queued'
-    },
-  ];
+  const ocrQueue: any[] = [];
 
-  const subtitleJobs = [
-    {
-      id: 1,
-      name: 'Product Tutorial EN → ES',
-      duration: '8:45',
-      language: 'Spanish',
-      status: 'completed',
-      accuracy: '97%'
-    },
-    {
-      id: 2,
-      name: 'Webinar Recording',
-      duration: '52:30',
-      language: 'English',
-      status: 'processing',
-      progress: 62
-    },
-  ];
+  const subtitleJobs: any[] = [];
 
-  const upscaleJobs = [
-    {
-      id: 1,
-      name: 'Low-res product images',
-      count: 34,
-      from: '800x600',
-      to: '3200x2400',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      name: 'Historical photos',
-      count: 12,
-      from: '640x480',
-      to: '2560x1920',
-      status: 'processing',
-      progress: 41
-    },
-  ];
+  const upscaleJobs: any[] = [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -175,22 +37,22 @@ export function MediaProcessing() {
       <div className="grid md:grid-cols-4 gap-6 mb-8">
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <Film className="w-8 h-8 text-red-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">847</div>
+          <div className="text-3xl font-bold text-white mb-1">0</div>
           <div className="text-sm text-slate-400">Videos processed</div>
         </div>
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <Image className="w-8 h-8 text-blue-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">12.4K</div>
+          <div className="text-3xl font-bold text-white mb-1">0</div>
           <div className="text-sm text-slate-400">Images optimized</div>
         </div>
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <FileText className="w-8 h-8 text-purple-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">3,289</div>
+          <div className="text-3xl font-bold text-white mb-1">0</div>
           <div className="text-sm text-slate-400">PDFs manipulated</div>
         </div>
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <Type className="w-8 h-8 text-green-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">156K</div>
+          <div className="text-3xl font-bold text-white mb-1">0</div>
           <div className="text-sm text-slate-400">Pages OCR'd</div>
         </div>
       </div>

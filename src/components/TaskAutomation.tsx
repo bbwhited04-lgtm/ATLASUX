@@ -51,105 +51,9 @@ interface Workflow {
 }
 
 export function TaskAutomation() {
-  const [workflows, setWorkflows] = useState<Workflow[]>([
-    {
-      id: "video-creation",
-      name: "Video Content Creation & Distribution",
-      category: "content",
-      description: "Create video script → Generate images → Compile MP4 → Post to social media",
-      enabled: true,
-      status: "idle",
-      lastRun: "2 hours ago",
-      nextRun: "Tomorrow at 9:00 AM",
-      steps: [
-        { id: "script", name: "Create Video Script", icon: FileText, color: "purple", status: "complete", duration: "2m" },
-        { id: "images", name: "Generate Images", icon: ImageIcon, color: "pink", status: "complete", duration: "5m" },
-        { id: "video", name: "Compile Video (MP4)", icon: Video, color: "cyan", status: "complete", duration: "8m" },
-        { id: "post", name: "Post to Social Media", icon: Send, color: "green", status: "complete", duration: "1m" }
-      ]
-    },
-    {
-      id: "email-campaign",
-      name: "CRM Email Campaign",
-      category: "business",
-      description: "Write business content → Email to all CRM contacts → Track engagement",
-      enabled: true,
-      status: "running",
-      lastRun: "Running now",
-      steps: [
-        { id: "write", name: "Write Business Development Idea", icon: FileText, color: "blue", status: "complete", duration: "3m" },
-        { id: "crm", name: "Load CRM Contacts", icon: Users, color: "purple", status: "complete", duration: "1m" },
-        { id: "email", name: "Send Emails", icon: Mail, color: "cyan", status: "running" },
-        { id: "track", name: "Track Engagement", icon: TrendingUp, color: "green", status: "pending" }
-      ]
-    },
-    {
-      id: "ad-campaign",
-      name: "Ad Campaign Generator",
-      category: "marketing",
-      description: "Create ad copy → Design visuals → Launch campaign → Monitor performance",
-      enabled: false,
-      status: "idle",
-      lastRun: "Yesterday",
-      nextRun: "Not scheduled",
-      steps: [
-        { id: "copy", name: "Generate Ad Copy", icon: FileText, color: "orange", status: "pending" },
-        { id: "design", name: "Create Ad Visuals", icon: ImageIcon, color: "pink", status: "pending" },
-        { id: "launch", name: "Launch Campaign", icon: Send, color: "cyan", status: "pending" },
-        { id: "monitor", name: "Monitor Performance", icon: BarChart3, color: "green", status: "pending" }
-      ]
-    },
-    {
-      id: "audit-letters",
-      name: "Audit Letter Generator",
-      category: "finance",
-      description: "Review financials → Generate audit letters → Send to stakeholders",
-      enabled: true,
-      status: "idle",
-      lastRun: "Last week",
-      nextRun: "End of month",
-      steps: [
-        { id: "review", name: "Review QuickBooks Data", icon: BarChart3, color: "blue", status: "pending" },
-        { id: "generate", name: "Generate Audit Letters", icon: FileCheck, color: "purple", status: "pending" },
-        { id: "approve", name: "Await Approval", icon: CheckCircle2, color: "yellow", status: "pending" },
-        { id: "send", name: "Send to Stakeholders", icon: Mail, color: "green", status: "pending" }
-      ]
-    },
-    {
-      id: "accounting-controls",
-      name: "Accountancy Controls Check",
-      category: "finance",
-      description: "Run financial controls → Generate reports → Alert on anomalies",
-      enabled: true,
-      status: "idle",
-      lastRun: "3 hours ago",
-      nextRun: "Daily at 6:00 PM",
-      steps: [
-        { id: "controls", name: "Run Control Checks", icon: FileCheck, color: "cyan", status: "pending" },
-        { id: "report", name: "Generate Control Report", icon: FileText, color: "blue", status: "pending" },
-        { id: "anomalies", name: "Detect Anomalies", icon: TrendingUp, color: "orange", status: "pending" },
-        { id: "notify", name: "Send Alerts", icon: Mail, color: "red", status: "pending" }
-      ]
-    },
-    {
-      id: "invoice-processing",
-      name: "Invoice Processing & Payment",
-      category: "finance",
-      description: "Import invoices → Process payments → Update QuickBooks → Send confirmations",
-      enabled: true,
-      status: "idle",
-      lastRun: "1 hour ago",
-      nextRun: "Every 4 hours",
-      steps: [
-        { id: "import", name: "Import Invoices", icon: FileText, color: "blue", status: "pending" },
-        { id: "process", name: "Process Payments", icon: DollarSign, color: "green", status: "pending" },
-        { id: "update", name: "Update QuickBooks", icon: BarChart3, color: "cyan", status: "pending" },
-        { id: "confirm", name: "Send Confirmations", icon: Mail, color: "purple", status: "pending" }
-      ]
-    }
-  ]);
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
 
-  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(workflows[0]);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
 
   const toggleWorkflow = (workflowId: string) => {
     setWorkflows(workflows.map(wf => 
@@ -262,60 +166,74 @@ export function TaskAutomation() {
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Available Workflows</h3>
           
-          <ScrollArea className="h-[calc(100vh-380px)]">
-            <div className="space-y-3 pr-4">
-              {workflows.map((workflow) => (
-                <Card
-                  key={workflow.id}
-                  className={`p-4 cursor-pointer transition-all ${
-                    selectedWorkflow?.id === workflow.id
-                      ? "bg-cyan-500/20 border-cyan-500/50"
-                      : "bg-slate-900/50 border-cyan-500/20 hover:bg-slate-900/70"
-                  }`}
-                  onClick={() => setSelectedWorkflow(workflow)}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded-lg bg-${categoryColors[workflow.category]}-500/20 flex items-center justify-center`}>
-                        <Zap className={`w-4 h-4 text-${categoryColors[workflow.category]}-400`} />
+          {workflows.length === 0 ? (
+            <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-12">
+              <div className="text-center text-slate-400">
+                <Zap className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                <p className="text-lg font-medium mb-2">No workflows created yet</p>
+                <p className="text-sm mb-4">Create your first automated workflow to get started</p>
+                <Button variant="outline" className="border-cyan-500/20">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Workflow
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <ScrollArea className="h-[calc(100vh-380px)]">
+              <div className="space-y-3 pr-4">
+                {workflows.map((workflow) => (
+                  <Card
+                    key={workflow.id}
+                    className={`p-4 cursor-pointer transition-all ${
+                      selectedWorkflow?.id === workflow.id
+                        ? "bg-cyan-500/20 border-cyan-500/50"
+                        : "bg-slate-900/50 border-cyan-500/20 hover:bg-slate-900/70"
+                    }`}
+                    onClick={() => setSelectedWorkflow(workflow)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-lg bg-${categoryColors[workflow.category]}-500/20 flex items-center justify-center`}>
+                          <Zap className={`w-4 h-4 text-${categoryColors[workflow.category]}-400`} />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-slate-200">{workflow.name}</h4>
+                          <Badge variant="outline" className={`text-xs border-${categoryColors[workflow.category]}-500/30 text-${categoryColors[workflow.category]}-400 mt-1`}>
+                            {workflow.category}
+                          </Badge>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium text-slate-200">{workflow.name}</h4>
-                        <Badge variant="outline" className={`text-xs border-${categoryColors[workflow.category]}-500/30 text-${categoryColors[workflow.category]}-400 mt-1`}>
-                          {workflow.category}
-                        </Badge>
+                      
+                      <div className="flex items-center gap-2">
+                        {workflow.status === "running" && (
+                          <Badge variant="outline" className="border-cyan-500/40 text-cyan-400 text-xs">
+                            <Play className="w-3 h-3 mr-1" />
+                            Running
+                          </Badge>
+                        )}
+                        {workflow.enabled && workflow.status !== "running" && (
+                          <Badge variant="outline" className="border-green-500/40 text-green-400 text-xs">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Enabled
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      {workflow.status === "running" && (
-                        <Badge variant="outline" className="border-cyan-500/40 text-cyan-400 text-xs">
-                          <Play className="w-3 h-3 mr-1" />
-                          Running
-                        </Badge>
-                      )}
-                      {workflow.enabled && workflow.status !== "running" && (
-                        <Badge variant="outline" className="border-green-500/40 text-green-400 text-xs">
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          Enabled
-                        </Badge>
-                      )}
+                    <p className="text-xs text-slate-400 mb-3">{workflow.description}</p>
+                    
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <div className="flex items-center gap-4">
+                        <span>Last: {workflow.lastRun}</span>
+                        <span>Next: {workflow.nextRun}</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4" />
                     </div>
-                  </div>
-                  
-                  <p className="text-xs text-slate-400 mb-3">{workflow.description}</p>
-                  
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <div className="flex items-center gap-4">
-                      <span>Last: {workflow.lastRun}</span>
-                      <span>Next: {workflow.nextRun}</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </ScrollArea>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
         </div>
 
         {/* Workflow Detail */}

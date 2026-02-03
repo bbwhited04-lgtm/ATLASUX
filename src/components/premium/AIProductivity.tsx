@@ -6,140 +6,18 @@ import {
 } from 'lucide-react';
 
 export function AIProductivity() {
-  const [emailsTriaged, setEmailsTriaged] = useState(142);
-  const [meetingsScheduled, setMeetingsScheduled] = useState(23);
+  const [emailsTriaged, setEmailsTriaged] = useState(0);
+  const [meetingsScheduled, setMeetingsScheduled] = useState(0);
 
-  const mockEmails = [
-    { 
-      id: 1, 
-      from: 'sarah@techcorp.com', 
-      subject: 'Q1 Budget Review', 
-      category: 'Important', 
-      aiAction: 'Draft response prepared',
-      priority: 'high',
-      time: '5 mins ago'
-    },
-    { 
-      id: 2, 
-      from: 'newsletter@marketing.com', 
-      subject: 'Weekly Industry News', 
-      category: 'Newsletter', 
-      aiAction: 'Archived - read later',
-      priority: 'low',
-      time: '1 hour ago'
-    },
-    { 
-      id: 3, 
-      from: 'client@business.com', 
-      subject: 'Project Proposal Request', 
-      category: 'Client', 
-      aiAction: 'Flagged for review',
-      priority: 'high',
-      time: '2 hours ago'
-    },
-    { 
-      id: 4, 
-      from: 'hr@company.com', 
-      subject: 'Benefits Enrollment', 
-      category: 'HR', 
-      aiAction: 'Auto-responded',
-      priority: 'medium',
-      time: '3 hours ago'
-    },
-  ];
+  const mockEmails: any[] = [];
 
-  const mockMeetings = [
-    {
-      id: 1,
-      title: 'Product Strategy Session',
-      participants: ['Sarah C.', 'Mike R.', 'Jennifer L.'],
-      scheduledTime: 'Tomorrow at 2:00 PM',
-      duration: '1 hour',
-      status: 'confirmed'
-    },
-    {
-      id: 2,
-      title: 'Client Presentation',
-      participants: ['John D.', 'Alex M.'],
-      scheduledTime: 'Friday at 10:00 AM',
-      duration: '45 mins',
-      status: 'confirmed'
-    },
-    {
-      id: 3,
-      title: 'Team Sync',
-      participants: ['Team'],
-      scheduledTime: 'Next Monday at 9:00 AM',
-      duration: '30 mins',
-      status: 'pending'
-    },
-  ];
+  const mockMeetings: any[] = [];
 
-  const mockDocuments = [
-    {
-      id: 1,
-      name: 'Q4_Financial_Report.pdf',
-      tags: ['Finance', 'Q4', 'Report', '2024'],
-      aiInsight: 'Revenue up 23% YoY',
-      tagged: '2 mins ago'
-    },
-    {
-      id: 2,
-      name: 'Product_Roadmap_Draft.docx',
-      tags: ['Product', 'Planning', 'Roadmap', 'Draft'],
-      aiInsight: '15 new features identified',
-      tagged: '15 mins ago'
-    },
-    {
-      id: 3,
-      name: 'Marketing_Strategy_2024.pptx',
-      tags: ['Marketing', 'Strategy', '2024', 'Presentation'],
-      aiInsight: 'Focus on digital channels',
-      tagged: '1 hour ago'
-    },
-  ];
+  const mockDocuments: any[] = [];
 
-  const mockScreenshots = [
-    {
-      id: 1,
-      name: 'Screenshot_Dashboard.png',
-      extractedText: 'Revenue: $2.4M | Users: 15,234 | Conversion Rate: 3.2%',
-      date: '10 mins ago'
-    },
-    {
-      id: 2,
-      name: 'Screenshot_Email_Thread.png',
-      extractedText: 'Meeting confirmed for Thursday 3PM. Please bring quarterly reports.',
-      date: '1 hour ago'
-    },
-    {
-      id: 3,
-      name: 'Screenshot_Design_Mockup.png',
-      extractedText: 'New landing page design - Hero section, CTA button, Social proof',
-      date: '3 hours ago'
-    },
-  ];
+  const mockScreenshots: any[] = [];
 
-  const mockTranscriptions = [
-    {
-      id: 1,
-      meeting: 'Client Strategy Call',
-      duration: '45:23',
-      participants: 4,
-      actionItems: 5,
-      date: 'Today',
-      summary: 'Discussed Q1 objectives, budget allocation, and timeline expectations. Client requested additional features for mobile app.'
-    },
-    {
-      id: 2,
-      meeting: 'Product Team Standup',
-      duration: '23:15',
-      participants: 8,
-      actionItems: 3,
-      date: 'Yesterday',
-      summary: 'Sprint planning completed. Team highlighted 3 blockers requiring immediate attention.'
-    },
-  ];
+  const mockTranscriptions: any[] = [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto">

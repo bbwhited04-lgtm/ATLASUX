@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { 
   Smartphone, Camera, Clipboard, Download, Fingerprint, 
   Mic, Users as ContactsIcon, Image, FolderOpen, Check,
-  Upload, Zap, RefreshCw, Link as LinkIcon
+  Upload, Zap, RefreshCw, Link as LinkIcon, Apple, QrCode,
+  Wifi, Shield, ArrowRight
 } from 'lucide-react';
 
 export function MobileIntegration() {
@@ -11,6 +12,7 @@ export function MobileIntegration() {
   const [clipboardSynced, setClipboardSynced] = useState(false);
   const [voiceMemos, setVoiceMemos] = useState<any[]>([]);
   const [scannedDocs, setScannedDocs] = useState<any[]>([]);
+  const [showQR, setShowQR] = useState(false);
 
   const connectiCloud = () => {
     setICloudStatus('connected');
@@ -50,6 +52,128 @@ export function MobileIntegration() {
         <p className="text-slate-400">
           Deep integration with your iOS devices for seamless productivity
         </p>
+      </div>
+
+      {/* Mobile Companion App Install */}
+      <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-8 mb-8">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <Apple className="w-10 h-10 text-cyan-400" />
+              <div>
+                <h3 className="text-2xl font-bold text-white">Atlas UX Mobile Companion</h3>
+                <p className="text-sm text-slate-400">iOS App for iPhone & iPad</p>
+              </div>
+            </div>
+            <p className="text-slate-300 mb-4">
+              Install the companion app to unlock approval requests, mobile tracking, voice commands, and seamless sync with your desktop.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          {/* QR Code Install */}
+          <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                <QrCode className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-white">Scan QR Code</h4>
+                <p className="text-xs text-slate-400">Quick install from iPhone</p>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => setShowQR(!showQR)}
+              className="w-full px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
+            >
+              <QrCode className="w-5 h-5" />
+              {showQR ? 'Hide QR Code' : 'Show QR Code'}
+            </button>
+
+            {showQR && (
+              <div className="mt-4 p-6 bg-white rounded-lg flex flex-col items-center">
+                <div className="w-48 h-48 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center mb-3">
+                  <QrCode className="w-32 h-32 text-white" />
+                </div>
+                <p className="text-slate-900 text-sm font-medium">Scan with iPhone Camera</p>
+                <p className="text-slate-600 text-xs">Opens App Store directly</p>
+              </div>
+            )}
+          </div>
+
+          {/* Direct Link Install */}
+          <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <LinkIcon className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-white">Direct Link</h4>
+                <p className="text-xs text-slate-400">Send to your iPhone</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button className="w-full px-4 py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-400 font-semibold transition-all flex items-center justify-center gap-2">
+                <Apple className="w-5 h-5" />
+                Open in App Store
+              </button>
+              
+              <button className="w-full px-4 py-2 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 rounded-lg text-slate-300 text-sm transition-all flex items-center justify-center gap-2">
+                <LinkIcon className="w-4 h-4" />
+                Copy Install Link
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Features Grid */}
+        <div className="grid md:grid-cols-4 gap-4">
+          <div className="bg-slate-900/30 border border-cyan-500/20 rounded-lg p-4">
+            <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center mb-3">
+              <Check className="w-5 h-5 text-green-400" />
+            </div>
+            <div className="text-sm font-semibold text-white mb-1">Approve Requests</div>
+            <div className="text-xs text-slate-400">2FA for sensitive operations</div>
+          </div>
+
+          <div className="bg-slate-900/30 border border-cyan-500/20 rounded-lg p-4">
+            <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center mb-3">
+              <Smartphone className="w-5 h-5 text-cyan-400" />
+            </div>
+            <div className="text-sm font-semibold text-white mb-1">Track Activity</div>
+            <div className="text-xs text-slate-400">Monitor Atlas on-the-go</div>
+          </div>
+
+          <div className="bg-slate-900/30 border border-cyan-500/20 rounded-lg p-4">
+            <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center mb-3">
+              <Mic className="w-5 h-5 text-purple-400" />
+            </div>
+            <div className="text-sm font-semibold text-white mb-1">Voice Commands</div>
+            <div className="text-xs text-slate-400">Control via Siri shortcuts</div>
+          </div>
+
+          <div className="bg-slate-900/30 border border-cyan-500/20 rounded-lg p-4">
+            <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center mb-3">
+              <Wifi className="w-5 h-5 text-blue-400" />
+            </div>
+            <div className="text-sm font-semibold text-white mb-1">Real-time Sync</div>
+            <div className="text-xs text-slate-400">Instant updates across devices</div>
+          </div>
+        </div>
+
+        {/* Connection Status */}
+        <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-start gap-3">
+          <Shield className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <div className="text-sm font-semibold text-yellow-400 mb-1">Pairing Required</div>
+            <div className="text-xs text-slate-400">
+              After installing the app, return here to pair your iPhone with Atlas UX. You'll receive a 6-digit pairing code on your mobile device.
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Connection Status */}

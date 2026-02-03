@@ -22,62 +22,15 @@ export function CodeGeneration() {
   ];
 
   const codeStats = {
-    generated: 1247,
-    executed: 892,
-    saved: 445,
-    timeSaved: '67h',
+    generated: 0,
+    executed: 0,
+    saved: 0,
+    timeSaved: '0h',
   };
 
-  const recentProjects = [
-    {
-      name: 'API Integration Script',
-      language: 'python',
-      lines: 156,
-      created: '2 hours ago',
-      status: 'success'
-    },
-    {
-      name: 'Data Processing Pipeline',
-      language: 'javascript',
-      lines: 234,
-      created: '1 day ago',
-      status: 'success'
-    },
-    {
-      name: 'Database Migration',
-      language: 'sql',
-      lines: 89,
-      created: '2 days ago',
-      status: 'error'
-    },
-  ];
+  const recentSnippets: any[] = [];
 
-  const codeTemplates = [
-    { 
-      name: 'API Client', 
-      description: 'RESTful API client with error handling',
-      language: 'javascript',
-      uses: 89
-    },
-    { 
-      name: 'Data Scraper', 
-      description: 'Web scraping with pagination support',
-      language: 'python',
-      uses: 67
-    },
-    { 
-      name: 'Automation Script', 
-      description: 'Task automation with scheduling',
-      language: 'bash',
-      uses: 145
-    },
-    { 
-      name: 'Database Query', 
-      description: 'Complex SQL queries with joins',
-      language: 'sql',
-      uses: 56
-    },
-  ];
+  const templates: any[] = [];
 
   const aiFeatures = [
     { name: 'Code Generation', description: 'Generate code from natural language', enabled: true },
@@ -209,7 +162,7 @@ console.log(data);`;
             <div>
               <h3 className="text-sm font-semibold text-white mb-3">Templates</h3>
               <div className="space-y-2">
-                {codeTemplates.map((template, idx) => (
+                {templates.map((template, idx) => (
                   <button
                     key={idx}
                     className="w-full text-left p-3 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-cyan-500/30 transition-colors"
@@ -329,7 +282,7 @@ console.log(data);`;
           </div>
 
           <div className="space-y-3">
-            {recentProjects.map((project, idx) => (
+            {recentSnippets.map((project, idx) => (
               <div
                 key={idx}
                 className="p-3 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-cyan-500/30 transition-colors"

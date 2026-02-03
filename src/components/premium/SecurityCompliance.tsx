@@ -6,112 +6,17 @@ import {
 } from 'lucide-react';
 
 export function SecurityCompliance() {
-  const dlpRules = [
-    { id: 1, name: 'Credit Card Numbers', status: 'active', blocked: 12, detected: 15 },
-    { id: 2, name: 'Social Security Numbers', status: 'active', blocked: 8, detected: 8 },
-    { id: 3, name: 'API Keys & Tokens', status: 'active', blocked: 34, detected: 41 },
-    { id: 4, name: 'Email Addresses', status: 'monitoring', blocked: 0, detected: 247 },
-  ];
+  const dlpRules: any[] = [];
 
-  const complianceReports = [
-    { id: 1, type: 'GDPR', status: 'compliant', lastAudit: '2024-02-01', issues: 0 },
-    { id: 2, type: 'HIPAA', status: 'compliant', lastAudit: '2024-01-28', issues: 0 },
-    { id: 3, type: 'SOC 2', status: 'review', lastAudit: '2024-01-15', issues: 2 },
-    { id: 4, type: 'ISO 27001', status: 'compliant', lastAudit: '2024-01-20', issues: 0 },
-  ];
+  const complianceReports: any[] = [];
 
-  const sharedFiles = [
-    { 
-      id: 1, 
-      name: 'Q4_Financial_Report.pdf', 
-      recipient: 'client@business.com',
-      password: true,
-      expires: '2024-02-10',
-      downloads: 3,
-      maxDownloads: 5
-    },
-    { 
-      id: 2, 
-      name: 'Product_Roadmap_Draft.pptx', 
-      recipient: 'team@company.com',
-      password: true,
-      expires: '2024-02-15',
-      downloads: 7,
-      maxDownloads: 10
-    },
-  ];
+  const sharedFiles: any[] = [];
 
-  const geofenceLocations = [
-    { id: 1, name: 'Corporate Office', address: '123 Business St, San Francisco, CA', status: 'active', radius: '500m' },
-    { id: 2, name: 'Remote Office - NYC', address: '456 Work Ave, New York, NY', status: 'active', radius: '300m' },
-    { id: 3, name: 'Home Office (CEO)', address: 'Palo Alto, CA', status: 'active', radius: '1km' },
-  ];
+  const geofenceLocations: any[] = [];
 
-  const activityLog = [
-    { 
-      id: 1, 
-      user: 'Sarah Chen', 
-      action: 'Exported customer data',
-      resource: 'CRM Database',
-      time: '2 mins ago',
-      risk: 'medium'
-    },
-    { 
-      id: 2, 
-      user: 'AI Assistant - Neptune',
-      action: 'Processed 47 documents',
-      resource: 'File System',
-      time: '15 mins ago',
-      risk: 'low'
-    },
-    { 
-      id: 3, 
-      user: 'Mike Rodriguez',
-      action: 'Attempted file transfer outside geofence',
-      resource: 'Cloud Storage',
-      time: '1 hour ago',
-      risk: 'high'
-    },
-    { 
-      id: 4, 
-      user: 'System',
-      action: 'DLP rule blocked sensitive data',
-      resource: 'Email System',
-      time: '2 hours ago',
-      risk: 'high'
-    },
-  ];
+  const activityLog: any[] = [];
 
-  const roles = [
-    { 
-      id: 1, 
-      name: 'Administrator', 
-      users: 2, 
-      permissions: ['Full Access', 'User Management', 'Settings', 'Compliance'],
-      color: 'red'
-    },
-    { 
-      id: 2, 
-      name: 'Manager', 
-      users: 8, 
-      permissions: ['Read/Write', 'Reports', 'Team Management'],
-      color: 'blue'
-    },
-    { 
-      id: 3, 
-      name: 'User', 
-      users: 45, 
-      permissions: ['Read/Write', 'Basic Features'],
-      color: 'green'
-    },
-    { 
-      id: 4, 
-      name: 'Guest', 
-      users: 12, 
-      permissions: ['Read Only'],
-      color: 'gray'
-    },
-  ];
+  const roles: any[] = [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -141,19 +46,19 @@ export function SecurityCompliance() {
 
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <AlertTriangle className="w-8 h-8 text-yellow-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">2</div>
+          <div className="text-3xl font-bold text-white mb-1">0</div>
           <div className="text-sm text-slate-400">Compliance Issues</div>
         </div>
 
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <Lock className="w-8 h-8 text-cyan-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">847</div>
+          <div className="text-3xl font-bold text-white mb-1">0</div>
           <div className="text-sm text-slate-400">Files Encrypted</div>
         </div>
 
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <Activity className="w-8 h-8 text-blue-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">3.2K</div>
+          <div className="text-3xl font-bold text-white mb-1">0</div>
           <div className="text-sm text-slate-400">Audit Logs</div>
         </div>
       </div>

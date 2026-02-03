@@ -1,91 +1,78 @@
 import { useState } from "react";
-import { 
+import {
   BarChart3,
-  TrendingUp,
-  TrendingDown,
+  RefreshCw,
+  Download,
   Users,
   Eye,
   MousePointerClick,
   Clock,
-  Globe,
-  Smartphone,
   Heart,
-  MessageCircle,
-  Share2,
-  Calendar,
-  Download,
-  RefreshCw,
-  CheckCircle2
+  TrendingUp,
+  TrendingDown,
+  Globe,
+  Smartphone
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from "recharts";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
-} from "recharts";
+import { AnalyticsConnectionModal } from "./AnalyticsConnectionModal";
 
 export function Analytics() {
   const [timeRange, setTimeRange] = useState("7d");
   const [activeTab, setActiveTab] = useState("overview");
   
-  // Google Analytics Data
-  const websiteData = [
-    { date: "Mon", visitors: 2400, pageviews: 4200, sessions: 3100 },
-    { date: "Tue", visitors: 1398, pageviews: 3800, sessions: 2200 },
-    { date: "Wed", visitors: 9800, pageviews: 12000, sessions: 10500 },
-    { date: "Thu", visitors: 3908, pageviews: 6800, sessions: 4900 },
-    { date: "Fri", visitors: 4800, pageviews: 8100, sessions: 6200 },
-    { date: "Sat", visitors: 3800, pageviews: 6500, sessions: 5100 },
-    { date: "Sun", visitors: 4300, pageviews: 7200, sessions: 5800 },
-  ];
+  // Connection Flow State
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
+  const [connectionStep, setConnectionStep] = useState(1); // 1: Auth Method, 2: Login, 3: Permissions, 4: Account Selection, 5: Success
+  const [authMethod, setAuthMethod] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  
+  // No connected accounts - all data is empty
+  const websiteData: any[] = [];
   
   // Social Media Metrics
-  const socialData = [
-    { platform: "Instagram", followers: 15420, engagement: 8.4, posts: 124, color: "#E1306C" },
-    { platform: "Facebook", followers: 8932, engagement: 5.2, posts: 89, color: "#1877F2" },
-    { platform: "Twitter", followers: 12547, engagement: 6.8, posts: 267, color: "#1DA1F2" },
-    { platform: "LinkedIn", followers: 5678, engagement: 4.1, posts: 45, color: "#0A66C2" },
-    { platform: "TikTok", followers: 28934, engagement: 12.3, posts: 78, color: "#000000" },
-  ];
+  const socialData: any[] = [];
   
-  const engagementData = [
-    { date: "Mon", likes: 450, comments: 89, shares: 34 },
-    { date: "Tue", likes: 380, comments: 72, shares: 28 },
-    { date: "Wed", likes: 890, comments: 156, shares: 67 },
-    { date: "Thu", likes: 520, comments: 94, shares: 41 },
-    { date: "Fri", likes: 670, comments: 112, shares: 53 },
-    { date: "Sat", likes: 540, comments: 98, shares: 45 },
-    { date: "Sun", likes: 610, comments: 103, shares: 48 },
-  ];
+  const engagementData: any[] = [];
   
-  const trafficSources = [
-    { name: "Organic Search", value: 45, color: "#10B981" },
-    { name: "Direct", value: 25, color: "#3B82F6" },
-    { name: "Social Media", value: 20, color: "#8B5CF6" },
-    { name: "Referral", value: 7, color: "#F59E0B" },
-    { name: "Email", value: 3, color: "#EF4444" },
-  ];
+  const trafficSources: any[] = [];
   
-  const topPages = [
-    { page: "/home", views: 12450, avgTime: "2:34", bounceRate: "32%" },
-    { page: "/products", views: 8932, avgTime: "3:12", bounceRate: "28%" },
-    { page: "/blog/ai-automation", views: 6547, avgTime: "4:56", bounceRate: "18%" },
-    { page: "/pricing", views: 5234, avgTime: "1:45", bounceRate: "45%" },
-    { page: "/contact", views: 3891, avgTime: "1:23", bounceRate: "52%" },
-  ];
+  const topPages: any[] = [];
+  
+  // Handle platform connection initiation
+  const handleConnectPlatform = (platformName: string) => {
+    setSelectedPlatform(platformName);
+    setConnectionStep(1);
+    setAuthMethod(null);
+    setShowConnectionModal(true);
+  };
+  
+  // Simulate connection process
+  const handleAuth = () => {
+    setIsConnecting(true);
+    setTimeout(() => {
+      setIsConnecting(false);
+      setConnectionStep(connectionStep + 1);
+    }, 1500);
+  };
   
   return (
     <div className="p-6 space-y-6">
@@ -137,12 +124,12 @@ export function Analytics() {
             <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
               <Users className="w-5 h-5 text-blue-400" />
             </div>
-            <Badge variant="outline" className="border-green-500/40 text-green-400 text-xs">
+            <Badge variant="outline" className="border-slate-500/40 text-slate-400 text-xs">
               <TrendingUp className="w-3 h-3 mr-1" />
-              +12%
+              +0%
             </Badge>
           </div>
-          <div className="text-2xl font-bold">34.2K</div>
+          <div className="text-2xl font-bold">0</div>
           <div className="text-xs text-slate-400 mt-1">Total Visitors</div>
         </Card>
         
@@ -151,12 +138,12 @@ export function Analytics() {
             <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
               <Eye className="w-5 h-5 text-purple-400" />
             </div>
-            <Badge variant="outline" className="border-green-500/40 text-green-400 text-xs">
+            <Badge variant="outline" className="border-slate-500/40 text-slate-400 text-xs">
               <TrendingUp className="w-3 h-3 mr-1" />
-              +8%
+              +0%
             </Badge>
           </div>
-          <div className="text-2xl font-bold">58.6K</div>
+          <div className="text-2xl font-bold">0</div>
           <div className="text-xs text-slate-400 mt-1">Page Views</div>
         </Card>
         
@@ -165,12 +152,12 @@ export function Analytics() {
             <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
               <MousePointerClick className="w-5 h-5 text-cyan-400" />
             </div>
-            <Badge variant="outline" className="border-red-500/40 text-red-400 text-xs">
+            <Badge variant="outline" className="border-slate-500/40 text-slate-400 text-xs">
               <TrendingDown className="w-3 h-3 mr-1" />
-              -3%
+              0%
             </Badge>
           </div>
-          <div className="text-2xl font-bold">4.8%</div>
+          <div className="text-2xl font-bold">0%</div>
           <div className="text-xs text-slate-400 mt-1">Click Rate</div>
         </Card>
         
@@ -179,12 +166,12 @@ export function Analytics() {
             <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
               <Clock className="w-5 h-5 text-green-400" />
             </div>
-            <Badge variant="outline" className="border-green-500/40 text-green-400 text-xs">
+            <Badge variant="outline" className="border-slate-500/40 text-slate-400 text-xs">
               <TrendingUp className="w-3 h-3 mr-1" />
-              +15%
+              +0%
             </Badge>
           </div>
-          <div className="text-2xl font-bold">3:24</div>
+          <div className="text-2xl font-bold">0:00</div>
           <div className="text-xs text-slate-400 mt-1">Avg. Session</div>
         </Card>
         
@@ -193,12 +180,12 @@ export function Analytics() {
             <div className="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center">
               <Heart className="w-5 h-5 text-pink-400" />
             </div>
-            <Badge variant="outline" className="border-green-500/40 text-green-400 text-xs">
+            <Badge variant="outline" className="border-slate-500/40 text-slate-400 text-xs">
               <TrendingUp className="w-3 h-3 mr-1" />
-              +24%
+              +0%
             </Badge>
           </div>
-          <div className="text-2xl font-bold">71.2K</div>
+          <div className="text-2xl font-bold">0</div>
           <div className="text-xs text-slate-400 mt-1">Social Followers</div>
         </Card>
       </div>
@@ -529,28 +516,191 @@ export function Analytics() {
           <BarChart3 className="w-12 h-12 text-cyan-400 flex-shrink-0" />
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <h4 className="font-semibold">Google Analytics Integration</h4>
-              <Badge variant="outline" className="border-green-500/40 text-green-400 text-xs">
-                <CheckCircle2 className="w-3 h-3 mr-1" />
-                Connected
+              <h4 className="font-semibold">Connect Analytics Platforms</h4>
+              <Badge variant="outline" className="border-red-500/40 text-red-400 text-xs">
+                0 Connected
               </Badge>
             </div>
-            <p className="text-sm text-slate-300 mb-3">
-              Atlas is syncing with your Google Analytics account. Data is updated every hour. 
-              Last sync: 15 minutes ago
+            <p className="text-sm text-slate-300 mb-4">
+              Import data from multiple analytics platforms to get a unified view of your performance across web, social, e-commerce, and more.
             </p>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="text-xs border-cyan-500/20">
-                <RefreshCw className="w-3 h-3 mr-1" />
-                Sync Now
-              </Button>
-              <Button size="sm" variant="outline" className="text-xs border-cyan-500/20">
-                Analytics Settings
-              </Button>
+            
+            {/* Analytics Platform Categories */}
+            <div className="space-y-4">
+              {/* Web Analytics */}
+              <div>
+                <div className="text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-2">Web Analytics</div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Globe className="w-3 h-3 mr-1" />
+                    Google Analytics
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Globe className="w-3 h-3 mr-1" />
+                    Adobe Analytics
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Globe className="w-3 h-3 mr-1" />
+                    Matomo
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Globe className="w-3 h-3 mr-1" />
+                    Mixpanel
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Globe className="w-3 h-3 mr-1" />
+                    Plausible
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Globe className="w-3 h-3 mr-1" />
+                    Heap Analytics
+                  </Button>
+                </div>
+              </div>
+              
+              {/* E-commerce Analytics */}
+              <div>
+                <div className="text-xs font-semibold text-green-400 uppercase tracking-wider mb-2">E-commerce Analytics</div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <BarChart3 className="w-3 h-3 mr-1" />
+                    Shopify Analytics
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <BarChart3 className="w-3 h-3 mr-1" />
+                    WooCommerce
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <BarChart3 className="w-3 h-3 mr-1" />
+                    Amazon Seller Central
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <BarChart3 className="w-3 h-3 mr-1" />
+                    Etsy Stats
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Marketing & Ads Analytics */}
+              <div>
+                <div className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-2">Marketing & Advertising</div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <TrendingUp className="w-3 h-3 mr-1" />
+                    Google Ads
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <TrendingUp className="w-3 h-3 mr-1" />
+                    Facebook Ads Manager
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <TrendingUp className="w-3 h-3 mr-1" />
+                    HubSpot Analytics
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <TrendingUp className="w-3 h-3 mr-1" />
+                    Mailchimp Analytics
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <TrendingUp className="w-3 h-3 mr-1" />
+                    SEMrush
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Social Media Analytics */}
+              <div>
+                <div className="text-xs font-semibold text-pink-400 uppercase tracking-wider mb-2">Social Media Analytics</div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Heart className="w-3 h-3 mr-1" />
+                    Facebook Insights
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Heart className="w-3 h-3 mr-1" />
+                    Instagram Insights
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Heart className="w-3 h-3 mr-1" />
+                    Twitter Analytics
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Heart className="w-3 h-3 mr-1" />
+                    LinkedIn Analytics
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Heart className="w-3 h-3 mr-1" />
+                    TikTok Analytics
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Heart className="w-3 h-3 mr-1" />
+                    YouTube Analytics
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Payment & Financial Analytics */}
+              <div>
+                <div className="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2">Payment & Financial</div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <BarChart3 className="w-3 h-3 mr-1" />
+                    Stripe Dashboard
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <BarChart3 className="w-3 h-3 mr-1" />
+                    PayPal Analytics
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <BarChart3 className="w-3 h-3 mr-1" />
+                    Square Analytics
+                  </Button>
+                </div>
+              </div>
+              
+              {/* App Analytics */}
+              <div>
+                <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">Mobile & App Analytics</div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Smartphone className="w-3 h-3 mr-1" />
+                    Firebase Analytics
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Smartphone className="w-3 h-3 mr-1" />
+                    Amplitude
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Smartphone className="w-3 h-3 mr-1" />
+                    App Annie
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                    <Smartphone className="w-3 h-3 mr-1" />
+                    Flurry Analytics
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-cyan-500/20">
+              <p className="text-xs text-slate-400">
+                💡 <strong>Tip:</strong> Connect multiple analytics sources to get a complete picture. All data will be unified in your Analytics Dashboard above.
+              </p>
             </div>
           </div>
         </div>
       </Card>
+      
+      {/* Connection Modal */}
+      <AnalyticsConnectionModal
+        show={showConnectionModal}
+        onClose={() => setShowConnectionModal(false)}
+        platform={selectedPlatform}
+        step={connectionStep}
+        authMethod={authMethod}
+        onAuth={handleAuth}
+        isConnecting={isConnecting}
+      />
     </div>
   );
 }

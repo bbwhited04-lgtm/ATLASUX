@@ -49,58 +49,15 @@ export function SocialMonitoring() {
   const [activeTab, setActiveTab] = useState("overview");
   
   const platforms = [
-    { name: "Twitter", color: "blue", posts: 1247, engagement: 89, active: true },
-    { name: "Instagram", color: "pink", posts: 892, engagement: 94, active: true },
-    { name: "LinkedIn", color: "cyan", posts: 456, engagement: 78, active: true },
-    { name: "Facebook", color: "indigo", posts: 634, engagement: 72, active: false },
+    { name: "Twitter", color: "blue", posts: 0, engagement: 0, active: false },
+    { name: "Instagram", color: "pink", posts: 0, engagement: 0, active: false },
+    { name: "LinkedIn", color: "cyan", posts: 0, engagement: 0, active: false },
+    { name: "Facebook", color: "indigo", posts: 0, engagement: 0, active: false },
   ];
   
-  const mentions: Mention[] = [
-    {
-      id: 1,
-      platform: "Twitter",
-      text: "Just tried the new Atlas UX system and it's incredible! The AI really understands what I need.",
-      author: "@techreviewer",
-      sentiment: "positive",
-      status: "new",
-      timestamp: "5m ago"
-    },
-    {
-      id: 2,
-      platform: "LinkedIn",
-      text: "Has anyone experienced issues with Atlas UX's mobile sync? Mine seems delayed.",
-      author: "Sarah Chen",
-      sentiment: "negative",
-      status: "new",
-      timestamp: "12m ago"
-    },
-    {
-      id: 3,
-      platform: "Instagram",
-      text: "The automation features are game-changing for my workflow!",
-      author: "@productivitypro",
-      sentiment: "positive",
-      status: "reviewed",
-      timestamp: "25m ago"
-    },
-    {
-      id: 4,
-      platform: "Twitter",
-      text: "Considering Atlas UX for my team. Anyone have experience with the enterprise plan?",
-      author: "@startupfounder",
-      sentiment: "neutral",
-      status: "responded",
-      timestamp: "1h ago"
-    },
-  ];
+  const mentions: Mention[] = [];
   
-  const trendingTopics = [
-    { tag: "#AtlasUX", mentions: 1247, trend: "+234", sentiment: 85 },
-    { tag: "#AIAutomation", mentions: 892, trend: "+156", sentiment: 78 },
-    { tag: "#ProductivityAI", mentions: 634, trend: "+89", sentiment: 92 },
-    { tag: "#Neptune", mentions: 445, trend: "+67", sentiment: 88 },
-    { tag: "#Pluto", mentions: 389, trend: "+45", sentiment: 81 },
-  ];
+  const trendingTopics: any[] = [];
   
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
@@ -134,7 +91,7 @@ export function SocialMonitoring() {
         <div className="flex gap-2">
           <Button variant="outline" className="border-cyan-500/20">
             <Bell className="w-4 h-4 mr-2" />
-            Alerts (3)
+            Alerts (0)
           </Button>
           <Button className="bg-cyan-500 hover:bg-cyan-400">
             <Radio className="w-4 h-4 mr-2" />
@@ -148,31 +105,31 @@ export function SocialMonitoring() {
         <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <MessageCircle className="w-8 h-8 text-blue-400" />
-            <TrendingUp className="w-4 h-4 text-green-400" />
+            <TrendingUp className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-2xl font-bold">3,229</div>
+          <div className="text-2xl font-bold">0</div>
           <div className="text-xs text-slate-400 mt-1">Total Mentions</div>
-          <div className="text-xs text-green-400 mt-2">+12% vs last week</div>
+          <div className="text-xs text-slate-400 mt-2">No data yet</div>
         </Card>
         
         <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <Heart className="w-8 h-8 text-pink-400" />
-            <TrendingUp className="w-4 h-4 text-green-400" />
+            <TrendingUp className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-2xl font-bold">127.5K</div>
+          <div className="text-2xl font-bold">0</div>
           <div className="text-xs text-slate-400 mt-1">Total Engagement</div>
-          <div className="text-xs text-green-400 mt-2">+24% vs last week</div>
+          <div className="text-xs text-slate-400 mt-2">No data yet</div>
         </Card>
         
         <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <Users className="w-8 h-8 text-purple-400" />
-            <TrendingUp className="w-4 h-4 text-green-400" />
+            <TrendingUp className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-2xl font-bold">45.2K</div>
+          <div className="text-2xl font-bold">0</div>
           <div className="text-xs text-slate-400 mt-1">Unique Users</div>
-          <div className="text-xs text-green-400 mt-2">+8% vs last week</div>
+          <div className="text-xs text-slate-400 mt-2">No data yet</div>
         </Card>
         
         <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4">
@@ -180,9 +137,9 @@ export function SocialMonitoring() {
             <BarChart3 className="w-8 h-8 text-cyan-400" />
             <div className="text-xs text-slate-400">Sentiment</div>
           </div>
-          <div className="text-2xl font-bold text-green-400">85%</div>
+          <div className="text-2xl font-bold text-slate-400">0%</div>
           <div className="text-xs text-slate-400 mt-1">Positive Sentiment</div>
-          <Progress value={85} className="h-1.5 mt-2" />
+          <Progress value={0} className="h-1.5 mt-2" />
         </Card>
       </div>
       
@@ -237,28 +194,8 @@ export function SocialMonitoring() {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Recent Activity</h3>
               
-              <div className="space-y-2">
-                {[
-                  { action: "New mention", platform: "Twitter", time: "2m ago", type: "positive" },
-                  { action: "High engagement", platform: "Instagram", time: "5m ago", type: "info" },
-                  { action: "Reply needed", platform: "LinkedIn", time: "8m ago", type: "warning" },
-                  { action: "Trending topic", platform: "Twitter", time: "12m ago", type: "info" },
-                  { action: "New follower", platform: "Instagram", time: "15m ago", type: "positive" },
-                ].map((activity, index) => (
-                  <Card key={index} className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-3">
-                    <div className="flex items-start gap-2">
-                      <div className={`w-2 h-2 rounded-full mt-1.5 ${
-                        activity.type === "positive" ? "bg-green-400" :
-                        activity.type === "warning" ? "bg-yellow-400" :
-                        "bg-blue-400"
-                      }`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-slate-200">{activity.action}</div>
-                        <div className="text-xs text-slate-400">{activity.platform} • {activity.time}</div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+              <div className="text-center py-12 text-slate-400">
+                No recent activity. Start monitoring to see real-time updates.
               </div>
             </div>
           </div>

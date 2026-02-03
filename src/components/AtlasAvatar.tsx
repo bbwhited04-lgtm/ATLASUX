@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, PanInfo } from "motion/react";
 
 const taskSayings = [
   "Task completed! What's next?",
@@ -30,6 +30,22 @@ export function AtlasAvatar() {
   const [message, setMessage] = useState("");
   const [showMessage, setShowMessage] = useState(false);
   const [networkRotation, setNetworkRotation] = useState(0);
+  
+  // Draggable position state - load from localStorage
+  const [atlasPosition, setAtlasPosition] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('atlasPosition');
+      return saved ? JSON.parse(saved) : { x: 0, y: 0 };
+    }
+    return { x: 0, y: 0 };
+  });
+  
+  // Save position to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('atlasPosition', JSON.stringify(atlasPosition));
+    }
+  }, [atlasPosition]);
   
   // Rotating network animation
   useEffect(() => {
@@ -412,7 +428,23 @@ export function AtlasAvatar() {
   };
   
   return (
-    <div className="fixed bottom-8 left-8 z-50 flex flex-col items-center gap-3">
+    <motion.div 
+      className="fixed bottom-8 left-8 z-50 flex flex-col items-center gap-3"
+      drag
+      dragConstraints={{ top: -window.innerHeight + 300, left: -200, right: window.innerWidth - 300, bottom: 0 }}
+      dragMomentum={false}
+      dragElastic={0}
+      whileHover={{ cursor: "grab" }}
+      whileDrag={{ cursor: "grabbing", scale: 1.05 }}
+      onDragEnd={(event, info: PanInfo) => {
+        // Save the offset, not the absolute position
+        setAtlasPosition({ 
+          x: atlasPosition.x + info.offset.x, 
+          y: atlasPosition.y + info.offset.y 
+        });
+      }}
+      style={{ x: atlasPosition.x, y: atlasPosition.y }}
+    >
       {/* Message Bubble */}
       <AnimatePresence>
         {showMessage && (
@@ -555,6 +587,6 @@ export function AtlasAvatar() {
         <div className="text-xs font-semibold text-cyan-400">ATLAS</div>
         <div className="text-[10px] text-slate-500 uppercase tracking-wider">{pose}</div>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -11,105 +11,15 @@ export function BrowserAutomation() {
   const [isPlaying, setIsPlaying] = useState(false);
 
   const automationStats = {
-    recorded: 67,
-    executed: 234,
-    timeSaved: '45h',
-    successRate: 96.7,
+    recorded: 0,
+    executed: 0,
+    timeSaved: '0h',
+    successRate: 0,
   };
 
-  const savedAutomations = [
-    {
-      name: 'Daily Data Scraping',
-      actions: 12,
-      avgDuration: '2m 34s',
-      lastRun: '2 hours ago',
-      status: 'success',
-      runs: 89
-    },
-    {
-      name: 'Form Auto-Fill',
-      actions: 8,
-      avgDuration: '45s',
-      lastRun: '1 day ago',
-      status: 'success',
-      runs: 156
-    },
-    {
-      name: 'Social Media Posting',
-      actions: 15,
-      avgDuration: '3m 12s',
-      lastRun: '2 days ago',
-      status: 'error',
-      runs: 34
-    },
-  ];
+  const savedAutomations: any[] = [];
 
-  const recordedActions = [
-    {
-      step: 1,
-      type: 'navigate',
-      icon: Globe,
-      action: 'Navigate to',
-      target: 'https://example.com/login',
-      timestamp: '00:00'
-    },
-    {
-      step: 2,
-      type: 'click',
-      icon: MousePointer,
-      action: 'Click',
-      target: '#email-input',
-      timestamp: '00:02'
-    },
-    {
-      step: 3,
-      type: 'type',
-      icon: Keyboard,
-      action: 'Type',
-      target: 'user@example.com',
-      timestamp: '00:03'
-    },
-    {
-      step: 4,
-      type: 'click',
-      icon: MousePointer,
-      action: 'Click',
-      target: '#password-input',
-      timestamp: '00:05'
-    },
-    {
-      step: 5,
-      type: 'type',
-      icon: Keyboard,
-      action: 'Type',
-      target: '**********',
-      timestamp: '00:06'
-    },
-    {
-      step: 6,
-      type: 'click',
-      icon: MousePointer,
-      action: 'Click',
-      target: 'button[type="submit"]',
-      timestamp: '00:08'
-    },
-    {
-      step: 7,
-      type: 'wait',
-      icon: Clock,
-      action: 'Wait',
-      target: '2 seconds',
-      timestamp: '00:09'
-    },
-    {
-      step: 8,
-      type: 'scrape',
-      icon: FileText,
-      action: 'Scrape data',
-      target: '.user-dashboard',
-      timestamp: '00:11'
-    },
-  ];
+  const recordedActions: any[] = [];
 
   const actionTypes = [
     { name: 'Navigate', icon: Globe, description: 'Go to URL' },

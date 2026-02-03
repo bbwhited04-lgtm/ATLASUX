@@ -11,50 +11,15 @@ export function AIModelTraining() {
   const [progress, setProgress] = useState(0);
 
   const modelStats = {
-    trained: 8,
-    accuracy: 94.3,
-    totalData: 125678,
-    activeModels: 4,
+    trained: 0,
+    accuracy: 0,
+    totalData: 0,
+    activeModels: 0,
   };
 
-  const customModels = [
-    {
-      name: 'Email Classification Model',
-      type: 'Text Classification',
-      accuracy: 96.8,
-      trainedOn: '12,547 emails',
-      status: 'active',
-      lastTrained: '2 days ago',
-      predictions: 8934
-    },
-    {
-      name: 'Customer Sentiment Analyzer',
-      type: 'Sentiment Analysis',
-      accuracy: 93.2,
-      trainedOn: '8,923 reviews',
-      status: 'active',
-      lastTrained: '1 week ago',
-      predictions: 5678
-    },
-    {
-      name: 'Document Categorizer',
-      type: 'Multi-class Classification',
-      accuracy: 91.5,
-      trainedOn: '4,567 documents',
-      status: 'training',
-      lastTrained: 'In progress',
-      predictions: 2345
-    },
-    {
-      name: 'Sales Predictor',
-      type: 'Regression',
-      accuracy: 88.4,
-      trainedOn: '15,234 transactions',
-      status: 'inactive',
-      lastTrained: '1 month ago',
-      predictions: 1234
-    },
-  ];
+  const customModels: any[] = [];
+
+  const trainingData: any[] = [];
 
   const modelTypes = [
     {
@@ -92,30 +57,6 @@ export function AIModelTraining() {
       description: 'Categorize images',
       icon: Eye,
       useCases: ['Product categorization', 'Quality control', 'Visual search']
-    },
-  ];
-
-  const trainingData = [
-    {
-      dataset: 'Email Dataset',
-      records: 12547,
-      size: '45 MB',
-      uploaded: '2 days ago',
-      validated: true
-    },
-    {
-      dataset: 'Customer Reviews',
-      records: 8923,
-      size: '23 MB',
-      uploaded: '1 week ago',
-      validated: true
-    },
-    {
-      dataset: 'Sales Transactions',
-      records: 15234,
-      size: '67 MB',
-      uploaded: '2 weeks ago',
-      validated: false
     },
   ];
 

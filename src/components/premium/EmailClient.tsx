@@ -12,98 +12,24 @@ export function EmailClient() {
   const [view, setView] = useState<'inbox' | 'sent' | 'starred' | 'archived'>('inbox');
 
   const emailStats = {
-    unread: 23,
-    urgent: 5,
-    aiTriaged: 147,
-    timeSaved: '12h',
+    unread: 0,
+    urgent: 0,
+    aiTriaged: 0,
+    timeSaved: '0h',
   };
 
   const folders = [
-    { name: 'Inbox', icon: Inbox, count: 23, view: 'inbox' as const },
-    { name: 'Sent', icon: Send, count: 89, view: 'sent' as const },
-    { name: 'Starred', icon: Star, count: 12, view: 'starred' as const },
-    { name: 'Archived', icon: Archive, count: 456, view: 'archived' as const },
+    { name: 'Inbox', icon: Inbox, count: 0, view: 'inbox' as const },
+    { name: 'Sent', icon: Send, count: 0, view: 'sent' as const },
+    { name: 'Starred', icon: Star, count: 0, view: 'starred' as const },
+    { name: 'Archived', icon: Archive, count: 0, view: 'archived' as const },
   ];
 
-  const aiCategories = [
-    { name: 'Urgent', count: 5, color: 'red', icon: Flag },
-    { name: 'Action Required', count: 8, color: 'yellow', icon: AlertCircle },
-    { name: 'FYI', count: 15, color: 'blue', icon: Eye },
-    { name: 'Newsletters', count: 34, color: 'purple', icon: Mail },
-  ];
+  const aiCategories: any[] = [];
 
-  const emails = [
-    {
-      id: 1,
-      from: 'Sarah Chen',
-      fromEmail: 'sarah@acmecorp.com',
-      subject: 'Q1 Budget Review - Action Required',
-      preview: 'Hey team, we need to review the Q1 budget by end of week. Please prepare your department...',
-      timestamp: '2 mins ago',
-      unread: true,
-      starred: true,
-      aiCategory: 'urgent',
-      aiSummary: 'Budget review deadline approaching. Need department input by Friday.',
-      attachments: 2,
-      importance: 'high'
-    },
-    {
-      id: 2,
-      from: 'Mike Rodriguez',
-      fromEmail: 'mike@techcorp.com',
-      subject: 'Engineering Sprint Planning',
-      preview: 'Here are the proposed features for next sprint. Let me know if you have any concerns...',
-      timestamp: '1 hour ago',
-      unread: true,
-      starred: false,
-      aiCategory: 'action',
-      aiSummary: 'Sprint planning review needed. Deadline: Tomorrow.',
-      attachments: 1,
-      importance: 'medium'
-    },
-    {
-      id: 3,
-      from: 'Jennifer Lee',
-      fromEmail: 'jen@marketing.com',
-      subject: 'Marketing Campaign Results',
-      preview: 'Attached are the results from our Q1 campaign. Overall performance exceeded expectations...',
-      timestamp: '3 hours ago',
-      unread: false,
-      starred: false,
-      aiCategory: 'fyi',
-      aiSummary: 'Campaign performed well. No action needed.',
-      attachments: 3,
-      importance: 'low'
-    },
-    {
-      id: 4,
-      from: 'TechCrunch Newsletter',
-      fromEmail: 'newsletter@techcrunch.com',
-      subject: 'Daily Tech News Roundup',
-      preview: 'Top stories from the tech world today: AI breakthrough, new startup funding rounds...',
-      timestamp: '5 hours ago',
-      unread: false,
-      starred: false,
-      aiCategory: 'newsletter',
-      aiSummary: 'Newsletter - Can read later.',
-      attachments: 0,
-      importance: 'low'
-    },
-    {
-      id: 5,
-      from: 'John Smith',
-      fromEmail: 'john@investor.com',
-      subject: 'Investment Proposal Discussion',
-      preview: 'I reviewed the proposal and have some questions. Can we schedule a call this week?',
-      timestamp: '1 day ago',
-      unread: false,
-      starred: true,
-      aiCategory: 'action',
-      aiSummary: 'Investor wants to schedule call. High priority.',
-      attachments: 0,
-      importance: 'high'
-    },
-  ];
+  const emails: any[] = [];
+
+  const draftSuggestions: any[] = [];
 
   const aiFeatures = [
     { name: 'Smart Triage', description: 'AI categorizes emails by urgency', enabled: true },

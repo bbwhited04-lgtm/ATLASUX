@@ -10,94 +10,21 @@ export function SpreadsheetAnalysis() {
   const [selectedSheet, setSelectedSheet] = useState('sales_data');
 
   const sheetStats = {
-    sheets: 12,
-    rows: 45678,
-    analyzed: 234,
-    insights: 67,
+    sheets: 0,
+    rows: 0,
+    analyzed: 0,
+    insights: 0,
   };
 
-  const recentSheets = [
-    {
-      name: 'Q1 Sales Data',
-      id: 'sales_data',
-      rows: 1247,
-      cols: 12,
-      uploaded: '2 hours ago',
-      insights: 8
-    },
-    {
-      name: 'Customer List 2024',
-      id: 'customers',
-      rows: 3456,
-      cols: 15,
-      uploaded: '1 day ago',
-      insights: 12
-    },
-    {
-      name: 'Expense Report',
-      id: 'expenses',
-      rows: 892,
-      cols: 8,
-      uploaded: '3 days ago',
-      insights: 5
-    },
-  ];
+  const recentSheets: any[] = [];
 
-  const sampleData = [
-    { id: 1, date: '2024-01-15', product: 'Widget A', quantity: 125, revenue: '$12,500', region: 'North', status: 'Completed' },
-    { id: 2, date: '2024-01-16', product: 'Widget B', quantity: 89, revenue: '$8,900', region: 'South', status: 'Completed' },
-    { id: 3, date: '2024-01-17', product: 'Widget C', quantity: 234, revenue: '$23,400', region: 'East', status: 'Pending' },
-    { id: 4, date: '2024-01-18', product: 'Widget A', quantity: 156, revenue: '$15,600', region: 'West', status: 'Completed' },
-    { id: 5, date: '2024-01-19', product: 'Widget D', quantity: 67, revenue: '$6,700', region: 'North', status: 'Cancelled' },
-  ];
+  const aiInsights: any[] = [];
 
-  const aiInsights = [
-    {
-      type: 'trend',
-      icon: TrendingUp,
-      title: 'Revenue Trending Up',
-      description: 'Sales increased 23% compared to last month',
-      severity: 'positive',
-      action: 'View detailed breakdown'
-    },
-    {
-      type: 'anomaly',
-      icon: AlertCircle,
-      title: 'Unusual Activity Detected',
-      description: 'Widget D sales dropped 45% in the West region',
-      severity: 'warning',
-      action: 'Investigate further'
-    },
-    {
-      type: 'prediction',
-      icon: Brain,
-      title: 'Forecast',
-      description: 'Based on current trends, expect $450K revenue next month',
-      severity: 'info',
-      action: 'View forecast details'
-    },
-    {
-      type: 'opportunity',
-      icon: Sparkles,
-      title: 'Growth Opportunity',
-      description: 'North region shows 35% untapped potential',
-      severity: 'positive',
-      action: 'Explore strategies'
-    },
-  ];
+  const sampleData: any[] = [];
 
-  const quickAnalytics = [
-    { label: 'Total Revenue', value: '$156,800', change: '+23%', color: 'green' },
-    { label: 'Avg Order Value', value: '$127', change: '+12%', color: 'green' },
-    { label: 'Total Orders', value: '1,234', change: '-5%', color: 'red' },
-    { label: 'Top Product', value: 'Widget C', change: '234 sold', color: 'blue' },
-  ];
+  const quickAnalytics: any[] = [];
 
-  const pivotTables = [
-    { name: 'Sales by Region', type: 'pivot', rows: 4, cols: 3 },
-    { name: 'Product Performance', type: 'pivot', rows: 12, cols: 5 },
-    { name: 'Monthly Trends', type: 'pivot', rows: 12, cols: 4 },
-  ];
+  const pivotTables: any[] = [];
 
   const availableFormulas = [
     { name: 'SUM', description: 'Add all numbers', example: '=SUM(A1:A10)' },
@@ -300,14 +227,19 @@ export function SpreadsheetAnalysis() {
 
             {/* Summary Row */}
             <div className="p-4 border-t border-slate-700/50 bg-slate-950/30">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Showing 5 of 1,247 rows</span>
-                <div className="flex items-center gap-4 text-white font-semibold">
-                  <span>Total Revenue: $156,800</span>
-                  <span>•</span>
-                  <span>Avg: $127</span>
+              {sampleData.length === 0 ? (
+                <div className="text-center py-12 text-slate-400">
+                  <Upload className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p>No spreadsheet data loaded. Upload a CSV or Excel file to get started.</p>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-400">Showing {sampleData.length} rows</span>
+                  <div className="flex items-center gap-4 text-white font-semibold">
+                    <span>Data loaded</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -360,6 +292,13 @@ export function SpreadsheetAnalysis() {
                 </div>
               );
             })}
+            
+            {aiInsights.length === 0 && (
+              <div className="text-center py-12 text-slate-400">
+                <Brain className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <p>No AI insights yet. Upload data and run analysis to discover patterns and trends.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -389,29 +328,11 @@ export function SpreadsheetAnalysis() {
             })}
           </div>
 
-          {/* Sample Chart */}
+          {/* Empty Chart State */}
           <div className="bg-slate-950/50 rounded-lg p-4 border border-slate-700/50">
-            <div className="text-sm font-semibold text-white mb-4">Revenue by Region</div>
-            <div className="space-y-3">
-              {[
-                { region: 'North', value: 35, amount: '$54,880' },
-                { region: 'South', value: 25, amount: '$39,200' },
-                { region: 'East', value: 28, amount: '$43,904' },
-                { region: 'West', value: 12, amount: '$18,816' },
-              ].map((item, idx) => (
-                <div key={idx}>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-slate-400">{item.region}</span>
-                    <span className="text-white font-semibold">{item.amount}</span>
-                  </div>
-                  <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full"
-                      style={{ width: `${item.value}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+            <div className="text-center py-12 text-slate-400">
+              <BarChart3 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+              <p>No chart data available. Upload spreadsheet data to create visualizations.</p>
             </div>
           </div>
         </div>

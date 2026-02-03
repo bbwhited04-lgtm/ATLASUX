@@ -7,57 +7,15 @@ import {
 } from 'lucide-react';
 
 export function VoiceCommands() {
-  const [isListening, setIsListening] = useState(true);
-  const [lastCommand, setLastCommand] = useState('Hey Atlas, what meetings do I have today?');
+  const [isListening, setIsListening] = useState(false);
+  const [lastCommand, setLastCommand] = useState('');
   const [wakeWord, setWakeWord] = useState('Hey Atlas');
 
-  const voiceCommands = [
-    {
-      category: 'Navigation',
-      commands: [
-        { phrase: 'Hey Atlas, open dashboard', action: 'Opens main dashboard', used: 342 },
-        { phrase: 'Hey Atlas, show my tasks', action: 'Opens task list', used: 289 },
-        { phrase: 'Hey Atlas, check email', action: 'Opens email inbox', used: 456 },
-        { phrase: 'Hey Atlas, open calendar', action: 'Opens calendar view', used: 198 },
-      ]
-    },
-    {
-      category: 'Actions',
-      commands: [
-        { phrase: 'Hey Atlas, send email to [name]', action: 'Compose new email', used: 234 },
-        { phrase: 'Hey Atlas, create task: [title]', action: 'Creates new task', used: 567 },
-        { phrase: 'Hey Atlas, schedule meeting', action: 'Opens meeting scheduler', used: 123 },
-        { phrase: 'Hey Atlas, start focus mode', action: 'Activates focus mode', used: 445 },
-      ]
-    },
-    {
-      category: 'Information',
-      commands: [
-        { phrase: 'Hey Atlas, what\'s on my calendar?', action: 'Lists today\'s events', used: 678 },
-        { phrase: 'Hey Atlas, summarize my emails', action: 'Email summary', used: 534 },
-        { phrase: 'Hey Atlas, show project status', action: 'Project overview', used: 234 },
-        { phrase: 'Hey Atlas, what did I miss?', action: 'Notifications summary', used: 789 },
-      ]
-    },
-    {
-      category: 'AI Assistant',
-      commands: [
-        { phrase: 'Hey Atlas, help me write...', action: 'Writing assistant', used: 456 },
-        { phrase: 'Hey Atlas, analyze this document', action: 'Document analysis', used: 234 },
-        { phrase: 'Hey Atlas, translate to [language]', action: 'Translation', used: 123 },
-        { phrase: 'Hey Atlas, explain this code', action: 'Code explanation', used: 345 },
-      ]
-    },
-    {
-      category: 'Smart Home',
-      commands: [
-        { phrase: 'Hey Atlas, set reminder for...', action: 'Creates reminder', used: 567 },
-        { phrase: 'Hey Atlas, play music', action: 'Starts music playback', used: 234 },
-        { phrase: 'Hey Atlas, set timer for [time]', action: 'Starts timer', used: 345 },
-        { phrase: 'Hey Atlas, good morning', action: 'Morning routine', used: 890 },
-      ]
-    },
-  ];
+  const voiceCommands: any[] = [];
+
+  const recentCommands: any[] = [];
+
+  const customCommands: any[] = [];
 
   const voiceSettings = [
     { name: 'Wake Word', value: 'Hey Atlas', options: ['Hey Atlas', 'Atlas', 'Computer'] },
@@ -65,14 +23,6 @@ export function VoiceCommands() {
     { name: 'Language', value: 'English (US)', options: ['English (US)', 'English (UK)', 'Spanish', 'French', 'German'] },
     { name: 'Confirmation Sound', value: 'Enabled', options: ['Enabled', 'Disabled', 'Vibrate Only'] },
     { name: 'Privacy Mode', value: 'Off', options: ['Off', 'On - Mute When Away', 'On - Always Mute'] },
-  ];
-
-  const recentCommands = [
-    { command: 'Hey Atlas, what meetings do I have today?', timestamp: '2 mins ago', success: true, response: 'You have 3 meetings today' },
-    { command: 'Hey Atlas, send email to John', timestamp: '5 mins ago', success: true, response: 'Email composed and sent' },
-    { command: 'Hey Atlas, create task: Review Q1 report', timestamp: '12 mins ago', success: true, response: 'Task created in your inbox' },
-    { command: 'Hey Atlas, what\'s the weather?', timestamp: '1 hour ago', success: false, response: 'Weather integration not configured' },
-    { command: 'Hey Atlas, summarize my emails', timestamp: '2 hours ago', success: true, response: '23 emails summarized' },
   ];
 
   const voiceStats = {

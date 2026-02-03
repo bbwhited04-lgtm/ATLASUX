@@ -6,173 +6,21 @@ import {
 } from 'lucide-react';
 
 export function SmartAutomation() {
-  const [autoResponderActive, setAutoResponderActive] = useState(true);
+  const [automationRunning, setAutomationRunning] = useState(false);
 
-  const autoResponses = [
-    {
-      id: 1,
-      trigger: 'Support request received',
-      response: 'Thank you for contacting us...',
-      sent: 47,
-      avgTime: '< 1 min'
-    },
-    {
-      id: 2,
-      trigger: 'Meeting request',
-      response: 'Checking calendar availability...',
-      sent: 23,
-      avgTime: '< 30 sec'
-    },
-    {
-      id: 3,
-      trigger: 'Newsletter inquiry',
-      response: 'Thanks for your interest...',
-      sent: 156,
-      avgTime: '< 1 min'
-    },
-  ];
+  const autoResponses: any[] = [];
 
-  const invoices = [
-    {
-      id: 1,
-      vendor: 'Office Supplies Co.',
-      amount: '$1,247.50',
-      invoiceNumber: 'INV-2024-0234',
-      status: 'synced',
-      date: '2024-02-01',
-      category: 'Office Supplies'
-    },
-    {
-      id: 2,
-      vendor: 'Cloud Services Inc.',
-      amount: '$899.00',
-      invoiceNumber: 'INV-2024-0235',
-      status: 'processing',
-      date: '2024-02-02',
-      category: 'Software & Services'
-    },
-    {
-      id: 3,
-      vendor: 'Marketing Agency',
-      amount: '$5,500.00',
-      invoiceNumber: 'INV-2024-0236',
-      status: 'queued',
-      date: '2024-02-02',
-      category: 'Marketing'
-    },
-  ];
+  const invoices: any[] = [];
 
-  const receipts = [
-    {
-      id: 1,
-      merchant: 'Starbucks',
-      amount: '$4.75',
-      category: 'Meals & Entertainment',
-      date: '2024-02-02',
-      status: 'categorized'
-    },
-    {
-      id: 2,
-      merchant: 'Uber',
-      amount: '$23.50',
-      category: 'Transportation',
-      date: '2024-02-02',
-      status: 'categorized'
-    },
-    {
-      id: 3,
-      merchant: 'Office Depot',
-      amount: '$87.32',
-      category: 'Office Supplies',
-      date: '2024-02-01',
-      status: 'categorized'
-    },
-    {
-      id: 4,
-      merchant: 'Best Buy',
-      amount: '$234.99',
-      category: 'Equipment',
-      date: '2024-01-31',
-      status: 'pending'
-    },
-  ];
+  const receipts: any[] = [];
 
-  const formProfiles = [
-    {
-      id: 1,
-      name: 'Business Profile',
-      fields: 12,
-      lastUsed: 'Today',
-      uses: 47
-    },
-    {
-      id: 2,
-      name: 'Personal Info',
-      fields: 8,
-      lastUsed: 'Yesterday',
-      uses: 23
-    },
-    {
-      id: 3,
-      name: 'Shipping Address',
-      fields: 6,
-      lastUsed: '3 days ago',
-      uses: 156
-    },
-  ];
+  const formProfiles: any[] = [];
 
-  const passwordManagers = [
-    { name: '1Password', status: 'connected', vaults: 3, credentials: 247 },
-    { name: 'LastPass', status: 'disconnected', vaults: 0, credentials: 0 },
-    { name: 'Bitwarden', status: 'disconnected', vaults: 0, credentials: 0 },
-  ];
+  const passwordManagers: any[] = [];
 
-  const browserAutomations = [
-    {
-      id: 1,
-      name: 'Daily News Scraping',
-      frequency: 'Every morning at 9 AM',
-      lastRun: '2 hours ago',
-      status: 'active'
-    },
-    {
-      id: 2,
-      name: 'Competitor Price Monitoring',
-      frequency: 'Every 6 hours',
-      lastRun: '1 hour ago',
-      status: 'active'
-    },
-    {
-      id: 3,
-      name: 'Social Media Posting',
-      frequency: 'Daily at 2 PM',
-      lastRun: 'Yesterday',
-      status: 'paused'
-    },
-  ];
+  const browserAutomations: any[] = [];
 
-  const fileOrganization = [
-    {
-      rule: 'Screenshots → Screenshots folder',
-      triggered: 147,
-      lastAction: '5 mins ago'
-    },
-    {
-      rule: 'PDFs with "Invoice" → Finance/Invoices',
-      triggered: 89,
-      lastAction: '1 hour ago'
-    },
-    {
-      rule: 'Images > 5MB → Archive/Large Files',
-      triggered: 34,
-      lastAction: '3 hours ago'
-    },
-    {
-      rule: 'Downloads older than 30 days → Archive',
-      triggered: 203,
-      lastAction: 'Yesterday'
-    },
-  ];
+  const fileOrganization: any[] = [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -220,16 +68,16 @@ export function SmartAutomation() {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-sm">
-              <div className={`w-2 h-2 rounded-full ${autoResponderActive ? 'bg-green-400 animate-pulse' : 'bg-slate-600'}`} />
-              <span className={autoResponderActive ? 'text-green-400' : 'text-slate-400'}>
-                {autoResponderActive ? 'Active' : 'Paused'}
+              <div className={`w-2 h-2 rounded-full ${automationRunning ? 'bg-green-400 animate-pulse' : 'bg-slate-600'}`} />
+              <span className={automationRunning ? 'text-green-400' : 'text-slate-400'}>
+                {automationRunning ? 'Active' : 'Paused'}
               </span>
             </div>
             <button 
-              onClick={() => setAutoResponderActive(!autoResponderActive)}
+              onClick={() => setAutomationRunning(!automationRunning)}
               className="px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-sm text-cyan-400 transition-colors"
             >
-              {autoResponderActive ? 'Pause' : 'Activate'}
+              {automationRunning ? 'Pause' : 'Activate'}
             </button>
           </div>
         </div>

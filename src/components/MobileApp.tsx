@@ -47,44 +47,9 @@ export function MobileApp() {
   const [activeTab, setActiveTab] = useState<"chat" | "jobs" | "viewport">("chat");
   const [chatInput, setChatInput] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      sender: "neptune",
-      message: "Neptune security control online. Ready for commands.",
-      timestamp: new Date(Date.now() - 60000)
-    }
-  ]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   
-  const [jobs, setJobs] = useState<Job[]>([
-    {
-      id: "job-1",
-      title: "Social Media Monitoring",
-      description: "Scanning LinkedIn for industry updates",
-      status: "running",
-      progress: 67,
-      timestamp: new Date(Date.now() - 120000),
-      requiresApproval: false
-    },
-    {
-      id: "job-2",
-      title: "CRM Contact Sync",
-      description: "Import 247 contacts from Twitter to Salesforce",
-      status: "awaiting_approval",
-      progress: 0,
-      timestamp: new Date(Date.now() - 300000),
-      requiresApproval: true
-    },
-    {
-      id: "job-3",
-      title: "Generate Marketing Video",
-      description: "Creating product demo animation (1080p, 45s)",
-      status: "pending",
-      progress: 0,
-      timestamp: new Date(Date.now() - 180000),
-      requiresApproval: false
-    }
-  ]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   
   const [expandedJobs, setExpandedJobs] = useState<Set<string>>(new Set());
   const [viewportExpanded, setViewportExpanded] = useState(false);

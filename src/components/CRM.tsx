@@ -53,55 +53,7 @@ interface ImportSource {
 }
 
 export function CRM() {
-  const [contacts, setContacts] = useState<Contact[]>([
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      email: "sarah.j@email.com",
-      phone: "+1 (555) 123-4567",
-      source: "facebook",
-      tags: ["Client", "VIP"],
-      lastContact: "2 hours ago",
-      status: "active"
-    },
-    {
-      id: 2,
-      name: "Mike Chen",
-      email: "mike.chen@company.com",
-      phone: "+1 (555) 234-5678",
-      source: "linkedin",
-      tags: ["Lead", "Enterprise"],
-      lastContact: "1 day ago",
-      status: "pending"
-    },
-    {
-      id: 3,
-      name: "Emma Williams",
-      email: "emma.w@email.com",
-      source: "instagram",
-      tags: ["Follower", "Influencer"],
-      lastContact: "3 days ago",
-      status: "active"
-    },
-    {
-      id: 4,
-      name: "Alex Rodriguez",
-      phone: "+1 (555) 345-6789",
-      source: "phone",
-      tags: ["Contact"],
-      lastContact: "1 week ago",
-      status: "active"
-    },
-    {
-      id: 5,
-      name: "Jessica Lee",
-      email: "jlee@startup.io",
-      source: "tiktok",
-      tags: ["Follower", "Creator"],
-      lastContact: "2 weeks ago",
-      status: "inactive"
-    },
-  ]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   
   const [importSources] = useState<ImportSource[]>([
     { 
@@ -109,8 +61,8 @@ export function CRM() {
       name: "Phone Contacts", 
       icon: Smartphone, 
       color: "cyan",
-      count: 247, 
-      connected: true,
+      count: 0, 
+      connected: false,
       type: "device"
     },
     { 
@@ -118,8 +70,8 @@ export function CRM() {
       name: "Facebook Friends", 
       icon: Facebook, 
       color: "blue",
-      count: 892, 
-      connected: true,
+      count: 0, 
+      connected: false,
       type: "social"
     },
     { 
@@ -127,8 +79,8 @@ export function CRM() {
       name: "Instagram Followers", 
       icon: Instagram, 
       color: "pink",
-      count: 1547, 
-      connected: true,
+      count: 0, 
+      connected: false,
       type: "social"
     },
     { 
@@ -136,7 +88,7 @@ export function CRM() {
       name: "TikTok Followers", 
       icon: MessageSquare, 
       color: "slate",
-      count: 3241, 
+      count: 0, 
       connected: false,
       type: "social"
     },
@@ -145,7 +97,7 @@ export function CRM() {
       name: "LinkedIn Connections", 
       icon: Users, 
       color: "blue",
-      count: 456, 
+      count: 0, 
       connected: false,
       type: "social"
     },
@@ -154,7 +106,7 @@ export function CRM() {
       name: "Twitter Followers", 
       icon: Twitter, 
       color: "cyan",
-      count: 2134, 
+      count: 0, 
       connected: false,
       type: "social"
     },

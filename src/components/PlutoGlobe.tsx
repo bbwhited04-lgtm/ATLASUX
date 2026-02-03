@@ -21,55 +21,66 @@ export function PlutoGlobe() {
     return () => clearInterval(interval);
   }, []);
   
-  // Job-focused movement patterns - move across ENTIRE screen
+  // Job-focused movement patterns - move across ENTIRE desktop (all 3 screens)
   const generateJobWaypoints = (taskType: JobTaskType) => {
-    const w = window.innerWidth - 150;
-    const h = window.innerHeight - 150;
+    // Get full desktop dimensions (all screens combined)
+    const totalWidth = window.screen.width * (window.screen.availWidth / window.screen.width);
+    const totalHeight = window.screen.height;
+    
+    // Use much larger range to cover multiple monitors
+    const w = totalWidth * 3; // Assume up to 3 monitors
+    const h = totalHeight - 150;
     
     switch (taskType) {
       case "analyzing":
-        // Circle pattern across screen
+        // Circle pattern across ALL screens
         return [
-          { x: w * 0.5, y: h * 0.3 },
-          { x: w * 0.7, y: h * 0.5 },
-          { x: w * 0.5, y: h * 0.7 },
-          { x: w * 0.3, y: h * 0.5 },
-          { x: w * 0.5, y: h * 0.3 },
+          { x: w * 0.16, y: h * 0.3 },  // Left screen
+          { x: w * 0.33, y: h * 0.5 },  // Left-center
+          { x: w * 0.5, y: h * 0.7 },   // Center screen
+          { x: w * 0.66, y: h * 0.5 },  // Right-center
+          { x: w * 0.83, y: h * 0.3 },  // Right screen
+          { x: w * 0.5, y: h * 0.2 },   // Back to center
         ];
       case "processing":
-        // Diagonal sweep across screen
+        // Diagonal sweep across ALL three screens
         return [
-          { x: w * 0.2, y: h * 0.2 },
-          { x: w * 0.8, y: h * 0.3 },
-          { x: w * 0.3, y: h * 0.7 },
-          { x: w * 0.7, y: h * 0.8 },
-          { x: w * 0.4, y: h * 0.4 },
+          { x: w * 0.1, y: h * 0.2 },   // Far left
+          { x: w * 0.3, y: h * 0.4 },   // Left screen
+          { x: w * 0.5, y: h * 0.5 },   // Center screen
+          { x: w * 0.7, y: h * 0.6 },   // Right screen
+          { x: w * 0.9, y: h * 0.8 },   // Far right
+          { x: w * 0.5, y: h * 0.3 },   // Back center
         ];
       case "syncing":
-        // Back and forth across screen width
+        // Back and forth across ALL THREE screens
         return [
-          { x: w * 0.1, y: h * 0.5 },
-          { x: w * 0.9, y: h * 0.5 },
-          { x: w * 0.1, y: h * 0.5 },
-          { x: w * 0.9, y: h * 0.5 },
+          { x: w * 0.05, y: h * 0.5 },  // Far left screen
+          { x: w * 0.5, y: h * 0.5 },   // Center screen
+          { x: w * 0.95, y: h * 0.5 },  // Far right screen
+          { x: w * 0.5, y: h * 0.5 },   // Back to center
+          { x: w * 0.05, y: h * 0.5 },  // Far left again
         ];
       case "computing":
-        // Z-pattern across entire screen
+        // Z-pattern across all three screens
         return [
-          { x: w * 0.1, y: h * 0.2 },
-          { x: w * 0.9, y: h * 0.2 },
-          { x: w * 0.1, y: h * 0.5 },
-          { x: w * 0.9, y: h * 0.5 },
-          { x: w * 0.1, y: h * 0.8 },
-          { x: w * 0.9, y: h * 0.8 },
+          { x: w * 0.05, y: h * 0.2 },  // Top left
+          { x: w * 0.5, y: h * 0.2 },   // Top center
+          { x: w * 0.95, y: h * 0.2 },  // Top right
+          { x: w * 0.05, y: h * 0.5 },  // Mid left
+          { x: w * 0.5, y: h * 0.5 },   // Mid center
+          { x: w * 0.95, y: h * 0.5 },  // Mid right
+          { x: w * 0.05, y: h * 0.8 },  // Bottom left
+          { x: w * 0.5, y: h * 0.8 },   // Bottom center
+          { x: w * 0.95, y: h * 0.8 },  // Bottom right
         ];
       default:
-        // Idle patrol pattern - gentle floating
+        // Idle patrol pattern - gentle floating across screens
         return [
-          { x: w * 0.7, y: h * 0.2 },
-          { x: w * 0.8, y: h * 0.4 },
-          { x: w * 0.7, y: h * 0.6 },
-          { x: w * 0.6, y: h * 0.4 },
+          { x: w * 0.3, y: h * 0.3 },   // Left screen
+          { x: w * 0.5, y: h * 0.4 },   // Center screen
+          { x: w * 0.7, y: h * 0.3 },   // Right screen
+          { x: w * 0.5, y: h * 0.6 },   // Back to center
         ];
     }
   };

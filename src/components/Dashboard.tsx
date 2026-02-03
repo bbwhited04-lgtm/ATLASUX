@@ -32,20 +32,9 @@ export function Dashboard() {
     { label: "Avg Response Time", value: "2.3s", icon: Zap, color: "yellow", trend: "-0.4s" },
   ];
   
-  const recentJobs = [
-    { id: 1, name: "Social Media Post Generation", status: "running", progress: 75, time: "2m ago" },
-    { id: 2, name: "File Organization", status: "completed", progress: 100, time: "5m ago" },
-    { id: 3, name: "Video Creation - Product Demo", status: "running", progress: 45, time: "8m ago" },
-    { id: 4, name: "Email Monitoring & Response", status: "queued", progress: 0, time: "Just now" },
-    { id: 5, name: "Animation Render", status: "running", progress: 90, time: "15m ago" },
-  ];
+  const recentJobs: any[] = [];
   
-  const neptuneAccessLog = [
-    { action: "File Access", resource: "Documents/Reports/Q1-2026.pdf", status: "approved", time: "3m ago" },
-    { action: "API Call", resource: "OpenAI GPT-4", status: "approved", time: "5m ago" },
-    { action: "Screen Capture", resource: "Desktop Monitor", status: "pending", time: "7m ago" },
-    { action: "File Write", resource: "Videos/output.mp4", status: "approved", time: "10m ago" },
-  ];
+  const neptuneAccessLog: any[] = [];
   
   return (
     <div className="p-6 space-y-6">
@@ -113,49 +102,58 @@ export function Dashboard() {
           </div>
           
           <div className="space-y-3">
-            {recentJobs.map((job) => (
-              <Card key={job.id} className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    {job.status === "running" && (
-                      <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                        <Activity className="w-4 h-4 text-cyan-400 animate-pulse" />
-                      </div>
-                    )}
-                    {job.status === "completed" && (
-                      <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                        <CheckCircle2 className="w-4 h-4 text-green-400" />
-                      </div>
-                    )}
-                    {job.status === "queued" && (
-                      <div className="w-8 h-8 rounded-lg bg-slate-700/50 flex items-center justify-center">
-                        <Clock className="w-4 h-4 text-slate-400" />
-                      </div>
-                    )}
-                    <div>
-                      <div className="font-medium text-sm">{job.name}</div>
-                      <div className="text-xs text-slate-400">{job.time}</div>
-                    </div>
-                  </div>
-                  <Badge 
-                    variant={job.status === "completed" ? "default" : "outline"}
-                    className={`text-xs ${
-                      job.status === "running" ? "border-cyan-500/40 text-cyan-400" : 
-                      job.status === "completed" ? "bg-green-500/20 border-green-500/40 text-green-400" :
-                      "border-slate-500/40 text-slate-400"
-                    }`}
-                  >
-                    {job.status}
-                  </Badge>
+            {recentJobs.length === 0 ? (
+              <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-8">
+                <div className="text-center text-slate-400">
+                  <Activity className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No active jobs. Create a task to get started.</p>
                 </div>
-                {job.progress > 0 && (
-                  <div className="space-y-1">
-                    <Progress value={job.progress} className="h-1.5" />
-                    <div className="text-xs text-slate-400 text-right">{job.progress}%</div>
-                  </div>
-                )}
               </Card>
-            ))}
+            ) : (
+              recentJobs.map((job) => (
+                <Card key={job.id} className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      {job.status === "running" && (
+                        <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                          <Activity className="w-4 h-4 text-cyan-400 animate-pulse" />
+                        </div>
+                      )}
+                      {job.status === "completed" && (
+                        <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                          <CheckCircle2 className="w-4 h-4 text-green-400" />
+                        </div>
+                      )}
+                      {job.status === "queued" && (
+                        <div className="w-8 h-8 rounded-lg bg-slate-700/50 flex items-center justify-center">
+                          <Clock className="w-4 h-4 text-slate-400" />
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium text-sm">{job.name}</div>
+                        <div className="text-xs text-slate-400">{job.time}</div>
+                      </div>
+                    </div>
+                    <Badge 
+                      variant={job.status === "completed" ? "default" : "outline"}
+                      className={`text-xs ${
+                        job.status === "running" ? "border-cyan-500/40 text-cyan-400" : 
+                        job.status === "completed" ? "bg-green-500/20 border-green-500/40 text-green-400" :
+                        "border-slate-500/40 text-slate-400"
+                      }`}
+                    >
+                      {job.status}
+                    </Badge>
+                  </div>
+                  {job.progress > 0 && (
+                    <div className="space-y-1">
+                      <Progress value={job.progress} className="h-1.5" />
+                      <div className="text-xs text-slate-400 text-right">{job.progress}%</div>
+                    </div>
+                  )}
+                </Card>
+              ))
+            )}
           </div>
         </div>
         

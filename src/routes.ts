@@ -12,6 +12,7 @@ import { Settings } from "./components/Settings";
 import { PremiumFeatures } from "./components/PremiumFeatures";
 import { BusinessAssets } from "./components/BusinessAssets";
 import { ProcessingSettings } from "./components/ProcessingSettings";
+import { SubscriptionManager } from "./components/SubscriptionManager";
 import { RootLayout } from "./components/RootLayout";
 import MobilePage from "./routes/mobile";
 
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
       { path: "premium", Component: PremiumFeatures },
       { path: "business-assets", Component: BusinessAssets },
       { path: "processing-settings", Component: ProcessingSettings },
+      { path: "subscription", Component: SubscriptionManager },
     ],
   },
   {

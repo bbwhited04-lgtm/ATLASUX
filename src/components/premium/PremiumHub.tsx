@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { 
-  Smartphone, Brain, TrendingUp, Film, Shield, Zap, 
-  Users, Calendar, MessageSquare, BarChart3, Globe, 
-  Palette, DollarSign, ArrowRight, Crown, Sparkles,
-  Video, Workflow, Mic, Database, Mail, Code, Table
+import {
+  Smartphone, Sparkles, TrendingUp, Video, Brain,
+  Shield, Zap, Users, Calendar, MessageSquare,
+  BarChart3, Globe, Palette, DollarSign, Layout,
+  Mic, Database, Mail, Code, FileSpreadsheet,
+  MousePointer, Cpu, Film, ArrowRight, Crown, GitBranch
 } from 'lucide-react';
 import { MobileIntegration } from './MobileIntegration';
 import { AIProductivity } from './AIProductivity';
@@ -21,6 +22,12 @@ import { CodeGeneration } from './CodeGeneration';
 import { SpreadsheetAnalysis } from './SpreadsheetAnalysis';
 import { BrowserAutomation } from './BrowserAutomation';
 import { AIModelTraining } from './AIModelTraining';
+import { PersonalAnalytics } from './PersonalAnalytics';
+import { BrowserExtension } from './BrowserExtension';
+import { CreativeTools } from './CreativeTools';
+import { CalendarScheduling } from './CalendarScheduling';
+import { CommunicationSuite } from './CommunicationSuite';
+import { FinancialManagement } from './FinancialManagement';
 
 type FeatureView = 
   | 'hub'
@@ -126,7 +133,7 @@ export function PremiumHub() {
     {
       id: 'workflow-builder' as FeatureView,
       name: 'Visual Workflow Builder',
-      icon: Workflow,
+      icon: GitBranch,
       description: 'Create and manage complex workflows visually',
       features: ['Drag-and-Drop Interface', 'Conditional Logic', 'Task Automation', 'Integration with APIs', 'Version Control'],
       color: 'from-blue-500 to-indigo-500',
@@ -171,7 +178,7 @@ export function PremiumHub() {
     {
       id: 'spreadsheet-analysis' as FeatureView,
       name: 'Spreadsheet Analysis',
-      icon: Table,
+      icon: FileSpreadsheet,
       description: 'Advanced spreadsheet analysis and data manipulation',
       features: ['Data Visualization', 'Data Analysis', 'Data Manipulation', 'Data Cleaning', 'Data Validation'],
       color: 'from-green-500 to-yellow-500',
@@ -268,6 +275,12 @@ export function PremiumHub() {
   if (currentView === 'spreadsheet-analysis') return <SpreadsheetAnalysis />;
   if (currentView === 'browser-automation') return <BrowserAutomation />;
   if (currentView === 'ai-training') return <AIModelTraining />;
+  if (currentView === 'personal-analytics') return <PersonalAnalytics />;
+  if (currentView === 'browser-extension') return <BrowserExtension />;
+  if (currentView === 'creative-tools') return <CreativeTools />;
+  if (currentView === 'calendar-scheduling') return <CalendarScheduling />;
+  if (currentView === 'communication') return <CommunicationSuite />;
+  if (currentView === 'financial-management') return <FinancialManagement />;
 
   // For features we haven't built full pages for yet, show a "coming soon" message
   if (currentView !== 'hub') {

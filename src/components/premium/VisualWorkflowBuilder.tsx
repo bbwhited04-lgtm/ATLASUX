@@ -18,225 +18,21 @@ interface WorkflowNode {
 }
 
 export function VisualWorkflowBuilder() {
-  const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
 
-  const nodeTypes = [
-    { 
-      type: 'trigger', 
-      name: 'Email Received', 
-      icon: Mail, 
-      color: 'blue',
-      description: 'Triggers when new email arrives'
-    },
-    { 
-      type: 'trigger', 
-      name: 'Schedule', 
-      icon: Clock, 
-      color: 'purple',
-      description: 'Run on a schedule (cron)'
-    },
-    { 
-      type: 'trigger', 
-      name: 'Webhook', 
-      icon: Globe, 
-      color: 'green',
-      description: 'HTTP webhook trigger'
-    },
-    { 
-      type: 'trigger', 
-      name: 'File Upload', 
-      icon: Upload, 
-      color: 'yellow',
-      description: 'When file is uploaded'
-    },
-    { 
-      type: 'action', 
-      name: 'Send Email', 
-      icon: Mail, 
-      color: 'cyan',
-      description: 'Send an email'
-    },
-    { 
-      type: 'action', 
-      name: 'Create Task', 
-      icon: CheckCircle, 
-      color: 'green',
-      description: 'Create task in project manager'
-    },
-    { 
-      type: 'action', 
-      name: 'Post to Slack', 
-      icon: MessageSquare, 
-      color: 'purple',
-      description: 'Send Slack message'
-    },
-    { 
-      type: 'action', 
-      name: 'Save to Database', 
-      icon: Database, 
-      color: 'blue',
-      description: 'Store data in database'
-    },
-    { 
-      type: 'action', 
-      name: 'Generate Report', 
-      icon: FileText, 
-      color: 'orange',
-      description: 'Create PDF report'
-    },
-    { 
-      type: 'action', 
-      name: 'Call API', 
-      icon: Globe, 
-      color: 'cyan',
-      description: 'HTTP API request'
-    },
-    { 
-      type: 'condition', 
-      name: 'If/Else', 
-      icon: GitBranch, 
-      color: 'yellow',
-      description: 'Conditional branching'
-    },
-    { 
-      type: 'condition', 
-      name: 'Filter', 
-      icon: Filter, 
-      color: 'red',
-      description: 'Filter data by condition'
-    },
-    { 
-      type: 'loop', 
-      name: 'For Each', 
-      icon: Workflow, 
-      color: 'purple',
-      description: 'Loop over items'
-    },
-    { 
-      type: 'delay', 
-      name: 'Wait', 
-      icon: Clock, 
-      color: 'orange',
-      description: 'Delay execution'
-    },
-  ];
+  const nodeTypes: any[] = [];
 
-  const exampleWorkflows = [
-    {
-      name: 'Email Triage & Response',
-      nodes: 4,
-      triggers: 'Email Received',
-      description: 'Categorize emails and send auto-responses',
-      active: true,
-      runs: 1247,
-      lastRun: '2 mins ago'
-    },
-    {
-      name: 'Daily Report Generator',
-      nodes: 6,
-      triggers: 'Schedule (Daily 9AM)',
-      description: 'Generate and email daily analytics report',
-      active: true,
-      runs: 89,
-      lastRun: '3 hours ago'
-    },
-    {
-      name: 'Invoice Processing',
-      nodes: 8,
-      triggers: 'File Upload',
-      description: 'Extract data from invoices and save to CRM',
-      active: true,
-      runs: 342,
-      lastRun: '1 day ago'
-    },
-    {
-      name: 'Social Media Monitor',
-      nodes: 5,
-      triggers: 'Schedule (Every 15 mins)',
-      description: 'Check social mentions and create alerts',
-      active: false,
-      runs: 0,
-      lastRun: 'Never'
-    },
-  ];
+  const exampleWorkflows: any[] = [];
 
   const activeWorkflow = {
-    name: 'Email Triage & Response',
-    nodes: [
-      {
-        id: '1',
-        type: 'trigger' as const,
-        name: 'Email Received',
-        icon: Mail,
-        config: { folder: 'inbox' },
-        position: { x: 50, y: 50 },
-        connections: ['2']
-      },
-      {
-        id: '2',
-        type: 'condition' as const,
-        name: 'If Contains "Urgent"',
-        icon: GitBranch,
-        config: { field: 'subject', operator: 'contains', value: 'urgent' },
-        position: { x: 250, y: 50 },
-        connections: ['3', '4']
-      },
-      {
-        id: '3',
-        type: 'action' as const,
-        name: 'Create High Priority Task',
-        icon: CheckCircle,
-        config: { priority: 'high' },
-        position: { x: 450, y: 20 },
-        connections: []
-      },
-      {
-        id: '4',
-        type: 'action' as const,
-        name: 'Send Auto-Reply',
-        icon: Mail,
-        config: { template: 'standard_reply' },
-        position: { x: 450, y: 120 },
-        connections: []
-      },
-    ]
+    name: 'New Workflow',
+    nodes: []
   };
 
-  const executionLogs = [
-    {
-      timestamp: '2 mins ago',
-      status: 'success' as const,
-      workflow: 'Email Triage & Response',
-      duration: '1.2s',
-      nodes: 4,
-      message: 'Processed email from john@acme.com'
-    },
-    {
-      timestamp: '5 mins ago',
-      status: 'success' as const,
-      workflow: 'Email Triage & Response',
-      duration: '0.8s',
-      nodes: 4,
-      message: 'Processed email from sarah@techcorp.com'
-    },
-    {
-      timestamp: '8 mins ago',
-      status: 'error' as const,
-      workflow: 'Email Triage & Response',
-      duration: '2.1s',
-      nodes: 2,
-      message: 'Failed to connect to email server'
-    },
-    {
-      timestamp: '12 mins ago',
-      status: 'success' as const,
-      workflow: 'Daily Report Generator',
-      duration: '15.3s',
-      nodes: 6,
-      message: 'Generated and sent daily report'
-    },
-  ];
+  const executionHistory: any[] = [];
+
+  const savedWorkflows: any[] = [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -318,7 +114,7 @@ export function VisualWorkflowBuilder() {
                   <div
                     className="absolute bg-slate-900 border-2 border-cyan-500/50 rounded-xl p-4 w-48 cursor-move hover:border-cyan-400 hover:shadow-xl hover:shadow-cyan-500/20 transition-all"
                     style={{ left: node.position.x, top: node.position.y }}
-                    onClick={() => setSelectedNode(node)}
+                    onClick={() => setSelectedNode(node.id)}
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
@@ -417,7 +213,7 @@ export function VisualWorkflowBuilder() {
           </div>
 
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {executionLogs.map((log, idx) => (
+            {executionHistory.map((log, idx) => (
               <div
                 key={idx}
                 className="p-3 bg-slate-950/50 rounded-lg border border-slate-700/50"
@@ -459,7 +255,7 @@ export function VisualWorkflowBuilder() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          {exampleWorkflows.map((workflow, idx) => (
+          {savedWorkflows.map((workflow, idx) => (
             <div
               key={idx}
               className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-cyan-500/30 transition-colors"

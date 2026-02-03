@@ -32,63 +32,9 @@ interface Job {
 }
 
 export function JobRunner() {
-  const [jobs, setJobs] = useState<Job[]>([
-    { 
-      id: 1, 
-      name: "Create Product Demo Video", 
-      type: "video",
-      status: "running", 
-      progress: 65, 
-      startTime: "2m ago",
-      estimatedTime: "3m",
-      priority: "high"
-    },
-    { 
-      id: 2, 
-      name: "Generate Social Media Posts", 
-      type: "social",
-      status: "running", 
-      progress: 80, 
-      startTime: "5m ago",
-      estimatedTime: "1m",
-      priority: "medium"
-    },
-    { 
-      id: 3, 
-      name: "Animate Logo Reveal", 
-      type: "animation",
-      status: "running", 
-      progress: 45, 
-      startTime: "8m ago",
-      estimatedTime: "5m",
-      priority: "medium"
-    },
-    { 
-      id: 4, 
-      name: "Process Financial Report", 
-      type: "document",
-      status: "queued", 
-      progress: 0, 
-      startTime: "Just now",
-      priority: "low"
-    },
-    { 
-      id: 5, 
-      name: "Email Response Automation", 
-      type: "task",
-      status: "paused", 
-      progress: 30, 
-      startTime: "15m ago",
-      priority: "medium"
-    },
-  ]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   
-  const [completedJobs, setCompletedJobs] = useState([
-    { id: 101, name: "Website Screenshot Capture", type: "task", completedTime: "10m ago" },
-    { id: 102, name: "Instagram Story Creation", type: "social", completedTime: "25m ago" },
-    { id: 103, name: "PDF Report Generation", type: "document", completedTime: "45m ago" },
-    { id: 104, name: "Background Removal - 50 images", type: "animation", completedTime: "1h ago" },
-  ]);
+  const [completedJobs, setCompletedJobs] = useState<any[]>([]);
   
   const [filter, setFilter] = useState<"all" | "video" | "animation" | "social" | "document" | "task">("all");
   
@@ -183,7 +129,7 @@ export function JobRunner() {
           <div className="text-xs text-slate-400 mt-1">Completed Today</div>
         </Card>
         <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4">
-          <div className="text-2xl font-bold text-purple-400">12</div>
+          <div className="text-2xl font-bold text-purple-400">{jobs.length + completedJobs.length}</div>
           <div className="text-xs text-slate-400 mt-1">Total Jobs</div>
         </Card>
       </div>
@@ -235,113 +181,123 @@ export function JobRunner() {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Active & Queued Jobs</h3>
         
-        <div className="space-y-3">
-          <AnimatePresence mode="popLayout">
-            {filteredJobs.map((job) => {
-              const TypeIcon = getTypeIcon(job.type);
-              const color = getTypeColor(job.type);
-              
-              return (
-                <motion.div
-                  key={job.id}
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -100 }}
-                  layout
-                >
-                  <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4 hover:bg-slate-900/70 transition-all">
-                    <div className="flex items-start gap-4">
-                      {/* Icon */}
-                      <div className={`w-12 h-12 rounded-xl bg-${color}-500/20 flex items-center justify-center flex-shrink-0`}>
-                        <TypeIcon className={`w-6 h-6 text-${color}-400 ${job.status === "running" ? "animate-pulse" : ""}`} />
-                      </div>
-                      
-                      {/* Job Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="font-medium text-slate-200">{job.name}</h4>
-                            <div className="flex items-center gap-3 mt-1">
-                              <span className="text-xs text-slate-400">{job.startTime}</span>
-                              {job.estimatedTime && (
-                                <span className="text-xs text-slate-500">
-                                  <Clock className="w-3 h-3 inline mr-1" />
-                                  {job.estimatedTime} remaining
-                                </span>
-                              )}
+        {filteredJobs.length === 0 ? (
+          <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-12">
+            <div className="text-center text-slate-400">
+              <Activity className="w-16 h-16 mx-auto mb-4 opacity-30" />
+              <p className="text-lg font-medium mb-2">No active jobs</p>
+              <p className="text-sm">Create a task to get started</p>
+            </div>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            <AnimatePresence mode="popLayout">
+              {filteredJobs.map((job) => {
+                const TypeIcon = getTypeIcon(job.type);
+                const color = getTypeColor(job.type);
+                
+                return (
+                  <motion.div
+                    key={job.id}
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -100 }}
+                    layout
+                  >
+                    <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4 hover:bg-slate-900/70 transition-all">
+                      <div className="flex items-start gap-4">
+                        {/* Icon */}
+                        <div className={`w-12 h-12 rounded-xl bg-${color}-500/20 flex items-center justify-center flex-shrink-0`}>
+                          <TypeIcon className={`w-6 h-6 text-${color}-400 ${job.status === "running" ? "animate-pulse" : ""}`} />
+                        </div>
+                        
+                        {/* Job Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="font-medium text-slate-200">{job.name}</h4>
+                              <div className="flex items-center gap-3 mt-1">
+                                <span className="text-xs text-slate-400">{job.startTime}</span>
+                                {job.estimatedTime && (
+                                  <span className="text-xs text-slate-500">
+                                    <Clock className="w-3 h-3 inline mr-1" />
+                                    {job.estimatedTime} remaining
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant="outline"
+                                className={`text-xs ${
+                                  job.priority === "high" ? "border-red-500/40 text-red-400" :
+                                  job.priority === "medium" ? "border-yellow-500/40 text-yellow-400" :
+                                  "border-slate-500/40 text-slate-400"
+                                }`}
+                              >
+                                {job.priority}
+                              </Badge>
+                              
+                              <Badge 
+                                variant="outline"
+                                className={`text-xs ${
+                                  job.status === "running" ? "border-cyan-500/40 text-cyan-400" : 
+                                  job.status === "completed" ? "border-green-500/40 text-green-400" :
+                                  job.status === "paused" ? "border-yellow-500/40 text-yellow-400" :
+                                  "border-slate-500/40 text-slate-400"
+                                }`}
+                              >
+                                {job.status}
+                              </Badge>
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2">
-                            <Badge 
-                              variant="outline"
-                              className={`text-xs ${
-                                job.priority === "high" ? "border-red-500/40 text-red-400" :
-                                job.priority === "medium" ? "border-yellow-500/40 text-yellow-400" :
-                                "border-slate-500/40 text-slate-400"
-                              }`}
-                            >
-                              {job.priority}
-                            </Badge>
-                            
-                            <Badge 
-                              variant="outline"
-                              className={`text-xs ${
-                                job.status === "running" ? "border-cyan-500/40 text-cyan-400" : 
-                                job.status === "completed" ? "border-green-500/40 text-green-400" :
-                                job.status === "paused" ? "border-yellow-500/40 text-yellow-400" :
-                                "border-slate-500/40 text-slate-400"
-                              }`}
-                            >
-                              {job.status}
-                            </Badge>
-                          </div>
-                        </div>
-                        
-                        {/* Progress Bar */}
-                        {job.progress > 0 && (
-                          <div className="space-y-2">
-                            <Progress value={job.progress} className="h-2" />
-                            <div className="flex items-center justify-between text-xs text-slate-400">
-                              <span>{job.progress}% complete</span>
-                              <div className="flex gap-2">
-                                {(job.status === "running" || job.status === "paused") && (
+                          {/* Progress Bar */}
+                          {job.progress > 0 && (
+                            <div className="space-y-2">
+                              <Progress value={job.progress} className="h-2" />
+                              <div className="flex items-center justify-between text-xs text-slate-400">
+                                <span>{job.progress}% complete</span>
+                                <div className="flex gap-2">
+                                  {(job.status === "running" || job.status === "paused") && (
+                                    <button 
+                                      onClick={() => toggleJobStatus(job.id)}
+                                      className="hover:text-cyan-400 transition-colors"
+                                    >
+                                      {job.status === "running" ? (
+                                        <Pause className="w-4 h-4" />
+                                      ) : (
+                                        <Play className="w-4 h-4" />
+                                      )}
+                                    </button>
+                                  )}
                                   <button 
-                                    onClick={() => toggleJobStatus(job.id)}
-                                    className="hover:text-cyan-400 transition-colors"
+                                    onClick={() => deleteJob(job.id)}
+                                    className="hover:text-red-400 transition-colors"
                                   >
-                                    {job.status === "running" ? (
-                                      <Pause className="w-4 h-4" />
-                                    ) : (
-                                      <Play className="w-4 h-4" />
-                                    )}
+                                    <Trash2 className="w-4 h-4" />
                                   </button>
-                                )}
-                                <button 
-                                  onClick={() => deleteJob(job.id)}
-                                  className="hover:text-red-400 transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
-                        
-                        {job.status === "queued" && (
-                          <div className="flex items-center gap-2 text-xs text-slate-400 mt-2">
-                            <Clock className="w-4 h-4 animate-pulse" />
-                            <span>Waiting for available resources...</span>
-                          </div>
-                        )}
+                          )}
+                          
+                          {job.status === "queued" && (
+                            <div className="flex items-center gap-2 text-xs text-slate-400 mt-2">
+                              <Clock className="w-4 h-4 animate-pulse" />
+                              <span>Waiting for available resources...</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
       
       {/* Completed Jobs */}
@@ -351,26 +307,34 @@ export function JobRunner() {
           Recently Completed
         </h3>
         
-        <div className="grid grid-cols-2 gap-3">
-          {completedJobs.map((job) => {
-            const TypeIcon = getTypeIcon(job.type);
-            const color = getTypeColor(job.type);
-            
-            return (
-              <Card key={job.id} className="bg-slate-900/50 border-green-500/20 backdrop-blur-xl p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0`}>
-                    <CheckCircle2 className="w-5 h-5 text-green-400" />
+        {completedJobs.length === 0 ? (
+          <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-8">
+            <div className="text-center text-slate-400">
+              <p className="text-sm">No completed jobs yet</p>
+            </div>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {completedJobs.map((job) => {
+              const TypeIcon = getTypeIcon(job.type);
+              const color = getTypeColor(job.type);
+              
+              return (
+                <Card key={job.id} className="bg-slate-900/50 border-green-500/20 backdrop-blur-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0`}>
+                      <CheckCircle2 className="w-5 h-5 text-green-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-slate-200 truncate">{job.name}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">{job.completedTime}</div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-slate-200 truncate">{job.name}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">{job.completedTime}</div>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
       
       {/* Completion Animation Overlay */}

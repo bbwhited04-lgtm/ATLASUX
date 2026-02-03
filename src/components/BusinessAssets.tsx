@@ -33,213 +33,60 @@ interface Business {
 }
 
 export function BusinessAssets() {
-  const [selectedBusiness, setSelectedBusiness] = useState<string | null>('dead-app-corp');
+  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
   const [showAddBusiness, setShowAddBusiness] = useState(false);
+  const [showAddAsset, setShowAddAsset] = useState(false);
+  const [newBusinessForm, setNewBusinessForm] = useState({
+    name: '',
+    description: '',
+    color: 'from-cyan-500 to-blue-500',
+  });
+  const [newAssetForm, setNewAssetForm] = useState({
+    type: 'domain' as 'domain' | 'social' | 'store' | 'email' | 'app',
+    name: '',
+    url: '',
+    platform: '',
+  });
 
-  const businesses: Business[] = [
-    {
-      id: 'dead-app-corp',
-      name: 'DEAD APP CORP',
-      description: 'Main portfolio of viral apps and domains',
-      color: 'from-red-500 to-pink-500',
-      status: 'active',
-      createdAt: '2024-01-15',
-      totalValue: '$2.4M',
-      assets: [
-        {
-          id: 'd1',
-          type: 'domain',
-          name: 'viraldead.pro',
-          url: 'https://viraldead.pro',
-          status: 'active',
-          metrics: { traffic: '45K/mo' }
-        },
-        {
-          id: 'd2',
-          type: 'domain',
-          name: 'shortypro.com',
-          url: 'https://shortypro.com',
-          status: 'active',
-          metrics: { traffic: '23K/mo' }
-        },
-        {
-          id: 'd3',
-          type: 'domain',
-          name: 'deadapp.pro',
-          url: 'https://deadapp.pro',
-          status: 'active',
-          metrics: { traffic: '67K/mo' }
-        },
-        {
-          id: 'd4',
-          type: 'domain',
-          name: 'insuretoday24.com',
-          url: 'https://insuretoday24.com',
-          status: 'active',
-          metrics: { traffic: '12K/mo' }
-        },
-        {
-          id: 's1',
-          type: 'social',
-          name: 'DEAD APP Facebook Page',
-          url: 'https://facebook.com/deadapp',
-          platform: 'Facebook',
-          status: 'active',
-          metrics: { followers: 125000 }
-        },
-        {
-          id: 's2',
-          type: 'social',
-          name: 'DEAD APP Facebook Group',
-          url: 'https://facebook.com/groups/deadapp',
-          platform: 'Facebook',
-          status: 'active',
-          metrics: { followers: 45000 }
-        },
-        {
-          id: 's3',
-          type: 'store',
-          name: 'DEAD APP Store',
-          url: 'https://facebook.com/deadappstore',
-          platform: 'Facebook',
-          status: 'active',
-          metrics: { revenue: '$34K/mo' }
-        },
-        {
-          id: 's4',
-          type: 'social',
-          name: '@deadapp',
-          url: 'https://instagram.com/deadapp',
-          platform: 'Instagram',
-          status: 'active',
-          metrics: { followers: 89000 }
-        },
-        {
-          id: 's5',
-          type: 'social',
-          name: '@deadapp_official',
-          url: 'https://twitter.com/deadapp_official',
-          platform: 'Twitter',
-          status: 'active',
-          metrics: { followers: 56000 }
-        },
-        {
-          id: 's6',
-          type: 'social',
-          name: 'DEAD APP Channel',
-          url: 'https://youtube.com/@deadapp',
-          platform: 'YouTube',
-          status: 'active',
-          metrics: { followers: 234000 }
-        },
-      ]
-    },
-    {
-      id: 'atlas-ux',
-      name: 'Atlas UX',
-      description: 'AI productivity platform and tools',
-      color: 'from-cyan-500 to-blue-500',
-      status: 'active',
-      createdAt: '2024-02-01',
-      totalValue: '$1.2M',
-      assets: [
-        {
-          id: 'a1',
-          type: 'domain',
-          name: 'atlasux.com',
-          url: 'https://atlasux.com',
-          status: 'active',
-          metrics: { traffic: '89K/mo' }
-        },
-        {
-          id: 'a2',
-          type: 'domain',
-          name: 'atlasux.ai',
-          url: 'https://atlasux.ai',
-          status: 'active',
-          metrics: { traffic: '45K/mo' }
-        },
-        {
-          id: 'a3',
-          type: 'social',
-          name: 'Atlas UX Official',
-          url: 'https://twitter.com/atlasux',
-          platform: 'Twitter',
-          status: 'active',
-          metrics: { followers: 23000 }
-        },
-        {
-          id: 'a4',
-          type: 'social',
-          name: 'Atlas UX',
-          url: 'https://linkedin.com/company/atlasux',
-          platform: 'LinkedIn',
-          status: 'active',
-          metrics: { followers: 12000 }
-        },
-      ]
-    },
-    {
-      id: 'viral-marketing',
-      name: 'Viral Marketing Co',
-      description: 'Marketing agency and content creation',
-      color: 'from-purple-500 to-pink-500',
-      status: 'active',
-      createdAt: '2024-01-20',
-      totalValue: '$890K',
-      assets: [
-        {
-          id: 'v1',
-          type: 'domain',
-          name: 'goviraltoday.com',
-          url: 'https://goviraltoday.com',
-          status: 'active',
-          metrics: { traffic: '156K/mo' }
-        },
-        {
-          id: 'v2',
-          type: 'social',
-          name: 'Viral Marketing Tips',
-          url: 'https://tiktok.com/@viralmarketing',
-          platform: 'TikTok',
-          status: 'active',
-          metrics: { followers: 567000 }
-        },
-      ]
-    },
-  ];
+  const businesses: Business[] = [];
 
-  const assetTypeIcons = {
-    domain: Globe,
-    social: Users,
-    store: Store,
-    email: MessageSquare,
-    app: Cpu,
+  const selectedBusinessData = selectedBusiness 
+    ? businesses.find(b => b.id === selectedBusiness)
+    : null;
+
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case 'Facebook': return Facebook;
+      case 'Instagram': return Instagram;
+      case 'Twitter': return Twitter;
+      case 'YouTube': return Youtube;
+      default: return Globe;
+    }
   };
 
-  const platformIcons: { [key: string]: any } = {
-    'Facebook': Facebook,
-    'Instagram': Instagram,
-    'Twitter': Twitter,
-    'YouTube': Youtube,
-    'TikTok': Hash,
-    'LinkedIn': Users,
+  const getAssetIcon = (type: string) => {
+    switch (type) {
+      case 'domain': return Globe;
+      case 'social': return Users;
+      case 'store': return Store;
+      case 'email': return MessageSquare;
+      case 'app': return Zap;
+      default: return Link;
+    }
   };
-
-  const selectedBusinessData = businesses.find(b => b.id === selectedBusiness);
 
   const assetStats = {
     totalBusinesses: businesses.length,
     totalAssets: businesses.reduce((acc, b) => acc + b.assets.length, 0),
-    totalValue: '$4.49M',
+    totalValue: '$0',
     activeAssets: businesses.reduce((acc, b) => acc + b.assets.filter(a => a.status === 'active').length, 0),
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 p-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <Briefcase className="w-8 h-8 text-cyan-400" />
@@ -251,10 +98,10 @@ export function BusinessAssets() {
           </div>
           <button
             onClick={() => setShowAddBusiness(true)}
-            className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white rounded-xl font-semibold transition-all flex items-center gap-2"
+            className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-400 rounded-lg text-white font-medium transition-colors"
           >
             <Plus className="w-5 h-5" />
-            New Business
+            Add Business
           </button>
         </div>
       </div>
@@ -267,323 +114,319 @@ export function BusinessAssets() {
           <div className="text-sm text-slate-400">Total businesses</div>
         </div>
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
-          <FolderOpen className="w-8 h-8 text-blue-400 mb-3" />
+          <Database className="w-8 h-8 text-purple-400 mb-3" />
           <div className="text-3xl font-bold text-white mb-1">{assetStats.totalAssets}</div>
           <div className="text-sm text-slate-400">Total assets</div>
         </div>
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
-          <CheckCircle className="w-8 h-8 text-green-400 mb-3" />
+          <DollarSign className="w-8 h-8 text-green-400 mb-3" />
+          <div className="text-3xl font-bold text-white mb-1">{assetStats.totalValue}</div>
+          <div className="text-sm text-slate-400">Portfolio value</div>
+        </div>
+        <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
+          <Activity className="w-8 h-8 text-blue-400 mb-3" />
           <div className="text-3xl font-bold text-white mb-1">{assetStats.activeAssets}</div>
           <div className="text-sm text-slate-400">Active assets</div>
         </div>
-        <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
-          <DollarSign className="w-8 h-8 text-yellow-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">{assetStats.totalValue}</div>
-          <div className="text-sm text-slate-400">Total portfolio value</div>
-        </div>
       </div>
 
-      {/* GPU/CPU Processing Status */}
-      <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-6 mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-              <Cpu className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-white mb-1">Hardware Acceleration Enabled</h3>
-              <p className="text-slate-400">GPU/CPU processing active for optimal performance</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="text-center">
-              <div className="flex items-center gap-2 mb-1">
-                <Cpu className="w-5 h-5 text-green-400" />
-                <span className="text-sm font-semibold text-white">CPU</span>
-              </div>
-              <div className="text-2xl font-bold text-green-400">78%</div>
-              <div className="text-xs text-slate-500">8 cores active</div>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center gap-2 mb-1">
-                <Gauge className="w-5 h-5 text-cyan-400" />
-                <span className="text-sm font-semibold text-white">GPU</span>
-              </div>
-              <div className="text-2xl font-bold text-cyan-400">45%</div>
-              <div className="text-xs text-slate-500">CUDA enabled</div>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center gap-2 mb-1">
-                <Activity className="w-5 h-5 text-yellow-400" />
-                <span className="text-sm font-semibold text-white">Memory</span>
-              </div>
-              <div className="text-2xl font-bold text-yellow-400">12GB</div>
-              <div className="text-xs text-slate-500">of 16GB used</div>
-            </div>
+      {businesses.length === 0 ? (
+        // Empty State
+        <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-12">
+          <div className="text-center max-w-md mx-auto">
+            <Briefcase className="w-20 h-20 text-cyan-400/30 mx-auto mb-6" />
+            <h3 className="text-2xl font-bold text-white mb-3">No Business Assets Yet</h3>
+            <p className="text-slate-400 mb-6">
+              Start organizing your digital empire by adding your first business. Track domains, social accounts, stores, and more all in one place.
+            </p>
+            <button
+              onClick={() => setShowAddBusiness(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-400 rounded-lg text-white font-medium transition-colors mx-auto"
+            >
+              <Plus className="w-5 h-5" />
+              Add Your First Business
+            </button>
           </div>
         </div>
-      </div>
-
-      <div className="grid lg:grid-cols-12 gap-6">
-        {/* Business List Sidebar */}
-        <div className="lg:col-span-4 bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Your Businesses</h3>
-          <div className="space-y-3">
+      ) : (
+        // Business List
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Business List Column */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-white mb-4">Your Businesses</h3>
             {businesses.map((business) => (
-              <button
+              <div
                 key={business.id}
                 onClick={() => setSelectedBusiness(business.id)}
-                className={`w-full text-left p-4 rounded-xl transition-all ${
+                className={`bg-slate-900/50 border rounded-xl p-4 cursor-pointer transition-all ${
                   selectedBusiness === business.id
-                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500/50'
-                    : 'bg-slate-950/50 border border-slate-700/50 hover:border-cyan-500/30'
+                    ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/20'
+                    : 'border-cyan-500/20 hover:border-cyan-500/40'
                 }`}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <div className="font-semibold text-white mb-1">{business.name}</div>
-                    <div className="text-xs text-slate-400 mb-2">{business.description}</div>
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`w-12 h-12 bg-gradient-to-br ${business.color} rounded-lg flex items-center justify-center`}>
+                    <Briefcase className="w-6 h-6 text-white" />
                   </div>
-                  {selectedBusiness === business.id && (
-                    <CheckCircle className="w-5 h-5 text-cyan-400" />
-                  )}
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-white mb-1">{business.name}</h4>
+                    <p className="text-xs text-slate-400">{business.description}</p>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-500">{business.assets.length} assets</span>
                   <span className="text-xs font-semibold text-green-400">{business.totalValue}</span>
                 </div>
-                <div className={`mt-2 h-1 rounded-full bg-gradient-to-r ${business.color}`} />
-              </button>
+              </div>
             ))}
           </div>
-        </div>
 
-        {/* Selected Business Details */}
-        <div className="lg:col-span-8">
-          {selectedBusinessData ? (
-            <>
-              {/* Business Header */}
-              <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 mb-6">
-                <div className="flex items-start justify-between mb-4">
+          {/* Business Details Column */}
+          <div className="md:col-span-2">
+            {selectedBusinessData ? (
+              <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
+                <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center gap-4">
                     <div className={`w-16 h-16 bg-gradient-to-br ${selectedBusinessData.color} rounded-xl flex items-center justify-center`}>
                       <Briefcase className="w-8 h-8 text-white" />
                     </div>
                     <div>
                       <h3 className="text-2xl font-bold text-white mb-1">{selectedBusinessData.name}</h3>
-                      <p className="text-slate-400">{selectedBusinessData.description}</p>
+                      <p className="text-slate-400 text-sm">{selectedBusinessData.description}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button className="p-2 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-colors">
-                      <Edit className="w-4 h-4 text-slate-400" />
-                    </button>
-                    <button className="p-2 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-colors">
-                      <Settings className="w-4 h-4 text-slate-400" />
-                    </button>
+                  <button className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
+                    <Settings className="w-5 h-5 text-slate-400" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-slate-800/50 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-white mb-1">{selectedBusinessData.assets.length}</div>
+                    <div className="text-xs text-slate-400">Total Assets</div>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-green-400 mb-1">{selectedBusinessData.totalValue}</div>
+                    <div className="text-xs text-slate-400">Est. Value</div>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-cyan-400 mb-1">
+                      {selectedBusinessData.assets.filter(a => a.status === 'active').length}
+                    </div>
+                    <div className="text-xs text-slate-400">Active</div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="p-3 bg-slate-950/50 rounded-lg">
-                    <div className="text-sm text-slate-400 mb-1">Total Value</div>
-                    <div className="text-xl font-bold text-white">{selectedBusinessData.totalValue}</div>
-                  </div>
-                  <div className="p-3 bg-slate-950/50 rounded-lg">
-                    <div className="text-sm text-slate-400 mb-1">Total Assets</div>
-                    <div className="text-xl font-bold text-white">{selectedBusinessData.assets.length}</div>
-                  </div>
-                  <div className="p-3 bg-slate-950/50 rounded-lg">
-                    <div className="text-sm text-slate-400 mb-1">Status</div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-400" />
-                      <span className="text-sm font-semibold text-green-400">Active</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Neptune Integration */}
-              <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-6 mb-6">
-                <div className="flex items-start gap-3">
-                  <Zap className="w-6 h-6 text-purple-400" />
-                  <div>
-                    <div className="text-sm font-semibold text-purple-400 mb-1">Neptune Integration Ready</div>
-                    <div className="text-xs text-slate-400 mb-3">
-                      Neptune can now use all assets from "{selectedBusinessData.name}" for automated tasks
-                    </div>
-                    <button className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 rounded-lg text-sm text-purple-400 transition-colors">
-                      Configure Neptune Access
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Assets Grid */}
-              <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-white">Assets</h3>
-                  <button className="px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-sm text-cyan-400 transition-colors flex items-center gap-2">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-white">Assets</h4>
+                  <button className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 rounded-lg text-cyan-400 text-sm transition-colors">
                     <Plus className="w-4 h-4" />
                     Add Asset
                   </button>
                 </div>
 
-                {/* Domains */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Globe className="w-5 h-5 text-cyan-400" />
-                    <h4 className="text-sm font-semibold text-white">Domains</h4>
-                    <span className="text-xs text-slate-500">
-                      ({selectedBusinessData.assets.filter(a => a.type === 'domain').length})
-                    </span>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-3">
-                    {selectedBusinessData.assets.filter(a => a.type === 'domain').map((asset) => (
+                <div className="space-y-3">
+                  {selectedBusinessData.assets.map((asset) => {
+                    const AssetIcon = getAssetIcon(asset.type);
+                    const PlatformIcon = asset.platform ? getPlatformIcon(asset.platform) : null;
+
+                    return (
                       <div
                         key={asset.id}
-                        className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-cyan-500/30 transition-colors group"
+                        className="bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700/50 rounded-lg p-4 transition-colors"
                       >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <div className="font-semibold text-white mb-1">{asset.name}</div>
-                            <div className="text-xs text-slate-500">{asset.metrics?.traffic}</div>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3 flex-1">
+                            <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                              {PlatformIcon ? <PlatformIcon className="w-5 h-5 text-cyan-400" /> : <AssetIcon className="w-5 h-5 text-cyan-400" />}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h5 className="font-medium text-white">{asset.name}</h5>
+                                <span className={`px-2 py-0.5 rounded text-xs ${
+                                  asset.status === 'active' 
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : asset.status === 'pending'
+                                    ? 'bg-yellow-500/20 text-yellow-400'
+                                    : 'bg-slate-500/20 text-slate-400'
+                                }`}>
+                                  {asset.status}
+                                </span>
+                              </div>
+                              <a 
+                                href={asset.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                              >
+                                {asset.url}
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                              {asset.metrics && (
+                                <div className="flex gap-4 mt-2">
+                                  {asset.metrics.followers && (
+                                    <div className="text-xs">
+                                      <span className="text-slate-500">Followers: </span>
+                                      <span className="text-white font-medium">{asset.metrics.followers.toLocaleString()}</span>
+                                    </div>
+                                  )}
+                                  {asset.metrics.revenue && (
+                                    <div className="text-xs">
+                                      <span className="text-slate-500">Revenue: </span>
+                                      <span className="text-green-400 font-medium">{asset.metrics.revenue}</span>
+                                    </div>
+                                  )}
+                                  {asset.metrics.traffic && (
+                                    <div className="text-xs">
+                                      <span className="text-slate-500">Traffic: </span>
+                                      <span className="text-blue-400 font-medium">{asset.metrics.traffic}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <a
-                              href={asset.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1 hover:bg-slate-800 rounded transition-colors"
-                            >
-                              <ExternalLink className="w-3 h-3 text-slate-400" />
-                            </a>
-                            <button className="p-1 hover:bg-slate-800 rounded transition-colors">
-                              <Copy className="w-3 h-3 text-slate-400" />
+                          <div className="flex gap-2">
+                            <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                              <Edit className="w-4 h-4 text-slate-400" />
+                            </button>
+                            <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                              <Trash2 className="w-4 h-4 text-red-400" />
                             </button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
-                            asset.status === 'active' ? 'bg-green-400' : 'bg-yellow-400'
-                          }`} />
-                          <span className="text-xs text-slate-500">{asset.status}</span>
-                        </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
-
-                {/* Social Media */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Users className="w-5 h-5 text-blue-400" />
-                    <h4 className="text-sm font-semibold text-white">Social Media</h4>
-                    <span className="text-xs text-slate-500">
-                      ({selectedBusinessData.assets.filter(a => a.type === 'social').length})
-                    </span>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-3">
-                    {selectedBusinessData.assets.filter(a => a.type === 'social').map((asset) => {
-                      const PlatformIcon = asset.platform ? platformIcons[asset.platform] : Users;
-                      return (
-                        <div
-                          key={asset.id}
-                          className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-blue-500/30 transition-colors group"
-                        >
-                          <div className="flex items-start gap-3 mb-2">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-lg flex items-center justify-center">
-                              <PlatformIcon className="w-5 h-5 text-blue-400" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-semibold text-white mb-1">{asset.name}</div>
-                              <div className="text-xs text-slate-500">{asset.platform}</div>
-                            </div>
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <a
-                                href={asset.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1 hover:bg-slate-800 rounded transition-colors"
-                              >
-                                <ExternalLink className="w-3 h-3 text-slate-400" />
-                              </a>
-                            </div>
-                          </div>
-                          {asset.metrics?.followers && (
-                            <div className="flex items-center gap-2">
-                              <Users className="w-3 h-3 text-slate-500" />
-                              <span className="text-sm font-semibold text-cyan-400">
-                                {asset.metrics.followers.toLocaleString()} followers
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Stores */}
-                {selectedBusinessData.assets.filter(a => a.type === 'store').length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Store className="w-5 h-5 text-green-400" />
-                      <h4 className="text-sm font-semibold text-white">E-commerce Stores</h4>
-                      <span className="text-xs text-slate-500">
-                        ({selectedBusinessData.assets.filter(a => a.type === 'store').length})
-                      </span>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      {selectedBusinessData.assets.filter(a => a.type === 'store').map((asset) => (
-                        <div
-                          key={asset.id}
-                          className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-green-500/30 transition-colors group"
-                        >
-                          <div className="flex items-start gap-3 mb-2">
-                            <div className="w-10 h-10 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg flex items-center justify-center">
-                              <Store className="w-5 h-5 text-green-400" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-semibold text-white mb-1">{asset.name}</div>
-                              <div className="text-xs text-slate-500">{asset.platform}</div>
-                            </div>
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <a
-                                href={asset.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1 hover:bg-slate-800 rounded transition-colors"
-                              >
-                                <ExternalLink className="w-3 h-3 text-slate-400" />
-                              </a>
-                            </div>
-                          </div>
-                          {asset.metrics?.revenue && (
-                            <div className="flex items-center gap-2">
-                              <DollarSign className="w-3 h-3 text-slate-500" />
-                              <span className="text-sm font-semibold text-green-400">
-                                {asset.metrics.revenue} revenue
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <Briefcase className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-                <div className="text-slate-500">Select a business to view details</div>
+            ) : (
+              <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-12">
+                <div className="text-center text-slate-400">
+                  <Database className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p>Select a business to view its assets</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Add Business Modal */}
+      {showAddBusiness && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-cyan-500/30 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
+                  <Briefcase className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">Add New Business</h3>
+              </div>
+              <button 
+                onClick={() => setShowAddBusiness(false)}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Business Name */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Business Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Acme Corporation"
+                  value={newBusinessForm.name}
+                  onChange={(e) => setNewBusinessForm({ ...newBusinessForm, name: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Description</label>
+                <textarea
+                  placeholder="Brief description of your business..."
+                  value={newBusinessForm.description}
+                  onChange={(e) => setNewBusinessForm({ ...newBusinessForm, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors resize-none"
+                />
+              </div>
+
+              {/* Color Theme */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-3">Color Theme</label>
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    { name: 'Cyan-Blue', value: 'from-cyan-500 to-blue-500' },
+                    { name: 'Purple-Pink', value: 'from-purple-500 to-pink-500' },
+                    { name: 'Green-Teal', value: 'from-green-500 to-teal-500' },
+                    { name: 'Orange-Red', value: 'from-orange-500 to-red-500' },
+                    { name: 'Indigo-Purple', value: 'from-indigo-500 to-purple-500' },
+                    { name: 'Yellow-Orange', value: 'from-yellow-500 to-orange-500' },
+                    { name: 'Rose-Red', value: 'from-rose-500 to-red-500' },
+                    { name: 'Emerald-Cyan', value: 'from-emerald-500 to-cyan-500' },
+                  ].map((color) => (
+                    <button
+                      key={color.value}
+                      onClick={() => setNewBusinessForm({ ...newBusinessForm, color: color.value })}
+                      className={`h-12 rounded-lg bg-gradient-to-br ${color.value} transition-all ${
+                        newBusinessForm.color === color.value
+                          ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105'
+                          : 'opacity-70 hover:opacity-100'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Link to Integrations */}
+              <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <Zap className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-cyan-400 mb-1">Connect Your Assets</h4>
+                    <p className="text-xs text-slate-400 mb-3">
+                      After creating your business, you can add assets from your connected integrations including domains, social accounts, e-commerce stores, and more.
+                    </p>
+                    <a
+                      href="/integrations"
+                      className="inline-flex items-center gap-2 text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                    >
+                      View Integrations →
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowAddBusiness(false)}
+                  className="flex-1 px-6 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-white font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    // TODO: Save business to database
+                    console.log('Creating business:', newBusinessForm);
+                    setShowAddBusiness(false);
+                    setNewBusinessForm({ name: '', description: '', color: 'from-cyan-500 to-blue-500' });
+                  }}
+                  disabled={!newBusinessForm.name}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Create Business
+                </button>
               </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -10,176 +10,22 @@ export function MemorySystem() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const memoryStats = {
-    totalMemories: 3847,
-    categories: 12,
-    keyPeople: 47,
-    preferences: 156,
-    conversations: 892,
+    totalMemories: 0,
+    categories: 0,
+    keyPeople: 0,
+    preferences: 0,
+    conversations: 0,
   };
 
-  const memoryCategories = [
-    { 
-      name: 'Personal Preferences', 
-      icon: Heart, 
-      count: 156, 
-      color: 'red',
-      items: ['Favorite coffee: Oat milk latte', 'Work hours: 9AM-6PM', 'Prefers async communication']
-    },
-    { 
-      name: 'Key People', 
-      icon: User, 
-      count: 47, 
-      color: 'blue',
-      items: ['Sarah Chen - Boss, prefers morning meetings', 'John Smith - Investor, based in SF']
-    },
-    { 
-      name: 'Work Patterns', 
-      icon: Briefcase, 
-      count: 89, 
-      color: 'purple',
-      items: ['Most productive: 10AM-12PM', 'Breaks needed every 90 mins', 'Deep work on Tuesdays']
-    },
-    { 
-      name: 'Important Dates', 
-      icon: Calendar, 
-      count: 234, 
-      color: 'green',
-      items: ['Partner\'s birthday: March 15', 'Team retreat: Q3', 'Annual review: December']
-    },
-    { 
-      name: 'Locations', 
-      icon: MapPin, 
-      count: 67, 
-      color: 'yellow',
-      items: ['Home office: NYC', 'Coffee shop: Blue Bottle on 5th', 'Gym: Equinox']
-    },
-    { 
-      name: 'Past Decisions', 
-      icon: CheckCircle, 
-      count: 445, 
-      color: 'cyan',
-      items: ['Chose vendor A over B for cost', 'Hired 3 engineers in Q1', 'Rejected partnership with X']
-    },
-  ];
+  const memoryCategories: any[] = [];
 
-  const recentMemories = [
-    {
-      timestamp: '2 mins ago',
-      type: 'preference',
-      icon: Heart,
-      content: 'User prefers detailed summaries over brief updates',
-      context: 'From conversation about email preferences',
-      importance: 'high'
-    },
-    {
-      timestamp: '1 hour ago',
-      type: 'person',
-      icon: User,
-      content: 'Jennifer Lee is VP of Marketing, reports to Sarah',
-      context: 'From org chart discussion',
-      importance: 'medium'
-    },
-    {
-      timestamp: '3 hours ago',
-      type: 'decision',
-      icon: CheckCircle,
-      content: 'Decided to use React for new dashboard project',
-      context: 'From technical planning meeting',
-      importance: 'high'
-    },
-    {
-      timestamp: '1 day ago',
-      type: 'work_pattern',
-      icon: Briefcase,
-      content: 'User is most creative in early morning',
-      context: 'Pattern detected from calendar analysis',
-      importance: 'medium'
-    },
-    {
-      timestamp: '2 days ago',
-      type: 'location',
-      icon: MapPin,
-      content: 'New favorite lunch spot: Chipotle on 42nd St',
-      context: 'Mentioned during expense tracking',
-      importance: 'low'
-    },
-  ];
+  const recentMemories: any[] = [];
 
-  const keyPeople = [
-    {
-      name: 'Sarah Chen',
-      role: 'Boss / CEO',
-      preferences: ['Morning meetings', 'Detailed reports', 'Direct communication'],
-      interactions: 247,
-      lastContact: '2 hours ago',
-      notes: 'Very detail-oriented, appreciates proactive updates'
-    },
-    {
-      name: 'Mike Rodriguez',
-      role: 'Engineering Lead',
-      preferences: ['Slack over email', 'Technical specs', 'Weekly check-ins'],
-      interactions: 189,
-      lastContact: '1 day ago',
-      notes: 'Prefers async communication, works late hours'
-    },
-    {
-      name: 'Jennifer Lee',
-      role: 'VP Marketing',
-      preferences: ['Visual presentations', 'Quick responses', 'Friday updates'],
-      interactions: 156,
-      lastContact: '3 days ago',
-      notes: 'Creative thinker, likes brainstorming sessions'
-    },
-  ];
+  const importantPeople: any[] = [];
 
-  const conversationMemories = [
-    {
-      date: '2 hours ago',
-      topic: 'Q1 Budget Planning',
-      keyPoints: [
-        'Need to cut costs by 15%',
-        'Marketing budget is flexible',
-        'Engineering headcount approved'
-      ],
-      decisions: ['Hire 2 engineers', 'Reduce ad spend'],
-      followUps: ['Review vendor contracts', 'Schedule team meeting']
-    },
-    {
-      date: 'Yesterday',
-      topic: 'Product Roadmap Discussion',
-      keyPoints: [
-        'Feature X is priority',
-        'Launch target: Q3',
-        'Need designer input'
-      ],
-      decisions: ['Move forward with Feature X', 'Hire contract designer'],
-      followUps: ['Draft PRD', 'Schedule design review']
-    },
-  ];
+  const conversationMemories: any[] = [];
 
-  const smartInsights = [
-    {
-      type: 'pattern',
-      icon: TrendingUp,
-      title: 'Work Pattern Detected',
-      description: 'You schedule most important meetings on Tuesday mornings',
-      suggestion: 'Consider blocking Tuesday 9-11AM for strategic work'
-    },
-    {
-      type: 'preference',
-      icon: Heart,
-      title: 'Communication Style',
-      description: 'You prefer detailed explanations over quick summaries',
-      suggestion: 'Atlas will provide comprehensive responses by default'
-    },
-    {
-      type: 'relationship',
-      icon: User,
-      title: 'Key Relationship',
-      description: 'Haven\'t connected with Jennifer Lee in 3 days',
-      suggestion: 'Consider scheduling a check-in this week'
-    },
-  ];
+  const smartInsights: any[] = [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -328,7 +174,7 @@ export function MemorySystem() {
           </div>
 
           <div className="space-y-4">
-            {keyPeople.map((person, idx) => (
+            {importantPeople.map((person, idx) => (
               <div
                 key={idx}
                 className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50"

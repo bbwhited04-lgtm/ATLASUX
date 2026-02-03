@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useDragControls, PanInfo } from "motion/react";
 import { 
   Shield, 
   X, 
@@ -42,38 +42,7 @@ interface SafetyCheck {
 
 export function NeptuneControl() {
   const [isOpen, setIsOpen] = useState(false);
-  const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([
-    {
-      id: 1,
-      task: "Access Documents folder to analyze quarterly reports",
-      type: "file_access",
-      requestedBy: "Atlas AI",
-      timestamp: "2m ago",
-      expiresIn: 280,
-      priority: "high",
-      requiresApproval: true
-    },
-    {
-      id: 2,
-      task: "Create and schedule Instagram post for product launch",
-      type: "social_post",
-      requestedBy: "Pluto Jobs",
-      timestamp: "5m ago",
-      expiresIn: 540,
-      priority: "medium",
-      requiresApproval: true
-    },
-    {
-      id: 3,
-      task: "Send follow-up emails to 15 contacts from CRM",
-      type: "email",
-      requestedBy: "Atlas AI",
-      timestamp: "8m ago",
-      expiresIn: 420,
-      priority: "low",
-      requiresApproval: true
-    },
-  ]);
+  const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([]);
   
   const [safetyStatus, setSafetyStatus] = useState<SafetyCheck>({
     contentFilter: true,
@@ -88,6 +57,23 @@ export function NeptuneControl() {
     requireApprovalForBrowser: true,
     expirationTime: 300 // 5 minutes default
   });
+  
+  // Draggable position state - load from localStorage
+  const [neptunePosition, setNeptunePosition] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('neptunePosition');
+      return saved ? JSON.parse(saved) : { x: 0, y: 0 };
+    }
+    return { x: 0, y: 0 };
+  });
+  const dragControls = useDragControls();
+  
+  // Save position to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('neptunePosition', JSON.stringify(neptunePosition));
+    }
+  }, [neptunePosition]);
   
   // Timer countdown for pending tasks
   useEffect(() => {
@@ -158,6 +144,19 @@ export function NeptuneControl() {
         onClick={() => setIsOpen(true)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        drag
+        dragControls={dragControls}
+        dragConstraints={{ top: -window.innerHeight + 300, left: -window.innerWidth + 200, right: 0, bottom: 0 }}
+        dragMomentum={false}
+        dragElastic={0}
+        onDragEnd={(event, info: PanInfo) => {
+          // Save the offset, not the absolute position
+          setNeptunePosition({ 
+            x: neptunePosition.x + info.offset.x, 
+            y: neptunePosition.y + info.offset.y 
+          });
+        }}
+        style={{ x: neptunePosition.x, y: neptunePosition.y }}
       >
         {/* Pending notifications badge */}
         {pendingTasks.length > 0 && (

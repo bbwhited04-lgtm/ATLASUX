@@ -6,115 +6,17 @@ import {
 } from 'lucide-react';
 
 export function BusinessIntelligence() {
-  const competitors = [
-    {
-      name: 'CompetitorAI Inc.',
-      sentiment: 'positive',
-      mentions: 234,
-      trend: 'up',
-      recentActivity: 'Launched new AI assistant feature',
-      stockChange: '+12.3%'
-    },
-    {
-      name: 'WorkflowPro',
-      sentiment: 'neutral',
-      mentions: 156,
-      trend: 'down',
-      recentActivity: 'Pricing model update announced',
-      stockChange: '-3.1%'
-    },
-    {
-      name: 'AutomateNow',
-      sentiment: 'negative',
-      mentions: 89,
-      trend: 'up',
-      recentActivity: 'Security breach reported',
-      stockChange: '-8.7%'
-    },
-  ];
+  const competitors: any[] = [];
 
-  const industryNews = [
-    {
-      id: 1,
-      title: 'AI Automation Market Expected to Reach $50B by 2026',
-      source: 'TechCrunch',
-      relevance: 95,
-      time: '2 hours ago',
-      summary: 'New report shows explosive growth in enterprise AI adoption...'
-    },
-    {
-      id: 2,
-      title: 'Major Players Enter AI Agent Competition',
-      source: 'Forbes',
-      relevance: 88,
-      time: '5 hours ago',
-      summary: 'Industry giants announce new AI employee products...'
-    },
-    {
-      id: 3,
-      title: 'Regulatory Changes Impact AI Software Deployment',
-      source: 'Bloomberg',
-      relevance: 76,
-      time: '1 day ago',
-      summary: 'New compliance requirements for enterprise AI...'
-    },
-    {
-      id: 4,
-      title: 'Study: AI Assistants Boost Productivity by 40%',
-      source: 'MIT Technology Review',
-      relevance: 92,
-      time: '2 days ago',
-      summary: 'Research demonstrates significant efficiency gains...'
-    },
-  ];
+  const industryNews: any[] = [];
 
-  const stockWatchlist = [
-    { symbol: 'AAPL', name: 'Apple Inc.', price: 178.23, change: 2.34, changePercent: 1.33, trend: 'up' },
-    { symbol: 'MSFT', name: 'Microsoft', price: 412.56, change: -1.87, changePercent: -0.45, trend: 'down' },
-    { symbol: 'GOOGL', name: 'Alphabet', price: 142.89, change: 3.12, changePercent: 2.23, trend: 'up' },
-    { symbol: 'META', name: 'Meta Platforms', price: 487.34, change: 5.67, changePercent: 1.18, trend: 'up' },
-  ];
+  const stockWatchlist: any[] = [];
 
-  const sentimentData = [
-    { platform: 'Twitter/X', positive: 72, neutral: 18, negative: 10, total: 1247 },
-    { platform: 'LinkedIn', positive: 85, neutral: 12, negative: 3, total: 893 },
-    { platform: 'Reddit', positive: 45, neutral: 35, negative: 20, total: 456 },
-    { platform: 'News Media', positive: 68, neutral: 25, negative: 7, total: 234 },
-  ];
+  const sentimentData: any[] = [];
 
-  const predictions = [
-    {
-      metric: 'User Growth',
-      current: '15,234',
-      predicted: '22,450',
-      confidence: 87,
-      timeframe: 'Next Quarter',
-      trend: 'up'
-    },
-    {
-      metric: 'Revenue',
-      current: '$2.4M',
-      predicted: '$3.8M',
-      confidence: 82,
-      timeframe: 'Next Quarter',
-      trend: 'up'
-    },
-    {
-      metric: 'Churn Rate',
-      current: '4.2%',
-      predicted: '2.8%',
-      confidence: 75,
-      timeframe: 'Next Quarter',
-      trend: 'down'
-    },
-  ];
+  const predictions: any[] = [];
 
-  const kpiDashboard = [
-    { name: 'Active Users', value: '15,234', change: '+12.3%', trend: 'up', target: '18,000' },
-    { name: 'MRR', value: '$847K', change: '+8.7%', trend: 'up', target: '$1M' },
-    { name: 'Conversion Rate', value: '3.2%', change: '+0.4%', trend: 'up', target: '4.0%' },
-    { name: 'Customer Satisfaction', value: '4.7/5', change: '+0.2', trend: 'up', target: '4.8/5' },
-  ];
+  const kpiDashboard: any[] = [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto">

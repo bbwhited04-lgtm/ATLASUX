@@ -3,34 +3,51 @@ import {
   Video, Calendar, Mic, Users, MessageSquare, 
   FileText, CheckCircle, Clock, Play, Download,
   Settings, Zap, Brain, TrendingUp, Eye,
-  PhoneCall, Share2, Bell, Sparkles
+  PhoneCall, Share2, Bell, Sparkles, Link, Plus,
+  X, ArrowRight
 } from 'lucide-react';
+import { AddMeetingModal, VideoConferencingConnectionModal } from '../MeetingModals';
 
 export function VideoConferencing() {
   const [atlasInMeeting, setAtlasInMeeting] = useState(false);
+  const [showAddMeetingModal, setShowAddMeetingModal] = useState(false);
+  const [showConnectModal, setShowConnectModal] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
+  const [meetingLink, setMeetingLink] = useState('');
+  const [meetingTitle, setMeetingTitle] = useState('');
+  const [meetingDate, setMeetingDate] = useState('');
+  const [meetingTime, setMeetingTime] = useState('');
 
   const platforms = [
     { 
       name: 'Zoom', 
-      status: 'connected', 
-      meetings: 247, 
-      lastUsed: '2 hours ago',
+      status: 'disconnected', 
+      meetings: 0, 
+      lastUsed: 'Never',
       logo: '🎥',
       color: 'blue'
     },
     { 
       name: 'Microsoft Teams', 
-      status: 'connected', 
-      meetings: 189, 
-      lastUsed: '1 day ago',
+      status: 'disconnected', 
+      meetings: 0, 
+      lastUsed: 'Never',
       logo: '💼',
       color: 'purple'
     },
     { 
+      name: 'Google Meet', 
+      status: 'disconnected', 
+      meetings: 0, 
+      lastUsed: 'Never',
+      logo: '📹',
+      color: 'red'
+    },
+    { 
       name: 'Cisco Webex', 
-      status: 'connected', 
-      meetings: 67, 
-      lastUsed: '3 days ago',
+      status: 'disconnected', 
+      meetings: 0, 
+      lastUsed: 'Never',
       logo: '🌐',
       color: 'green'
     },
@@ -60,77 +77,9 @@ export function VideoConferencing() {
     },
   ];
 
-  const upcomingMeetings = [
-    {
-      id: 1,
-      title: 'Q1 Strategy Planning',
-      platform: 'Zoom',
-      time: 'Today at 2:00 PM',
-      duration: '1 hour',
-      participants: 8,
-      atlasJoining: true,
-      meetingLink: 'zoom.us/j/123456789'
-    },
-    {
-      id: 2,
-      title: 'Client Presentation - Acme Corp',
-      platform: 'Microsoft Teams',
-      time: 'Today at 4:30 PM',
-      duration: '45 mins',
-      participants: 5,
-      atlasJoining: true,
-      meetingLink: 'teams.microsoft.com/l/...'
-    },
-    {
-      id: 3,
-      title: 'Engineering Team Standup',
-      platform: 'Zoom',
-      time: 'Tomorrow at 9:00 AM',
-      duration: '30 mins',
-      participants: 12,
-      atlasJoining: false,
-      meetingLink: 'zoom.us/j/987654321'
-    },
-  ];
+  const upcomingMeetings: any[] = [];
 
-  const recentMeetings = [
-    {
-      id: 1,
-      title: 'Product Roadmap Review',
-      platform: 'Zoom',
-      date: '2 hours ago',
-      duration: '52:30',
-      participants: 7,
-      transcribed: true,
-      actionItems: 8,
-      keyPoints: 15,
-      recording: true
-    },
-    {
-      id: 2,
-      title: 'Sales Team Weekly',
-      platform: 'Microsoft Teams',
-      date: 'Yesterday',
-      duration: '35:12',
-      participants: 15,
-      transcribed: true,
-      actionItems: 5,
-      keyPoints: 12,
-      recording: true
-    },
-    {
-      id: 3,
-      title: 'Customer Success Check-in',
-      platform: 'Cisco Webex',
-      date: '2 days ago',
-      duration: '28:45',
-      participants: 4,
-      transcribed: true,
-      actionItems: 3,
-      keyPoints: 8,
-      recording: true
-    },
-  ];
+  const recentMeetings: any[] = [];
 
   const aiFeatures = [
     {
@@ -184,22 +133,15 @@ export function VideoConferencing() {
   ];
 
   const meetingAnalytics = {
-    totalMeetings: 503,
-    totalHours: 347,
-    avgDuration: '41 mins',
-    actionItemsCreated: 1247,
-    transcriptionsGenerated: 489,
-    timesSaved: '89 hours',
+    totalMeetings: 0,
+    totalHours: 0,
+    avgDuration: '0 mins',
+    actionItemsCreated: 0,
+    transcriptionsGenerated: 0,
+    timesSaved: '0 hours',
   };
 
-  const liveTranscript = [
-    { speaker: 'Sarah Chen', text: 'Thanks everyone for joining. Let\'s start with the Q1 roadmap review.', timestamp: '14:02:15' },
-    { speaker: 'Mike Rodriguez', text: 'I\'ve prepared the slides. Sharing screen now.', timestamp: '14:02:28' },
-    { speaker: 'Atlas AI', text: '[Action Item Detected] Review Q1 roadmap slides', timestamp: '14:02:30', isAI: true },
-    { speaker: 'Jennifer Lee', text: 'The new feature set looks promising. What\'s the timeline?', timestamp: '14:03:45' },
-    { speaker: 'Sarah Chen', text: 'We\'re targeting March 15th for the initial release.', timestamp: '14:04:02' },
-    { speaker: 'Atlas AI', text: '[Decision Recorded] Initial release date: March 15th', timestamp: '14:04:05', isAI: true },
-  ];
+  const liveTranscript: any[] = [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -309,7 +251,13 @@ export function VideoConferencing() {
                     <span className="text-xs text-green-400 font-semibold">CONNECTED</span>
                   </div>
                 ) : (
-                  <button className="px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-xs text-cyan-400 transition-colors">
+                  <button 
+                    onClick={() => {
+                      setSelectedPlatform(platform.name);
+                      setShowConnectModal(true);
+                    }}
+                    className="px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-xs text-cyan-400 transition-colors"
+                  >
                     Connect
                   </button>
                 )}
@@ -326,9 +274,18 @@ export function VideoConferencing() {
             <Calendar className="w-6 h-6 text-blue-400" />
             <h3 className="text-xl font-semibold text-white">Upcoming Meetings</h3>
           </div>
-          <button className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors">
-            View Calendar
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setShowAddMeetingModal(true)}
+              className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg text-sm text-white font-medium transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Meeting with Link
+            </button>
+            <button className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors">
+              View Calendar
+            </button>
+          </div>
         </div>
 
         <div className="grid gap-3">
@@ -546,6 +503,29 @@ export function VideoConferencing() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <AddMeetingModal
+        isOpen={showAddMeetingModal}
+        onClose={() => setShowAddMeetingModal(false)}
+        meetingLink={meetingLink}
+        setMeetingLink={setMeetingLink}
+        meetingTitle={meetingTitle}
+        setMeetingTitle={setMeetingTitle}
+        meetingDate={meetingDate}
+        setMeetingDate={setMeetingDate}
+        meetingTime={meetingTime}
+        setMeetingTime={setMeetingTime}
+      />
+
+      <VideoConferencingConnectionModal
+        isOpen={showConnectModal}
+        onClose={() => {
+          setShowConnectModal(false);
+          setSelectedPlatform(null);
+        }}
+        platformName={selectedPlatform}
+      />
     </div>
   );
 }
