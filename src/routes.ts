@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createHashRouter } from "react-router";
 import { Dashboard } from "./components/Dashboard";
 import { JobRunner } from "./components/JobRunner";
 import { ChatInterface } from "./components/ChatInterface";
@@ -16,7 +16,7 @@ import { SubscriptionManager } from "./components/SubscriptionManager";
 import { RootLayout } from "./components/RootLayout";
 import MobilePage from "./routes/mobile";
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     path: "/",
     Component: RootLayout,

@@ -22,7 +22,10 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
-      preload: path.join(__dirname, 'preload.js')
+      // Fix preload path for both dev and production
+      preload: isDev 
+        ? path.join(__dirname, 'preload.js')
+        : path.join(__dirname, 'preload.js')
     }
   });
 
@@ -32,6 +35,8 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    // Always open DevTools for debugging in production
+    mainWindow.webContents.openDevTools();
   }
 
   mainWindow.on('closed', () => {
