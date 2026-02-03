@@ -11,6 +11,9 @@
     "electron/**/*",
     "package.json"
   ],
+  "asarUnpack": [
+    "electron/preload.js"
+  ],
   "extraMetadata": {
     "main": "electron/main.js"
   },

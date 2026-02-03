@@ -32,6 +32,8 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    // Always open DevTools for debugging in production
+    mainWindow.webContents.openDevTools();
   }
 
   mainWindow.on('closed', () => {
