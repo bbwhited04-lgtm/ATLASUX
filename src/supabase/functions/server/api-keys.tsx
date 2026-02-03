@@ -3,7 +3,7 @@
  * Securely stores and retrieves API keys for all 65 integrations
  */
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient } from "jsr:";
 import * as kv from './kv_store.tsx';
 
 const supabase = createClient(

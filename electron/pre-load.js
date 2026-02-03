@@ -1,22 +1,5 @@
-# Dependencies
-node_modules/
+const { contextBridge } = require('electron');
 
-# Build outputs
-dist/
-installers/
-out/
-
-# Environment
-.env
-.env.local
-
-# Logs
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
+contextBridge.exposeInMainWorld('electron', {
+  platform: process.platform,
+});

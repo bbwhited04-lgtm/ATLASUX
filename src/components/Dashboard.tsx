@@ -20,7 +20,7 @@ import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
 import { useState } from "react";
 import { MobileInstallModal } from "./MobileInstallModal";
-import heroImage from "figma:asset/1d98c9a466c5c875d2a239310c5622d83e56444f.png";
+const imgA = "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800";
 
 export function Dashboard() {
   const [showMobileInstall, setShowMobileInstall] = useState(false);

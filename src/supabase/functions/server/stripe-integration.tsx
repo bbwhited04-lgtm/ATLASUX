@@ -3,8 +3,8 @@
  * Handles subscriptions, payments, and webhook events
  */
 
-import Stripe from 'npm:stripe@14.14.0';
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import Stripe from "npm:stripe";
+import { createClient } from "jsr:";
 
 // Initialize Stripe with API key from environment
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
