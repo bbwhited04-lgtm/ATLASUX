@@ -8,11 +8,9 @@
   },
   "files": [
     "dist/**/*",
-    "electron/**/*",
+    "electron/main.js",
+    "electron/preload.js",
     "package.json"
-  ],
-  "asarUnpack": [
-    "electron/preload.js"
   ],
   "extraMetadata": {
     "main": "electron/main.js"

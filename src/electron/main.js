@@ -22,7 +22,10 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
-      preload: path.join(__dirname, 'preload.js')
+      // Fix preload path for both dev and production
+      preload: isDev 
+        ? path.join(__dirname, 'preload.js')
+        : path.join(__dirname, 'preload.js')
     }
   });
 
