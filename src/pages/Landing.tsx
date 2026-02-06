@@ -79,7 +79,7 @@ export default function Landing() {
               </a>
 
               <a
-                href={`https://www.youtube.com/watch?v=${YOUTUBE_ID}`}
+                href={`https://www.youtube.com/embed/QtTn_o6zXDY?si=xAsMUSyguM9wY3k7`}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white/90 hover:bg-white/10"
@@ -112,7 +112,7 @@ export default function Landing() {
               <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
                 <iframe
                   className="absolute inset-0 h-full w-full"
-                  src={`https://www.youtube.com/embed/${YOUTUBE_ID}?rel=0&modestbranding=1`}
+                  src={`https://www.youtube.com/embed/QtTn_o6zXDY?si=xAsMUSyguM9wY3k7`}
                   title="ATLAS UX Pitch"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
