@@ -34,9 +34,9 @@ export default function Landing() {
           <div>
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
               The AI Worker that{" "}
-              <span className="text-cyan-300">listens</span>,{" "}
-              <span className="text-blue-300">plans</span>, and{" "}
-              <span className="text-indigo-300">executes</span> where you work.
+              <span className="text-cyan-300">works where</span>,{" "}
+              <span className="text-blue-300">you</span>{" "}
+              <span className="text-indigo-300">work</span>
             </h1>
 
             <p className="mt-4 max-w-xl text-lg text-white/75">
