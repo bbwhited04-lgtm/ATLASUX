@@ -1,4 +1,6 @@
 import { createHashRouter } from "react-router";
+import Landing from "./pages/Landing";
+
 import { Dashboard } from "./components/Dashboard";
 import { JobRunner } from "./components/JobRunner";
 import { ChatInterface } from "./components/ChatInterface";
@@ -17,8 +19,12 @@ import { RootLayout } from "./components/RootLayout";
 import MobilePage from "./routes/mobile";
 
 export const router = createHashRouter([
+  // Landing at "#/"
+  { path: "/", Component: Landing },
+
+  // App at "#/app"
   {
-    path: "/",
+    path: "/app",
     Component: RootLayout,
     children: [
       { index: true, Component: Dashboard },
@@ -37,8 +43,6 @@ export const router = createHashRouter([
       { path: "subscription", Component: SubscriptionManager },
     ],
   },
-  {
-    path: "/mobile",
-    Component: MobilePage,
-  },
+
+  { path: "/mobile", Component: MobilePage },
 ]);
