@@ -43,13 +43,13 @@ export default function App() {
   }
   
   return (
-    <>
+    <div className="min-h-screen overflow-hidden bg-slate-950 text-white">
       <RouterProvider router={router} />
       <OnboardingWizard 
         isOpen={showOnboarding} 
         onComplete={handleOnboardingComplete}
         onSkip={handleOnboardingSkip}
       />
-    </>
+    </div>
   );
 }

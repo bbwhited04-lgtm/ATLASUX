@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, PanInfo } from "motion/react";
+import { Lock, Unlock } from "lucide-react";
 
 const taskSayings = [
   "Task completed! What's next?",
@@ -40,6 +41,33 @@ export function AtlasAvatar() {
     return { x: 0, y: 0 };
   });
   
+
+
+// Lock dragging (prevents accidental moves)
+const [atlasLocked, setAtlasLocked] = useState(() => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('atlasLocked') === 'true';
+  }
+  return false;
+});
+
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('atlasLocked', String(atlasLocked));
+  }
+}, [atlasLocked]);
+
+// Viewport size for drag constraints (updates on resize)
+const [viewport, setViewport] = useState(() => ({
+  w: typeof window !== 'undefined' ? window.innerWidth : 1024,
+  h: typeof window !== 'undefined' ? window.innerHeight : 768,
+}));
+
+useEffect(() => {
+  const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+  window.addEventListener('resize', onResize);
+  return () => window.removeEventListener('resize', onResize);
+}, []);
   // Save position to localStorage whenever it changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -429,9 +457,9 @@ export function AtlasAvatar() {
   
   return (
     <motion.div 
-      className="fixed bottom-8 left-8 z-50 flex flex-col items-center gap-3"
-      drag
-      dragConstraints={{ top: -window.innerHeight + 300, left: -200, right: window.innerWidth - 300, bottom: 0 }}
+      className="fixed bottom-8 left-8 z-50 relative flex flex-col items-center gap-3"
+      drag={!atlasLocked}
+      dragConstraints={{ top: -viewport.h + 80, left: -viewport.w + 120, right: viewport.w - 120, bottom: viewport.h - 120 }}
       dragMomentum={false}
       dragElastic={0}
       whileHover={{ cursor: "grab" }}
@@ -445,6 +473,15 @@ export function AtlasAvatar() {
       }}
       style={{ x: atlasPosition.x, y: atlasPosition.y }}
     >
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setAtlasLocked(v => !v); }}
+        className="absolute -top-2 -right-2 rounded-full border border-white/10 bg-slate-900/70 p-2 text-cyan-200 hover:bg-slate-900/90"
+        title={atlasLocked ? "Atlas locked" : "Atlas movable"}
+      >
+        {atlasLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+      </button>
+
       {/* Message Bubble */}
       <AnimatePresence>
         {showMessage && (

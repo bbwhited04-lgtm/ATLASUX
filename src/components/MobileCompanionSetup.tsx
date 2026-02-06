@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import QRCode from 'qrcode';
 import { Smartphone, Download, Shield, CheckCircle2, QrCode, Apple, Camera, Wifi, Lock, FileText, Bell, Loader2, X, ChevronRight } from 'lucide-react';
 
 interface MobileCompanionSetupProps {
@@ -11,6 +12,24 @@ export function MobileCompanionSetup({ isOpen, onClose }: MobileCompanionSetupPr
   const [isPairing, setIsPairing] = useState(false);
   const [isPaired, setIsPaired] = useState(false);
   const [pairingCode] = useState('AX-7K9M-2P4R');
+  const downloadUrl = useMemo(() => 'https://apps.apple.com', []);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const url = await QRCode.toDataURL(downloadUrl, { margin: 1, width: 256 });
+        if (!cancelled) setQrDataUrl(url);
+      } catch {
+        if (!cancelled) setQrDataUrl('');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [downloadUrl]);
+
 
   if (!isOpen) return null;
 
@@ -107,7 +126,11 @@ export function MobileCompanionSetup({ isOpen, onClose }: MobileCompanionSetupPr
               <div className="bg-slate-800/50 border border-cyan-500/20 rounded-xl p-6">
                 <div className="flex items-start gap-6">
                   <div className="bg-white rounded-xl p-4 flex-shrink-0">
-                    <QrCode className="w-32 h-32 text-slate-900" />
+                    {qrDataUrl ? (
+                      <img src={qrDataUrl} alt="Atlas UX download QR" className="w-32 h-32" />
+                    ) : (
+                      <QrCode className="w-32 h-32 text-slate-900" />
+                    )}
                   </div>
                   <div className="flex-1">
                     <h4 className="text-lg font-semibold text-white mb-3">Scan to Download</h4>
@@ -126,7 +149,7 @@ export function MobileCompanionSetup({ isOpen, onClose }: MobileCompanionSetupPr
               <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 border border-slate-700/50 rounded-xl p-6">
                 <h4 className="text-lg font-semibold text-white mb-4">Or download manually:</h4>
                 <a
-                  href="https://apps.apple.com"
+                  href={downloadUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-4 bg-slate-900/50 hover:bg-slate-900 border border-slate-700 hover:border-cyan-500/40 rounded-lg transition-all group"

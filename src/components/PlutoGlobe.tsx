@@ -328,7 +328,7 @@ export function PlutoGlobe() {
           r="25"
           fill="rgba(59,130,246,0.15)"
           animate={{
-            r: [20, 30, 20],
+          scale: [0.8, 1.2, 0.8],
             opacity: [0.1, 0.3, 0.1],
           }}
           transition={{

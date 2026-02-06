@@ -130,48 +130,82 @@ export function ChatInterface() {
     }));
   };
   
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
-    
-    const newMessage: Message = {
-      id: messages.length + 1,
-      role: "user",
-      content: inputValue,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    
-    setMessages([...messages, newMessage]);
-    setInputValue("");
-    setIsTyping(true);
-    
-    // Simulate AI response
-    setTimeout(() => {
-      const activePlatforms = Object.entries(selectedPlatforms)
-        .filter(([_, active]) => active)
-        .map(([id]) => platforms.find(p => p.id === id)?.name)
-        .filter(Boolean);
-      
-      const platformName = activePlatforms[0] || "GPT-4";
-      
-      const responses = [
-        "I'll get started on that right away. I'm analyzing the requirements and will have this completed within the next few minutes.",
-        "Great! I've added this to my task queue. I'll process this using my current learning models and notify you when it's complete.",
-        "Understood. I'm accessing the necessary files and resources now. This should be done shortly.",
-        "Perfect! I'm coordinating with Neptune for the required access permissions. I'll begin processing immediately after approval."
-      ];
-      
-      const aiMessage: Message = {
-        id: messages.length + 2,
-        role: "assistant",
-        content: responses[Math.floor(Math.random() * responses.length)],
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        platform: platformName
-      };
-      
-      setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 2000);
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "";
+
+const resolveProvider = (): { provider: "openai" | "deepseek"; label: string } => {
+  // If DeepSeek is selected, route to DeepSeek. Otherwise default to OpenAI.
+  const active = Object.entries(selectedPlatforms).filter(([_, v]) => v).map(([id]) => id);
+  if (active.includes("deepseek")) return { provider: "deepseek", label: "DeepSeek" };
+  // Everything else defaults to OpenAI for now (platform-owned key)
+  return { provider: "openai", label: "OpenAI" };
+};
+
+const handleSend = async () => {
+  if (!inputValue.trim()) return;
+
+  const userMessage: Message = {
+    id: messages.length + 1,
+    role: "user",
+    content: inputValue,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   };
+
+  setMessages(prev => [...prev, userMessage]);
+  setInputValue("");
+  setIsTyping(true);
+
+  try {
+    const { provider, label } = resolveProvider();
+
+    const body = {
+      provider,
+      // Keep model default server-side unless you want to wire explicit model choices per platform
+      messages: [
+        ...messages
+          .filter(m => m.role === "user" || m.role === "assistant")
+          .slice(-10)
+          .map(m => ({ role: m.role, content: m.content })),
+        { role: "user", content: userMessage.content }
+      ],
+      // If user explicitly selects "Atlas"/"Neptune" persona in the future, pass systemPrompt here.
+      systemPrompt: null
+    };
+
+    const resp = await fetch(`${API_BASE}/v1/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    const data = await resp.json().catch(() => ({}));
+
+    if (!resp.ok) {
+      throw new Error(data?.error || "Chat request failed");
+    }
+
+    const aiMessage: Message = {
+      id: messages.length + 2,
+      role: "assistant",
+      content: data?.content || "",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      platform: `${label}${data?.model ? ` • ${data.model}` : ""}`
+    };
+
+    setMessages(prev => [...prev, aiMessage]);
+  } catch (err: any) {
+    const aiMessage: Message = {
+      id: messages.length + 2,
+      role: "assistant",
+      content: `⚠️ ${err?.message || "Unable to reach backend chat service."}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      platform: "System"
+    };
+    setMessages(prev => [...prev, aiMessage]);
+  } finally {
+    setIsTyping(false);
+  }
+};
+
   
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {

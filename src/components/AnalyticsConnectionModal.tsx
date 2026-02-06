@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { setConnection } from "../utils/connections";
+
 import {
   X,
   ArrowRight,
@@ -32,7 +34,7 @@ export function AnalyticsConnectionModal({ isOpen, onClose, platformName }: Anal
   const [authMethod, setAuthMethod] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
-
+  const platformKey = (name: string) => `video:${name.toLowerCase().replace(/\s+/g, "-")}`;
   if (!isOpen) return null;
 
   // Simulate authentication
@@ -45,10 +47,14 @@ export function AnalyticsConnectionModal({ isOpen, onClose, platformName }: Anal
   };
 
   // Mock accounts for selection
-  const mockAccounts = [
-    { id: "1", name: "My Business Analytics", email: "business@company.com", properties: 3 },
-    { id: "2", name: "Personal Website", email: "personal@example.com", properties: 1 },
-  ];
+  const selected = mockAccounts.find(a => a.id === selectedAccount);
+setConnection({
+  providerKey: platformKey(platformName || "unknown"),
+  status: "connected",
+  accountLabel: selected?.email || selected?.name || "Connected",
+  connectedAt: new Date().toISOString()
+});
+
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">

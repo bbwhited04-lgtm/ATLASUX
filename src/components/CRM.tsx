@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router";
+import { getConnection } from "../utils/connections";
 import { 
   Users, 
   UserPlus,
@@ -55,62 +57,151 @@ interface ImportSource {
 export function CRM() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   
-  const [importSources] = useState<ImportSource[]>([
-    { 
-      id: "phone", 
-      name: "Phone Contacts", 
-      icon: Smartphone, 
+  const navigate = useNavigate();
+
+  const baseImportSources: ImportSource[] = [
+    {
+      id: "phone",
+      name: "Phone Contacts",
+      icon: Smartphone,
       color: "cyan",
-      count: 0, 
+      count: 0,
       connected: false,
-      type: "device"
+      type: "device",
     },
-    { 
-      id: "facebook", 
-      name: "Facebook Friends", 
-      icon: Facebook, 
+    {
+      id: "facebook",
+      name: "Facebook Friends",
+      icon: Facebook,
       color: "blue",
-      count: 0, 
+      count: 0,
       connected: false,
-      type: "social"
+      type: "social",
     },
-    { 
-      id: "instagram", 
-      name: "Instagram Followers", 
-      icon: Instagram, 
+    {
+      id: "instagram",
+      name: "Instagram Followers",
+      icon: Instagram,
       color: "pink",
-      count: 0, 
+      count: 0,
       connected: false,
-      type: "social"
+      type: "social",
     },
-    { 
-      id: "tiktok", 
-      name: "TikTok Followers", 
-      icon: MessageSquare, 
+    {
+      id: "tiktok",
+      name: "TikTok Followers",
+      icon: MessageSquare,
       color: "slate",
-      count: 0, 
+      count: 0,
       connected: false,
-      type: "social"
+      type: "social",
     },
-    { 
-      id: "linkedin", 
-      name: "LinkedIn Connections", 
-      icon: Users, 
+    {
+      id: "linkedin",
+      name: "LinkedIn Connections",
+      icon: Users,
       color: "blue",
-      count: 0, 
+      count: 0,
       connected: false,
-      type: "social"
+      type: "social",
     },
-    { 
-      id: "twitter", 
-      name: "Twitter Followers", 
-      icon: Twitter, 
+    {
+      id: "twitter",
+      name: "Twitter Followers",
+      icon: Twitter,
       color: "cyan",
-      count: 0, 
+      count: 0,
       connected: false,
-      type: "social"
+      type: "social",
     },
-  ]);
+  ];
+
+  // Map CRM import sources to Integration provider keys used by Integrations + connections store
+  const providerKeyBySource: Record<string, string> = {
+    facebook: "facebook-pages",
+    instagram: "instagram",
+    tiktok: "tiktok",
+    linkedin: "linkedin",
+    twitter: "twitter",
+  };
+
+  const importSources = useMemo<ImportSource[]>(() => {
+    return baseImportSources.map((s) => {
+      if (s.type !== "social") return s;
+      const providerKey = providerKeyBySource[s.id];
+      const conn = providerKey ? getConnection(providerKey) : null;
+      return { ...s, connected: conn?.status === "connected" };
+    });
+  }, [showImportModal, contacts.length]);
+
+  const [importingSourceId, setImportingSourceId] = useState<string | null>(null);
+
+  const handleConnectSource = (sourceId: string) => {
+    const providerKey = providerKeyBySource[sourceId];
+    if (!providerKey) return;
+
+    try {
+      localStorage.setItem("atlasux.pendingIntegrationConnect.v1", providerKey);
+    } catch {
+      // ignore
+    }
+
+    setShowImportModal(false);
+    navigate("/integrations");
+  };
+
+  const handleImportSource = (sourceId: string) => {
+    // For now we simulate an import by adding a few example contacts.
+    // When real platform APIs are wired, replace this with real fetch + dedupe.
+    setImportingSourceId(sourceId);
+
+    setTimeout(() => {
+      const now = new Date().toLocaleDateString();
+      const source = sourceId as Contact["source"];
+      const samples: Contact[] = [
+        {
+          id: Date.now(),
+          name: "Imported Contact 1",
+          email: "imported1@example.com",
+          phone: "555-0101",
+          source,
+          tags: ["imported"],
+          lastContact: now,
+          status: "active",
+          notes: `Imported from ${sourceId}`,
+        },
+        {
+          id: Date.now() + 1,
+          name: "Imported Contact 2",
+          email: "imported2@example.com",
+          phone: "555-0102",
+          source,
+          tags: ["imported"],
+          lastContact: now,
+          status: "pending",
+          notes: `Imported from ${sourceId}`,
+        },
+      ];
+
+      setContacts((prev) => {
+        // Basic dedupe by email/phone
+        const seen = new Set(prev.map((c) => c.email || c.phone || String(c.id)));
+        const merged = [...prev];
+        for (const c of samples) {
+          const key = c.email || c.phone || String(c.id);
+          if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(c);
+          }
+        }
+        return merged;
+      });
+
+      setImportingSourceId(null);
+      setShowImportModal(false);
+    }, 800);
+  };
+
   
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");

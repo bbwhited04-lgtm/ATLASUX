@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import QRCode from "qrcode";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Smartphone, 
@@ -27,7 +28,12 @@ export function MobileInstallModal({ isOpen, onClose }: MobileInstallModalProps)
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   
   // Generate unique installation link (would be user-specific in production)
-  const installationLink = `${window.location.origin}/mobile?auth=${btoa(Date.now().toString())}`;
+    const installationLink = useMemo(() => {
+    const origin = window.location.origin;
+    const base = origin && origin.startsWith("http") ? origin : "https://atlasux.cloud";
+    return `${base}/mobile?auth=${btoa(Date.now().toString())}`;
+  }, []);
+
   
   const sendSMS = () => {
     if (!phoneNumber || !acceptedTerms) return;
@@ -51,11 +57,23 @@ export function MobileInstallModal({ isOpen, onClose }: MobileInstallModalProps)
     }, 2000);
   };
   
-  // Generate QR code data URL (simplified - would use actual QR library in production)
-  const generateQRCode = () => {
-    // This is a placeholder. In production, use a library like 'qrcode' or 'react-qr-code'
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(installationLink)}`;
-  };
+    const [qrDataUrl, setQrDataUrl] = useState<string>("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const url = await QRCode.toDataURL(installationLink, { margin: 1, width: 256 });
+        if (!cancelled) setQrDataUrl(url);
+      } catch {
+        if (!cancelled) setQrDataUrl("");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [installationLink]);
+
   
   return (
     <AnimatePresence>
@@ -155,11 +173,11 @@ export function MobileInstallModal({ isOpen, onClose }: MobileInstallModalProps)
                   
                   {acceptedTerms ? (
                     <div className="bg-white p-3 rounded-lg mb-3">
-                      <img 
-                        src={generateQRCode()} 
-                        alt="Installation QR Code" 
-                        className="w-full h-auto"
-                      />
+                      {qrDataUrl ? (
+                      <img src={qrDataUrl} alt="Installation QR Code" className="w-full h-auto" />
+                    ) : (
+                      <div className="h-40 flex items-center justify-center text-slate-500 text-sm">Generating QR…</div>
+                    )}
                     </div>
                   ) : (
                     <div className="bg-slate-900 border border-slate-700 rounded-lg h-40 flex items-center justify-center mb-3">

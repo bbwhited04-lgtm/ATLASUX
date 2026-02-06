@@ -8,6 +8,7 @@ import {
   Clock,
   AlertTriangle,
   Lock,
+  Unlock,
   Play,
   Pause,
   Settings,
@@ -66,6 +67,33 @@ export function NeptuneControl() {
     }
     return { x: 0, y: 0 };
   });
+
+
+// Lock dragging (prevents accidental moves)
+const [neptuneLocked, setNeptuneLocked] = useState(() => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('neptuneLocked') === 'true';
+  }
+  return false;
+});
+
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('neptuneLocked', String(neptuneLocked));
+  }
+}, [neptuneLocked]);
+
+// Viewport size for drag constraints (updates on resize)
+const [viewport, setViewport] = useState(() => ({
+  w: typeof window !== 'undefined' ? window.innerWidth : 1024,
+  h: typeof window !== 'undefined' ? window.innerHeight : 768,
+}));
+
+useEffect(() => {
+  const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+  window.addEventListener('resize', onResize);
+  return () => window.removeEventListener('resize', onResize);
+}, []);
   const dragControls = useDragControls();
   
   // Save position to localStorage whenever it changes
@@ -140,13 +168,14 @@ export function NeptuneControl() {
     <>
       {/* Neptune Avatar - Lower Right Corner */}
       <motion.div
-        className="fixed bottom-8 right-8 z-50 cursor-pointer"
+        className="fixed bottom-8 right-8 z-50 cursor-pointer relative"
         onClick={() => setIsOpen(true)}
+        onDoubleClick={(e) => { e.stopPropagation(); setNeptuneLocked(v => !v); }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        drag
+        drag={!neptuneLocked}
         dragControls={dragControls}
-        dragConstraints={{ top: -window.innerHeight + 300, left: -window.innerWidth + 200, right: 0, bottom: 0 }}
+        dragConstraints={{ top: -viewport.h + 80, left: -viewport.w + 120, right: viewport.w - 120, bottom: viewport.h - 120 }}
         dragMomentum={false}
         dragElastic={0}
         onDragEnd={(event, info: PanInfo) => {

@@ -59,7 +59,7 @@ export function Dashboard() {
               </button>
             </div>
           </div>
-          <img src={heroImage} alt="Atlas AI" className="w-64 h-64 object-cover opacity-60" />
+          <img src="./atlas_hero.png"  alt="Atlas AI" className="w-64 h-64 object-cover opacity-60" />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
       </div>

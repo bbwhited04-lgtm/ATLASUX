@@ -215,3 +215,8 @@ html {
 .scrollbar-thin:hover {
   scrollbar-color: rgba(34, 211, 238, 0.4) transparent;
 }
+
+/* Desktop-friendly dark fallback to prevent white flash */
+html, body {
+  background: #020617;
+}

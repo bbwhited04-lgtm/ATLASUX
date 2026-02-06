@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getConnection } from "../../utils/connections";
 import { 
   Video, Calendar, Mic, Users, MessageSquare, 
   FileText, CheckCircle, Clock, Play, Download,
@@ -18,65 +19,29 @@ export function VideoConferencing() {
   const [meetingDate, setMeetingDate] = useState('');
   const [meetingTime, setMeetingTime] = useState('');
 
-  const platforms = [
-    { 
-      name: 'Zoom', 
-      status: 'disconnected', 
-      meetings: 0, 
-      lastUsed: 'Never',
-      logo: '🎥',
-      color: 'blue'
-    },
-    { 
-      name: 'Microsoft Teams', 
-      status: 'disconnected', 
-      meetings: 0, 
-      lastUsed: 'Never',
-      logo: '💼',
-      color: 'purple'
-    },
-    { 
-      name: 'Google Meet', 
-      status: 'disconnected', 
-      meetings: 0, 
-      lastUsed: 'Never',
-      logo: '📹',
-      color: 'red'
-    },
-    { 
-      name: 'Cisco Webex', 
-      status: 'disconnected', 
-      meetings: 0, 
-      lastUsed: 'Never',
-      logo: '🌐',
-      color: 'green'
-    },
-    { 
-      name: 'Livestorm', 
-      status: 'disconnected', 
-      meetings: 0, 
-      lastUsed: 'Never',
-      logo: '📡',
-      color: 'orange'
-    },
-    { 
-      name: 'ClickMeeting', 
-      status: 'disconnected', 
-      meetings: 0, 
-      lastUsed: 'Never',
-      logo: '🖱️',
-      color: 'red'
-    },
-    { 
-      name: 'GoTo Meeting', 
-      status: 'disconnected', 
-      meetings: 0, 
-      lastUsed: 'Never',
-      logo: '🚀',
-      color: 'cyan'
-    },
-  ];
+  // Platforms shown in the UI. Connection status is derived from stored connections.
+  const platformDefs = [
+    { id: "zoom", name: "Zoom", logo: "🎥", color: "blue" },
+    { id: "microsoft-teams", name: "Microsoft Teams", logo: "💼", color: "purple" },
+    { id: "google-meet", name: "Google Meet", logo: "📹", color: "red" },
+    { id: "cisco-webex", name: "Cisco Webex", logo: "🌐", color: "green" },
+    { id: "livestorm", name: "Livestorm", logo: "📡", color: "orange" },
+    { id: "clickmeeting", name: "ClickMeeting", logo: "🖱️", color: "red" },
+    { id: "goto-meeting", name: "GoTo Meeting", logo: "🚀", color: "cyan" },
+  ] as const;
 
+  const platforms = platformDefs.map((p) => {
+    const c: any = getConnection(p.id);
+    const isConnected = c?.status === "connected";
+
+    return {
+      ...p,
+      status: isConnected ? "connected" : "disconnected",
+      connectedAs: c?.accountLabel || "",
+      meetings: c?.meetings ?? 0,
+      lastUsed: c?.lastUsed || "Never",
+    };
+  });
   const upcomingMeetings: any[] = [];
 
   const recentMeetings: any[] = [];
@@ -238,6 +203,14 @@ export function VideoConferencing() {
                   <div>
                     <div className="font-semibold text-white">{platform.name}</div>
                     <div className="text-xs text-slate-400">Last used: {platform.lastUsed}</div>
+	                    {platform.status === "connected" && platform.connectedAs ? (
+	                      <div className="text-xs text-slate-400">
+	                        Connected as:{" "}
+	                        <span className="text-slate-200">{platform.connectedAs}</span>
+	                      </div>
+	                    ) : (
+	                      <div className="text-xs text-slate-500">Not connected</div>
+	                    )}
                   </div>
                 </div>
               </div>
