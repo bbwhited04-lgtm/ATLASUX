@@ -46,7 +46,7 @@ export default function Home() {
             <div className="relative w-full overflow-hidden rounded-2xl border shadow-sm" style={{ paddingTop: "56.25%" }}>
               <iframe
                 className="absolute inset-0 h-full w-full"
-                src="https://www.youtube.com/embed/VIDEO_ID_HERE"
+                src="https://youtu.be/QtTn_o6zXDY?si=ipu_1GOFhMMOWtyW"
                 title="ATLAS UX Pitch"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
