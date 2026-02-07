@@ -19,11 +19,13 @@ import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { MobileInstallModal } from "./MobileInstallModal";
 const imgA = "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800";
 
 export function Dashboard() {
   const [showMobileInstall, setShowMobileInstall] = useState(false);
+  const navigate = useNavigate();
   
   const stats = [
     { label: "Active Jobs", value: "12", icon: Activity, color: "cyan", trend: "+3" },
@@ -54,7 +56,7 @@ export function Dashboard() {
                 <Play className="w-4 h-4" />
                 New Task
               </button>
-              <button className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-cyan-500/20">
+              <button onClick={() => navigate("/app/jobs")} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-cyan-500/20">
                 View All Jobs
               </button>
             </div>
@@ -206,7 +208,7 @@ export function Dashboard() {
       
       {/* Quick Actions for New Features */}
       <div className="grid md:grid-cols-2 gap-6">
-        <a href="/business-assets" className="group">
+        <button type="button" onClick={() => navigate("/app/business-assets")} className="group text-left">
           <Card className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-cyan-500/30 backdrop-blur-xl p-6 hover:from-cyan-500/20 hover:to-blue-500/20 transition-all">
             <div className="flex items-start justify-between mb-4">
               <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">

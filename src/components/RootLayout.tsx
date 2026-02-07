@@ -35,22 +35,22 @@ export function RootLayout() {
   const atlasLogo = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z'/%3E%3C/svg%3E";
   
   const navItems = [
-    { path: "/", icon: LayoutDashboard, label: "Dashboard" },
-    { path: "/jobs", icon: Cpu, label: "Pluto Jobs" },
-    { path: "/chat", icon: MessageSquare, label: "AI Chat" },
-    { path: "/automation", icon: Zap, label: "Automation" },
-    { path: "/monitoring", icon: Radio, label: "Monitoring" },
-    { path: "/crm", icon: Users, label: "CRM" },
-    { path: "/analytics", icon: BarChart3, label: "Analytics" },
-    { path: "/integrations", icon: Plug, label: "Integrations" },
-    { path: "/business-assets", icon: Briefcase, label: "Business Assets" },
-    { path: "/files", icon: FolderOpen, label: "Files" },
-    { path: "/processing-settings", icon: Gauge, label: "Processing" },
-    { path: "/subscription", icon: CreditCard, label: "Subscription" },
+    { path: "/app", icon: LayoutDashboard, label: "Dashboard" },
+    { path: "/app/jobs", icon: Cpu, label: "Pluto Jobs" },
+    { path: "/app/chat", icon: MessageSquare, label: "AI Chat" },
+    { path: "/app/automation", icon: Zap, label: "Automation" },
+    { path: "/app/monitoring", icon: Radio, label: "Monitoring" },
+    { path: "/app/crm", icon: Users, label: "CRM" },
+    { path: "/app/analytics", icon: BarChart3, label: "Analytics" },
+    { path: "/app/integrations", icon: Plug, label: "Integrations" },
+    { path: "/app/business-assets", icon: Briefcase, label: "Business Assets" },
+    { path: "/app/files", icon: FolderOpen, label: "Files" },
+    { path: "/app/processing-settings", icon: Gauge, label: "Processing" },
+    { path: "/app/subscription", icon: CreditCard, label: "Subscription" },
   ];
   
   const isActive = (path: string) => {
-    if (path === "/") return location.pathname === "/";
+    if (path === "/app") return location.pathname === "/app";
     return location.pathname.startsWith(path);
   };
   
