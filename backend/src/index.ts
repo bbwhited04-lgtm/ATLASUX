@@ -149,3 +149,52 @@ const port = Number(env.PORT || 8787);
 app.listen(port, () => {
   console.log(`AtlasUX backend listening on :${port}`);
 });
+// -------------------- INTEGRATIONS STATUS + DISCONNECT --------------------
+app.get("/v1/integrations/status", async (req, res) => {
+  try {
+    const org_id = String(req.query.org_id || "");
+    const user_id = String(req.query.user_id || "");
+    if (!org_id || !user_id) return res.status(400).json({ error: "Missing org_id/user_id" });
+
+    const supabase = makeSupabase(env);
+    const { data, error } = await supabase
+      .from("token_vault")
+      .select("provider")
+      .eq("org_id", org_id)
+      .eq("user_id", user_id);
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    const providers = new Set((data ?? []).map((r: any) => r.provider));
+    res.json([
+      { provider: "google", connected: providers.has("google") },
+      { provider: "meta", connected: providers.has("meta") },
+    ]);
+  } catch (e: any) {
+    res.status(400).json({ error: e?.message || "status_failed" });
+  }
+});
+
+app.post("/v1/integrations/:provider/disconnect", async (req, res) => {
+  try {
+    const provider = String(req.params.provider || "");
+    if (provider !== "google" && provider !== "meta") return res.status(400).json({ error: "Unsupported provider" });
+
+    const org_id = String(req.query.org_id || "");
+    const user_id = String(req.query.user_id || "");
+    if (!org_id || !user_id) return res.status(400).json({ error: "Missing org_id/user_id" });
+
+    const supabase = makeSupabase(env);
+    const { error } = await supabase
+      .from("token_vault")
+      .delete()
+      .eq("org_id", org_id)
+      .eq("user_id", user_id)
+      .eq("provider", provider);
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(400).json({ error: e?.message || "disconnect_failed" });
+  }
+});

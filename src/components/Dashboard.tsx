@@ -26,7 +26,6 @@ const imgA = "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800
 export function Dashboard() {
   const [showMobileInstall, setShowMobileInstall] = useState(false);
   const navigate = useNavigate();
-  
   const stats = [
     { label: "Active Jobs", value: "12", icon: Activity, color: "cyan", trend: "+3" },
     { label: "Completed Today", value: "47", icon: CheckCircle2, color: "green", trend: "+12" },
@@ -52,11 +51,13 @@ export function Dashboard() {
               and learning from your workflows. Neptune access control is active.
             </p>
             <div className="flex gap-3 pt-2">
-              <button className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-                <Play className="w-4 h-4" />
-                New Task
+              
+              <button type="button" onClick={() => navigate("/app/automation")} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-cyan-500/20"
+              >
+              New Task
               </button>
-              <button onClick={() => navigate("/app/jobs")} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-cyan-500/20">
+
+              <button onClick={() => navigate("/jobs")} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-cyan-500/20">
                 View All Jobs
               </button>
             </div>
@@ -235,7 +236,7 @@ export function Dashboard() {
               </div>
             </div>
           </Card>
-        </a>
+        </button>
         
         <a href="/processing-settings" className="group">
           <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30 backdrop-blur-xl p-6 hover:from-green-500/20 hover:to-emerald-500/20 transition-all">
