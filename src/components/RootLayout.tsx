@@ -70,51 +70,31 @@ export function RootLayout() {
         {/* Navigation - Scrollable */}
         <nav className="flex-1 flex flex-col gap-3 overflow-y-auto overflow-x-visible scrollbar-thin scrollbar-thumb-cyan-500/20 scrollbar-track-transparent hover:scrollbar-thumb-cyan-500/40 pr-2">
           {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
-            return (
-              <Link
-                to="/app/premium"
-                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all relative group ${
-                isActive("/app/premium")
-                ? "bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-cyan-400 shadow-lg shadow-cyan-500/20"
-                : "text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
-                  }`}
-                >
-                ...
-              </Link>
+  const Icon = item.icon;
+  const active = isActive(item.path);
 
-              <Link
-                to="/app/settings"
-                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all relative group ${
-                isActive("/app/settings")
-                ? "bg-cyan-500/20 text-cyan-400 shadow-lg shadow-cyan-500/20"
-                : "text-slate-400 hover:text-cyan-300 hover:bg-slate-800/50"
-                 }`}
-                >
-                ...
-                </Link>
+  return (
+    <Link
+      key={item.path}
+      to={item.path}
+      className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all relative group flex-shrink-0 ${
+        active
+          ? "bg-cyan-500/20 text-cyan-400 shadow-lg shadow-cyan-500/20"
+          : "text-slate-400 hover:text-cyan-300 hover:bg-slate-800/50"
+      }`}
+    >
+      <Icon className="w-5 h-5" />
+      {active && (
+        <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-cyan-400 rounded-r" />
+      )}
+      {/* Tooltip */}
+      <div className="absolute left-16 bg-slate-800 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 border border-cyan-500/20">
+        {item.label}
+      </div>
+    </Link>
+  );
+})}
 
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all relative group flex-shrink-0 ${
-                  active 
-                    ? "bg-cyan-500/20 text-cyan-400 shadow-lg shadow-cyan-500/20" 
-                    : "text-slate-400 hover:text-cyan-300 hover:bg-slate-800/50"
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                {active && (
-                  <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-cyan-400 rounded-r" />
-                )}
-                {/* Tooltip */}
-                <div className="absolute left-16 bg-slate-800 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 border border-cyan-500/20">
-                  {item.label}
-                </div>
-              </Link>
-            );
-          })}
         </nav>
         
         {/* Bottom Actions */}
