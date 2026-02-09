@@ -21,6 +21,7 @@ import { RootLayout } from "./components/RootLayout";
 import { VideoConferencing } from "./components/premium/VideoConferencing";
 import { HelpSection } from "./components/HelpSection";
 import MobilePage from "./routes/mobile";
+import { HelpPage } from "./components/HelpPage";
 
 export const router = createHashRouter([
   // Landing at "#/"
@@ -49,7 +50,7 @@ export const router = createHashRouter([
       { path: "processing-settings", Component: ProcessingSettings },
       { path: "subscription", Component: SubscriptionManager },
       { path: "video-conferencing", Component: VideoConferencing },
-      { path: "help", Component: HelpSection },
+      { path: "help", Component: HelpPage },
     ],
   },
 

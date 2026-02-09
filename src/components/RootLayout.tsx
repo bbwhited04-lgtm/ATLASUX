@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import { HelpCircle } from "lucide-react";
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router';
 import { AtlasAvatar } from './AtlasAvatar';
@@ -131,6 +133,16 @@ export function RootLayout() {
               Settings
             </div>
           </Link>
+          <Link
+  to="/app/help"
+  className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-cyan-300 hover:bg-slate-800/50 transition-all relative group"
+>
+  <HelpCircle className="w-5 h-5" />
+  <div className="absolute left-16 bg-slate-800 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 border border-cyan-500/20">
+    Help
+  </div>
+</Link>
+
           <button className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all relative group">
             <Bell className="w-5 h-5" />
             <div className="absolute left-16 bg-slate-800 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 border border-cyan-500/20">
