@@ -52,12 +52,15 @@ export function Dashboard() {
             </p>
             <div className="flex gap-3 pt-2">
               
-              <button type="button" onClick={() => navigate("/app/automation")} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-cyan-500/20"
+              <button
+                type="button"
+                onClick={() => navigate("/app/automation?new=1")}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-cyan-500/20"
               >
               New Task
               </button>
 
-              <button onClick={() => navigate("/jobs")} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-cyan-500/20">
+              <button onClick={() => navigate("/app/jobs")} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-cyan-500/20">
                 View All Jobs
               </button>
             </div>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { 
   Zap, 
   Play,
@@ -52,8 +53,57 @@ interface Workflow {
 
 export function TaskAutomation() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createPrompt, setCreatePrompt] = useState("");
+  const [createName, setCreateName] = useState("Morning Content");
+  const [createCadence, setCreateCadence] = useState<"once" | "daily" | "weekly">("daily");
 
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+
+  // If the user clicked "New Task" from Dashboard (/?new=1), open the dialog automatically.
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setCreateOpen(true);
+      // clear param so refresh doesn't re-open
+      searchParams.delete("new");
+      setSearchParams(searchParams, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const defaultSteps = useMemo<WorkflowStep[]>(
+    () => [
+      { id: "plan", name: "Plan", icon: FileText, color: "cyan", status: "pending" },
+      { id: "create", name: "Create", icon: Video, color: "cyan", status: "pending" },
+      { id: "post", name: "Post", icon: Send, color: "cyan", status: "pending" },
+      { id: "report", name: "Report", icon: BarChart3, color: "cyan", status: "pending" },
+    ],
+    []
+  );
+
+  const createWorkflow = () => {
+    const trimmed = createPrompt.trim();
+    if (!trimmed) return;
+
+    const id = `wf_${Date.now()}`;
+    const nextRun = createCadence === "once" ? undefined : "Tomorrow 9:00 AM";
+    const wf: Workflow = {
+      id,
+      name: createName.trim() || "New Workflow",
+      category: "content",
+      description: trimmed,
+      steps: defaultSteps,
+      status: "idle",
+      enabled: true,
+      nextRun,
+    };
+
+    setWorkflows((prev) => [wf, ...prev]);
+    setCreateOpen(false);
+    setCreatePrompt("");
+    setSelectedWorkflow(wf);
+  };
 
   const toggleWorkflow = (workflowId: string) => {
     setWorkflows(workflows.map(wf => 
@@ -85,6 +135,72 @@ export function TaskAutomation() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Create Task / Workflow (simple prompt-first dialog) */}
+      {createOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setCreateOpen(false)}
+          />
+          <div className="relative w-full max-w-2xl mx-4 rounded-2xl bg-slate-900 border border-cyan-500/20 shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-cyan-500/10">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Create a Task</h3>
+                <p className="text-sm text-slate-400">Describe what you want Atlas to do. Keep it simple — you can refine later.</p>
+              </div>
+              <Button variant="ghost" onClick={() => setCreateOpen(false)}>
+                <ChevronRight className="w-4 h-4 rotate-180" />
+              </Button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="md:col-span-2">
+                  <label className="text-xs text-slate-400">Task name</label>
+                  <input
+                    className="mt-1 w-full rounded-lg bg-slate-950/40 border border-cyan-500/20 px-3 py-2 text-sm outline-none focus:border-cyan-400"
+                    value={createName}
+                    onChange={(e) => setCreateName(e.target.value)}
+                    placeholder="Morning Content"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400">Cadence</label>
+                  <select
+                    className="mt-1 w-full rounded-lg bg-slate-950/40 border border-cyan-500/20 px-3 py-2 text-sm outline-none focus:border-cyan-400"
+                    value={createCadence}
+                    onChange={(e) => setCreateCadence(e.target.value as any)}
+                  >
+                    <option value="once">Once</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400">What should Atlas do?</label>
+                <textarea
+                  className="mt-1 w-full min-h-[120px] rounded-lg bg-slate-950/40 border border-cyan-500/20 px-3 py-2 text-sm outline-none focus:border-cyan-400"
+                  value={createPrompt}
+                  onChange={(e) => setCreatePrompt(e.target.value)}
+                  placeholder='Example: “Create a 5s steaming coffee sunrise video, add Atlas UX branding, post to TikTok/IG/YouTube with #fyp #viral, tag @CharlieTrucker on TikTok and @growincorn2020 on Facebook.”'
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button variant="outline" className="border-cyan-500/20" onClick={() => setCreateOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={createWorkflow} disabled={!createPrompt.trim()}>
+                  Save Task
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -98,7 +214,7 @@ export function TaskAutomation() {
         </div>
         
         <div className="flex gap-2">
-          <Button variant="outline" className="border-cyan-500/20">
+          <Button variant="outline" className="border-cyan-500/20" onClick={() => setCreateOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Create Workflow
           </Button>
@@ -172,7 +288,7 @@ export function TaskAutomation() {
                 <Zap className="w-16 h-16 mx-auto mb-4 opacity-30" />
                 <p className="text-lg font-medium mb-2">No workflows created yet</p>
                 <p className="text-sm mb-4">Create your first automated workflow to get started</p>
-                <Button variant="outline" className="border-cyan-500/20">
+          <Button variant="outline" className="border-cyan-500/20" onClick={() => setCreateOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Create Workflow
                 </Button>

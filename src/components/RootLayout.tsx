@@ -98,15 +98,15 @@ export function RootLayout() {
         {/* Bottom Actions */}
         <div className="flex flex-col gap-3 flex-shrink-0">
           <Link
-            to="/premium"
+            to="/app/premium"
             className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all relative group ${
-              isActive("/premium")
+              isActive("/app/premium")
                 ? "bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-cyan-400 shadow-lg shadow-cyan-500/20"
                 : "text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
             }`}
           >
             <Crown className="w-5 h-5" />
-            {isActive("/premium") && (
+            {isActive("/app/premium") && (
               <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-cyan-400 rounded-r" />
             )}
             <div className="absolute left-16 bg-slate-800 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 border border-cyan-500/20">
@@ -114,15 +114,15 @@ export function RootLayout() {
             </div>
           </Link>
           <Link
-            to="/settings"
+            to="/app/settings"
             className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all relative group ${
-              isActive("/settings")
+              isActive("/app/settings")
                 ? "bg-cyan-500/20 text-cyan-400 shadow-lg shadow-cyan-500/20"
                 : "text-slate-400 hover:text-cyan-300 hover:bg-slate-800/50"
             }`}
           >
             <SettingsIcon className="w-5 h-5" />
-            {isActive("/settings") && (
+            {isActive("/app/settings") && (
               <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-cyan-400 rounded-r" />
             )}
             <div className="absolute left-16 bg-slate-800 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 border border-cyan-500/20">

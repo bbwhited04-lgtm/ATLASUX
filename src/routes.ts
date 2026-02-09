@@ -37,18 +37,18 @@ export const router = createHashRouter([
       { path: "monitoring", Component: SocialMonitoring },
       { path: "files", Component: FileManagement },
       { path: "integrations", Component: Integrations },
-      // Sprout-style connect wizard + OAuth callback routes
+      // Optional wizard routes (reserved for provider callbacks / stepper UI)
       { path: "integrations/connect/:provider", Component: Integrations },
       { path: "integrations/callback/:provider", Component: Integrations },
       { path: "crm", Component: CRM },
       { path: "analytics", Component: Analytics },
-      { path: "video-conferencing", Component: VideoConferencing },
       { path: "automation", Component: TaskAutomation },
       { path: "settings", Component: Settings },
       { path: "premium", Component: PremiumFeatures },
       { path: "business-assets", Component: BusinessAssets },
       { path: "processing-settings", Component: ProcessingSettings },
       { path: "subscription", Component: SubscriptionManager },
+      { path: "video-conferencing", Component: VideoConferencing },
     ],
   },
 

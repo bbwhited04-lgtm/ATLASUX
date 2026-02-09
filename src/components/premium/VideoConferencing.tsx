@@ -8,13 +8,12 @@ import {
   PhoneCall, Share2, Bell, Sparkles, Link, Plus,
   X, ArrowRight
 } from 'lucide-react';
-import { AddMeetingModal, VideoConferencingConnectionModal } from '../MeetingModals';
+import { AddMeetingModal } from '../MeetingModals';
 
 export function VideoConferencing() {
   const navigate = useNavigate();
   const [atlasInMeeting, setAtlasInMeeting] = useState(false);
   const [showAddMeetingModal, setShowAddMeetingModal] = useState(false);
-  const [showConnectModal, setShowConnectModal] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [meetingLink, setMeetingLink] = useState('');
   const [meetingTitle, setMeetingTitle] = useState('');
@@ -226,19 +225,10 @@ export function VideoConferencing() {
                     <span className="text-xs text-green-400 font-semibold">CONNECTED</span>
                   </div>
                 ) : (
-                  <button 
+                  <button
                     onClick={() => {
-                      // Route supported providers through the shared Integrations wizard.
-                      if (platform.id === "google-meet") {
-                        const qp = new URLSearchParams();
-                        qp.set("integration", "google_meet");
-                        qp.set("returnTo", "/app/video-conferencing");
-                        navigate(`/app/integrations/connect/google?${qp.toString()}`);
-                        return;
-                      }
-                      // Fallback (UI-only) modal for providers not yet wired.
                       setSelectedPlatform(platform.name);
-                      setShowConnectModal(true);
+                      navigate(`/app/integrations?focus=${encodeURIComponent(platform.name)}`);
                     }}
                     className="px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-xs text-cyan-400 transition-colors"
                   >
@@ -502,14 +492,6 @@ export function VideoConferencing() {
         setMeetingTime={setMeetingTime}
       />
 
-      <VideoConferencingConnectionModal
-        isOpen={showConnectModal}
-        onClose={() => {
-          setShowConnectModal(false);
-          setSelectedPlatform(null);
-        }}
-        platformName={selectedPlatform}
-      />
     </div>
   );
 }

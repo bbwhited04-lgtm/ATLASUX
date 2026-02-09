@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Plus, X, Search, Filter, RefreshCw } from "lucide-react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 
 type Category =
@@ -29,7 +29,8 @@ type Integration = {
   oauth: "google" | "meta" | null;
 };
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "http://localhost:8787";
+// Default to your deployed backend. Override locally with VITE_BACKEND_URL.
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "https://atlas-ux.onrender.com";
 
 // backend scaffold expects org_id/user_id in query (per its comments)
 function getOrgUser() {
@@ -156,10 +157,7 @@ const ALL_CATEGORIES: Array<Category | "All"> = [
 type StatusRow = { provider: "google" | "meta"; connected: boolean };
 
 export default function Integrations() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const params = useParams();
-
+  const [searchParams] = useSearchParams();
   const [status, setStatus] = React.useState<Record<string, boolean>>({});
   const [loading, setLoading] = React.useState<string | null>(null);
   const [query, setQuery] = React.useState("");
@@ -196,13 +194,23 @@ export default function Integrations() {
     refreshStatus();
   }, [refreshStatus]);
 
+  // If another page links here with ?focus=..., prefill search so the user sees the right card immediately.
+  React.useEffect(() => {
+    const focus = searchParams.get("focus");
+    if (focus) setQuery(focus);
+  }, [searchParams]);
+
   const connect = (i: Integration) => {
     if (!i.oauth) return; // not wired yet
-    // Route through the trusted wizard flow (Sprout-style)
-    const qp = new URLSearchParams();
-    qp.set("integration", i.id);
-    qp.set("returnTo", "/app/integrations");
-    navigate(`/app/integrations/connect/${i.oauth}?${qp.toString()}`);
+    setLoading(i.id);
+
+    const { org_id, user_id } = getOrgUser();
+    const start =
+      i.oauth === "google"
+        ? `${BACKEND_URL}/v1/oauth/google/start`
+        : `${BACKEND_URL}/v1/oauth/meta/start`;
+
+    window.location.href = `${start}?org_id=${encodeURIComponent(org_id)}&user_id=${encodeURIComponent(user_id)}`;
   };
 
   const disconnect = async (i: Integration) => {
@@ -241,14 +249,6 @@ export default function Integrations() {
 
   return (
     <div className="space-y-5">
-      <ConnectWizard
-        providerParam={params.provider}
-        pathname={location.pathname}
-        onClose={() => navigate("/app/integrations")}
-        backendUrl={BACKEND_URL}
-        getOrgUser={getOrgUser}
-        refreshStatus={refreshStatus}
-      />
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">Integrations</h2>
@@ -362,292 +362,3 @@ export default function Integrations() {
     </div>
   );
 }
-
-// -------------------- Sprout-style Connect Wizard --------------------
-// This is intentionally lightweight: OAuth is done on the backend, then we
-// fetch "owned" assets (Meta pages / ad accounts) and store a selection back
-// into token_vault.meta. Other providers can plug into the same skeleton.
-
-type WizardStep = "select" | "authorize" | "import" | "done" | "error";
-type WizardAsset = { id: string; name: string; type: "page" | "ads"; meta?: any };
-
-function ConnectWizard(props: {
-  providerParam?: string;
-  pathname: string;
-  onClose: () => void;
-  backendUrl: string;
-  getOrgUser: () => { org_id: string; user_id: string };
-  refreshStatus: () => Promise<void> | void;
-}) {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const isConnectRoute = props.pathname.includes("/integrations/connect/");
-  const provider = (props.providerParam as "google" | "meta" | undefined);
-  if (!isConnectRoute || !provider) return null;
-
-  const qs = React.useMemo(() => new URLSearchParams(location.search), [location.search]);
-  const integration = qs.get("integration") || "";
-  const returnTo = qs.get("returnTo") || "/app/integrations";
-  const initialTypeFromIntegration = React.useMemo(() => {
-    if (integration.includes("ads")) return "ads";
-    return "page";
-  }, [integration]);
-
-  const [step, setStep] = React.useState<WizardStep>(provider === "meta" ? "select" : "authorize");
-  const [assetType, setAssetType] = React.useState<"page" | "ads">(initialTypeFromIntegration);
-  const [assets, setAssets] = React.useState<WizardAsset[]>([]);
-  const [selected, setSelected] = React.useState<Record<string, boolean>>({});
-  const [busy, setBusy] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  // After OAuth redirect back to /app/integrations?connected=..., auto-jump back into this wizard.
-  React.useEffect(() => {
-    const url = new URL(window.location.href);
-    const connected = url.searchParams.get("connected");
-    if (!connected) return;
-    const pendingRaw = localStorage.getItem("atlasux_pending_connect");
-    if (!pendingRaw) return;
-    try {
-      const pending = JSON.parse(pendingRaw);
-      if (pending?.provider !== connected) return;
-      // clear the query param (avoid loops)
-      url.searchParams.delete("connected");
-      window.history.replaceState({}, "", url.toString());
-
-      navigate(`/app/integrations/connect/${pending.provider}?integration=${encodeURIComponent(pending.integration || "")}&type=${encodeURIComponent(pending.type || "page")}&returnTo=${encodeURIComponent(pending.returnTo || "/app/integrations")}`);
-      localStorage.removeItem("atlasux_pending_connect");
-    } catch {
-      // ignore
-    }
-  }, [navigate]);
-
-  // If wizard is opened with ?type=...&step=import, go there.
-  React.useEffect(() => {
-    const t = (qs.get("type") as any) || null;
-    if (t === "page" || t === "ads") setAssetType(t);
-    const st = qs.get("step");
-    if (st === "import") setStep("import");
-  }, [qs]);
-
-  const startOAuth = () => {
-    const { org_id, user_id } = props.getOrgUser();
-    const start = provider === "google" ? `${props.backendUrl}/v1/oauth/google/start` : `${props.backendUrl}/v1/oauth/meta/start`;
-
-    localStorage.setItem(
-      "atlasux_pending_connect",
-      JSON.stringify({ provider, type: assetType, integration, returnTo })
-    );
-
-    window.location.href = `${start}?org_id=${encodeURIComponent(org_id)}&user_id=${encodeURIComponent(user_id)}`;
-  };
-
-  const loadAssets = async () => {
-    if (provider !== "meta") return;
-    setBusy(true);
-    setError(null);
-    try {
-      const { org_id, user_id } = props.getOrgUser();
-      const r = await fetch(
-        `${props.backendUrl}/v1/integrations/meta/assets?org_id=${encodeURIComponent(org_id)}&user_id=${encodeURIComponent(user_id)}&type=${encodeURIComponent(assetType)}`,
-        { credentials: "include" }
-      );
-      const j = await r.json();
-      if (!r.ok) throw new Error(j?.error || "Failed to load assets");
-      setAssets(j.assets || []);
-      const sel: Record<string, boolean> = {};
-      for (const a of (j.assets || [])) sel[a.id] = true;
-      setSelected(sel);
-    } catch (e: any) {
-      setError(e?.message || "Failed to load assets");
-      setStep("error");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  React.useEffect(() => {
-    if (step === "import") void loadAssets();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, assetType]);
-
-  const saveSelection = async () => {
-    if (provider !== "meta") {
-      setStep("done");
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      const { org_id, user_id } = props.getOrgUser();
-      const picked = assets.filter((a) => selected[a.id]).map((a) => ({ id: a.id, name: a.name }));
-      const r = await fetch(`${props.backendUrl}/v1/integrations/meta/assets/save`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ org_id, user_id, type: assetType, selected: picked }),
-      });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j?.error || "Failed to save assets");
-      await props.refreshStatus();
-      setStep("done");
-    } catch (e: any) {
-      setError(e?.message || "Failed to save");
-      setStep("error");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const closeAndReturn = () => {
-    props.onClose();
-    navigate(returnTo);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="glass w-full max-w-3xl rounded-2xl p-5">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-sm text-neutral-400">Connect a Profile</div>
-            <div className="text-lg font-semibold">
-              {provider === "meta" ? "Facebook / Instagram" : "Google"}
-            </div>
-          </div>
-          <button onClick={props.onClose} className="rounded-lg p-2 hover:bg-white/5" aria-label="Close">
-            <X className="h-5 w-5 text-neutral-300" />
-          </button>
-        </div>
-
-        <div className="mt-4 flex items-center gap-2 text-xs text-neutral-400">
-          <div className={step === "select" ? "text-neutral-200" : ""}>1 Select</div>
-          <div>•</div>
-          <div className={step === "authorize" ? "text-neutral-200" : ""}>2 Authorize</div>
-          <div>•</div>
-          <div className={step === "import" ? "text-neutral-200" : ""}>3 Import</div>
-          <div>•</div>
-          <div className={step === "done" ? "text-neutral-200" : ""}>4 Done</div>
-        </div>
-
-        {step === "select" ? (
-          <div className="mt-6">
-            <div className="text-sm text-neutral-300">Select the type of Facebook account you want to connect.</div>
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button
-                onClick={() => {
-                  setAssetType("page");
-                  setStep("authorize");
-                }}
-                className={`rounded-xl border p-4 text-left transition-colors ${assetType === "page" ? "border-cyan-500/50 bg-cyan-500/10" : "border-white/10 hover:bg-white/5"}`}
-              >
-                <div className="text-sm font-semibold text-neutral-100">Page</div>
-                <div className="mt-1 text-xs text-neutral-400">Manage Business Pages and Messenger conversations.</div>
-              </button>
-              <button
-                onClick={() => {
-                  setAssetType("ads");
-                  setStep("authorize");
-                }}
-                className={`rounded-xl border p-4 text-left transition-colors ${assetType === "ads" ? "border-cyan-500/50 bg-cyan-500/10" : "border-white/10 hover:bg-white/5"}`}
-              >
-                <div className="text-sm font-semibold text-neutral-100">Ad Account</div>
-                <div className="mt-1 text-xs text-neutral-400">Boost posts and monitor ad performance.</div>
-              </button>
-            </div>
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <button onClick={props.onClose} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-neutral-200 hover:bg-white/5">Cancel</button>
-              <button onClick={() => setStep("authorize")} className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-black hover:opacity-90">Continue</button>
-            </div>
-          </div>
-        ) : null}
-
-        {step === "authorize" ? (
-          <div className="mt-6">
-            <div className="text-sm text-neutral-300">We’re sending you to {provider === "meta" ? "Facebook" : "Google"} for authorization.</div>
-            <div className="mt-2 text-xs text-neutral-500">Tip: if prompted, switch to the account you want to connect.</div>
-
-            <div className="mt-6 flex items-center justify-between">
-              <button
-                onClick={() => (provider === "meta" ? setStep("select") : props.onClose())}
-                className="rounded-xl border border-white/10 px-4 py-2 text-sm text-neutral-200 hover:bg-white/5"
-              >
-                Back
-              </button>
-              <button onClick={startOAuth} className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50" disabled={busy}>
-                {busy ? "Preparing…" : `Go to ${provider === "meta" ? "Facebook" : "Google"}`}
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {step === "import" ? (
-          <div className="mt-6">
-            <div className="text-sm text-neutral-300">Verify ownership and choose what to import.</div>
-            <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-3">
-              {busy ? (
-                <div className="text-sm text-neutral-400">Loading…</div>
-              ) : assets.length === 0 ? (
-                <div className="text-sm text-neutral-400">No assets found.</div>
-              ) : (
-                <div className="max-h-72 space-y-2 overflow-auto">
-                  {assets.map((a) => (
-                    <label key={a.id} className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 hover:bg-white/5">
-                      <input
-                        type="checkbox"
-                        checked={!!selected[a.id]}
-                        onChange={(e) => setSelected((p) => ({ ...p, [a.id]: e.target.checked }))}
-                      />
-                      <div className="min-w-0">
-                        <div className="truncate text-sm text-neutral-100">{a.name}</div>
-                        <div className="text-xs text-neutral-500">{a.id}</div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <button onClick={props.onClose} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-neutral-200 hover:bg-white/5">Cancel</button>
-              <button onClick={saveSelection} className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50" disabled={busy}>
-                {busy ? "Saving…" : "Save"}
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {step === "done" ? (
-          <div className="mt-6">
-            <div className="text-sm text-neutral-200">Connected successfully.</div>
-            <div className="mt-2 text-xs text-neutral-500">Assets were added to your connected profile list.</div>
-            <div className="mt-6 flex items-center justify-end">
-              <button onClick={closeAndReturn} className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-black hover:opacity-90">Finish</button>
-            </div>
-          </div>
-        ) : null}
-
-        {step === "error" ? (
-          <div className="mt-6">
-            <div className="text-sm text-red-300">Something went wrong.</div>
-            <div className="mt-2 text-xs text-neutral-400">{error || "Unknown error"}</div>
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <button onClick={props.onClose} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-neutral-200 hover:bg-white/5">Close</button>
-              {provider === "meta" ? (
-                <button
-                  onClick={() => {
-                    setStep("authorize");
-                    setError(null);
-                  }}
-                  className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-black hover:opacity-90"
-                >
-                  Try Again
-                </button>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
