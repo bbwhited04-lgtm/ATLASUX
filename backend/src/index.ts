@@ -6,6 +6,7 @@ import { makeCors } from "./cors";
 import { runChat } from "./ai";
 import { oauthEnabled, buildGoogleAuthUrl, exchangeGoogleCode, buildMetaAuthUrl, exchangeMetaCode, storeTokenVault } from "./oauth";
 import { createJob, JobTypeSchema } from "./jobs";
+import { makeSupabase } from "./supabase";
 
 const env = loadEnv(process.env);
 
@@ -95,7 +96,9 @@ app.get("/v1/oauth/google/callback", async (req, res) => {
       // Desktop custom-protocol return
       return res.redirect(`${protocol}?provider=google&status=connected`);
     }
-    res.redirect((env.APP_URL || "/") + "/integrations?connected=google");
+    // Hash-router friendly redirect back to the desktop/web app
+    const base = env.APP_URL || "";
+    res.redirect(`${base}#/app/integrations?connected=google`);
   } catch (e: any) {
     res.status(400).send(e?.message || "Google callback failed");
   }
@@ -139,16 +142,95 @@ app.get("/v1/oauth/meta/callback", async (req, res) => {
       // Desktop custom-protocol return
       return res.redirect(`${protocol}?provider=meta&status=connected`);
     }
-    res.redirect((env.APP_URL || "/") + "/integrations?connected=meta");
+    // Hash-router friendly redirect back to the desktop/web app
+    const base = env.APP_URL || "";
+    res.redirect(`${base}#/app/integrations?connected=meta`);
   } catch (e: any) {
     res.status(400).send(e?.message || "Meta callback failed");
   }
 });
 
-const port = Number(env.PORT || 8787);
-app.listen(port, () => {
-  console.log(`AtlasUX backend listening on :${port}`);
+// -------------------- INTEGRATION ASSET DISCOVERY (META) --------------------
+// Minimal “Sprout-style” ownership verification: list what the user actually owns.
+app.get("/v1/integrations/meta/assets", async (req, res) => {
+  try {
+    const org_id = String(req.query.org_id || "");
+    const user_id = String(req.query.user_id || "");
+    const type = String(req.query.type || "page"); // page | ad_account
+    if (!org_id || !user_id) return res.status(400).json({ error: "Missing org_id/user_id" });
+    if (type !== "page" && type !== "ad_account") return res.status(400).json({ error: "Unsupported type" });
+
+    const supabase = makeSupabase(env);
+    const { data, error } = await supabase
+      .from("token_vault")
+      .select("access_token")
+      .eq("org_id", org_id)
+      .eq("user_id", user_id)
+      .eq("provider", "meta")
+      .maybeSingle();
+
+    if (error) return res.status(400).json({ error: error.message });
+    const access_token = (data as any)?.access_token;
+    if (!access_token) return res.status(400).json({ error: "Meta not connected" });
+
+    const url =
+      type === "page"
+        ? `https://graph.facebook.com/v19.0/me/accounts?fields=id,name&access_token=${encodeURIComponent(access_token)}`
+        : `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,account_id&access_token=${encodeURIComponent(access_token)}`;
+
+    const r = await fetch(url);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return res.status(400).json({ error: j?.error?.message || "meta_assets_failed" });
+
+    const assets = Array.isArray(j?.data) ? j.data : [];
+    res.json({ type, assets });
+  } catch (e: any) {
+    res.status(400).json({ error: e?.message || "meta_assets_failed" });
+  }
 });
+
+app.post("/v1/integrations/meta/assets/save", async (req, res) => {
+  try {
+    const body = z.object({
+      org_id: z.string().min(1),
+      user_id: z.string().min(1),
+      type: z.enum(["page", "ad_account"]),
+      selected: z.array(z.object({ id: z.string().min(1), name: z.string().optional() })).default([]),
+    }).parse(req.body);
+
+    const supabase = makeSupabase(env);
+    const { data, error } = await supabase
+      .from("token_vault")
+      .select("meta")
+      .eq("org_id", body.org_id)
+      .eq("user_id", body.user_id)
+      .eq("provider", "meta")
+      .maybeSingle();
+    if (error) return res.status(400).json({ error: error.message });
+
+    const prevMeta = (data as any)?.meta && typeof (data as any).meta === "object" ? (data as any).meta : {};
+    const nextMeta = {
+      ...prevMeta,
+      selected_assets: {
+        ...(prevMeta?.selected_assets || {}),
+        [body.type]: body.selected,
+      },
+    };
+
+    const { error: upErr } = await supabase
+      .from("token_vault")
+      .update({ meta: nextMeta, updated_at: new Date().toISOString() })
+      .eq("org_id", body.org_id)
+      .eq("user_id", body.user_id)
+      .eq("provider", "meta");
+
+    if (upErr) return res.status(400).json({ error: upErr.message });
+    res.json({ ok: true, meta: nextMeta });
+  } catch (e: any) {
+    res.status(400).json({ error: e?.message || "meta_assets_save_failed" });
+  }
+});
+
 // -------------------- INTEGRATIONS STATUS + DISCONNECT --------------------
 app.get("/v1/integrations/status", async (req, res) => {
   try {
@@ -197,4 +279,97 @@ app.post("/v1/integrations/:provider/disconnect", async (req, res) => {
   } catch (e: any) {
     res.status(400).json({ error: e?.message || "disconnect_failed" });
   }
+});
+
+// -------------------- META ASSET DISCOVERY (PAGES / AD ACCOUNTS) --------------------
+// These endpoints support the "verify ownership then import" step (Sprout/Hootsuite style).
+
+app.get("/v1/integrations/meta/assets", async (req, res) => {
+  try {
+    const org_id = String(req.query.org_id || "");
+    const user_id = String(req.query.user_id || "");
+    const type = String(req.query.type || "page"); // page | ads
+    if (!org_id || !user_id) return res.status(400).json({ error: "Missing org_id/user_id" });
+    if (type !== "page" && type !== "ads") return res.status(400).json({ error: "Unsupported type" });
+
+    const supabase = makeSupabase(env);
+    const { data, error } = await supabase
+      .from("token_vault")
+      .select("access_token")
+      .eq("org_id", org_id)
+      .eq("user_id", user_id)
+      .eq("provider", "meta")
+      .maybeSingle();
+
+    if (error) return res.status(400).json({ error: error.message });
+    const access_token = (data as any)?.access_token;
+    if (!access_token) return res.status(400).json({ error: "Meta not connected" });
+
+    const endpoint =
+      type === "page"
+        ? "https://graph.facebook.com/v19.0/me/accounts?fields=id,name,category"
+        : "https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,account_id";
+
+    const r = await fetch(`${endpoint}&access_token=${encodeURIComponent(access_token)}`);
+    const j: any = await r.json().catch(() => ({}));
+    if (!r.ok) return res.status(400).json({ error: j?.error?.message || "Meta asset fetch failed" });
+
+    const assets = (j?.data || []).map((a: any) => ({
+      id: a.id,
+      name: a.name,
+      type,
+      meta: type === "page" ? { category: a.category } : { account_id: a.account_id }
+    }));
+    res.json({ assets });
+  } catch (e: any) {
+    res.status(400).json({ error: e?.message || "meta_assets_failed" });
+  }
+});
+
+app.post("/v1/integrations/meta/assets/save", async (req, res) => {
+  try {
+    const body = z.object({
+      org_id: z.string().min(1),
+      user_id: z.string().min(1),
+      type: z.enum(["page", "ads"]),
+      selected: z.array(z.object({ id: z.string(), name: z.string() })).default([]),
+    }).parse(req.body);
+
+    const supabase = makeSupabase(env);
+    // Read existing meta row
+    const { data: existing, error: readErr } = await supabase
+      .from("token_vault")
+      .select("meta")
+      .eq("org_id", body.org_id)
+      .eq("user_id", body.user_id)
+      .eq("provider", "meta")
+      .maybeSingle();
+    if (readErr) return res.status(400).json({ error: readErr.message });
+
+    const prevMeta = (existing as any)?.meta || {};
+    const nextMeta = {
+      ...prevMeta,
+      imported_assets: {
+        ...(prevMeta?.imported_assets || {}),
+        [body.type]: body.selected,
+      },
+    };
+
+    const { error: updErr } = await supabase
+      .from("token_vault")
+      .update({ meta: nextMeta, updated_at: new Date().toISOString() })
+      .eq("org_id", body.org_id)
+      .eq("user_id", body.user_id)
+      .eq("provider", "meta");
+
+    if (updErr) return res.status(400).json({ error: updErr.message });
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(400).json({ error: e?.message || "meta_assets_save_failed" });
+  }
+});
+
+const port = Number(env.PORT || 8787);
+app.listen(port, () => {
+  console.log(`AtlasUX backend listening on :${port}`);
 });

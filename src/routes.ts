@@ -18,6 +18,7 @@ import { BusinessAssets } from "./components/BusinessAssets";
 import { ProcessingSettings } from "./components/ProcessingSettings";
 import { SubscriptionManager } from "./components/SubscriptionManager";
 import { RootLayout } from "./components/RootLayout";
+import { VideoConferencing } from "./components/premium/VideoConferencing";
 
 import MobilePage from "./routes/mobile";
 
@@ -36,8 +37,12 @@ export const router = createHashRouter([
       { path: "monitoring", Component: SocialMonitoring },
       { path: "files", Component: FileManagement },
       { path: "integrations", Component: Integrations },
+      // Sprout-style connect wizard + OAuth callback routes
+      { path: "integrations/connect/:provider", Component: Integrations },
+      { path: "integrations/callback/:provider", Component: Integrations },
       { path: "crm", Component: CRM },
       { path: "analytics", Component: Analytics },
+      { path: "video-conferencing", Component: VideoConferencing },
       { path: "automation", Component: TaskAutomation },
       { path: "settings", Component: Settings },
       { path: "premium", Component: PremiumFeatures },

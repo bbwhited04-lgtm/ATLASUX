@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   BarChart3,
   RefreshCw,
@@ -32,18 +33,20 @@ import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { AnalyticsConnectionModal } from "./AnalyticsConnectionModal";
+// Connections are handled by the shared Integrations wizard (Sprout-style)
 
 export function Analytics() {
+  const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState("7d");
   const [activeTab, setActiveTab] = useState("overview");
   
-  // Connection Flow State
-  const [showConnectionModal, setShowConnectionModal] = useState(false);
-  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
-  const [connectionStep, setConnectionStep] = useState(1); // 1: Auth Method, 2: Login, 3: Permissions, 4: Account Selection, 5: Success
-  const [authMethod, setAuthMethod] = useState<string | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const startConnect = (provider: "google" | "meta", integration: string, type?: "page" | "ads") => {
+    const qp = new URLSearchParams();
+    qp.set("integration", integration);
+    if (type) qp.set("type", type);
+    qp.set("returnTo", "/app/analytics");
+    navigate(`/app/integrations/connect/${provider}?${qp.toString()}`);
+  };
   
   // No connected accounts - all data is empty
   const websiteData: any[] = [];
@@ -57,22 +60,7 @@ export function Analytics() {
   
   const topPages: any[] = [];
   
-  // Handle platform connection initiation
-  const handleConnectPlatform = (platformName: string) => {
-    setSelectedPlatform(platformName);
-    setConnectionStep(1);
-    setAuthMethod(null);
-    setShowConnectionModal(true);
-  };
-  
-  // Simulate connection process
-  const handleAuth = () => {
-    setIsConnecting(true);
-    setTimeout(() => {
-      setIsConnecting(false);
-      setConnectionStep(connectionStep + 1);
-    }, 1500);
-  };
+  // Connection modal removed: use Integrations wizard
   
   return (
     <div className="p-6 space-y-6">
@@ -531,27 +519,32 @@ export function Analytics() {
               <div>
                 <div className="text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-2">Web Analytics</div>
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs border-cyan-500/20 hover:bg-cyan-500/10"
+                    onClick={() => startConnect("google", "ga4")}
+                  >
                     <Globe className="w-3 h-3 mr-1" />
                     Google Analytics
                   </Button>
-                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10" onClick={() => startConnect("google", "google_ads")}>
                     <Globe className="w-3 h-3 mr-1" />
                     Adobe Analytics
                   </Button>
-                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10" onClick={() => startConnect("meta", "facebook_ads", "ads")}>
                     <Globe className="w-3 h-3 mr-1" />
                     Matomo
                   </Button>
-                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10" onClick={() => startConnect("meta", "facebook_pages", "page")}>
                     <Globe className="w-3 h-3 mr-1" />
                     Mixpanel
                   </Button>
-                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10" onClick={() => startConnect("meta", "instagram", "page")}>
                     <Globe className="w-3 h-3 mr-1" />
                     Plausible
                   </Button>
-                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10" onClick={() => startConnect("google", "youtube")}>
                     <Globe className="w-3 h-3 mr-1" />
                     Heap Analytics
                   </Button>
@@ -585,11 +578,21 @@ export function Analytics() {
               <div>
                 <div className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-2">Marketing & Advertising</div>
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs border-cyan-500/20 hover:bg-cyan-500/10"
+                    onClick={() => startConnect("google", "google_ads")}
+                  >
                     <TrendingUp className="w-3 h-3 mr-1" />
                     Google Ads
                   </Button>
-                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs border-cyan-500/20 hover:bg-cyan-500/10"
+                    onClick={() => startConnect("meta", "facebook_ads", "ads")}
+                  >
                     <TrendingUp className="w-3 h-3 mr-1" />
                     Facebook Ads Manager
                   </Button>
@@ -612,11 +615,21 @@ export function Analytics() {
               <div>
                 <div className="text-xs font-semibold text-pink-400 uppercase tracking-wider mb-2">Social Media Analytics</div>
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs border-cyan-500/20 hover:bg-cyan-500/10"
+                    onClick={() => startConnect("meta", "facebook_pages", "page")}
+                  >
                     <Heart className="w-3 h-3 mr-1" />
                     Facebook Insights
                   </Button>
-                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs border-cyan-500/20 hover:bg-cyan-500/10"
+                    onClick={() => startConnect("meta", "instagram", "page")}
+                  >
                     <Heart className="w-3 h-3 mr-1" />
                     Instagram Insights
                   </Button>
@@ -632,7 +645,12 @@ export function Analytics() {
                     <Heart className="w-3 h-3 mr-1" />
                     TikTok Analytics
                   </Button>
-                  <Button size="sm" variant="outline" className="text-xs border-cyan-500/20 hover:bg-cyan-500/10">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs border-cyan-500/20 hover:bg-cyan-500/10"
+                    onClick={() => startConnect("google", "youtube")}
+                  >
                     <Heart className="w-3 h-3 mr-1" />
                     YouTube Analytics
                   </Button>
@@ -691,16 +709,6 @@ export function Analytics() {
         </div>
       </Card>
       
-      {/* Connection Modal */}
-      <AnalyticsConnectionModal
-        show={showConnectionModal}
-        onClose={() => setShowConnectionModal(false)}
-        platform={selectedPlatform}
-        step={connectionStep}
-        authMethod={authMethod}
-        onAuth={handleAuth}
-        isConnecting={isConnecting}
-      />
     </div>
   );
 }

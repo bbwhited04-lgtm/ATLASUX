@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getConnection } from "../../utils/connections";
 import { 
   Video, Calendar, Mic, Users, MessageSquare, 
@@ -10,6 +11,7 @@ import {
 import { AddMeetingModal, VideoConferencingConnectionModal } from '../MeetingModals';
 
 export function VideoConferencing() {
+  const navigate = useNavigate();
   const [atlasInMeeting, setAtlasInMeeting] = useState(false);
   const [showAddMeetingModal, setShowAddMeetingModal] = useState(false);
   const [showConnectModal, setShowConnectModal] = useState(false);
@@ -226,6 +228,15 @@ export function VideoConferencing() {
                 ) : (
                   <button 
                     onClick={() => {
+                      // Route supported providers through the shared Integrations wizard.
+                      if (platform.id === "google-meet") {
+                        const qp = new URLSearchParams();
+                        qp.set("integration", "google_meet");
+                        qp.set("returnTo", "/app/video-conferencing");
+                        navigate(`/app/integrations/connect/google?${qp.toString()}`);
+                        return;
+                      }
+                      // Fallback (UI-only) modal for providers not yet wired.
                       setSelectedPlatform(platform.name);
                       setShowConnectModal(true);
                     }}
