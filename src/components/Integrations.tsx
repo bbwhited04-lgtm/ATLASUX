@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Plus, X, Search, Filter, RefreshCw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import { API_BASE } from "@/lib/api";
 
 
 type Category =

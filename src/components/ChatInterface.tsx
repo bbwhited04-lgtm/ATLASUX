@@ -1,3 +1,4 @@
+import { API_BASE } from "@/lib/api";
 import { useState, useRef, useEffect } from "react";
 import { 
   Send, 
