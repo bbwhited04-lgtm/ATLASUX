@@ -25,9 +25,9 @@
 
   "bundle": {
     "active": true,
-    "targets": ["msi"],
+    "targets": ["appimage", "dmg","msi"],
     "icon": [
-      "icons/icon.ico"
+      "icons/atlas_hero_rgba.png"
     ]
   }
 }

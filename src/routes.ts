@@ -1,15 +1,14 @@
+import React from "react";
 import { createHashRouter } from "react-router";
 import Landing from "./pages/Landing";
-
 import { Dashboard } from "./components/Dashboard";
 import { JobRunner } from "./components/JobRunner";
 import { ChatInterface } from "./components/ChatInterface";
 import { SocialMonitoring } from "./components/SocialMonitoring";
 import { FileManagement } from "./components/FileManagement";
-
 import Integrations from "./components/Integrations";
 import CRM from "./components/CRM";
-
+import AppGate from "./components/AppGate";
 import { Analytics } from "./components/Analytics";
 import { TaskAutomation } from "./components/TaskAutomation";
 import { Settings } from "./components/Settings";
@@ -30,7 +29,13 @@ export const router = createHashRouter([
   // App at "#/app"
   {
     path: "/app",
-    Component: RootLayout,
+    Component: () => (
+      React.createElement(
+        AppGate,
+         null, 
+         React.createElement(RootLayout, null)
+        ),
+    ),
     children: [
       { index: true, Component: Dashboard },
       { path: "jobs", Component: JobRunner },

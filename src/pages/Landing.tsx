@@ -112,12 +112,27 @@ export default function Landing() {
 
         {/* Dev updates */}
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-xl font-semibold">Dev updates</h2>
-          <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/70">
-            <li>Landing deployed to Vercel + routing stabilized.</li>
-            <li>Integrations moving from demo-mode → real connect/verify/import.</li>
-            <li>Desktop UI wiring continues to harden.</li>
-          </ul>
+          <div className="flex items-baseline justify-between gap-4">
+    `       <h2 className="text-xl font-semibold">Dev updates</h2>
+            <span className="text-sm text-white/60">Last updated: Feb 10, 2026</span>
+          </div>
+          <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
+              <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
+              <li>Stated initial seating pricing and stored UI on supabase for demo mode only</li>
+              <li>Published Initial UI(user interface) wireframe to web from Figma.</li>
+              <li>Removed Demo Mode only and went live with frontend at Vercel</li>
+              <li>Set up backend wiring to run through onrender</li>
+              <li>Started work with ChatGPT 5.2 to integrate my wireframe into a real program</li>
+              <li>Created first backend files, frontend files index.html</li>
+              <li>Published 60s pitch video + cross-platform posts.</li>
+              <li>Integration UX wiring in progress (connect → verify → import).</li>
+              <li>Stabilizing desktop builds and routing across pages.</li>
+              <li>Fighting Demons and Gremlins buried in the code, all about them routes.</li>
+              <li>Added AppGate functionality for security.</li>
+              <li>Added Task/Workflows Functionality.</li>
+              <li>Rebuilding Mobile Companion App/link. Rebuilding Atlas Avatar with Blender, New look coming soon. </li>
+              
+            </ul>
 
           <div className="mt-5 flex gap-3">
             <a

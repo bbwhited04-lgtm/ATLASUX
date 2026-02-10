@@ -1,7 +1,6 @@
-import { Link } from "react-router-dom";
+import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import { HelpCircle } from "lucide-react";
 import { useState } from 'react';
-import { Outlet, useNavigate, useLocation, Link } from 'react-router';
 import { AtlasAvatar } from './AtlasAvatar';
 import { PlutoGlobe } from './PlutoGlobe';
 import { NeptuneControl } from './NeptuneControl';
