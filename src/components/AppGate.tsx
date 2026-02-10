@@ -1,22 +1,23 @@
 import { useMemo, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-console.log("GATE CODE:", import.meta.env.VITE_APP_GATE_CODE);
 
 const SESSION_KEY = "atlasux_gate_ok";
 
 function normalize(s: string) {
-  return s.trim();
+  return (s ?? "").trim();
 }
 
-export function isGateOpen() {
-  return sessionStorage.getItem(SESSION_KEY) === "1";
+function isGateOpen() {
+  try {
+    return sessionStorage.getItem(SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
 export default function AppGate({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
   const expected = useMemo(
     () => normalize(import.meta.env.VITE_APP_GATE_CODE ?? ""),
     []
@@ -24,34 +25,55 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
 
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [authed, setAuthed] = useState(false);
+  const [lockedUntil, setLockedUntil] = useState<number>(0);
+  const [fails, setFails] = useState(0);
 
-  // If no code configured, fail closed (safer)
+  // Fail closed if not configured (safer)
   if (!expected) {
     return (
-      <div className="p-6">
-        <Card className="max-w-md border-cyan-500/20">
+      <div className="min-h-[70vh] flex items-center justify-center p-6">
+        <Card className="w-full max-w-md border-cyan-500/20">
           <CardHeader>
             <CardTitle>Private Beta</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Access is currently restricted.
+            Access is currently limited.
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // Already authorized this session → continue
-  if (isGateOpen()) return <>{children}</>;
+  // Allow through once authorized (session + immediate state)
+  if (authed || isGateOpen()) return <>{children}</>;
+
+  const now = Date.now();
+  const isLocked = now < lockedUntil;
 
   const onSubmit = () => {
+    if (isLocked) return;
+
     if (normalize(code) === expected) {
-      sessionStorage.setItem(SESSION_KEY, "1");
+      try {
+        sessionStorage.setItem(SESSION_KEY, "1");
+      } catch {
+        // ignore storage failures; authed state still lets user in
+      }
       setError(null);
-      // stay on same route; now children will render
+      setAuthed(true); // forces immediate render (no “backspace opens app”)
       return;
     }
+
+    const nextFails = fails + 1;
+    setFails(nextFails);
     setError("Invalid access code.");
+
+    // Simple lockout friction after 5 failures (30s)
+    if (nextFails >= 5) {
+      setLockedUntil(Date.now() + 30_000);
+      setFails(0);
+    }
   };
 
   return (
@@ -60,6 +82,7 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
         <CardHeader>
           <CardTitle>Private Beta</CardTitle>
         </CardHeader>
+
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
             Enter your access code to continue.
@@ -67,10 +90,14 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
 
           <Input
             value={code}
-            onChange={(e) => setCode(e.target.value)}
+            onChange={(e) => {
+              setCode(e.target.value);
+              if (error) setError(null);
+            }}
             placeholder="Access code"
             type="password"
             autoComplete="off"
+            disabled={isLocked}
             onKeyDown={(e) => {
               if (e.key === "Enter") onSubmit();
             }}
@@ -78,17 +105,34 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
 
           {error && <div className="text-sm text-red-500">{error}</div>}
 
+          {isLocked && (
+            <div className="text-xs text-muted-foreground">
+              Too many attempts. Try again in{" "}
+              {Math.ceil((lockedUntil - now) / 1000)}s.
+            </div>
+          )}
+
           <div className="flex gap-2">
-            <Button className="bg-cyan-500 hover:bg-cyan-400" onClick={onSubmit}>
+            <Button
+              className="bg-cyan-500 hover:bg-cyan-400"
+              onClick={onSubmit}
+              disabled={isLocked}
+            >
               Continue
             </Button>
-            <Button variant="outline" onClick={() => (window.location.hash = "#/")}>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                window.location.hash = "#/";
+              }}
+            >
               Back
             </Button>
           </div>
 
           <div className="text-xs text-muted-foreground">
-            You’ll only need this code once per session.
+            Access is stored for this session.
           </div>
         </CardContent>
       </Card>
