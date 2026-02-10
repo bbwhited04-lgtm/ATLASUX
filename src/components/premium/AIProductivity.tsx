@@ -1,8 +1,20 @@
 import { useState } from 'react';
-import { 
-  Mail, Calendar, FileText, Image, Video, 
-  CheckCircle, Clock, Tag, Zap, TrendingUp,
-  Users, MessageSquare, Bell, Star
+import { queuePremiumJob } from "@/lib/premiumActions";
+import {
+  Mail, 
+  Calendar, 
+  FileText, 
+  Image, 
+  Video, 
+  CheckCircle, 
+  Clock, 
+  Tag, 
+  Zap, 
+  TrendingUp,
+  Users, 
+  MessageSquare, 
+  Bell, 
+  Star,
 } from 'lucide-react';
 
 export function AIProductivity() {
@@ -125,7 +137,7 @@ export function AIProductivity() {
             <Calendar className="w-6 h-6 text-blue-400" />
             <h3 className="text-xl font-semibold text-white">Meeting Auto-Scheduler</h3>
           </div>
-          <button className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors">
+          <button onClick={() => queuePremiumJob("Schedule New Meeting")} className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors">
             Schedule New Meeting
           </button>
         </div>
@@ -218,7 +230,7 @@ export function AIProductivity() {
             <Image className="w-6 h-6 text-green-400" />
             <h3 className="text-xl font-semibold text-white">Screenshot OCR Archive</h3>
           </div>
-          <button className="px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg text-sm text-green-400 transition-colors">
+          <button onClick={() => queuePremiumJob("Search All Screenshots")} className="px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg text-sm text-green-400 transition-colors">
             Search All Screenshots
           </button>
         </div>
@@ -265,7 +277,7 @@ export function AIProductivity() {
             <Video className="w-6 h-6 text-red-400" />
             <h3 className="text-xl font-semibold text-white">Meeting Transcription & Action Items</h3>
           </div>
-          <button className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-400 hover:to-pink-400 rounded-lg text-sm font-semibold transition-all">
+          <button onClick={() => queuePremiumJob("Record New Meeting")} className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-400 hover:to-pink-400 rounded-lg text-sm font-semibold transition-all">
             Record New Meeting
           </button>
         </div>
@@ -302,10 +314,10 @@ export function AIProductivity() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-xs text-cyan-400 transition-colors">
+                <button onClick={() => queuePremiumJob("View Full Transcript")} className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-xs text-cyan-400 transition-colors">
                   View Full Transcript
                 </button>
-                <button className="px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 rounded text-xs text-slate-300 transition-colors">
+                <button onClick={() => queuePremiumJob("Export Action Items")} className="px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 rounded text-xs text-slate-300 transition-colors">
                   Export Action Items
                 </button>
               </div>

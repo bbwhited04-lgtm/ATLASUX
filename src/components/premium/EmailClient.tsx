@@ -1,11 +1,33 @@
 import { useState } from 'react';
-import { 
-  Mail, Inbox, Send, Star, Archive, Trash2, 
-  Search, Filter, Tag, Clock, User, Paperclip,
-  CheckCircle, AlertCircle, TrendingUp, Zap,
-  Eye, EyeOff, Flag, Reply, Forward, MoreVertical,
-  Sparkles, Brain, Calendar, FileText
-} from 'lucide-react';
+import { queuePremiumJob } from "@/lib/premiumActions";
+import {  
+  Mail, 
+  Inbox, 
+  Send, 
+  Star, 
+  Archive, 
+  Trash2, 
+  Search, 
+  Filter, 
+  Tag, 
+  Clock, 
+  User, 
+  Paperclip,
+  CheckCircle, 
+  AlertCircle, 
+  TrendingUp, 
+  Zap,
+  Eye, 
+  EyeOff, 
+  Flag, 
+  Reply, 
+  Forward, 
+  MoreVertical,
+  Sparkles, 
+  Brain, 
+  Calendar, 
+  FileText,
+} from "lucide-react";
 
 export function EmailClient() {
   const [selectedEmail, setSelectedEmail] = useState<any>(null);
@@ -98,7 +120,7 @@ export function EmailClient() {
           {/* Sidebar */}
           <div className="lg:col-span-3 border-r border-slate-700/50 p-4">
             {/* Compose Button */}
-            <button className="w-full px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg font-semibold mb-6 transition-colors flex items-center justify-center gap-2">
+            <button onClick={() => queuePremiumJob("Compose")} className="w-full px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg font-semibold mb-6 transition-colors flex items-center justify-center gap-2">
               <Send className="w-4 h-4" />
               Compose
             </button>
@@ -142,7 +164,7 @@ export function EmailClient() {
                   return (
                     <button
                       key={category.name}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-colors"
+                      onClick={() => queuePremiumJob("{category.name} {category.count}")} className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-colors"
                     >
                       <div className="flex items-center gap-2">
                         <Icon className={`w-4 h-4 text-${category.color}-400`} />
@@ -166,7 +188,7 @@ export function EmailClient() {
                 {templates.map((template) => (
                   <button
                     key={template.name}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-colors text-sm"
+                    onClick={() => queuePremiumJob("{template.name} {template.uses}")} className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-colors text-sm"
                   >
                     <span>{template.name}</span>
                     <span className="text-xs text-slate-600">{template.uses}</span>
@@ -267,7 +289,7 @@ export function EmailClient() {
                         <span>{selectedEmail.timestamp}</span>
                       </div>
                     </div>
-                    <button className="p-2 hover:bg-slate-800 rounded transition-colors">
+                    <button onClick={() => queuePremiumJob("Premium action")} className="p-2 hover:bg-slate-800 rounded transition-colors">
                       <MoreVertical className="w-4 h-4 text-slate-400" />
                     </button>
                   </div>
@@ -290,7 +312,7 @@ export function EmailClient() {
                       return (
                         <button
                           key={action.name}
-                          className="px-3 py-1.5 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 rounded text-xs text-slate-300 transition-colors flex items-center gap-2"
+                          onClick={() => queuePremiumJob("{action.name}")} className="px-3 py-1.5 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 rounded text-xs text-slate-300 transition-colors flex items-center gap-2"
                         >
                           <Icon className="w-3 h-3" />
                           {action.name}
@@ -325,7 +347,7 @@ export function EmailClient() {
                           <div className="text-sm text-white">Q1_Budget_Report.pdf</div>
                           <div className="text-xs text-slate-500">2.4 MB</div>
                         </div>
-                        <button className="px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-xs text-cyan-400 transition-colors">
+                        <button onClick={() => queuePremiumJob("Download")} className="px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-xs text-cyan-400 transition-colors">
                           Download
                         </button>
                       </div>
@@ -340,10 +362,10 @@ export function EmailClient() {
                     <span className="text-sm font-semibold text-purple-400">AI Smart Reply Suggestions</span>
                   </div>
                   <div className="space-y-2">
-                    <button className="w-full text-left p-3 bg-slate-900/50 hover:bg-slate-900 border border-slate-700/50 rounded-lg text-sm text-slate-300 transition-colors">
+                    <button onClick={() => queuePremiumJob("'Thanks for sharing. I'll review this by end of day.'")} className="w-full text-left p-3 bg-slate-900/50 hover:bg-slate-900 border border-slate-700/50 rounded-lg text-sm text-slate-300 transition-colors">
                       "Thanks for sharing. I'll review this by end of day."
                     </button>
-                    <button className="w-full text-left p-3 bg-slate-900/50 hover:bg-slate-900 border border-slate-700/50 rounded-lg text-sm text-slate-300 transition-colors">
+                    <button onClick={() => queuePremiumJob("'Can we schedule a call to discuss this further?'")} className="w-full text-left p-3 bg-slate-900/50 hover:bg-slate-900 border border-slate-700/50 rounded-lg text-sm text-slate-300 transition-colors">
                       "Can we schedule a call to discuss this further?"
                     </button>
                   </div>
@@ -375,7 +397,7 @@ export function EmailClient() {
               <div className="flex items-center justify-between mb-2">
                 <div className="font-semibold text-white">{feature.name}</div>
                 <button
-                  className={`w-10 h-5 rounded-full transition-colors relative ${
+                  onClick={() => queuePremiumJob("Premium action")} className={`w-10 h-5 rounded-full transition-colors relative ${
                     feature.enabled
                       ? 'bg-gradient-to-r from-cyan-500 to-blue-500'
                       : 'bg-slate-700'

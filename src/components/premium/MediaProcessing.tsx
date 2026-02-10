@@ -1,9 +1,22 @@
 import { useState } from 'react';
-import { 
-  Film, Image, FileText, Scissors, Wand2, 
-  Upload, Download, Layers, Type, Sparkles,
-  Play, Pause, CheckCircle, Clock, Zap
-} from 'lucide-react';
+import { queuePremiumJob } from "@/lib/premiumActions";
+import {  
+  Film, 
+  Image, 
+  FileText, 
+  Scissors, 
+  Wand2, 
+  Upload, 
+  Download, 
+  Layers, 
+  Type, 
+  Sparkles,
+  Play, 
+  Pause, 
+  CheckCircle, 
+  Clock, 
+  Zap,
+} from "lucide-react";
 
 export function MediaProcessing() {
   const [processing, setProcessing] = useState(false);
@@ -64,7 +77,7 @@ export function MediaProcessing() {
             <Film className="w-6 h-6 text-red-400" />
             <h3 className="text-xl font-semibold text-white">AI Video Auto-Editor</h3>
           </div>
-          <button className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-400 hover:to-pink-400 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
+          <button onClick={() => queuePremiumJob("Upload Video")} className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-400 hover:to-pink-400 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
             <Upload className="w-4 h-4" />
             Upload Video
           </button>
@@ -110,7 +123,7 @@ export function MediaProcessing() {
                       <span>Queued</span>
                     </div>
                   )}
-                  <button className="ml-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded text-xs text-red-400 transition-colors">
+                  <button onClick={() => queuePremiumJob("Premium action")} className="ml-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded text-xs text-red-400 transition-colors">
                     <Download className="w-3 h-3" />
                   </button>
                 </div>
@@ -139,7 +152,7 @@ export function MediaProcessing() {
             <Layers className="w-6 h-6 text-blue-400" />
             <h3 className="text-xl font-semibold text-white">Batch Image Processing</h3>
           </div>
-          <button className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors flex items-center gap-2">
+          <button onClick={() => queuePremiumJob("Upload Images")} className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors flex items-center gap-2">
             <Upload className="w-4 h-4" />
             Upload Images
           </button>
@@ -200,15 +213,15 @@ export function MediaProcessing() {
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <button className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-blue-500/30 rounded-lg text-sm text-slate-300 transition-colors">
+          <button onClick={() => queuePremiumJob("Remove Background")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-blue-500/30 rounded-lg text-sm text-slate-300 transition-colors">
             <Wand2 className="w-5 h-5 mx-auto mb-1 text-blue-400" />
             Remove Background
           </button>
-          <button className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-blue-500/30 rounded-lg text-sm text-slate-300 transition-colors">
+          <button onClick={() => queuePremiumJob("Resize & Crop")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-blue-500/30 rounded-lg text-sm text-slate-300 transition-colors">
             <Scissors className="w-5 h-5 mx-auto mb-1 text-blue-400" />
             Resize & Crop
           </button>
-          <button className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-blue-500/30 rounded-lg text-sm text-slate-300 transition-colors">
+          <button onClick={() => queuePremiumJob("Watermark")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-blue-500/30 rounded-lg text-sm text-slate-300 transition-colors">
             <Sparkles className="w-5 h-5 mx-auto mb-1 text-blue-400" />
             Watermark
           </button>
@@ -222,7 +235,7 @@ export function MediaProcessing() {
             <FileText className="w-6 h-6 text-purple-400" />
             <h3 className="text-xl font-semibold text-white">PDF Manipulation Suite</h3>
           </div>
-          <button className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-lg text-sm text-purple-400 transition-colors flex items-center gap-2">
+          <button onClick={() => queuePremiumJob("Upload PDFs")} className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-lg text-sm text-purple-400 transition-colors flex items-center gap-2">
             <Upload className="w-4 h-4" />
             Upload PDFs
           </button>
@@ -278,16 +291,16 @@ export function MediaProcessing() {
         </div>
 
         <div className="grid grid-cols-4 gap-3">
-          <button className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-xs text-slate-300 transition-colors">
+          <button onClick={() => queuePremiumJob("Merge PDFs")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-xs text-slate-300 transition-colors">
             Merge PDFs
           </button>
-          <button className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-xs text-slate-300 transition-colors">
+          <button onClick={() => queuePremiumJob("Split PDF")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-xs text-slate-300 transition-colors">
             Split PDF
           </button>
-          <button className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-xs text-slate-300 transition-colors">
+          <button onClick={() => queuePremiumJob("Extract Pages")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-xs text-slate-300 transition-colors">
             Extract Pages
           </button>
-          <button className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-xs text-slate-300 transition-colors">
+          <button onClick={() => queuePremiumJob("Compress")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-xs text-slate-300 transition-colors">
             Compress
           </button>
         </div>
@@ -300,7 +313,7 @@ export function MediaProcessing() {
             <Type className="w-6 h-6 text-green-400" />
             <h3 className="text-xl font-semibold text-white">OCR Everything</h3>
           </div>
-          <button className="px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg text-sm text-green-400 transition-colors flex items-center gap-2">
+          <button onClick={() => queuePremiumJob("Upload for OCR")} className="px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg text-sm text-green-400 transition-colors flex items-center gap-2">
             <Upload className="w-4 h-4" />
             Upload for OCR
           </button>

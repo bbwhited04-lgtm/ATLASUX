@@ -102,6 +102,8 @@ export function TaskAutomation() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        org_id: localStorage.getItem("atlasux_org_id") || "demo_org",
+        user_id: localStorage.getItem("atlasux_user_id") || "demo_user",
         type: "generic",
         payload: {
           workflow_id: workflow.id,

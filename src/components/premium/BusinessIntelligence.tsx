@@ -1,9 +1,22 @@
 import { useState } from 'react';
-import { 
-  TrendingUp, Newspaper, DollarSign, Heart, Brain,
-  BarChart3, AlertCircle, Target, Search, ExternalLink,
-  ArrowUp, ArrowDown, Activity, Users, Globe
-} from 'lucide-react';
+import { queuePremiumJob } from "@/lib/premiumActions";
+import {  
+  TrendingUp, 
+  Newspaper, 
+  DollarSign, 
+  Heart, 
+  Brain,
+  BarChart3, 
+  AlertCircle, 
+  Target, 
+  Search, 
+  ExternalLink,
+  ArrowUp, 
+  ArrowDown, 
+  Activity, 
+  Users, 
+  Globe,
+} from "lucide-react";
 
 export function BusinessIntelligence() {
   const competitors: any[] = [];
@@ -57,7 +70,7 @@ export function BusinessIntelligence() {
             <Target className="w-6 h-6 text-red-400" />
             <h3 className="text-xl font-semibold text-white">Competitor Monitoring</h3>
           </div>
-          <button className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-sm text-red-400 transition-colors flex items-center gap-2">
+          <button onClick={() => queuePremiumJob("Add Competitor")} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-sm text-red-400 transition-colors flex items-center gap-2">
             <Search className="w-4 h-4" />
             Add Competitor
           </button>
@@ -100,7 +113,7 @@ export function BusinessIntelligence() {
                     </div>
                   </div>
                 </div>
-                <button className="px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 rounded text-xs text-slate-300 transition-colors flex items-center gap-1">
+                <button onClick={() => queuePremiumJob("View Details")} className="px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 rounded text-xs text-slate-300 transition-colors flex items-center gap-1">
                   View Details
                   <ExternalLink className="w-3 h-3" />
                 </button>
@@ -144,7 +157,7 @@ export function BusinessIntelligence() {
                     </div>
                   </div>
                 </div>
-                <button className="ml-4 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded text-xs text-blue-400 transition-colors flex items-center gap-1">
+                <button onClick={() => queuePremiumJob("Read")} className="ml-4 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded text-xs text-blue-400 transition-colors flex items-center gap-1">
                   Read
                   <ExternalLink className="w-3 h-3" />
                 </button>
@@ -161,7 +174,7 @@ export function BusinessIntelligence() {
             <DollarSign className="w-6 h-6 text-green-400" />
             <h3 className="text-xl font-semibold text-white">Stock & Market Dashboard</h3>
           </div>
-          <button className="px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg text-sm text-green-400 transition-colors">
+          <button onClick={() => queuePremiumJob("Manage Watchlist")} className="px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg text-sm text-green-400 transition-colors">
             Manage Watchlist
           </button>
         </div>
@@ -189,7 +202,7 @@ export function BusinessIntelligence() {
                     </div>
                   </div>
                 </div>
-                <button className="ml-4 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 rounded text-xs text-slate-300 transition-colors">
+                <button onClick={() => queuePremiumJob("View Chart")} className="ml-4 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 rounded text-xs text-slate-300 transition-colors">
                   View Chart
                 </button>
               </div>
