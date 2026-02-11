@@ -51,8 +51,7 @@ function RootLayoutInner() {
     { path: "/app/files", icon: FolderOpen, label: "Files" },
     { path: "/app/processing-settings", icon: Gauge, label: "Processing" },
     { path: "/app/subscription", icon: CreditCard, label: "Subscription" },
-    { path: "/app/settings", icon: SettingsIcon, label: "Settings" },
-
+   
   ];
   const [isMobileCompanionOpen, setIsMobileCompanionOpen] = useState(false);
   const showMobileCompanion = () => setIsMobileCompanionOpen(true);
