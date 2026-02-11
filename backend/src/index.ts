@@ -81,6 +81,34 @@ app.get("/v1/audit/export.csv", async (req, res) => {
   }
 });
 
+// Generic event endpoint for client-side / mobile companion / task runners.
+// Use this to record semantic events such as approve/deny, store open/close, etc.
+const AuditEventBody = z.object({
+  actor_type: z.enum(["user","system","device","mobile"]).optional(),
+  action: z.string().min(1),
+  entity_type: z.string().optional().nullable(),
+  entity_id: z.string().optional().nullable(),
+  status: z.enum(["success","failure"]).optional(),
+  metadata: z.any().optional()
+});
+
+app.post("/v1/audit/event", async (req, res) => {
+  try {
+    const body = AuditEventBody.parse(req.body || {});
+    const out = await logBusinessEvent(env, req, {
+      actor_type: body.actor_type || "user",
+      action: body.action,
+      entity_type: body.entity_type ?? null,
+      entity_id: body.entity_id ?? null,
+      status: body.status || "success",
+      metadata: (body.metadata && typeof body.metadata === "object") ? body.metadata : { value: body.metadata }
+    });
+    res.json({ ok: true, audit: out });
+  } catch (e: any) {
+    res.status(400).json({ ok: false, error: e?.message || "audit_event_failed" });
+  }
+});
+
 // -------------------- ACCOUNTING (FOUNDATION) --------------------
 app.get("/v1/accounting/summary", async (req, res) => {
   try {
@@ -155,7 +183,7 @@ app.post("/v1/ledger/event", async (req, res) => {
 
 
 // -------------------- MOBILE PAIRING (DEV) --------------------
-app.post("/v1/mobile/pair/start", (_req, res) => {
+app.post("/v1/mobile/pair/start", async (req, res) => {
   try {
     const appUrl = env.APP_URL || "https://atlasux.cloud";
     const payload = startPair(appUrl);
@@ -173,7 +201,7 @@ app.post("/v1/mobile/pair/start", (_req, res) => {
   }
 });
 
-app.post("/v1/mobile/pair/confirm", (req, res) => {
+app.post("/v1/mobile/pair/confirm", async (req, res) => {
   try {
     const code = String(req.body?.code || "");
     if (!code) return res.status(400).json({ error: "missing_code" });
@@ -217,8 +245,32 @@ app.post("/v1/chat", async (req, res) => {
   try {
     const body = ChatBody.parse(req.body);
     const out = await runChat(body, env);
+    // Semantic audit event (request middleware also logs the HTTP call)
+    await logBusinessEvent(env, req, {
+      actor_type: "user",
+      action: "ai.chat",
+      entity_type: "ai",
+      entity_id: body.model || null,
+      status: "success",
+      metadata: {
+        provider: body.provider,
+        message_count: body.messages?.length || 0,
+        has_system_prompt: Boolean(body.systemPrompt)
+      }
+    });
     res.json(out);
   } catch (e: any) {
+    // Log failures too (best effort)
+    try {
+      await logBusinessEvent(env, req, {
+        actor_type: "user",
+        action: "ai.chat.failed",
+        entity_type: "ai",
+        entity_id: null,
+        status: "failure",
+        metadata: { error: e?.message || "chat_failed" }
+      });
+    } catch { /* ignore */ }
     res.status(400).json({ error: e?.message || "chat_failed" });
   }
 });
@@ -286,6 +338,15 @@ app.get("/v1/oauth/google/callback", async (req, res) => {
       scope: tok.scope ?? null,
       meta: { token_type: tok.token_type }
     });
+    // Audit: integration connected
+    await logBusinessEvent(env, req, {
+      actor_type: "user",
+      action: "integration.connected",
+      entity_type: "integration",
+      entity_id: "google",
+      status: "success",
+      metadata: { org_id: decoded.org_id, user_id: decoded.user_id }
+    });
     const protocol = env.APP_PROTOCOL;
     if (protocol && protocol.startsWith("atlasux://")) {
       // Desktop custom-protocol return
@@ -293,6 +354,16 @@ app.get("/v1/oauth/google/callback", async (req, res) => {
     }
     res.redirect(webReturnTo("google"));
   } catch (e: any) {
+    try {
+      await logBusinessEvent(env, req, {
+        actor_type: "user",
+        action: "integration.connect_failed",
+        entity_type: "integration",
+        entity_id: "google",
+        status: "failure",
+        metadata: { error: e?.message || "Google callback failed" }
+      });
+    } catch { /* ignore */ }
     res.status(400).send(e?.message || "Google callback failed");
   }
 });
@@ -330,6 +401,14 @@ app.get("/v1/oauth/meta/callback", async (req, res) => {
       scope: null,
       meta: { token_type: tok.token_type }
     });
+    await logBusinessEvent(env, req, {
+      actor_type: "user",
+      action: "integration.connected",
+      entity_type: "integration",
+      entity_id: "meta",
+      status: "success",
+      metadata: { org_id: decoded.org_id, user_id: decoded.user_id }
+    });
     const protocol = env.APP_PROTOCOL;
     if (protocol && protocol.startsWith("atlasux://")) {
       // Desktop custom-protocol return
@@ -337,6 +416,16 @@ app.get("/v1/oauth/meta/callback", async (req, res) => {
     }
     res.redirect(webReturnTo("meta"));
   } catch (e: any) {
+    try {
+      await logBusinessEvent(env, req, {
+        actor_type: "user",
+        action: "integration.connect_failed",
+        entity_type: "integration",
+        entity_id: "meta",
+        status: "failure",
+        metadata: { error: e?.message || "Meta callback failed" }
+      });
+    } catch { /* ignore */ }
     res.status(400).send(e?.message || "Meta callback failed");
   }
 });
@@ -385,8 +474,26 @@ app.post("/v1/integrations/:provider/disconnect", async (req, res) => {
       .eq("provider", provider);
 
     if (error) return res.status(400).json({ error: error.message });
+    await logBusinessEvent(env, req, {
+      actor_type: "user",
+      action: "integration.disconnected",
+      entity_type: "integration",
+      entity_id: provider,
+      status: "success",
+      metadata: { org_id, user_id }
+    });
     res.json({ ok: true });
   } catch (e: any) {
+    try {
+      await logBusinessEvent(env, req, {
+        actor_type: "user",
+        action: "integration.disconnect_failed",
+        entity_type: "integration",
+        entity_id: String(req.params.provider || ""),
+        status: "failure",
+        metadata: { error: e?.message || "disconnect_failed" }
+      });
+    } catch { /* ignore */ }
     res.status(400).json({ error: e?.message || "disconnect_failed" });
   }
 });

@@ -21,6 +21,27 @@ export type AuditEvent = {
   org_id?: string | null;
 };
 
+// --------------------
+// Local-first + cost-aware audit batching
+// --------------------
+// We batch audit writes to reduce DB chatter (important once Atlas is logging
+// *everything* it touches). This also keeps things resilient if the DB is
+// briefly unavailable.
+const AUDIT_BATCH_MAX = 25;
+const AUDIT_FLUSH_INTERVAL_MS = 2000;
+
+let auditQueue: any[] = [];
+let flushing = false;
+let timerStarted = false;
+
+function startFlushTimer(env: Env) {
+  if (timerStarted) return;
+  timerStarted = true;
+  setInterval(() => {
+    void flushAuditQueue(env);
+  }, AUDIT_FLUSH_INTERVAL_MS).unref?.();
+}
+
 function isoNow() {
   return new Date().toISOString();
 }
@@ -49,7 +70,7 @@ export function getRequestContext(req: Request) {
 export async function writeAudit(env: Env, event: AuditEvent) {
   // "Local-first": if Supabase isn't configured or table isn't present, we won't crash.
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return { ok: false, skipped: true, reason: "supabase_not_configured" };
-  const supabase = makeSupabase(env);
+  startFlushTimer(env);
 
   const row = {
     timestamp: event.timestamp || isoNow(),
@@ -68,9 +89,32 @@ export async function writeAudit(env: Env, event: AuditEvent) {
     request_id: event.request_id ?? null
   };
 
-  const { error } = await supabase.from("audit_log").insert([row]);
-  if (error) return { ok: false, skipped: false, reason: error.message };
-  return { ok: true };
+  // Queue + flush (batch insert)
+  auditQueue.push(row);
+  if (auditQueue.length >= AUDIT_BATCH_MAX) void flushAuditQueue(env);
+  return { ok: true, queued: true };
+}
+
+async function flushAuditQueue(env: Env) {
+  if (flushing) return;
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return;
+  if (!auditQueue.length) return;
+  flushing = true;
+  const supabase = makeSupabase(env);
+  let batch: any[] = [];
+  try {
+    batch = auditQueue.splice(0, AUDIT_BATCH_MAX);
+    const { error } = await supabase.from("audit_log").insert(batch);
+    if (error) {
+      // Put back to queue (front) for retry later.
+      auditQueue = batch.concat(auditQueue);
+    }
+  } catch {
+    // Put back to queue for retry later.
+    if (batch.length) auditQueue = batch.concat(auditQueue);
+  } finally {
+    flushing = false;
+  }
 }
 
 export function auditMiddleware(env: Env) {
@@ -130,5 +174,25 @@ export async function logBusinessEvent(env: Env, req: Request, event: Omit<Audit
     ip_address: ctx.ip_address,
     user_agent: ctx.user_agent,
     request_id: ctx.request_id
+  });
+}
+
+// Background/system events (no Request available)
+export async function logSystemEvent(env: Env, event: Omit<AuditEvent, "ip_address" | "user_agent" | "request_id" | "org_id" | "actor_id" | "device_id" | "source"> & {
+  org_id?: string | null;
+  actor_id?: string | null;
+  device_id?: string | null;
+  source?: string;
+  request_id?: string | null;
+}) {
+  return writeAudit(env, {
+    ...event,
+    org_id: event.org_id ?? null,
+    actor_id: event.actor_id ?? null,
+    device_id: event.device_id ?? null,
+    source: (event as any).source ?? "system",
+    ip_address: null,
+    user_agent: null,
+    request_id: (event as any).request_id ?? null
   });
 }
