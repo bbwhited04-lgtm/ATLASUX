@@ -6,7 +6,10 @@ import { makeCors } from "./cors";
 import { runChat } from "./ai";
 import { oauthEnabled, buildGoogleAuthUrl, exchangeGoogleCode, buildMetaAuthUrl, exchangeMetaCode, storeTokenVault } from "./oauth";
 import { createJob, JobTypeSchema } from "./jobs";
+import { startPair, confirmPair } from "./mobile";
 import { makeSupabase } from "./supabase";
+import { auditMiddleware, logBusinessEvent } from "./audit";
+import { writeLedgerEvent } from "./ledger";
 
 const env = loadEnv(process.env);
 
@@ -14,7 +17,182 @@ const app = express();
 app.use(makeCors(env));
 app.use(express.json({ limit: "2mb" }));
 
+// Automatic audit trail (safe no-crash if DB tables not created yet)
+app.use(auditMiddleware(env));
+
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+// -------------------- AUDIT LOG --------------------
+app.get("/v1/audit/list", async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit || 200), 1000);
+    const supabase = makeSupabase(env);
+    let q = supabase.from("audit_log").select("*").order("timestamp", { ascending: false }).limit(limit);
+
+    const actor_id = req.query.actor_id ? String(req.query.actor_id) : "";
+    const source = req.query.source ? String(req.query.source) : "";
+    const action = req.query.action ? String(req.query.action) : "";
+    const since = req.query.since ? String(req.query.since) : "";
+    const until = req.query.until ? String(req.query.until) : "";
+
+    if (actor_id) q = q.eq("actor_id", actor_id);
+    if (source) q = q.eq("source", source);
+    if (action) q = q.ilike("action", `%${action}%`);
+    if (since) q = q.gte("timestamp", since);
+    if (until) q = q.lte("timestamp", until);
+
+    const { data, error } = await q;
+    if (error) return res.status(200).json({ ok: false, rows: [], warning: error.message, setup: "/AUDIT_ACCOUNTING_SETUP.md" });
+    res.json({ ok: true, rows: data || [] });
+  } catch (e: any) {
+    res.status(200).json({ ok: false, rows: [], warning: e?.message || "audit_list_failed" });
+  }
+});
+
+app.get("/v1/audit/export.csv", async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit || 1000), 5000);
+    const supabase = makeSupabase(env);
+    const { data, error } = await supabase.from("audit_log").select("*").order("timestamp", { ascending: false }).limit(limit);
+    if (error) return res.status(200).send(`error,${JSON.stringify(error.message)}`);
+
+    const rows = (data || []).map((r: any) => ({
+      timestamp: r.timestamp,
+      actor_type: r.actor_type,
+      actor_id: r.actor_id,
+      org_id: r.org_id,
+      device_id: r.device_id,
+      source: r.source,
+      action: r.action,
+      entity_type: r.entity_type,
+      entity_id: r.entity_id,
+      status: r.status,
+      ip_address: r.ip_address,
+      request_id: r.request_id
+    }));
+
+    const header = Object.keys(rows[0] || { timestamp: "" });
+    const lines = [header.join(",")].concat(rows.map((r: any) => header.map(k => JSON.stringify((r as any)[k] ?? "")).join(",")));
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=\"audit_log.csv\"");
+    res.send(lines.join("\n"));
+  } catch (e: any) {
+    res.status(200).send(`error,${JSON.stringify(e?.message || "export_failed")}`);
+  }
+});
+
+// -------------------- ACCOUNTING (FOUNDATION) --------------------
+app.get("/v1/accounting/summary", async (req, res) => {
+  try {
+    const supabase = makeSupabase(env);
+    // If table doesn't exist yet, Supabase will return an error; handle gracefully.
+    const { data, error } = await supabase.from("ledger_events").select("event_type,amount,currency,timestamp").limit(5000);
+    if (error) return res.json({ ok: false, totals: { spend: 0, income: 0, refund: 0, payout: 0 }, warning: error.message, setup: "/AUDIT_ACCOUNTING_SETUP.md" });
+
+    const totals: any = { spend: 0, income: 0, refund: 0, payout: 0 };
+    for (const r of (data || []) as any[]) {
+      const t = String(r.event_type || "");
+      const amt = Number(r.amount || 0);
+      if (t in totals) totals[t] += amt;
+    }
+    res.json({ ok: true, totals });
+  } catch (e: any) {
+    res.json({ ok: false, totals: { spend: 0, income: 0, refund: 0, payout: 0 }, warning: e?.message || "summary_failed" });
+  }
+});
+
+app.get("/v1/accounting/export.csv", async (_req, res) => {
+  try {
+    const supabase = makeSupabase(env);
+    const { data, error } = await supabase.from("ledger_events").select("*").order("timestamp", { ascending: false }).limit(5000);
+    if (error) return res.status(200).send(`error,${JSON.stringify(error.message)}`);
+
+    const rows = (data || []).map((r: any) => ({
+      timestamp: r.timestamp,
+      event_type: r.event_type,
+      amount: r.amount,
+      currency: r.currency,
+      status: r.status,
+      provider: r.provider,
+      related_job_id: r.related_job_id,
+      org_id: r.org_id,
+      user_id: r.user_id
+    }));
+
+    const header = Object.keys(rows[0] || { timestamp: "" });
+    const lines = [header.join(",")].concat(rows.map((r: any) => header.map(k => JSON.stringify((r as any)[k] ?? "")).join(",")));
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=\"ledger_events.csv\"");
+    res.send(lines.join("\n"));
+  } catch (e: any) {
+    res.status(200).send(`error,${JSON.stringify(e?.message || "export_failed")}`);
+  }
+});
+
+// Optional: record a ledger event (used later by spend/income flows)
+const LedgerBody = z.object({
+  event_type: z.enum(["spend","income","refund","payout"]),
+  amount: z.number(),
+  currency: z.string().optional(),
+  status: z.string().optional(),
+  related_job_id: z.string().optional().nullable(),
+  provider: z.string().optional().nullable(),
+  metadata: z.any().optional(),
+  org_id: z.string().optional().nullable(),
+  user_id: z.string().optional().nullable()
+});
+
+app.post("/v1/ledger/event", async (req, res) => {
+  try {
+    const body = LedgerBody.parse(req.body);
+    const out = await writeLedgerEvent(env, body);
+    res.json(out);
+  } catch (e: any) {
+    res.status(400).json({ error: e?.message || "ledger_write_failed" });
+  }
+});
+
+
+
+// -------------------- MOBILE PAIRING (DEV) --------------------
+app.post("/v1/mobile/pair/start", (_req, res) => {
+  try {
+    const appUrl = env.APP_URL || "https://atlasux.cloud";
+    const payload = startPair(appUrl);
+    await logBusinessEvent(env, req, {
+      actor_type: "user",
+      action: "mobile.pair.start",
+      entity_type: "mobile_pair",
+      entity_id: payload.code,
+      status: "success",
+      metadata: { expires_in_seconds: payload.expires_in_seconds }
+    });
+    res.json(payload);
+  } catch (e: any) {
+    res.status(400).json({ error: e?.message || "pair_start_failed" });
+  }
+});
+
+app.post("/v1/mobile/pair/confirm", (req, res) => {
+  try {
+    const code = String(req.body?.code || "");
+    if (!code) return res.status(400).json({ error: "missing_code" });
+    const result = confirmPair(code);
+    await logBusinessEvent(env, req, {
+      actor_type: "user",
+      action: result.ok ? "mobile.pair.confirm" : "mobile.pair.confirm_failed",
+      entity_type: "mobile_pair",
+      entity_id: code,
+      status: result.ok ? "success" : "failure",
+      metadata: result.ok ? { device: (result as any).device } : { error: (result as any).error }
+    });
+    if (!result.ok) return res.status(400).json({ error: result.error });
+    res.json(result);
+  } catch (e: any) {
+    res.status(400).json({ error: e?.message || "pair_confirm_failed" });
+  }
+});
+
 
 // Helper: return to the web app (HashRouter) after OAuth completes.
 function webReturnTo(connectedProvider: string) {
@@ -57,6 +235,15 @@ app.post("/v1/jobs", async (req, res) => {
   try {
     const body = CreateJobBody.parse(req.body);
     const job = await createJob(env, body);
+    // High-value business audit event
+    await logBusinessEvent(env, req, {
+      actor_type: "user",
+      action: "job.created",
+      entity_type: "job",
+      entity_id: String((job as any)?.id || ""),
+      status: "success",
+      metadata: { type: body.type }
+    });
     res.json({ job });
   } catch (e: any) {
     res.status(400).json({ error: e?.message || "job_create_failed" });

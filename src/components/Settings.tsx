@@ -297,6 +297,15 @@ export function Settings() {
             <SettingsIcon className="w-4 h-4 mr-2" />
             General
           </TabsTrigger>
+          <TabsTrigger value="audit" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <FileText className="w-4 h-4 mr-2" />
+            Audit Log
+          </TabsTrigger>
+          <TabsTrigger value="accounting" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Mail className="w-4 h-4 mr-2" />
+            Accounting
+          </TabsTrigger>
+
           <TabsTrigger value="admin" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Crown className="w-4 h-4 mr-2" />
             Admin Login
@@ -640,7 +649,83 @@ export function Settings() {
         </TabsContent>
         
         {/* Admin Login Tab */}
-        <TabsContent value="admin" className="space-y-4">
+        <TabsContent value="audit">
+          <Card className="p-6 bg-slate-900/50 border border-cyan-500/20">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-white">Audit Log</h3>
+                <p className="text-sm text-slate-400">Immutable trail for approvals, denials, logins, and remote actions.</p>
+              </div>
+              <Button variant="outline" className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10">
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                { t: "08:14:22", a: "Mobile pairing requested", by: "Billy", meta: "code AX-****-****" },
+                { t: "08:16:04", a: "Approval: Publish TikTok", by: "Billy (mobile)", meta: "job# 1293" },
+                { t: "08:18:55", a: "Security: WiFi toggled OFF", by: "Billy (mobile)", meta: "reason: leaving shop" },
+                { t: "08:20:11", a: "Accounting report generated", by: "Atlas", meta: "range: last 7 days" },
+              ].map((e, i) => (
+                <div key={i} className="p-4 rounded-xl bg-slate-950/40 border border-slate-800 flex items-start justify-between">
+                  <div>
+                    <div className="text-white font-semibold">{e.a}</div>
+                    <div className="text-xs text-slate-400 mt-1">By {e.by} • {e.meta}</div>
+                  </div>
+                  <div className="text-xs text-slate-500">{e.t}</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="accounting">
+          <Card className="p-6 bg-slate-900/50 border border-cyan-500/20">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-white">Accounting Report</h3>
+                <p className="text-sm text-slate-400">Spend / income analysis + system usage cost tracking (Neptune + integrations).</p>
+              </div>
+              <div className="flex gap-2">
+                <Button className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Generate
+                </Button>
+                <Button variant="outline" className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              {[
+                { label: "Spend (7d)", value: "$42.18", note: "AI + storage + messaging" },
+                { label: "Income (7d)", value: "$0.00", note: "Orders (soon)" },
+                { label: "Net", value: "-$42.18", note: "Pre‑launch burn" },
+              ].map((k) => (
+                <div key={k.label} className="p-5 rounded-2xl bg-slate-950/40 border border-slate-800">
+                  <div className="text-xs text-slate-400">{k.label}</div>
+                  <div className="text-2xl font-black text-white mt-1">{k.value}</div>
+                  <div className="text-xs text-slate-500 mt-1">{k.note}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 p-5 rounded-2xl bg-slate-950/40 border border-slate-800">
+              <div className="text-white font-semibold mb-2">Next wiring (backend)</div>
+              <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
+                <li>Write ledger events: spend, receive, refunds, payouts</li>
+                <li>Attach job IDs + integration provider IDs</li>
+                <li>Expose /v1/audit and /v1/accounting endpoints + CSV export</li>
+              </ul>
+            </div>
+          </Card>
+        </TabsContent>
+
+<TabsContent value="admin" className="space-y-4">
           <Card className="bg-slate-800/50 border-cyan-500/20 p-6">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <Crown className="w-5 h-5 text-cyan-400" />

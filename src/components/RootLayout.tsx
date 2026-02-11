@@ -5,7 +5,8 @@ import { AtlasAvatar } from './AtlasAvatar';
 import { PlutoGlobe } from './PlutoGlobe';
 import { NeptuneControl } from './NeptuneControl';
 import { MobilePairingIndicator } from './MobilePairingIndicator';
-import { MobileCompanionSetup } from './MobileCompanionSetup';
+import { MobileConnectionModal } from './MobileConnectionModal';
+import { MobileConnectionProvider, useMobileConnection } from './mobile/MobileConnectionContext';
 import { 
   Smartphone, 
   LayoutDashboard, 
@@ -27,11 +28,11 @@ import {
   ChevronLeft
 } from 'lucide-react';
 
-export function RootLayout() {
+function RootLayoutInner() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showMobileCompanion, setShowMobileCompanion] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { openModal } = useMobileConnection();
   
   const atlasLogo = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z'/%3E%3C/svg%3E";
   
@@ -171,7 +172,7 @@ export function RootLayout() {
             
             {/* Mobile Companion - Clickable */}
             <button
-              onClick={() => setShowMobileCompanion(true)}
+              onClick={openModal}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-cyan-500/20 hover:bg-slate-800 hover:border-cyan-400/40 transition-all group"
             >
               <Smartphone className="w-3 h-3 text-blue-400 group-hover:text-cyan-400 transition-colors" />
@@ -193,6 +194,9 @@ export function RootLayout() {
       
       {/* Mobile Pairing Indicator - Bottom Right */}
       <MobilePairingIndicator />
+
+      {/* Mobile Connection Modal (shared) */}
+      <MobileConnectionModal />
       
       {/* Mobile Companion Setup Modal */}
       <MobileCompanionSetup 
@@ -210,5 +214,13 @@ export function RootLayout() {
         {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
       </button>
     </div>
+  );
+}
+
+export function RootLayout() {
+  return (
+    <MobileConnectionProvider>
+      <RootLayoutInner />
+    </MobileConnectionProvider>
   );
 }
