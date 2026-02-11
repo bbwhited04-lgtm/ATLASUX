@@ -26,7 +26,8 @@ import {
   Settings as SettingsIcon,
   Bell,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  FileText
 } from 'lucide-react';
 
 function RootLayoutInner() {
