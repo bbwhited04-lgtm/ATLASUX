@@ -51,7 +51,9 @@ function RootLayoutInner() {
     { path: "/app/processing-settings", icon: Gauge, label: "Processing" },
     { path: "/app/subscription", icon: CreditCard, label: "Subscription" },
   ];
-  
+  const [isMobileCompanionOpen, setIsMobileCompanionOpen] = useState(false);
+  const showMobileCompanion = () => setIsMobileCompanionOpen(true);
+  const hideMobileCompanion = () => setIsMobileCompanionOpen(false);
   const isActive = (path: string) => {
     if (path === "/app") return location.pathname === "/app";
     return location.pathname.startsWith(path);
@@ -201,7 +203,7 @@ function RootLayoutInner() {
       
       {/* Mobile Companion Setup Modal */}
       <MobileCompanionSetup 
-        isOpen={showMobileCompanion} 
+        isOpen={isMobileCompanionOpen} 
         onClose={() => setShowMobileCompanion(false)} 
       />
       
