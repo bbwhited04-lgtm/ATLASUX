@@ -6,6 +6,7 @@ import { PlutoGlobe } from './PlutoGlobe';
 import { NeptuneControl } from './NeptuneControl';
 import { MobilePairingIndicator } from './MobilePairingIndicator';
 import { MobileConnectionModal } from './MobileConnectionModal';
+import { MobileCompanionSetup } from "./MobileCompanionSetup";
 import { MobileConnectionProvider, useMobileConnection } from './mobile/MobileConnectionContext';
 import { 
   Smartphone, 

@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  }
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  timestamp   DateTime @default(now())
+  actorType   String?
+  actorId     String?
+  deviceId    String?
+  source      String?
+  action      String
+  entityType  String?
+  entityId    String?
+  status      String?
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+}
+
+model SystemState {
+  key        String   @id
+  value      String
+  updatedAt  DateTime @updatedAt
+  updatedBy  String?
+}
+
+model LedgerEvent {
+  id        String   @id @default(uuid())
+  timestamp DateTime @default(now())
+  eventType String
+  amount    Float?
+  currency  String?
+  relatedId String?
+  provider  String?
+  status    String?
+  metadata  Json?
+}
+
