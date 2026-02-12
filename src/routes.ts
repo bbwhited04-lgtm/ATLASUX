@@ -14,6 +14,11 @@ import { BusinessManager } from "./components/business-manager";
 import { RootLayout } from "./components/RootLayout";
 import { HelpPage } from "./components/HelpPage";
 import MobilePage from "./routes/mobile";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import AcceptableUse from "./pages/AcceptableUse";
+import Payment from "./pages/Payment";
+import Store from "./pages/Store";
 
 export const router = createHashRouter([
   // Landing at "#/"
@@ -45,6 +50,13 @@ export const router = createHashRouter([
       { path: "/acceptable-use", Component: AcceptableUse },
       { path: "/payment", Component: Payment },
       { path: "/store", Component: Store },
+      { path: "/", Component: Landing },
+      { path: "/privacy", Component: Privacy },
+      { path: "/terms", Component: Terms },
+      { path: "/acceptable-use", Component: AcceptableUse },
+      { path: "/payment", Component: Payment },
+      { path: "/store", Component: Store },
+
 
     ],
   },
