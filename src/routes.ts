@@ -39,6 +39,13 @@ export const router = createHashRouter([
       { path: "business-manager", Component: BusinessManager },
       { path: "settings", Component: Settings },
       { path: "help", Component: HelpPage },
+      { path: "/", Component: Landing },
+      { path: "/privacy", Component: Privacy },
+      { path: "/terms", Component: Terms },
+      { path: "/acceptable-use", Component: AcceptableUse },
+      { path: "/payment", Component: Payment },
+      { path: "/store", Component: Store },
+
     ],
   },
 

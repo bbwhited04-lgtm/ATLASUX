@@ -169,9 +169,19 @@ export default function Landing() {
           </div>
         </section>
 
-        <footer className="mt-12 pb-6 text-center text-xs text-white/40">
-          © 2026 ATLAS UX — a DEAD APP CORP company
-        </footer>
+        <footer className="mt-24 border-t border-slate-800 pt-8 text-sm text-slate-400">
+          <div className="flex flex-wrap gap-6 justify-center">
+            <Link to="/store" className="hover:text-white">Store</Link>
+            <Link to="/payment" className="hover:text-white">Payment</Link>
+            <Link to="/privacy" className="hover:text-white">Privacy</Link>
+            <Link to="/terms" className="hover:text-white">Terms</Link>
+            <Link to="/acceptable-use" className="hover:text-white">Acceptable Use</Link>
+          </div>
+  <p className="mt-6 text-center text-xs text-slate-500">
+    © {new Date().getFullYear()} Atlas UX, a product of DEAD APP CORP, All rights reserved.
+  </p>
+</footer>
+
       </main>
     </div>
   );
