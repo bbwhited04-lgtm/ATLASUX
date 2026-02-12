@@ -43,6 +43,14 @@ function RootLayoutInner() {
   ];
 
   // (Kept for future “setup wizard” flows; currently the modal is opened via context.)
+  const statusStyles = {
+    online: "bg-emerald-600 text-white",
+    pairing: "bg-amber-500 text-black",
+    busy: "bg-yellow-400 text-black",
+    error: "bg-red-600 text-white animate-pulse",
+    offline: "bg-slate-700 text-white",
+  };
+
   const [isMobileCompanionOpen, setIsMobileCompanionOpen] = useState(false);
   const hideMobileCompanion = () => setIsMobileCompanionOpen(false);
   const isActive = (path: string) => {
@@ -95,7 +103,7 @@ function RootLayoutInner() {
         
         {/* Bottom Actions */}
         <div className="flex flex-col gap-3 flex-shrink-0">
-<Link
+          <Link
             to="/app/settings"
             className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all relative group ${
               isActive("/app/settings")
@@ -142,15 +150,12 @@ function RootLayoutInner() {
           </div>          <div className="flex items-center gap-4">
             {/* Neptune Status Pill */}
             <button
-              type="button"
-              onClick={() => setIsNeptunePanelOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/20 border border-cyan-400/40 hover:bg-cyan-500/30 hover:border-cyan-300/60 shadow-lg shadow-cyan-500/10 transition-all"
-              aria-label="Open Neptune status"
-              title="Neptune status"
-            >
-              <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-sm font-semibold text-cyan-100 tracking-wide">Neptune Online</span>
+              onClick={() => setShowNeptunePanel(true)}
+              className={`px-5 py-2 rounded-lg font-bold tracking-wide uppercase shadow-lg transition-all duration-200 ${statusStyles[currentStatus]}`}
+              >
+              NEPTUNE · {currentStatus}
             </button>
+
           </div>
         </header>
         
