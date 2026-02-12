@@ -1,4 +1,4 @@
-import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
+import { Outlet, useLocation, Link } from "react-router-dom";
 import { HelpCircle } from "lucide-react";
 import { useState } from 'react';
 import { AtlasAvatar } from './AtlasAvatar';
@@ -8,30 +8,24 @@ import { MobilePairingIndicator } from './MobilePairingIndicator';
 import { MobileConnectionModal } from './MobileConnectionModal';
 import { MobileCompanionSetup } from "./MobileCompanionSetup";
 import { MobileConnectionProvider, useMobileConnection } from './mobile/MobileConnectionContext';
-import { 
-  Smartphone, 
-  LayoutDashboard, 
-  Cpu, 
-  MessageSquare, 
-  Zap, 
-  Radio, 
-  Users, 
-  BarChart3, 
-  Plug, 
-  Briefcase, 
-  FolderOpen, 
-  Gauge,
+import {
+  Smartphone,
+  LayoutDashboard,
+  Cpu,
+  MessageSquare,
+  Zap,
+  Radio,
+  Users,
+  BarChart3,
+  Briefcase,
   Crown,
-  CreditCard,
   Settings as SettingsIcon,
   Bell,
   ChevronRight,
   ChevronLeft,
-  FileText
 } from 'lucide-react';
 
 function RootLayoutInner() {
-  const navigate = useNavigate();
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { openModal } = useMobileConnection();
@@ -46,15 +40,13 @@ function RootLayoutInner() {
     { path: "/app/monitoring", icon: Radio, label: "Monitoring" },
     { path: "/app/crm", icon: Users, label: "CRM" },
     { path: "/app/analytics", icon: BarChart3, label: "Analytics" },
-    { path: "/app/integrations", icon: Plug, label: "Integrations" },
-    { path: "/app/business-assets", icon: Briefcase, label: "Business Assets" },
-    { path: "/app/files", icon: FolderOpen, label: "Files" },
-    { path: "/app/processing-settings", icon: Gauge, label: "Processing" },
-    { path: "/app/subscription", icon: CreditCard, label: "Subscription" },
+    // Consolidated business tooling lives under Business Manager now.
+    { path: "/app/business-manager", icon: Briefcase, label: "Business Manager" },
    
   ];
+
+  // (Kept for future “setup wizard” flows; currently the modal is opened via context.)
   const [isMobileCompanionOpen, setIsMobileCompanionOpen] = useState(false);
-  const showMobileCompanion = () => setIsMobileCompanionOpen(true);
   const hideMobileCompanion = () => setIsMobileCompanionOpen(false);
   const isActive = (path: string) => {
     if (path === "/app") return location.pathname === "/app";
@@ -206,7 +198,7 @@ function RootLayoutInner() {
       {/* Mobile Companion Setup Modal */}
       <MobileCompanionSetup 
         isOpen={isMobileCompanionOpen} 
-        onClose={() => setShowMobileCompanion(false)} 
+        onClose={hideMobileCompanion}
       />
       
       {/* Sidebar Toggle Button */}
