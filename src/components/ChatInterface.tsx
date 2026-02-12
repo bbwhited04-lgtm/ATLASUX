@@ -130,9 +130,6 @@ export function ChatInterface() {
       [platformId]: !prev[platformId]
     }));
   };
-  
-  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "";
-
 const resolveProvider = (): { provider: "openai" | "deepseek"; label: string } => {
   // If DeepSeek is selected, route to DeepSeek. Otherwise default to OpenAI.
   const active = Object.entries(selectedPlatforms).filter(([_, v]) => v).map(([id]) => id);

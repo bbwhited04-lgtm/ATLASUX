@@ -32,3 +32,23 @@ export async function createJob(env: Env, args: {
   if (error) throw new Error(`jobs insert failed: ${error.message}`);
   return data;
 }
+
+
+export async function listJobs(env: Env, args: {
+  org_id: string;
+  user_id: string;
+  limit?: number;
+}) {
+  const supabase = makeSupabase(env);
+  const lim = Math.max(1, Math.min(args.limit ?? 50, 200));
+  const { data, error } = await supabase
+    .from("jobs")
+    .select("*")
+    .eq("org_id", args.org_id)
+    .eq("user_id", args.user_id)
+    .order("created_at", { ascending: false })
+    .limit(lim);
+  if (error) throw new Error(`job_list_failed: ${error.message}`);
+  return data ?? [];
+}
+

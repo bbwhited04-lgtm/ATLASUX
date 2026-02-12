@@ -5,7 +5,7 @@ import { loadEnv } from "./env";
 import { makeCors } from "./cors";
 import { runChat } from "./ai";
 import { oauthEnabled, buildGoogleAuthUrl, exchangeGoogleCode, buildMetaAuthUrl, exchangeMetaCode, storeTokenVault } from "./oauth";
-import { createJob, JobTypeSchema } from "./jobs";
+import { createJob, listJobs, JobTypeSchema } from "./jobs";
 import { startPair, confirmPair } from "./mobile";
 import { makeSupabase } from "./supabase";
 import { auditMiddleware, logBusinessEvent } from "./audit";
@@ -301,6 +301,21 @@ app.post("/v1/jobs", async (req, res) => {
     res.status(400).json({ error: e?.message || "job_create_failed" });
   }
 });
+
+
+app.get("/v1/jobs/list", async (req, res) => {
+  try {
+    const org_id = String(req.query.org_id || "");
+    const user_id = String(req.query.user_id || "");
+    const limit = req.query.limit ? Number(req.query.limit) : undefined;
+    if (!org_id || !user_id) return res.status(400).json({ error: "missing_org_or_user" });
+    const rows = await listJobs(env, { org_id, user_id, limit });
+    res.json({ rows });
+  } catch (e: any) {
+    res.status(400).json({ error: e?.message || "job_list_failed" });
+  }
+});
+
 
 // -------------------- OAUTH --------------------
 // NOTE: For simplicity, org_id/user_id are passed via query in this scaffold.

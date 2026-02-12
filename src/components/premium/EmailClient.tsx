@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { queuePremiumJob } from "@/lib/premiumActions";
 import {  
+import { API_BASE } from "@/lib/api";
   Mail, 
   Inbox, 
   Send, 
@@ -31,7 +32,7 @@ import {
 
 export function EmailClient() {
 // Keep consistent with Integrations.tsx
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "https://atlas-ux.onrender.com";
+const BACKEND_URL = API_BASE;
 
 function getOrgUser() {
   const org_id = localStorage.getItem("atlasux_org_id") || "demo_org";

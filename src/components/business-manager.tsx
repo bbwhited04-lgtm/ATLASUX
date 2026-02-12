@@ -120,10 +120,10 @@ async function disconnect(provider: "google" | "meta") {
 
 async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
   const payload = { requested_from: "business_manager" };
-  const res = await fetch(`${API_BASE}/v1/jobs?org_id=${encodeURIComponent(org_id)}&user_id=${encodeURIComponent(user_id)}`, {
+  const res = await fetch(`${API_BASE}/v1/jobs`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type, payload })
+    body: JSON.stringify({ org_id, user_id, type, payload })
   }).catch(() => null);
 
   const ok = !!res && res.ok;

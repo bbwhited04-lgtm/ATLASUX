@@ -31,8 +31,7 @@ type Integration = {
 };
 
 // Default to your deployed backend. Override locally with VITE_BACKEND_URL.
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "https://atlas-ux.onrender.com";
-
+const BACKEND_URL = API_BASE;
 // backend scaffold expects org_id/user_id in query (per its comments)
 function getOrgUser() {
   const org_id = localStorage.getItem("atlasux_org_id") || "demo_org";
