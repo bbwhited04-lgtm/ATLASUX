@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { queuePremiumJob } from "@/lib/premiumActions";
 import {  
   Mail, 
@@ -30,6 +30,67 @@ import {
 } from "lucide-react";
 
 export function EmailClient() {
+// Keep consistent with Integrations.tsx
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "https://atlas-ux.onrender.com";
+
+function getOrgUser() {
+  const org_id = localStorage.getItem("atlasux_org_id") || "demo_org";
+  const user_id = localStorage.getItem("atlasux_user_id") || "demo_user";
+  return { org_id, user_id };
+}
+
+type Provider = "google" | "microsoft" | "smtp";
+const [provider, setProvider] = useState<Provider>("google");
+const [googleConnected, setGoogleConnected] = useState(false);
+const [loadingConnect, setLoadingConnect] = useState<Provider | null>(null);
+const [smtpConfig, setSmtpConfig] = useState({
+  host: localStorage.getItem("atlasux_smtp_host") || "",
+  port: localStorage.getItem("atlasux_smtp_port") || "587",
+  username: localStorage.getItem("atlasux_smtp_user") || "",
+  password: localStorage.getItem("atlasux_smtp_pass") || "",
+  fromName: localStorage.getItem("atlasux_smtp_from_name") || "",
+  fromEmail: localStorage.getItem("atlasux_smtp_from_email") || "",
+  tls: (localStorage.getItem("atlasux_smtp_tls") ?? "true") === "true",
+});
+const smtpConfigured = useMemo(() => {
+  return !!smtpConfig.host && !!smtpConfig.port && !!smtpConfig.username && !!smtpConfig.password;
+}, [smtpConfig]);
+
+const refreshStatus = async () => {
+  const { org_id, user_id } = getOrgUser();
+  try {
+    const r = await fetch(
+      `${BACKEND_URL}/v1/integrations/status?org_id=${encodeURIComponent(org_id)}&user_id=${encodeURIComponent(user_id)}`,
+      { credentials: "include" }
+    );
+    const rows = (await r.json()) as Array<{ provider: "google" | "meta"; connected: boolean }>;
+    setGoogleConnected(!!rows.find((x) => x.provider === "google")?.connected);
+  } catch {
+    setGoogleConnected(false);
+  }
+};
+
+useEffect(() => {
+  refreshStatus();
+}, []);
+
+const startGoogleConnect = () => {
+  setLoadingConnect("google");
+  const { org_id, user_id } = getOrgUser();
+  window.location.href = `${BACKEND_URL}/v1/oauth/google/start?org_id=${encodeURIComponent(org_id)}&user_id=${encodeURIComponent(user_id)}`;
+};
+
+const saveSmtp = () => {
+  localStorage.setItem("atlasux_smtp_host", smtpConfig.host);
+  localStorage.setItem("atlasux_smtp_port", smtpConfig.port);
+  localStorage.setItem("atlasux_smtp_user", smtpConfig.username);
+  localStorage.setItem("atlasux_smtp_pass", smtpConfig.password);
+  localStorage.setItem("atlasux_smtp_from_name", smtpConfig.fromName);
+  localStorage.setItem("atlasux_smtp_from_email", smtpConfig.fromEmail);
+  localStorage.setItem("atlasux_smtp_tls", String(smtpConfig.tls));
+  queuePremiumJob("Email SMTP config saved");
+};
+
   const [selectedEmail, setSelectedEmail] = useState<any>(null);
   const [view, setView] = useState<'inbox' | 'sent' | 'starred' | 'archived'>('inbox');
 
@@ -88,9 +149,208 @@ export function EmailClient() {
         <p className="text-slate-400">
           AI-powered email management with smart triage and auto-responses
         </p>
+</div>
+
+{/* Email Connections */}
+<div className="mb-8 grid gap-6 lg:grid-cols-3">
+  <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
+    <div className="flex items-center justify-between">
+      <div>
+        <div className="text-sm font-semibold text-white">Provider</div>
+        <div className="text-xs text-slate-400 mt-1">Choose how Atlas connects to email</div>
+      </div>
+    </div>
+
+    <div className="mt-4 space-y-2">
+      <button
+        onClick={() => setProvider("google")}
+        className={`w-full text-left px-3 py-2 rounded-lg border transition ${
+          provider === "google"
+            ? "border-cyan-500/40 bg-cyan-500/10 text-white"
+            : "border-slate-700/60 bg-slate-900/30 text-slate-300 hover:bg-slate-900/50"
+        }`}
+      >
+        Gmail / Google Workspace
+        <div className="text-xs text-slate-400 mt-1">OAuth connection (recommended)</div>
+      </button>
+
+      <button
+        onClick={() => setProvider("microsoft")}
+        className={`w-full text-left px-3 py-2 rounded-lg border transition ${
+          provider === "microsoft"
+            ? "border-cyan-500/40 bg-cyan-500/10 text-white"
+            : "border-slate-700/60 bg-slate-900/30 text-slate-300 hover:bg-slate-900/50"
+        }`}
+        disabled
+        title="Coming soon"
+      >
+        Outlook / Microsoft 365
+        <div className="text-xs text-slate-500 mt-1">Coming soon</div>
+      </button>
+
+      <button
+        onClick={() => setProvider("smtp")}
+        className={`w-full text-left px-3 py-2 rounded-lg border transition ${
+          provider === "smtp"
+            ? "border-cyan-500/40 bg-cyan-500/10 text-white"
+            : "border-slate-700/60 bg-slate-900/30 text-slate-300 hover:bg-slate-900/50"
+        }`}
+      >
+        SMTP / IMAP
+        <div className="text-xs text-slate-400 mt-1">Manual credentials (advanced)</div>
+      </button>
+    </div>
+  </div>
+
+  <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 lg:col-span-2">
+    <div className="flex items-center justify-between gap-4">
+      <div>
+        <div className="text-sm font-semibold text-white">Connection</div>
+        <div className="text-xs text-slate-400 mt-1">
+          Connect email so Atlas can read, triage, and automate workflows.
+        </div>
       </div>
 
-      {/* Email Stats */}
+      <button
+        onClick={refreshStatus}
+        className="px-3 py-2 rounded-lg border border-slate-700/60 bg-slate-900/30 text-slate-200 hover:bg-slate-900/50 transition text-sm"
+      >
+        Refresh
+      </button>
+    </div>
+
+    {provider === "google" && (
+      <div className="mt-5">
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-slate-200">
+            Status:{" "}
+            <span className={googleConnected ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>
+              {googleConnected ? "Connected" : "Not Connected"}
+            </span>
+          </div>
+
+          {!googleConnected ? (
+            <button
+              onClick={startGoogleConnect}
+              disabled={loadingConnect === "google"}
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold transition disabled:opacity-60"
+            >
+              {loadingConnect === "google" ? "Connecting..." : "Connect Google"}
+            </button>
+          ) : (
+            <a
+              href="#/app/settings?tab=integrations&focus=gmail"
+              className="px-4 py-2 rounded-lg border border-cyan-500/30 bg-slate-900/30 hover:bg-slate-900/50 text-cyan-200 font-semibold transition"
+              title="Open Integrations"
+            >
+              Manage in Integrations →
+            </a>
+          )}
+        </div>
+
+        <div className="mt-4 text-xs text-slate-400">
+          Tip: Use Google Workspace for business domains to keep access clean and auditable.
+        </div>
+      </div>
+    )}
+
+    {provider === "smtp" && (
+      <div className="mt-5 grid gap-4">
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 mb-1">SMTP Host</label>
+            <input
+              value={smtpConfig.host}
+              onChange={(e) => setSmtpConfig((s) => ({ ...s, host: e.target.value }))}
+              placeholder="smtp.yourdomain.com"
+              className="w-full px-3 py-2 rounded-lg bg-slate-950/30 border border-slate-700/60 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 mb-1">Port</label>
+            <input
+              value={smtpConfig.port}
+              onChange={(e) => setSmtpConfig((s) => ({ ...s, port: e.target.value }))}
+              placeholder="587"
+              className="w-full px-3 py-2 rounded-lg bg-slate-950/30 border border-slate-700/60 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+            />
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 mb-1">Username</label>
+            <input
+              value={smtpConfig.username}
+              onChange={(e) => setSmtpConfig((s) => ({ ...s, username: e.target.value }))}
+              placeholder="user@yourdomain.com"
+              className="w-full px-3 py-2 rounded-lg bg-slate-950/30 border border-slate-700/60 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 mb-1">Password / App Password</label>
+            <input
+              value={smtpConfig.password}
+              onChange={(e) => setSmtpConfig((s) => ({ ...s, password: e.target.value }))}
+              type="password"
+              placeholder="••••••••"
+              className="w-full px-3 py-2 rounded-lg bg-slate-950/30 border border-slate-700/60 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+            />
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 mb-1">From Name</label>
+            <input
+              value={smtpConfig.fromName}
+              onChange={(e) => setSmtpConfig((s) => ({ ...s, fromName: e.target.value }))}
+              placeholder="Atlas UX"
+              className="w-full px-3 py-2 rounded-lg bg-slate-950/30 border border-slate-700/60 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 mb-1">From Email</label>
+            <input
+              value={smtpConfig.fromEmail}
+              onChange={(e) => setSmtpConfig((s) => ({ ...s, fromEmail: e.target.value }))}
+              placeholder="noreply@yourdomain.com"
+              className="w-full px-3 py-2 rounded-lg bg-slate-950/30 border border-slate-700/60 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-slate-300">
+            Status:{" "}
+            <span className={smtpConfigured ? "text-emerald-400 font-semibold" : "text-yellow-400 font-semibold"}>
+              {smtpConfigured ? "Configured" : "Needs Info"}
+            </span>
+          </div>
+          <button
+            onClick={saveSmtp}
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold transition"
+          >
+            Save Configuration
+          </button>
+        </div>
+
+        <div className="text-xs text-slate-500">
+          Note: Stored locally for now. We’ll wire secure vault storage server-side when backend email ingest is finalized.
+        </div>
+      </div>
+    )}
+
+    {provider === "microsoft" && (
+      <div className="mt-5 text-sm text-slate-400">
+        Outlook/Microsoft 365 connector is staged. For now, use SMTP/IMAP if needed.
+      </div>
+    )}
+  </div>
+</div>
+
+{/* Email Stats */}
+
       <div className="grid md:grid-cols-4 gap-6 mb-8">
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <Mail className="w-8 h-8 text-cyan-400 mb-3" />

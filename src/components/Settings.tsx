@@ -44,8 +44,7 @@ import * as adminAuth from "../utils/admin-auth";
 // Import existing feature components
 import Integrations from './Integrations';
 import { FileManagement } from './FileManagement';
-import { ProcessingSettings } from './ProcessingSettings';
-import { EmailClient } from './premium/EmailClient';
+import { ProcessingSettings } from './ProcessingSettings'; 
 import { MobileIntegration } from './premium/MobileIntegration';
 
 // Icon mapping for permissions
@@ -313,12 +312,7 @@ export function Settings() {
           <TabsTrigger value="files" className="text-slate-300 data-[state=active]:text-cyan-400">
             <FolderOpen className="w-4 h-4 mr-2" />
             Files
-          </TabsTrigger>
-          <TabsTrigger value="email" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <Mail className="w-4 h-4 mr-2" />
-            Email
-          </TabsTrigger>
-          <TabsTrigger value="mobile" className="text-slate-300 data-[state=active]:text-cyan-400">
+          </TabsTrigger><TabsTrigger value="mobile" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Smartphone className="w-4 h-4 mr-2" />
             Mobile
           </TabsTrigger>
@@ -491,12 +485,7 @@ export function Settings() {
           <FileManagement />
         </TabsContent>
         
-        {/* Email Tab */}
-        <TabsContent value="email">
-          <EmailClient />
-        </TabsContent>
-        
-        {/* Mobile Tab */}
+        {/* Email Tab */}{/* Mobile Tab */}
         <TabsContent value="mobile">
           <MobileIntegration />
         </TabsContent>
