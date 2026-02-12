@@ -12,12 +12,9 @@ import {
   Cpu,
   Briefcase,
   Gauge,
-  ArrowRight,
-  Smartphone
+  ArrowRight
 } from "lucide-react";
 import { Card } from "./ui/card";
-import { MobileInstallModal } from './MobileInstallModal';
-import { showMobileInstall } from './MobileInstallModal';
 import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
 import { useState } from "react";
@@ -271,22 +268,6 @@ const navigate = useNavigate();
         </a>
       </div>
       
-      {/* Mobile Install Button */}
-      <div className="mt-6">
-        <button
-          className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-          onClick={() => setShowMobileInstall(true)}
-        >
-          <Smartphone className="w-4 h-4" />
-          Install Mobile Companion
-        </button>
-      </div>
       
-      {/* Mobile Install Modal */}
-      <MobileInstallModal 
-        isOpen={showMobileInstall} 
-        onClose={() => setShowMobileInstall(false)} 
-      />
-    </div>
   );
 }
