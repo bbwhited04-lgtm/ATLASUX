@@ -27,7 +27,10 @@ import {
   MessageSquare,
   Crown,
   Mail,
-  Loader2
+  Loader2,
+  Plug,
+  Gauge,
+  Smartphone
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -37,6 +40,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { ScrollArea } from "./ui/scroll-area";
 import { Input } from "./ui/input";
 import * as adminAuth from "../utils/admin-auth";
+
+// Import existing feature components
+import Integrations from './Integrations';
+import { FileManagement } from './FileManagement';
+import { ProcessingSettings } from './ProcessingSettings';
+import { EmailClient } from './premium/EmailClient';
+import { MobileIntegration } from './premium/MobileIntegration';
 
 // Icon mapping for permissions
 const iconMap: Record<string, any> = {
@@ -153,14 +163,12 @@ export function Settings() {
     if (savedPermissions) {
       setPermissions(JSON.parse(savedPermissions));
     } else {
-      // Save defaults on first load
       localStorage.setItem('atlas-permissions', JSON.stringify(defaultPermissions));
     }
     
     if (savedDriveAccess) {
       setDriveAccess(JSON.parse(savedDriveAccess));
     } else {
-      // Save defaults on first load
       localStorage.setItem('atlas-drive-access', JSON.stringify(defaultDriveAccess));
     }
     
@@ -273,15 +281,19 @@ export function Settings() {
       <div>
         <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent flex items-center gap-2">
           <SettingsIcon className="w-6 h-6 text-cyan-400" />
-          Settings & Permissions
+          Settings & Configuration
         </h2>
         <p className="text-slate-400 text-sm mt-1">
-          Manage system permissions, drive access, and security settings
+          Manage system settings, integrations, and preferences
         </p>
       </div>
       
-      <Tabs defaultValue="permissions" className="space-y-6">
-        <TabsList className="bg-slate-900/50 border border-cyan-500/20">
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="bg-slate-900/50 border border-cyan-500/20 flex-wrap h-auto">
+          <TabsTrigger value="general" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <SettingsIcon className="w-4 h-4 mr-2" />
+            General
+          </TabsTrigger>
           <TabsTrigger value="permissions" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Shield className="w-4 h-4 mr-2" />
             Permissions
@@ -290,492 +302,246 @@ export function Settings() {
             <HardDrive className="w-4 h-4 mr-2" />
             Drive Access
           </TabsTrigger>
+          <TabsTrigger value="integrations" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Plug className="w-4 h-4 mr-2" />
+            Integrations
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Gauge className="w-4 h-4 mr-2" />
+            Performance
+          </TabsTrigger>
+          <TabsTrigger value="files" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <FolderOpen className="w-4 h-4 mr-2" />
+            Files
+          </TabsTrigger>
+          <TabsTrigger value="email" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Mail className="w-4 h-4 mr-2" />
+            Email
+          </TabsTrigger>
+          <TabsTrigger value="mobile" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Smartphone className="w-4 h-4 mr-2" />
+            Mobile
+          </TabsTrigger>
           <TabsTrigger value="security" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Lock className="w-4 h-4 mr-2" />
             Security
           </TabsTrigger>
-          <TabsTrigger value="general" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <SettingsIcon className="w-4 h-4 mr-2" />
-            General
-          </TabsTrigger>
-          <TabsTrigger value="audit" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <FileText className="w-4 h-4 mr-2" />
-            Audit Log
-          </TabsTrigger>
-          <TabsTrigger value="accounting" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <Mail className="w-4 h-4 mr-2" />
-            Accounting
-          </TabsTrigger>
-
-          <TabsTrigger value="admin" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <Crown className="w-4 h-4 mr-2" />
-            Admin Login
-          </TabsTrigger>
         </TabsList>
         
-        {/* Permissions Tab */}
-        <TabsContent value="permissions" className="space-y-4">
-          <Card className="bg-yellow-500/10 border-yellow-500/30 p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-semibold text-sm mb-1">Modifying Permissions</h4>
-                <p className="text-xs text-slate-300">
-                  Disabling required permissions may cause Atlas UX to malfunction. Neptune will validate all changes before applying them.
-                </p>
+        {/* General Tab */}
+        <TabsContent value="general" className="space-y-4">
+          <Card className="bg-slate-900/50 border-cyan-500/20 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <SettingsIcon className="w-5 h-5 text-cyan-400" />
+              General Settings
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-lg border border-cyan-500/10">
+                <div>
+                  <p className="text-white font-medium">Dark Mode</p>
+                  <p className="text-sm text-slate-400">Atlas UX dark theme</p>
+                </div>
+                <Switch defaultChecked disabled />
+              </div>
+              
+              <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-lg border border-cyan-500/10">
+                <div>
+                  <p className="text-white font-medium">Auto-Start</p>
+                  <p className="text-sm text-slate-400">Launch Atlas on system startup</p>
+                </div>
+                <Switch defaultChecked />
+              </div>
+              
+              <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-lg border border-cyan-500/10">
+                <div>
+                  <p className="text-white font-medium">Minimize to Tray</p>
+                  <p className="text-sm text-slate-400">Keep Atlas running in background</p>
+                </div>
+                <Switch defaultChecked />
+              </div>
+              
+              <div className="pt-4 border-t border-cyan-500/10 space-y-3">
+                <Button 
+                  onClick={restartOnboarding}
+                  variant="outline" 
+                  className="w-full"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Restart Setup Wizard
+                </Button>
+                
+                <Button 
+                  onClick={resetToDefaults}
+                  variant="destructive" 
+                  className="w-full"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Reset to Defaults
+                </Button>
               </div>
             </div>
           </Card>
-          
-          <ScrollArea className="h-[600px]">
-            <div className="space-y-3 pr-4">
+        </TabsContent>
+        
+        {/* Permissions Tab */}
+        <TabsContent value="permissions" className="space-y-4">
+          <Card className="bg-slate-900/50 border-cyan-500/20 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-cyan-400" />
+              System Permissions
+            </h3>
+            
+            <div className="space-y-3">
               {permissions.map((permission) => {
-                const Icon = iconMap[permission.id] || Shield; // Fallback to Shield icon
+                const Icon = iconMap[permission.id] || Shield;
                 return (
-                  <Card
+                  <div
                     key={permission.id}
-                    className={`p-4 ${
-                      permission.enabled
-                        ? "bg-cyan-500/10 border-cyan-500/30"
-                        : "bg-slate-800/50 border-slate-700"
-                    }`}
+                    className="flex items-center justify-between p-4 bg-slate-800/30 rounded-lg border border-cyan-500/10"
                   >
-                    <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-xl ${
-                        permission.enabled ? "bg-cyan-500/20" : "bg-slate-700"
-                      } flex items-center justify-center flex-shrink-0`}>
-                        {Icon && (
-                          <Icon className={`w-6 h-6 ${
-                            permission.enabled ? "text-cyan-400" : "text-slate-400"
-                          }`} />
-                        )}
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                        <Icon className="w-5 h-5 text-cyan-400" />
                       </div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="font-medium text-sm flex items-center gap-2">
-                              {permission.name}
-                              {permission.required && (
-                                <Badge variant="outline" className="text-xs border-red-500/40 text-red-400">
-                                  Required
-                                </Badge>
-                              )}
-                            </h4>
-                            <p className="text-xs text-slate-400 mt-1">
-                              {permission.description}
-                            </p>
-                          </div>
-                          
-                          <Switch
-                            checked={permission.enabled}
-                            onCheckedChange={() => togglePermission(permission.id)}
-                            disabled={permission.required && permission.enabled}
-                          />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-white font-medium">{permission.name}</p>
+                          {permission.required && (
+                            <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">
+                              Required
+                            </Badge>
+                          )}
                         </div>
+                        <p className="text-sm text-slate-400">{permission.description}</p>
                       </div>
                     </div>
-                  </Card>
+                    <Switch
+                      checked={permission.enabled}
+                      onCheckedChange={() => togglePermission(permission.id)}
+                      disabled={permission.required}
+                    />
+                  </div>
                 );
               })}
             </div>
-          </ScrollArea>
+          </Card>
         </TabsContent>
         
         {/* Drive Access Tab */}
         <TabsContent value="drives" className="space-y-4">
-          <Card className="bg-cyan-500/10 border-cyan-500/30 p-4">
-            <div className="flex items-start gap-3">
-              <HardDrive className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-semibold text-sm mb-1">Drive Access Control</h4>
-                <p className="text-xs text-slate-300">
-                  Control which drives Atlas UX can access. System folders are automatically protected to prevent accidental damage.
-                </p>
-              </div>
-            </div>
-          </Card>
-          
-          <div className="space-y-3">
-            {driveAccess.map((drive) => (
-              <Card
-                key={drive.drive}
-                className={`p-4 ${
-                  drive.enabled
-                    ? "bg-green-500/10 border-green-500/30"
-                    : "bg-slate-800/50 border-slate-700"
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-xl ${
-                    drive.enabled ? "bg-green-500/20" : "bg-slate-700"
-                  } flex items-center justify-center flex-shrink-0`}>
-                    <HardDrive className={`w-6 h-6 ${
-                      drive.enabled ? "text-green-400" : "text-slate-400"
-                    }`} />
+          <Card className="bg-slate-900/50 border-cyan-500/20 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <HardDrive className="w-5 h-5 text-cyan-400" />
+              Drive Access
+            </h3>
+            
+            <div className="space-y-3">
+              {driveAccess.map((drive) => (
+                <div
+                  key={drive.drive}
+                  className="p-4 bg-slate-800/30 rounded-lg border border-cyan-500/10"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                        <HardDrive className="w-5 h-5 text-cyan-400" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">{drive.drive} {drive.label}</p>
+                        <p className="text-sm text-slate-400">{drive.size} • {drive.type}</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={drive.enabled}
+                      onCheckedChange={() => toggleDrive(drive.drive)}
+                    />
                   </div>
                   
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium text-sm flex items-center gap-2">
-                          {drive.drive} - {drive.label}
-                          {drive.type === "system" && (
-                            <Badge variant="outline" className="text-xs border-yellow-500/40 text-yellow-400">
-                              System
-                            </Badge>
-                          )}
-                        </h4>
-                        <p className="text-xs text-slate-400 mt-1">
-                          {drive.size} • {drive.type === "system" ? "OS & Programs" : drive.type === "data" ? "User Data" : "Removable Storage"}
-                        </p>
+                  {drive.restricted && drive.excludedFolders.length > 0 && (
+                    <div className="ml-13 pt-3 border-t border-cyan-500/10">
+                      <p className="text-xs text-slate-500 mb-2">Excluded Folders:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {drive.excludedFolders.map((folder: string) => (
+                          <Badge key={folder} variant="secondary" className="text-xs">
+                            {folder}
+                          </Badge>
+                        ))}
                       </div>
-                      
-                      <Switch
-                        checked={drive.enabled}
-                        onCheckedChange={() => toggleDrive(drive.drive)}
-                      />
                     </div>
-                    
-                    {drive.enabled && drive.restricted && drive.excludedFolders.length > 0 && (
-                      <div className="p-3 bg-slate-800/50 rounded-lg">
-                        <div className="text-xs font-medium mb-2 text-slate-300 flex items-center gap-2">
-                          <Lock className="w-3 h-3 text-yellow-400" />
-                          Protected Folders:
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {drive.excludedFolders.map((folder: string) => (
-                            <Badge
-                              key={folder}
-                              variant="outline"
-                              className="text-xs border-yellow-500/20 text-yellow-400"
-                            >
-                              <EyeOff className="w-3 h-3 mr-1" />
-                              {folder}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
-              </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+          </Card>
         </TabsContent>
         
-        {/* Security Tab */}
+        {/* Integrations Tab */}
+        <TabsContent value="integrations">
+          <Integrations />
+        </TabsContent>
+        
+        {/* Performance Tab */}
+        <TabsContent value="performance">
+          <ProcessingSettings />
+        </TabsContent>
+        
+        {/* Files Tab */}
+        <TabsContent value="files">
+          <FileManagement />
+        </TabsContent>
+        
+        {/* Email Tab */}
+        <TabsContent value="email">
+          <EmailClient />
+        </TabsContent>
+        
+        {/* Mobile Tab */}
+        <TabsContent value="mobile">
+          <MobileIntegration />
+        </TabsContent>
+        
+        {/* Security Tab - Admin Authentication */}
         <TabsContent value="security" className="space-y-4">
-          <Card className="bg-slate-800/50 border-cyan-500/20 p-6">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <Shield className="w-5 h-5 text-cyan-400" />
-              Neptune Security Settings
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                <div>
-                  <div className="font-medium text-sm">Two-Factor Authentication</div>
-                  <div className="text-xs text-slate-400">Require mobile approval for sensitive operations</div>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                <div>
-                  <div className="font-medium text-sm">Audit Logging</div>
-                  <div className="text-xs text-slate-400">Track all file access and system operations</div>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                <div>
-                  <div className="font-medium text-sm">Auto-Lock on Idle</div>
-                  <div className="text-xs text-slate-400">Lock Atlas after 15 minutes of inactivity</div>
-                </div>
-                <Switch />
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                <div>
-                  <div className="font-medium text-sm">Encrypted Backups</div>
-                  <div className="text-xs text-slate-400">Automatically backup configuration with AES-256</div>
-                </div>
-                <Switch defaultChecked />
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="bg-slate-800/50 border-cyan-500/20 p-6">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <Key className="w-5 h-5 text-cyan-400" />
-              Credential Management
-            </h3>
-            
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-between border-cyan-500/20">
-                <span className="flex items-center gap-2">
-                  <Download className="w-4 h-4" />
-                  Export Encrypted Credentials
-                </span>
-                <Badge variant="outline" className="text-xs border-green-500/40 text-green-400">
-                  AES-256
-                </Badge>
-              </Button>
-              
-              <Button variant="outline" className="w-full justify-between border-cyan-500/20">
-                <span className="flex items-center gap-2">
-                  <Upload className="w-4 h-4" />
-                  Import Credentials
-                </span>
-              </Button>
-              
-              <Button variant="outline" className="w-full justify-between border-red-500/20 text-red-400 hover:bg-red-500/10">
-                <span className="flex items-center gap-2">
-                  <Trash2 className="w-4 h-4" />
-                  Clear All Stored Credentials
-                </span>
-                <Badge variant="outline" className="text-xs border-red-500/40 text-red-400">
-                  Danger
-                </Badge>
-              </Button>
-            </div>
-          </Card>
-        </TabsContent>
-        
-        {/* General Tab */}
-        <TabsContent value="general" className="space-y-4">
-          <Card className="bg-slate-800/50 border-cyan-500/20 p-6">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <SettingsIcon className="w-5 h-5 text-cyan-400" />
-              Application Settings
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                <div>
-                  <div className="font-medium text-sm">Run on Startup</div>
-                  <div className="text-xs text-slate-400">Launch Atlas UX when Windows starts</div>
-                </div>
-                <Switch />
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                <div>
-                  <div className="font-medium text-sm">Minimize to Tray</div>
-                  <div className="text-xs text-slate-400">Keep Atlas running in system tray when closed</div>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                <div>
-                  <div className="font-medium text-sm">Auto-Update</div>
-                  <div className="text-xs text-slate-400">Automatically download and install updates</div>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                <div>
-                  <div className="font-medium text-sm">Desktop Notifications</div>
-                  <div className="text-xs text-slate-400">Show system notifications for events</div>
-                </div>
-                <Switch defaultChecked />
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="bg-slate-800/50 border-cyan-500/20 p-6">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <Info className="w-5 h-5 text-cyan-400" />
-              System Information
-            </h3>
-            
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Version:</span>
-                <span className="font-mono">1.0.0</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Build:</span>
-                <span className="font-mono">2026.02.02</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Platform:</span>
-                <span>Windows 11</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Installation:</span>
-                <span>C:\Program Files\Atlas UX</span>
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="bg-red-500/10 border-red-500/30 p-6">
-            <h3 className="font-semibold mb-4 flex items-center gap-2 text-red-400">
-              <AlertTriangle className="w-5 h-5" />
-              Danger Zone
-            </h3>
-            
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full justify-start border-yellow-500/20 text-yellow-400 hover:bg-yellow-500/10"
-                onClick={resetToDefaults}
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Reset All Settings to Default
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="w-full justify-start border-red-500/20 text-red-400 hover:bg-red-500/10"
-                onClick={restartOnboarding}
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Restart Setup Wizard
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="w-full justify-start border-red-500/20 text-red-400 hover:bg-red-500/10"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Uninstall Atlas UX
-              </Button>
-            </div>
-          </Card>
-        </TabsContent>
-        
-        {/* Admin Login Tab */}
-        <TabsContent value="audit">
-          <Card className="p-6 bg-slate-900/50 border border-cyan-500/20">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-bold text-white">Audit Log</h3>
-                <p className="text-sm text-slate-400">Immutable trail for approvals, denials, logins, and remote actions.</p>
-              </div>
-              <Button variant="outline" className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10">
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
-            </div>
-
-            <div className="space-y-3">
-              {[
-                { t: "08:14:22", a: "Mobile pairing requested", by: "Billy", meta: "code AX-****-****" },
-                { t: "08:16:04", a: "Approval: Publish TikTok", by: "Billy (mobile)", meta: "job# 1293" },
-                { t: "08:18:55", a: "Security: WiFi toggled OFF", by: "Billy (mobile)", meta: "reason: leaving shop" },
-                { t: "08:20:11", a: "Accounting report generated", by: "Atlas", meta: "range: last 7 days" },
-              ].map((e, i) => (
-                <div key={i} className="p-4 rounded-xl bg-slate-950/40 border border-slate-800 flex items-start justify-between">
-                  <div>
-                    <div className="text-white font-semibold">{e.a}</div>
-                    <div className="text-xs text-slate-400 mt-1">By {e.by} • {e.meta}</div>
-                  </div>
-                  <div className="text-xs text-slate-500">{e.t}</div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="accounting">
-          <Card className="p-6 bg-slate-900/50 border border-cyan-500/20">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-bold text-white">Accounting Report</h3>
-                <p className="text-sm text-slate-400">Spend / income analysis + system usage cost tracking (Neptune + integrations).</p>
-              </div>
-              <div className="flex gap-2">
-                <Button className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold">
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Generate
-                </Button>
-                <Button variant="outline" className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-4">
-              {[
-                { label: "Spend (7d)", value: "$42.18", note: "AI + storage + messaging" },
-                { label: "Income (7d)", value: "$0.00", note: "Orders (soon)" },
-                { label: "Net", value: "-$42.18", note: "Pre‑launch burn" },
-              ].map((k) => (
-                <div key={k.label} className="p-5 rounded-2xl bg-slate-950/40 border border-slate-800">
-                  <div className="text-xs text-slate-400">{k.label}</div>
-                  <div className="text-2xl font-black text-white mt-1">{k.value}</div>
-                  <div className="text-xs text-slate-500 mt-1">{k.note}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 p-5 rounded-2xl bg-slate-950/40 border border-slate-800">
-              <div className="text-white font-semibold mb-2">Next wiring (backend)</div>
-              <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
-                <li>Write ledger events: spend, receive, refunds, payouts</li>
-                <li>Attach job IDs + integration provider IDs</li>
-                <li>Expose /v1/audit and /v1/accounting endpoints + CSV export</li>
-              </ul>
-            </div>
-          </Card>
-        </TabsContent>
-
-<TabsContent value="admin" className="space-y-4">
-          <Card className="bg-slate-800/50 border-cyan-500/20 p-6">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <Crown className="w-5 h-5 text-cyan-400" />
+          <Card className="bg-slate-900/50 border-cyan-500/20 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Lock className="w-5 h-5 text-cyan-400" />
               Admin Authentication
             </h3>
             
-            <div className="mb-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-              <div className="flex items-start gap-3">
-                <Lock className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-sm mb-1 text-yellow-400">Restricted Access</h4>
-                  <p className="text-xs text-slate-400">
-                    Admin access is restricted to authorized email addresses only. 
-                    A verification code will be sent to your email if authorized.
-                  </p>
-                  <p className="text-xs text-slate-500 mt-2">
-                    Authorized: b******@i*****.***
-                  </p>
-                </div>
-              </div>
-            </div>
-            
             {!isAdminAuthenticated ? (
               <div className="space-y-4">
-                {adminStep === 'email' && (
-                  <div className="space-y-3">
+                <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <div className="flex gap-3">
+                    <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
                     <div>
-                      <label className="text-sm font-medium mb-2 block text-slate-300">
-                        Admin Email Address
+                      <p className="text-yellow-400 font-medium mb-1">Admin Access Required</p>
+                      <p className="text-sm text-yellow-400/80">
+                        Advanced settings require admin authentication for security.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {adminStep === 'email' ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        Email Address
                       </label>
                       <Input
                         type="email"
-                        placeholder="Enter your authorized email"
                         value={adminEmail}
                         onChange={(e) => setAdminEmail(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleRequestAdminCode();
-                          }
-                        }}
-                        className="bg-slate-900/50 border-cyan-500/20 focus:border-cyan-500/50"
-                        disabled={adminLoading}
+                        placeholder="admin@company.com"
+                        className="bg-slate-800/50 border-cyan-500/20"
                       />
                     </div>
                     
                     <Button
                       onClick={handleRequestAdminCode}
                       disabled={adminLoading}
-                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400"
+                      className="w-full"
                     >
                       {adminLoading ? (
                         <>
@@ -785,190 +551,89 @@ export function Settings() {
                       ) : (
                         <>
                           <Mail className="w-4 h-4 mr-2" />
-                          Send Verification Code
+                          Request Admin Code
                         </>
                       )}
                     </Button>
                   </div>
-                )}
-                
-                {adminStep === 'code' && (
-                  <div className="space-y-3">
-                    <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg mb-4">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-xs text-green-400 font-medium mb-1">
-                            Verification Code Sent
-                          </p>
-                          <p className="text-xs text-slate-400">
-                            Check your email for a 6-digit code. Code expires in 10 minutes.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
+                ) : (
+                  <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium mb-2 block text-slate-300">
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
                         Verification Code
                       </label>
                       <Input
                         type="text"
-                        placeholder="Enter 6-digit code"
                         value={adminCode}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                          setAdminCode(value);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && adminCode.length === 6) {
-                            handleVerifyAdminCode();
-                          }
-                        }}
-                        className="bg-slate-900/50 border-cyan-500/20 focus:border-cyan-500/50 text-center text-2xl tracking-widest font-mono"
+                        onChange={(e) => setAdminCode(e.target.value)}
+                        placeholder="000000"
                         maxLength={6}
-                        disabled={adminLoading}
-                        autoFocus
+                        className="bg-slate-800/50 border-cyan-500/20 text-center text-2xl tracking-widest"
                       />
-                      <p className="text-xs text-slate-500 mt-2 text-center">
-                        Enter the 6-digit code from your email
-                      </p>
                     </div>
                     
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          setAdminStep('email');
-                          setAdminCode('');
-                          setAdminError('');
-                        }}
-                        variant="outline"
-                        className="flex-1 border-slate-700"
-                        disabled={adminLoading}
-                      >
-                        Back
-                      </Button>
-                      <Button
-                        onClick={handleVerifyAdminCode}
-                        disabled={adminLoading || adminCode.length !== 6}
-                        className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400"
-                      >
-                        {adminLoading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Verifying...
-                          </>
-                        ) : (
-                          <>
-                            <Key className="w-4 h-4 mr-2" />
-                            Verify & Login
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={handleVerifyAdminCode}
+                      disabled={adminLoading}
+                      className="w-full"
+                    >
+                      {adminLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        <>
+                          <Key className="w-4 h-4 mr-2" />
+                          Verify Code
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button
+                      onClick={() => setAdminStep('email')}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Back
+                    </Button>
                   </div>
                 )}
                 
                 {adminError && (
-                  <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-red-400 mb-1">
-                          Authentication Failed
-                        </p>
-                        <p className="text-xs text-red-300">
-                          {adminError}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                    {adminError}
                   </div>
                 )}
                 
-                {adminSuccess && !isAdminAuthenticated && (
-                  <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-green-400 mb-1">
-                          Success
-                        </p>
-                        <p className="text-xs text-green-300">
-                          {adminSuccess}
-                        </p>
-                      </div>
-                    </div>
+                {adminSuccess && (
+                  <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 text-sm">
+                    {adminSuccess}
                   </div>
                 )}
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="p-6 bg-gradient-to-br from-green-500/20 to-cyan-500/20 border border-green-500/30 rounded-xl">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                      <Crown className="w-6 h-6 text-green-400" />
-                    </div>
+                <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                  <div className="flex gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <h4 className="font-semibold text-green-400 mb-1 flex items-center gap-2">
-                        Admin Access Granted
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                          Enterprise
-                        </Badge>
-                      </h4>
-                      <p className="text-xs text-slate-300 mb-3">
-                        You have full administrative privileges with unlimited seat access
+                      <p className="text-green-400 font-medium mb-1">Admin Authenticated</p>
+                      <p className="text-sm text-green-400/80">
+                        Logged in as: {adminSession?.email}
                       </p>
-                      <div className="grid grid-cols-2 gap-4 text-xs">
-                        <div className="p-3 bg-slate-900/50 rounded-lg">
-                          <div className="text-slate-400 mb-1">Email</div>
-                          <div className="font-mono text-green-400">{adminSession?.email}</div>
-                        </div>
-                        <div className="p-3 bg-slate-900/50 rounded-lg">
-                          <div className="text-slate-400 mb-1">Plan</div>
-                          <div className="font-semibold text-cyan-400">Enterprise</div>
-                        </div>
-                        <div className="p-3 bg-slate-900/50 rounded-lg">
-                          <div className="text-slate-400 mb-1">Seats</div>
-                          <div className="font-semibold text-blue-400">Unlimited</div>
-                        </div>
-                        <div className="p-3 bg-slate-900/50 rounded-lg">
-                          <div className="text-slate-400 mb-1">Session</div>
-                          <div className="font-semibold text-purple-400">
-                            {adminSession?.timeRemaining 
-                              ? `${Math.floor(adminSession.timeRemaining / (1000 * 60 * 60))}h remaining`
-                              : '24h'
-                            }
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
-                  
-                  <Button
-                    onClick={handleAdminLogout}
-                    variant="outline"
-                    className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10"
-                  >
-                    <Lock className="w-4 h-4 mr-2" />
-                    Logout Admin Session
-                  </Button>
                 </div>
                 
-                <Card className="bg-slate-900/50 border-slate-700 p-4">
-                  <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-semibold text-sm mb-1">Admin Capabilities</h4>
-                      <ul className="text-xs text-slate-400 space-y-1">
-                        <li>• Access all premium features without subscription</li>
-                        <li>• Unlimited integrations and API calls</li>
-                        <li>• Maximum GPU/CPU processing allocation</li>
-                        <li>• Full system configuration access</li>
-                        <li>• Advanced debugging and monitoring tools</li>
-                      </ul>
-                    </div>
-                  </div>
-                </Card>
+                <Button
+                  onClick={handleAdminLogout}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Unlock className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
               </div>
             )}
           </Card>

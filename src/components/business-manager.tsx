@@ -1,0 +1,427 @@
+import { useState } from 'react';
+import { 
+  Briefcase, Plus, Globe, Facebook, Instagram, Twitter,
+  Youtube, TrendingUp, Users, DollarSign, Settings,
+  Edit, Trash2, ExternalLink, Copy, CheckCircle,
+  Store, MessageSquare, Hash, Link, Crown, Zap,
+  Cpu, Gauge, Activity, Database, FolderOpen, Shield, Film,
+  BarChart3, Bell, AlertCircle
+} from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
+import { BusinessIntelligence } from './premium/BusinessIntelligence';
+import { MediaProcessing } from './premium/MediaProcessing';
+import { SecurityCompliance } from './premium/SecurityCompliance';
+
+interface Asset {
+  id: string;
+  type: 'domain' | 'social' | 'store' | 'email' | 'app';
+  name: string;
+  url: string;
+  platform?: string;
+  status: 'active' | 'pending' | 'inactive';
+  metrics?: {
+    followers?: number;
+    revenue?: string;
+    traffic?: string;
+  };
+}
+
+interface Business {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  assets: Asset[];
+  createdAt: string;
+  totalValue: string;
+  status: 'active' | 'archived';
+}
+
+export function BusinessManager() {
+  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
+  const [showAddBusiness, setShowAddBusiness] = useState(false);
+  const [showAddAsset, setShowAddAsset] = useState(false);
+  const [newBusinessForm, setNewBusinessForm] = useState({
+    name: '',
+    description: '',
+    color: 'from-cyan-500 to-blue-500',
+  });
+  const [newAssetForm, setNewAssetForm] = useState({
+    type: 'domain' as 'domain' | 'social' | 'store' | 'email' | 'app',
+    name: '',
+    url: '',
+    platform: '',
+  });
+
+  const businesses: Business[] = [];
+
+  const selectedBusinessData = selectedBusiness 
+    ? businesses.find(b => b.id === selectedBusiness)
+    : null;
+
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case 'Facebook': return Facebook;
+      case 'Instagram': return Instagram;
+      case 'Twitter': return Twitter;
+      case 'YouTube': return Youtube;
+      default: return Globe;
+    }
+  };
+
+  const getAssetIcon = (type: string) => {
+    switch (type) {
+      case 'domain': return Globe;
+      case 'social': return Users;
+      case 'store': return Store;
+      case 'email': return MessageSquare;
+      case 'app': return Zap;
+      default: return Link;
+    }
+  };
+
+  const assetStats = {
+    totalBusinesses: businesses.length,
+    totalAssets: businesses.reduce((acc, b) => acc + b.assets.length, 0),
+    totalValue: '$0',
+    activeAssets: businesses.reduce((acc, b) => acc + b.assets.filter(a => a.status === 'active').length, 0),
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Briefcase className="w-8 h-8 text-cyan-400" />
+              <h2 className="text-3xl font-bold text-white">Business Manager</h2>
+            </div>
+            <p className="text-slate-400">
+              Human operations hub - Manage assets, intelligence, security & media
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <Tabs defaultValue="assets" className="space-y-6">
+        <TabsList className="bg-slate-900/50 border border-cyan-500/20">
+          <TabsTrigger value="assets" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Briefcase className="w-4 h-4 mr-2" />
+            Business Assets
+          </TabsTrigger>
+          <TabsTrigger value="intelligence" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <TrendingUp className="w-4 h-4 mr-2" />
+            Intelligence
+          </TabsTrigger>
+          <TabsTrigger value="media" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Film className="w-4 h-4 mr-2" />
+            Media Processing
+          </TabsTrigger>
+          <TabsTrigger value="security" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Shield className="w-4 h-4 mr-2" />
+            Security & Compliance
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Business Assets Tab */}
+        <TabsContent value="assets" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-white">Asset Portfolio</h3>
+              <p className="text-sm text-slate-400">Track domains, social accounts, stores, and more</p>
+            </div>
+            <button
+              onClick={() => setShowAddBusiness(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-400 rounded-lg text-white font-medium transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Add Business
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="grid md:grid-cols-4 gap-6">
+            <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
+              <Briefcase className="w-8 h-8 text-cyan-400 mb-3" />
+              <div className="text-3xl font-bold text-white mb-1">{assetStats.totalBusinesses}</div>
+              <div className="text-sm text-slate-400">Total businesses</div>
+            </div>
+            <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
+              <Database className="w-8 h-8 text-purple-400 mb-3" />
+              <div className="text-3xl font-bold text-white mb-1">{assetStats.totalAssets}</div>
+              <div className="text-sm text-slate-400">Total assets</div>
+            </div>
+            <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
+              <DollarSign className="w-8 h-8 text-green-400 mb-3" />
+              <div className="text-3xl font-bold text-white mb-1">{assetStats.totalValue}</div>
+              <div className="text-sm text-slate-400">Portfolio value</div>
+            </div>
+            <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
+              <Activity className="w-8 h-8 text-blue-400 mb-3" />
+              <div className="text-3xl font-bold text-white mb-1">{assetStats.activeAssets}</div>
+              <div className="text-sm text-slate-400">Active assets</div>
+            </div>
+          </div>
+
+          {businesses.length === 0 ? (
+            // Empty State
+            <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-12">
+              <div className="text-center max-w-md mx-auto">
+                <Briefcase className="w-20 h-20 text-cyan-400/30 mx-auto mb-6" />
+                <h3 className="text-2xl font-bold text-white mb-3">No Business Assets Yet</h3>
+                <p className="text-slate-400 mb-6">
+                  Start organizing your digital empire by adding your first business. Track domains, social accounts, stores, and more all in one place.
+                </p>
+                <button
+                  onClick={() => setShowAddBusiness(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-400 rounded-lg text-white font-medium transition-colors mx-auto"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Your First Business
+                </button>
+              </div>
+            </div>
+          ) : (
+            // Business List
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Business List Column */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white mb-4">Your Businesses</h3>
+                {businesses.map((business) => (
+                  <div
+                    key={business.id}
+                    onClick={() => setSelectedBusiness(business.id)}
+                    className={`bg-slate-900/50 border rounded-xl p-4 cursor-pointer transition-all ${
+                      selectedBusiness === business.id
+                        ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/20'
+                        : 'border-cyan-500/20 hover:border-cyan-500/40'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className={`w-12 h-12 bg-gradient-to-br ${business.color} rounded-lg flex items-center justify-center`}>
+                        <Briefcase className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-white font-semibold">{business.name}</h4>
+                        <p className="text-xs text-slate-400">{business.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-slate-400">
+                      <span>{business.assets.length} assets</span>
+                      <span className="text-green-400">{business.totalValue}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Asset Details Column */}
+              <div className="md:col-span-2">
+                {selectedBusinessData ? (
+                  <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-xl font-bold text-white mb-1">{selectedBusinessData.name}</h3>
+                        <p className="text-sm text-slate-400">{selectedBusinessData.description}</p>
+                      </div>
+                      <button
+                        onClick={() => setShowAddAsset(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded-lg text-cyan-400 font-medium transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Asset
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {selectedBusinessData.assets.map((asset) => {
+                        const AssetIcon = getAssetIcon(asset.type);
+                        const PlatformIcon = asset.platform ? getPlatformIcon(asset.platform) : AssetIcon;
+
+                        return (
+                          <div
+                            key={asset.id}
+                            className="bg-slate-800/50 border border-cyan-500/10 rounded-lg p-4"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-start gap-3 flex-1">
+                                <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <PlatformIcon className="w-5 h-5 text-cyan-400" />
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="text-white font-medium mb-1">{asset.name}</h4>
+                                  <a
+                                    href={asset.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 mb-2"
+                                  >
+                                    {asset.url}
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                  {asset.metrics && (
+                                    <div className="flex gap-4 mt-2">
+                                      {asset.metrics.followers && (
+                                        <div className="text-xs">
+                                          <span className="text-slate-500">Followers: </span>
+                                          <span className="text-white font-medium">{asset.metrics.followers.toLocaleString()}</span>
+                                        </div>
+                                      )}
+                                      {asset.metrics.revenue && (
+                                        <div className="text-xs">
+                                          <span className="text-slate-500">Revenue: </span>
+                                          <span className="text-green-400 font-medium">{asset.metrics.revenue}</span>
+                                        </div>
+                                      )}
+                                      {asset.metrics.traffic && (
+                                        <div className="text-xs">
+                                          <span className="text-slate-500">Traffic: </span>
+                                          <span className="text-blue-400 font-medium">{asset.metrics.traffic}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                                  <Edit className="w-4 h-4 text-slate-400" />
+                                </button>
+                                <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                                  <Trash2 className="w-4 h-4 text-red-400" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-12">
+                    <div className="text-center text-slate-400">
+                      <Database className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                      <p>Select a business to view its assets</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Add Business Modal */}
+          {showAddBusiness && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-slate-900 border border-cyan-500/30 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
+                      <Briefcase className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white">Add New Business</h3>
+                  </div>
+                  <button 
+                    onClick={() => setShowAddBusiness(false)}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Business Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Business Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Acme Corporation"
+                      value={newBusinessForm.name}
+                      onChange={(e) => setNewBusinessForm({ ...newBusinessForm, name: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Description</label>
+                    <textarea
+                      placeholder="Brief description of your business..."
+                      value={newBusinessForm.description}
+                      onChange={(e) => setNewBusinessForm({ ...newBusinessForm, description: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors resize-none"
+                    />
+                  </div>
+
+                  {/* Color Theme */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-3">Color Theme</label>
+                    <div className="grid grid-cols-4 gap-3">
+                      {[
+                        { name: 'Cyan-Blue', value: 'from-cyan-500 to-blue-500' },
+                        { name: 'Purple-Pink', value: 'from-purple-500 to-pink-500' },
+                        { name: 'Green-Teal', value: 'from-green-500 to-teal-500' },
+                        { name: 'Orange-Red', value: 'from-orange-500 to-red-500' },
+                        { name: 'Indigo-Purple', value: 'from-indigo-500 to-purple-500' },
+                        { name: 'Yellow-Orange', value: 'from-yellow-500 to-orange-500' },
+                        { name: 'Rose-Red', value: 'from-rose-500 to-red-500' },
+                        { name: 'Emerald-Cyan', value: 'from-emerald-500 to-cyan-500' },
+                      ].map((color) => (
+                        <button
+                          key={color.value}
+                          onClick={() => setNewBusinessForm({ ...newBusinessForm, color: color.value })}
+                          className={`h-12 rounded-lg bg-gradient-to-br ${color.value} transition-all ${
+                            newBusinessForm.color === color.value
+                              ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105'
+                              : 'opacity-70 hover:opacity-100'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={() => setShowAddBusiness(false)}
+                      className="flex-1 px-6 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-white font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        // TODO: Save business to database
+                        console.log('Creating business:', newBusinessForm);
+                        setShowAddBusiness(false);
+                        setNewBusinessForm({ name: '', description: '', color: 'from-cyan-500 to-blue-500' });
+                      }}
+                      disabled={!newBusinessForm.name}
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Create Business
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Business Intelligence Tab */}
+        <TabsContent value="intelligence">
+          <BusinessIntelligence />
+        </TabsContent>
+
+        {/* Media Processing Tab */}
+        <TabsContent value="media">
+          <MediaProcessing />
+        </TabsContent>
+
+        {/* Security & Compliance Tab */}
+        <TabsContent value="security">
+          <SecurityCompliance />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
