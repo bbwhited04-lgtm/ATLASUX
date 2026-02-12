@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { 
   Briefcase, Plus, Globe, Facebook, Instagram, Twitter,
   Youtube, TrendingUp, Users, DollarSign, Settings,
@@ -8,6 +8,8 @@ import {
   BarChart3, Bell, AlertCircle
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
+import { API_BASE } from '@/lib/api';
+import { getOrgUser } from '@/lib/org';
 import { BusinessIntelligence } from './premium/BusinessIntelligence';
 import { MediaProcessing } from './premium/MediaProcessing';
 import { SecurityCompliance } from './premium/SecurityCompliance';
@@ -55,6 +57,84 @@ export function BusinessManager() {
     description: '',
     color: 'from-cyan-500 to-blue-500',
   });
+
+// -------------------- Backend-backed dashboards (Neptune internals, surfaced as Atlas Core / Business Manager) --------------------
+const { org_id, user_id } = useMemo(() => getOrgUser(), []);
+const [integrations, setIntegrations] = useState<Array<{ provider: string; connected: boolean }>>([]);
+const [accounting, setAccounting] = useState<any>(null);
+const [jobs, setJobs] = useState<any[]>([]);
+const [auditRows, setAuditRows] = useState<any[]>([]);
+const [loading, setLoading] = useState(false);
+const [warning, setWarning] = useState<string | null>(null);
+
+async function refreshAll() {
+  setLoading(true);
+  setWarning(null);
+  try {
+    const qs = new URLSearchParams({ org_id, user_id }).toString();
+    const [iRes, aRes, jRes, auRes] = await Promise.all([
+      fetch(`${API_BASE}/v1/integrations/status?${qs}`),
+      fetch(`${API_BASE}/v1/accounting/summary?${qs}`),
+      fetch(`${API_BASE}/v1/jobs/list?${qs}&limit=50`),
+      fetch(`${API_BASE}/v1/audit/list?${qs}&limit=50`)
+    ]);
+
+    const iJson = await iRes.json().catch(() => []);
+    const aJson = await aRes.json().catch(() => null);
+    const jJson = await jRes.json().catch(() => ({ ok: false, rows: [] }));
+    const auJson = await auRes.json().catch(() => ({ ok: false, rows: [] }));
+
+    setIntegrations(Array.isArray(iJson) ? iJson : []);
+    setAccounting(aJson);
+    setJobs((jJson?.rows ?? jJson ?? []) as any[]);
+    setAuditRows((auJson?.rows ?? []) as any[]);
+    if (jJson?.warning || auJson?.warning) setWarning(String(jJson?.warning || auJson?.warning));
+  } catch (e: any) {
+    setWarning(e?.message || "refresh_failed");
+  } finally {
+    setLoading(false);
+  }
+}
+
+useEffect(() => {
+  void refreshAll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
+async function connect(provider: "google" | "meta") {
+  const qs = new URLSearchParams({ org_id, user_id }).toString();
+  // open provider oauth start in a new tab (backend redirects to provider consent)
+  window.open(`${API_BASE}/v1/oauth/${provider}/start?${qs}`, "_blank", "noopener,noreferrer");
+}
+
+async function disconnect(provider: "google" | "meta") {
+  const qs = new URLSearchParams({ org_id, user_id }).toString();
+  await fetch(`${API_BASE}/v1/integrations/${provider}/disconnect?${qs}`, { method: "POST" }).catch(() => null);
+  await fetch(`${API_BASE}/v1/audit/event`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ actor_type: "user", action: `integrations.${provider}.disconnect`, status: "success" })
+  }).catch(() => null);
+  await refreshAll();
+}
+
+async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
+  const payload = { requested_from: "business_manager" };
+  const res = await fetch(`${API_BASE}/v1/jobs?org_id=${encodeURIComponent(org_id)}&user_id=${encodeURIComponent(user_id)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, payload })
+  }).catch(() => null);
+
+  const ok = !!res && res.ok;
+  await fetch(`${API_BASE}/v1/audit/event`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ actor_type: "user", action: `jobs.create.${type}`, status: ok ? "success" : "failure" })
+  }).catch(() => null);
+
+  await refreshAll();
+}
   const [newAssetForm, setNewAssetForm] = useState({
     type: 'domain' as 'domain' | 'social' | 'store' | 'email' | 'app',
     name: '',
@@ -158,6 +238,37 @@ export function BusinessManager() {
             <div>
               <h3 className="text-xl font-semibold text-white">Asset Portfolio</h3>
               <p className="text-sm text-slate-400">Track domains, social accounts, stores, and more</p>
+
+<div className="mt-3 flex flex-wrap items-center gap-2">
+  <button
+    onClick={refreshAll}
+    className="px-3 py-1.5 rounded-lg text-sm bg-slate-900/60 border border-cyan-500/20 text-slate-200 hover:bg-slate-900"
+    title="Refresh Business Manager data"
+  >
+    {loading ? "Refreshing…" : "Refresh"}
+  </button>
+
+  <button
+    onClick={() => queueJob("integrations.discovery")}
+    className="px-3 py-1.5 rounded-lg text-sm bg-slate-900/60 border border-cyan-500/20 text-slate-200 hover:bg-slate-900"
+    title="Queue an integration discovery job"
+  >
+    Discover Integrations
+  </button>
+
+  <button
+    onClick={() => queueJob("analytics.refresh")}
+    className="px-3 py-1.5 rounded-lg text-sm bg-slate-900/60 border border-cyan-500/20 text-slate-200 hover:bg-slate-900"
+    title="Queue an analytics refresh job"
+  >
+    Refresh Analytics
+  </button>
+
+  {warning ? (
+    <span className="text-xs text-yellow-300/90">⚠ {warning}</span>
+  ) : null}
+</div>
+
             </div>
             <button
               onClick={() => setShowAddBusiness(true)}
