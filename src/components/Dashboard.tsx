@@ -12,7 +12,8 @@ import {
   Cpu,
   Briefcase,
   Gauge,
-  ArrowRight
+  ArrowRight,
+  Smartphone
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
