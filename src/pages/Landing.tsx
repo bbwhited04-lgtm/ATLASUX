@@ -132,7 +132,8 @@ export default function Landing() {
               <li>Added AppGate functionality for security.</li>
               <li>Added Task/Workflows Functionality.</li>
               <li>Rebuilding Mobile Companion App/link. Rebuilding Atlas Avatar with Blender, New look coming soon. </li>
-              
+              <li>Co-Founder application denied after path, scope, alignment and payment needs were not met.</li>
+              <li>Restructured Entire environment and changed layout to be more professional</li>
             </ul>
 
           <div className="mt-5 flex gap-3">
