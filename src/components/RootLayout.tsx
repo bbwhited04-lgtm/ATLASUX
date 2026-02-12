@@ -23,7 +23,7 @@ import {
 function RootLayoutInner() {
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isNeptunePanelOpen, setIsNeptunePanelOpen] = useState(false);
+  const [isNeptunePanelOpen, setIsNeptunePanelOpen] = useState(false); // Internal codename: Neptune; UI label: Atlas Core
   const [showMobileInstall, setShowMobileInstall] = useState(false);
   const { openModal } = useMobileConnection();
   
@@ -147,12 +147,12 @@ function RootLayoutInner() {
             </h1>
             <p className="text-xs text-slate-400">The AI Worker who works Where You Work</p>
           </div>          <div className="flex items-center gap-4">
-            {/* Neptune Status Pill */}
+            {/* Atlas Core Pill */}
             <button
-              onClick={() => setShowNeptunePanel(true)}
+              onClick={() => setIsNeptunePanelOpen(true)}
               className={`px-5 py-2 rounded-lg font-bold tracking-wide uppercase shadow-lg transition-all duration-200 ${statusStyles[currentStatus]}`}
               >
-              NEPTUNE · {currentStatus}
+              ATLAS CORE · {currentStatus}
             </button>
 
           </div>
@@ -173,16 +173,16 @@ function RootLayoutInner() {
       />
       
       
-      {/* Neptune Status Panel */}
+      {/* Atlas Core Panel */}
       {isNeptunePanelOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsNeptunePanelOpen(false); }}>
           <div className="w-full max-w-lg rounded-2xl bg-slate-950/90 border border-cyan-500/20 shadow-2xl shadow-cyan-500/10">
             <div className="flex items-center justify-between px-5 py-4 border-b border-cyan-500/10">
               <div className="flex items-center gap-3">
                 <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
                 <div>
-                  <div className="text-sm font-semibold text-white">Neptune Status</div>
-                  <div className="text-xs text-slate-400">System + Companion connectivity</div>
+                  <div className="text-sm font-semibold text-white">Atlas Core</div>
+                  <div className="text-xs text-slate-400">System state + companion connectivity</div>
                 </div>
               </div>
               <button
@@ -199,7 +199,7 @@ function RootLayoutInner() {
               <div className="rounded-xl bg-slate-900/40 border border-cyan-500/10 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-xs text-slate-400">Neptune</div>
+                    <div className="text-xs text-slate-400">Core</div>
                     <div className="text-sm text-white">Online</div>
                   </div>
                   <div className="text-xs text-slate-400">Mode: <span className="text-slate-200">Operational</span></div>
