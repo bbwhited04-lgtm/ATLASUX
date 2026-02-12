@@ -10,11 +10,15 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@fastify/jwt": "^10.0.0",
+    "@fastify/sensible": "^6.0.4",
     "@prisma/client": "^7.3.0",
     "@supabase/supabase-js": "^2.48.1",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.19.2",
+    "fastify": "^5.7.4",
     "prisma": "^7.3.0",
     "zod": "^3.23.8"
   },
