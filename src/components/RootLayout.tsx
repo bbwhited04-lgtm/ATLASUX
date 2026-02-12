@@ -2,7 +2,7 @@ import { Outlet, useLocation, Link } from "react-router-dom";
 import { HelpCircle } from "lucide-react";
 import { useState } from 'react';
 import { MobileConnectionModal } from './MobileConnectionModal';
-import { MobileInstallModal } from './MobileInstallModal';
+
 import { MobileCompanionSetup } from "./MobileCompanionSetup";
 import { MobileConnectionProvider, useMobileConnection } from './mobile/MobileConnectionContext';
 import {
