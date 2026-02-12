@@ -16,7 +16,7 @@ export async function createJob(env: Env, args: {
   org_id: string;
   user_id: string;
   type: JobType;
-  payload: any;
+  payload?: any;
 }) {
   const supabase = makeSupabase(env);
   const now = new Date().toISOString();

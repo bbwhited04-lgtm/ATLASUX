@@ -1,7 +1,5 @@
 import { z } from "zod";
 import "dotenv/config";
-import { env } from "./env";
-import express from "express"
 
 const EnvSchema = z.object({
   PORT: z.string().optional(),

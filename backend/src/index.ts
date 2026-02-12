@@ -302,40 +302,6 @@ app.post("/v1/jobs", async (req, res) => {
   }
 });
 
-
-// -------------------- JOBS (LIST/DETAIL) --------------------
-app.get("/v1/jobs/list", async (req, res) => {
-  try {
-    const org_id = String(req.query.org_id || "");
-    const user_id = String(req.query.user_id || "");
-    if (!org_id || !user_id) return res.status(400).json({ ok: false, rows: [], error: "Missing org_id/user_id" });
-    const limit = Math.min(Number(req.query.limit || 200), 1000);
-    const status = String(req.query.status || "");
-
-    const supabase = makeSupabase(env);
-    let q = supabase.from("jobs").select("*").eq("org_id", org_id).eq("user_id", user_id).order("created_at", { ascending: false }).limit(limit);
-    if (status) q = q.eq("status", status);
-
-    const { data, error } = await q;
-    if (error) return res.status(200).json({ ok: false, rows: [], warning: error.message, setup: "/AUDIT_ACCOUNTING_SETUP.md" });
-    res.json({ ok: true, rows: data || [] });
-  } catch (e: any) {
-    res.status(200).json({ ok: false, rows: [], warning: e?.message || "jobs_list_failed" });
-  }
-});
-
-app.get("/v1/jobs/:id", async (req, res) => {
-  try {
-    const id = String(req.params.id || "");
-    const supabase = makeSupabase(env);
-    const { data, error } = await supabase.from("jobs").select("*").eq("id", id).single();
-    if (error) return res.status(200).json({ ok: false, row: null, warning: error.message });
-    res.json({ ok: true, row: data });
-  } catch (e: any) {
-    res.status(200).json({ ok: false, row: null, warning: e?.message || "jobs_get_failed" });
-  }
-});
-
 // -------------------- OAUTH --------------------
 // NOTE: For simplicity, org_id/user_id are passed via query in this scaffold.
 // In production, you should derive these from your session/JWT.
