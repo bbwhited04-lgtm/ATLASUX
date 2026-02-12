@@ -267,7 +267,6 @@ const navigate = useNavigate();
           </Card>
         </a>
       </div>
+    </div>
       
-      
-  );
-}
+};
