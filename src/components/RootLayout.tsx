@@ -43,6 +43,7 @@ function RootLayoutInner() {
   ];
 
   // (Kept for future “setup wizard” flows; currently the modal is opened via context.)
+  const [currentStatus, setCurrentStatus] = useState<"online" | "pairing" | "busy" | "error" | "offline">("online");
   const statusStyles = {
     online: "bg-emerald-600 text-white",
     pairing: "bg-amber-500 text-black",
@@ -50,14 +51,12 @@ function RootLayoutInner() {
     error: "bg-red-600 text-white animate-pulse",
     offline: "bg-slate-700 text-white",
   };
-
   const [isMobileCompanionOpen, setIsMobileCompanionOpen] = useState(false);
   const hideMobileCompanion = () => setIsMobileCompanionOpen(false);
   const isActive = (path: string) => {
     if (path === "/app") return location.pathname === "/app";
     return location.pathname.startsWith(path);
   };
-  
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white overflow-hidden">
       {/* Sidebar */}
