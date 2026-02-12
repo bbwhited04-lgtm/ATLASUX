@@ -6,7 +6,6 @@ import { MobileInstallModal } from './MobileInstallModal';
 import { MobileCompanionSetup } from "./MobileCompanionSetup";
 import { MobileConnectionProvider, useMobileConnection } from './mobile/MobileConnectionContext';
 import {
-  Smartphone,
   LayoutDashboard,
   Cpu,
   MessageSquare,
