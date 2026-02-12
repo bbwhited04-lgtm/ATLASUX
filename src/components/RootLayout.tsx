@@ -1,8 +1,8 @@
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { HelpCircle } from "lucide-react";
 import { useState } from 'react';
-import { MobilePairingIndicator } from './MobilePairingIndicator';
 import { MobileConnectionModal } from './MobileConnectionModal';
+import { MobileInstallModal } from './MobileInstallModal';
 import { MobileCompanionSetup } from "./MobileCompanionSetup";
 import { MobileConnectionProvider, useMobileConnection } from './mobile/MobileConnectionContext';
 import {
@@ -25,6 +25,8 @@ import {
 function RootLayoutInner() {
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isNeptunePanelOpen, setIsNeptunePanelOpen] = useState(false);
+  const [showMobileInstall, setShowMobileInstall] = useState(false);
   const { openModal } = useMobileConnection();
   
   const atlasLogo = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z'/%3E%3C/svg%3E";
@@ -155,22 +157,17 @@ function RootLayoutInner() {
               ATLAS UX
             </h1>
             <p className="text-xs text-slate-400">The AI Worker who works Where You Work</p>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {/* System Status */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-cyan-500/20">
+          </div>          <div className="flex items-center gap-4">
+            {/* Neptune Status Pill */}
+            <button
+              type="button"
+              onClick={() => setIsNeptunePanelOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-cyan-500/20 hover:bg-slate-800 hover:border-cyan-400/40 transition-all"
+              aria-label="Open Neptune status"
+              title="Neptune status"
+            >
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
               <span className="text-xs text-slate-300">Neptune Online</span>
-            </div>
-            
-            {/* Mobile Companion - Clickable */}
-            <button
-              onClick={openModal}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-cyan-500/20 hover:bg-slate-800 hover:border-cyan-400/40 transition-all group"
-            >
-              <Smartphone className="w-3 h-3 text-blue-400 group-hover:text-cyan-400 transition-colors" />
-              <span className="text-xs text-slate-300 group-hover:text-white transition-colors">Mobile Companion</span>
             </button>
           </div>
         </header>
@@ -180,11 +177,6 @@ function RootLayoutInner() {
           <Outlet />
         </main>
       </div>
-      
- 
-      {/* Mobile Pairing Indicator - Bottom Right */}
-      <MobilePairingIndicator />
-
       {/* Mobile Connection Modal (shared) */}
       <MobileConnectionModal />
       
@@ -194,6 +186,96 @@ function RootLayoutInner() {
         onClose={hideMobileCompanion}
       />
       
+      
+      {/* Neptune Status Panel */}
+      {isNeptunePanelOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-slate-950/90 border border-cyan-500/20 shadow-2xl shadow-cyan-500/10">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-cyan-500/10">
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
+                <div>
+                  <div className="text-sm font-semibold text-white">Neptune Status</div>
+                  <div className="text-xs text-slate-400">System + Companion connectivity</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsNeptunePanelOpen(false)}
+                className="px-3 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-200 text-xs border border-cyan-500/10"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="px-5 py-4 space-y-4">
+              {/* System status */}
+              <div className="rounded-xl bg-slate-900/40 border border-cyan-500/10 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-slate-400">Neptune</div>
+                    <div className="text-sm text-white">Online</div>
+                  </div>
+                  <div className="text-xs text-slate-400">Mode: <span className="text-slate-200">Operational</span></div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-lg bg-slate-950/40 border border-cyan-500/10 px-3 py-2">
+                    <div className="text-slate-400">Agent</div>
+                    <div className="text-slate-200">Atlas UX</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-950/40 border border-cyan-500/10 px-3 py-2">
+                    <div className="text-slate-400">Audit</div>
+                    <div className="text-slate-200">Enabled</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile companion actions */}
+              <div className="rounded-xl bg-slate-900/40 border border-cyan-500/10 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs text-slate-400">Mobile Companion</div>
+                    <div className="text-sm text-white">Pairing & Access</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsNeptunePanelOpen(false);
+                        openModal();
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-200 text-xs border border-cyan-500/10"
+                    >
+                      Pair / Status
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsNeptunePanelOpen(false);
+                        setShowMobileInstall(true);
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-200 text-xs border border-cyan-500/10"
+                    >
+                      Install
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-xs text-slate-500">
+                Tip: keep companion access behind approvals + audit for every action.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Install Modal (centralized) */}
+      <MobileInstallModal
+        isOpen={showMobileInstall}
+        onClose={() => setShowMobileInstall(false)}
+      />
+
       {/* Sidebar Toggle Button */}
       <button
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}

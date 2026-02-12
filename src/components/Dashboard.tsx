@@ -10,7 +10,6 @@ import {
   Play,
   Pause,
   Cpu,
-  Smartphone,
   Briefcase,
   Gauge,
   ArrowRight
@@ -20,12 +19,10 @@ import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { MobileInstallModal } from "./MobileInstallModal";
 const imgA = "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800";
 
 export function Dashboard() {
-  const [showMobileInstall, setShowMobileInstall] = useState(false);
-  const navigate = useNavigate();
+const navigate = useNavigate();
   const stats = [
     { label: "Active Jobs", value: "12", icon: Activity, color: "cyan", trend: "+3" },
     { label: "Completed Today", value: "47", icon: CheckCircle2, color: "green", trend: "+12" },
