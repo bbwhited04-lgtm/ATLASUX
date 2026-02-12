@@ -268,5 +268,5 @@ const navigate = useNavigate();
         </a>
       </div>
     </div>
-      
+  )
 };
