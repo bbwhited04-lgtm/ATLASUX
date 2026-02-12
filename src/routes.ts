@@ -10,7 +10,6 @@ import AppGate from "./components/AppGate";
 import { Analytics } from "./components/Analytics";
 import { TaskAutomation } from "./components/TaskAutomation";
 import { Settings } from "./components/Settings";
-// NOTE: Linux builds are case-sensitive; component file is kebab-case.
 import { BusinessManager } from "./components/business-manager";
 import { RootLayout } from "./components/RootLayout";
 import { HelpPage } from "./components/HelpPage";
