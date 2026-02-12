@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { MobileInstallModal } from './MobileInstallModal';
+import { MobileInstall } from './ModbileInstallModal';
 import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
 import { useState } from "react";
