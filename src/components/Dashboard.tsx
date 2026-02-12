@@ -207,65 +207,49 @@ const navigate = useNavigate();
         </div>
       </div>
       
-      {/* Quick Actions for New Features */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <button type="button" onClick={() => navigate("/app/business-assets")} className="group text-left">
-          <Card className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-cyan-500/30 backdrop-blur-xl p-6 hover:from-cyan-500/20 hover:to-blue-500/20 transition-all">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
-                <Briefcase className="w-6 h-6 text-white" />
+      {/* Quick Actions */}
+      <div className="grid md:grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={() => navigate("/app/business-manager")}
+          className="group text-left"
+        >
+          <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl p-3 hover:border-cyan-500/40 hover:bg-slate-900/70 transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 bg-cyan-500/15 border border-cyan-500/30 rounded-lg flex items-center justify-center">
+                  <Briefcase className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-white truncate">Business Management</div>
+                  <div className="text-[11px] text-slate-400 truncate">Teams, comms, intel, assets</div>
+                </div>
               </div>
-              <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">Business Assets</h3>
-            <p className="text-sm text-slate-400 mb-4">
-              Manage your $4.49M portfolio across 3 businesses with 16 total assets
-            </p>
-            <div className="flex items-center gap-4 text-xs">
-              <div>
-                <div className="text-slate-500">Businesses</div>
-                <div className="text-white font-semibold">3</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Assets</div>
-                <div className="text-white font-semibold">16</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Value</div>
-                <div className="text-green-400 font-semibold">$4.49M</div>
-              </div>
+              <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all" />
             </div>
           </Card>
         </button>
-        
-        <a href="/processing-settings" className="group">
-          <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30 backdrop-blur-xl p-6 hover:from-green-500/20 hover:to-emerald-500/20 transition-all">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                <Gauge className="w-6 h-6 text-white" />
+
+        <button
+          type="button"
+          onClick={() => navigate("/app/settings")}
+          className="group text-left"
+        >
+          <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl p-3 hover:border-green-500/40 hover:bg-slate-900/70 transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 bg-green-500/15 border border-green-500/30 rounded-lg flex items-center justify-center">
+                  <Gauge className="w-4 h-4 text-green-400" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-white truncate">Settings</div>
+                  <div className="text-[11px] text-slate-400 truncate">Performance, keys, security</div>
+                </div>
               </div>
-              <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-green-400 group-hover:translate-x-1 transition-all" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">GPU Acceleration</h3>
-            <p className="text-sm text-slate-400 mb-4">
-              Hardware acceleration active - 16.5x faster AI processing with RTX 4090
-            </p>
-            <div className="flex items-center gap-4 text-xs">
-              <div>
-                <div className="text-slate-500">CPU Usage</div>
-                <div className="text-blue-400 font-semibold">45%</div>
-              </div>
-              <div>
-                <div className="text-slate-500">GPU Usage</div>
-                <div className="text-cyan-400 font-semibold">32%</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Speed Boost</div>
-                <div className="text-green-400 font-semibold">16.5x</div>
-              </div>
+              <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-green-400 group-hover:translate-x-0.5 transition-all" />
             </div>
           </Card>
-        </a>
+        </button>
       </div>
     </div>
   )
