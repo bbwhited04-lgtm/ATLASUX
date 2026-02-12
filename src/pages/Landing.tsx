@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const YOUTUBE_ID = "QtTn_o6zXDY";
 
@@ -113,7 +114,7 @@ export default function Landing() {
         {/* Dev updates */}
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
-    `       <h2 className="text-xl font-semibold">Dev updates</h2>
+          <h2 className="text-xl font-semibold">Dev updates</h2>
             <span className="text-sm text-white/60">Last updated: Feb 10, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">

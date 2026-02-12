@@ -1,5 +1,5 @@
 import React from "react";
-import { createHashRouter } from "react-router";
+import { createHashRouter } from "react-router-dom";
 import Landing from "./pages/Landing";
 import { Dashboard } from "./components/Dashboard";
 import { JobRunner } from "./components/JobRunner";
@@ -24,6 +24,13 @@ export const router = createHashRouter([
   // Landing at "#/"
   { path: "/", Component: Landing },
 
+  // Public pages
+  { path: "/privacy", Component: Privacy },
+  { path: "/terms", Component: Terms },
+  { path: "/acceptable-use", Component: AcceptableUse },
+  { path: "/payment", Component: Payment },
+  { path: "/store", Component: Store },
+
   // App at "#/app"
   {
     path: "/app",
@@ -44,20 +51,6 @@ export const router = createHashRouter([
       { path: "business-manager", Component: BusinessManager },
       { path: "settings", Component: Settings },
       { path: "help", Component: HelpPage },
-      { path: "/", Component: Landing },
-      { path: "/privacy", Component: Privacy },
-      { path: "/terms", Component: Terms },
-      { path: "/acceptable-use", Component: Acceptableuse },
-      { path: "/payment", Component: Payment },
-      { path: "/store", Component: Store },
-      { path: "/", Component: Landing },
-      { path: "/privacy", Component: Privacy },
-      { path: "/terms", Component: Terms },
-      { path: "/acceptable-use", Component: Acceptableuse },
-      { path: "/payment", Component: Payment },
-      { path: "/store", Component: Store },
-
-
     ],
   },
 
