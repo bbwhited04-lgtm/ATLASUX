@@ -3,7 +3,7 @@ import {
   Briefcase, Plus, Globe, Facebook, Instagram, Twitter,
   Youtube, TrendingUp, Users, DollarSign, Settings,
   Edit, Trash2, ExternalLink, Copy, CheckCircle,
-  Store, MessageSquare, Hash, Link, Crown, Zap,
+  Store, MessageSquare, Mail, Calendar, Video, ArrowRight, Hash, Link, Zap,
   Cpu, Gauge, Activity, Database, FolderOpen, Shield, Film,
   BarChart3, Bell, AlertCircle
 } from 'lucide-react';
@@ -11,6 +11,15 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { BusinessIntelligence } from './premium/BusinessIntelligence';
 import { MediaProcessing } from './premium/MediaProcessing';
 import { SecurityCompliance } from './premium/SecurityCompliance';
+import { TeamCollaboration } from './premium/TeamCollaboration';
+import { VideoConferencing } from './premium/VideoConferencing';
+import { SpreadsheetAnalysis } from './premium/SpreadsheetAnalysis';
+import { CommunicationSuite } from './premium/CommunicationSuite';
+import { FinancialManagement } from './premium/FinancialManagement';
+import { CalendarScheduling } from './premium/CalendarScheduling';
+import { SmartAutomation } from './premium/SmartAutomation';
+import { EmailClient } from './premium/EmailClient';
+
 
 interface Asset {
   id: string;
@@ -52,6 +61,20 @@ export function BusinessManager() {
     url: '',
     platform: '',
   });
+
+  // Business Manager "Suite" (formerly Premium Hub)
+  const [suiteView, setSuiteView] = useState<
+    | 'hub'
+    | 'video-conferencing'
+    | 'communication'
+    | 'team-collaboration'
+    | 'business-intelligence'
+    | 'spreadsheet-analysis'
+    | 'calendar-scheduling'
+    | 'financial-management'
+    | 'smart-automation'
+    | 'email-client'
+  >('hub');
 
   const businesses: Business[] = [];
 
@@ -122,6 +145,11 @@ export function BusinessManager() {
             <Shield className="w-4 h-4 mr-2" />
             Security & Compliance
           </TabsTrigger>
+          <TabsTrigger value="suite" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Zap className="w-4 h-4 mr-2" />
+            Operations Suite
+          </TabsTrigger>
+
         </TabsList>
 
         {/* Business Assets Tab */}
@@ -421,7 +449,175 @@ export function BusinessManager() {
         <TabsContent value="security">
           <SecurityCompliance />
         </TabsContent>
-      </Tabs>
+      
+        {/* Operations Suite Tab (relocated from Premium Hub) */}
+        <TabsContent value="suite" className="space-y-6">
+          {suiteView !== 'hub' && (
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-white">Operations Suite</h3>
+                <p className="text-sm text-slate-400">Tools that plug into day-to-day business operations</p>
+              </div>
+              <button
+                onClick={() => setSuiteView('hub')}
+                className="px-4 py-2 rounded-lg border border-cyan-500/30 bg-slate-900/50 hover:bg-slate-900 text-cyan-300 transition-colors"
+              >
+                ← Back to Suite
+              </button>
+            </div>
+          )}
+
+          {suiteView === 'video-conferencing' && <VideoConferencing />}
+          {suiteView === 'communication' && <CommunicationSuite />}
+          {suiteView === 'team-collaboration' && <TeamCollaboration />}
+          {suiteView === 'business-intelligence' && <BusinessIntelligence />}
+          {suiteView === 'spreadsheet-analysis' && <SpreadsheetAnalysis />}
+          {suiteView === 'calendar-scheduling' && <CalendarScheduling />}
+          {suiteView === 'financial-management' && <FinancialManagement />}
+          {suiteView === 'smart-automation' && <SmartAutomation />}
+          {suiteView === 'email-client' && <EmailClient />}
+
+          {suiteView === 'hub' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xl font-semibold text-white">Operations Suite</h3>
+                <p className="text-sm text-slate-400">
+                  Formerly the Premium Hub — moved here so everything lives under Business Management.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <button
+                  onClick={() => setSuiteView('video-conferencing')}
+                  className="text-left bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-400/40 hover:bg-slate-900/60 transition"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Video className="w-5 h-5 text-cyan-400" />
+                      <div className="text-white font-semibold">Video Conferencing</div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="text-sm text-slate-400">Zoom / Teams / Webex + join, transcribe, summarize.</div>
+                </button>
+
+                <button
+                  onClick={() => setSuiteView('communication')}
+                  className="text-left bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-400/40 hover:bg-slate-900/60 transition"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5 text-cyan-400" />
+                      <div className="text-white font-semibold">Communication Suite</div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="text-sm text-slate-400">Unified messaging, channels, and outbound comms.</div>
+                </button>
+
+                <button
+                  onClick={() => setSuiteView('team-collaboration')}
+                  className="text-left bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-400/40 hover:bg-slate-900/60 transition"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-5 h-5 text-cyan-400" />
+                      <div className="text-white font-semibold">Team Collaboration</div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="text-sm text-slate-400">Roles, channels, shared context, and collaboration tools.</div>
+                </button>
+
+                <button
+                  onClick={() => setSuiteView('business-intelligence')}
+                  className="text-left bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-400/40 hover:bg-slate-900/60 transition"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-cyan-400" />
+                      <div className="text-white font-semibold">Business Intelligence</div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="text-sm text-slate-400">Dashboards, KPIs, and operational insights.</div>
+                </button>
+
+                <button
+                  onClick={() => setSuiteView('spreadsheet-analysis')}
+                  className="text-left bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-400/40 hover:bg-slate-900/60 transition"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 text-cyan-400" />
+                      <div className="text-white font-semibold">Spreadsheet Analysis</div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="text-sm text-slate-400">Upload, inspect, summarize, and extract meaning.</div>
+                </button>
+
+                <button
+                  onClick={() => setSuiteView('calendar-scheduling')}
+                  className="text-left bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-400/40 hover:bg-slate-900/60 transition"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-cyan-400" />
+                      <div className="text-white font-semibold">Calendar Scheduling</div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="text-sm text-slate-400">Scheduling, reminders, and coordination across teams.</div>
+                </button>
+
+                <button
+                  onClick={() => setSuiteView('financial-management')}
+                  className="text-left bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-400/40 hover:bg-slate-900/60 transition"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-cyan-400" />
+                      <div className="text-white font-semibold">Financial Management</div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="text-sm text-slate-400">Spend/income analysis, accounting hooks, and reporting.</div>
+                </button>
+
+                <button
+                  onClick={() => setSuiteView('smart-automation')}
+                  className="text-left bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-400/40 hover:bg-slate-900/60 transition"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-5 h-5 text-cyan-400" />
+                      <div className="text-white font-semibold">Smart Automation</div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="text-sm text-slate-400">Build automations that run reliably, with audit trail.</div>
+                </button>
+
+                <button
+                  onClick={() => setSuiteView('email-client')}
+                  className="text-left bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-400/40 hover:bg-slate-900/60 transition"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-5 h-5 text-cyan-400" />
+                      <div className="text-white font-semibold">Email Client</div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <div className="text-sm text-slate-400">Configure, read, and triage business email.</div>
+                </button>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+</Tabs>
     </div>
   );
 }
