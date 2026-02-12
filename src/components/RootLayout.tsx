@@ -181,11 +181,7 @@ function RootLayoutInner() {
         </main>
       </div>
       
-      {/* Animated Assistants */}
-      <AtlasAvatar />
-      <PlutoGlobe />
-      <NeptuneControl />
-      
+ 
       {/* Mobile Pairing Indicator - Bottom Right */}
       <MobilePairingIndicator />
 
