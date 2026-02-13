@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import type { Env } from "../../env";
 import { logBusinessEvent } from "../../audit";
+import { executeContentJob } from "./contentJob.executor";
 import {
   createContentJob,
   getContentJob,
@@ -16,13 +17,19 @@ const ListQuerySchema = z.object({
   limit: z.coerce.number().optional(),
 });
 
+const ExecuteBodySchema = z.object({
+  org_id: z.string().min(1),
+  user_id: z.string().min(1),
+});
+
 /**
  * Register Content Job routes.
- * Add in src/index.ts:
+ * In src/index.ts:
  *   import { registerContentJobRoutes } from "./domain/content/contentJob.routes";
  *   registerContentJobRoutes(app, env);
  */
 export function registerContentJobRoutes(app: Express, env: Env) {
+  // ✅ Create a job
   app.post("/v1/content/jobs", async (req: Request, res: Response) => {
     try {
       const body = CreateContentJobSchema.parse(req.body || {});
@@ -39,30 +46,72 @@ export function registerContentJobRoutes(app: Express, env: Env) {
 
       res.json({ ok: true, job });
     } catch (e: any) {
-      res.status(400).json({ ok: false, error: e?.message || "content_job_create_failed" });
+      res
+        .status(400)
+        .json({ ok: false, error: e?.message || "content_job_create_failed" });
     }
   });
 
+  // ✅ Execute a job (runs the provider call and updates status/output)
+  app.post("/v1/content/jobs/:id/execute", async (req: Request, res: Response) => {
+    try {
+      const id = String(req.params.id || "");
+      const body = ExecuteBodySchema.parse(req.body || {});
+
+      const result = await executeContentJob(env, {
+        jobId: id,
+        orgId: body.org_id,
+        userId: body.user_id,
+      });
+
+      await logBusinessEvent(env, req, {
+        actor_type: "user",
+        action: "content_job.executed",
+        entity_type: "content_job",
+        entity_id: id,
+        status: result.ok ? "success" : "failure",
+        metadata: {},
+      });
+
+      res.json({ ok: true, result });
+    } catch (e: any) {
+      res
+        .status(400)
+        .json({ ok: false, error: e?.message || "content_job_execute_failed" });
+    }
+  });
+
+  // ✅ List jobs
   app.get("/v1/content/jobs", async (req: Request, res: Response) => {
     try {
       const q = ListQuerySchema.parse(req.query);
-      const jobs = await listContentJobs(env, { org_id: q.org_id, user_id: q.user_id, limit: q.limit });
+      const jobs = await listContentJobs(env, {
+        org_id: q.org_id,
+        user_id: q.user_id,
+        limit: q.limit,
+      });
       res.json({ ok: true, jobs });
     } catch (e: any) {
-      res.status(400).json({ ok: false, error: e?.message || "content_job_list_failed" });
+      res
+        .status(400)
+        .json({ ok: false, error: e?.message || "content_job_list_failed" });
     }
   });
 
+  // ✅ Get job by id
   app.get("/v1/content/jobs/:id", async (req: Request, res: Response) => {
     try {
       const id = String(req.params.id || "");
       const job = await getContentJob(env, id);
       res.json({ ok: true, job });
     } catch (e: any) {
-      res.status(404).json({ ok: false, error: e?.message || "content_job_not_found" });
+      res
+        .status(404)
+        .json({ ok: false, error: e?.message || "content_job_not_found" });
     }
   });
 
+  // ✅ Patch job
   app.patch("/v1/content/jobs/:id", async (req: Request, res: Response) => {
     try {
       const id = String(req.params.id || "");
@@ -80,7 +129,9 @@ export function registerContentJobRoutes(app: Express, env: Env) {
 
       res.json({ ok: true, job });
     } catch (e: any) {
-      res.status(400).json({ ok: false, error: e?.message || "content_job_patch_failed" });
+      res
+        .status(400)
+        .json({ ok: false, error: e?.message || "content_job_patch_failed" });
     }
   });
 }
