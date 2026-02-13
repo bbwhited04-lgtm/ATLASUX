@@ -15,8 +15,8 @@ export async function writeLedgerEvent(args: {
     data: {
       eventType: args.eventType,
       status: args.status,
-      amountUsd: args.amountUsd ?? 0,
-      currencyUsd: "USD",
+      amount: args.amountUsd ?? 0,
+      currency: "USD",
       provider: args.provider ?? null,
       relatedId: args.relatedId ?? null,
       metadata: args.metadata ?? {},
