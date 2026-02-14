@@ -2,37 +2,60 @@ import fp from "fastify-plugin";
 import { FastifyPluginAsync } from "fastify";
 import { prisma } from "../prisma.js";
 
+let auditDisabled = false;
+let warnedOnce = false;
+
+function shouldDisableAudit(err: any): boolean {
+  const msg = String(err?.message ?? err);
+  // Supabase/PG: type "public.AuditLevel" does not exist (code 42704)
+  if (msg.includes('type "public.AuditLevel" does not exist')) return true;
+  if (msg.includes("AuditLevel") && msg.includes("does not exist")) return true;
+  if (String(err?.code) === "42704") return true;
+  if (String(err?.meta?.code) === "42704") return true;
+  return false;
+}
+
 const auditPlugin: FastifyPluginAsync = async (app) => {
-  console.log("AUDIT PLUGIN LOADED");
+  app.log.info("AUDIT PLUGIN LOADED");
 
   app.addHook("onSend", async (req, reply, payload) => {
-    console.log("AUDIT HOOK FIRED", req.method, req.url);
+    if (auditDisabled) return payload;
 
     try {
       const level =
-        reply.statusCode >= 500
-          ? "error"
-          : reply.statusCode >= 400
-            ? "warn"
-            : "info";
+        reply.statusCode >= 500 ? "error" : reply.statusCode >= 400 ? "warn" : "info";
 
       await prisma.auditLog.create({
-  data: {
-    actorType: "system",
-    actorUserId: null,          // or a uuid when you have it
-    actorExternalId: null,
-    level,
-    action: `${req.method} ${req.url}`,
-    meta: {
-      source: "api",
-      statusCode: reply.statusCode,
-      ipAddress: req.ip,
-      userAgent: req.headers["user-agent"] || null,
-    },
-  },
-});
+        data: {
+          actorType: "system",
+          actorUserId: null, // TODO: set when auth is wired
+          actorExternalId: null,
+          // If your Prisma schema uses an enum for `level`, Prisma will coerce string values that match enum variants.
+          // If it doesn't, this still works as a plain string.
+          level: level as any,
+          action: `${req.method} ${req.url}`,
+          meta: {
+            source: "api",
+            statusCode: reply.statusCode,
+            ipAddress: req.ip,
+            userAgent: (req.headers["user-agent"] as string) || null,
+          } as any,
+        },
+      });
     } catch (err) {
-      console.error("AUDIT DB WRITE FAILED", err);
+      // Never fail the request because audit logging failed.
+      app.log.error({ err }, "AUDIT DB WRITE FAILED (non-fatal)");
+
+      // If the database schema isn't ready (missing enum type), disable audit to stop spamming logs.
+      if (shouldDisableAudit(err)) {
+        auditDisabled = true;
+        if (!warnedOnce) {
+          warnedOnce = true;
+          app.log.warn(
+            "Audit logging disabled because AuditLevel enum/type is missing in Postgres. Run prisma migrations/db push to create it."
+          );
+        }
+      }
     }
 
     return payload;

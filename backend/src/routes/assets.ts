@@ -207,21 +207,25 @@ export async function assetsRoutes(app: FastifyInstance) {
           },
         });
 
-        await tx.auditLog.create({
-          data: {
-            tenantId,
-            actorUserId: actor.actorUserId,
-            actorExternalId: actor.actorExternalId,
-            actorType: actor.actorType,
-            level: "info",
-            action: "ASSET_CREATED",
-            entityType: "asset",
-            entityId: created.id,
-            message: `Asset created: ${created.name}`,
-            meta: auditMeta(null, created, { requestId }),
-            timestamp: new Date(),
-          },
-        });
+        try {
+          await tx.auditLog.create({
+                    data: {
+                      tenantId,
+                      actorUserId: actor.actorUserId,
+                      actorExternalId: actor.actorExternalId,
+                      actorType: actor.actorType,
+                      level: "info",
+                      action: "ASSET_CREATED",
+                      entityType: "asset",
+                      entityId: created.id,
+                      message: `Asset created: ${created.name}`,
+                      meta: auditMeta(null, created, { requestId }),
+                      timestamp: new Date(),
+                    },
+                  });
+        } catch (err) {
+          req.log.error({ err }, "AUDIT DB WRITE FAILED (non-fatal)");
+        }
 
         await tx.ledgerEntry.create({
           data: {
@@ -246,21 +250,25 @@ export async function assetsRoutes(app: FastifyInstance) {
           const category = (created as any).metrics.cost.category ?? "hosting";
           const currency = (created as any).metrics.cost.currency ?? "USD";
 
-          await tx.auditLog.create({
-            data: {
-              tenantId,
-              actorUserId: actor.actorUserId,
-              actorExternalId: actor.actorExternalId,
-              actorType: actor.actorType,
-              level: "info",
-              action: "ASSET_COST_ADDED",
-              entityType: "asset",
-              entityId: created.id,
-              message: `Asset cost added: ${created.name}`,
-              meta: auditMeta(null, (created as any).metrics.cost, { requestId }),
-              timestamp: new Date(),
-            },
-          });
+          try {
+            await tx.auditLog.create({
+                        data: {
+                          tenantId,
+                          actorUserId: actor.actorUserId,
+                          actorExternalId: actor.actorExternalId,
+                          actorType: actor.actorType,
+                          level: "info",
+                          action: "ASSET_COST_ADDED",
+                          entityType: "asset",
+                          entityId: created.id,
+                          message: `Asset cost added: ${created.name}`,
+                          meta: auditMeta(null, (created as any).metrics.cost, { requestId }),
+                          timestamp: new Date(),
+                        },
+                      });
+          } catch (err) {
+            req.log.error({ err }, "AUDIT DB WRITE FAILED (non-fatal)");
+          }
 
           await tx.ledgerEntry.create({
             data: {
@@ -353,21 +361,25 @@ export async function assetsRoutes(app: FastifyInstance) {
 
         const after = await tx.asset.update({ where: { id }, data });
 
-        await tx.auditLog.create({
-          data: {
-            tenantId: after.tenantId,
-            actorUserId: actor.actorUserId,
-            actorExternalId: actor.actorExternalId,
-            actorType: actor.actorType,
-            level: "info",
-            action: "ASSET_UPDATED",
-            entityType: "asset",
-            entityId: after.id,
-            message: `Asset updated: ${after.name}`,
-            meta: auditMeta(before, after, { requestId }),
-            timestamp: new Date(),
-          },
-        });
+        try {
+          await tx.auditLog.create({
+                    data: {
+                      tenantId: after.tenantId,
+                      actorUserId: actor.actorUserId,
+                      actorExternalId: actor.actorExternalId,
+                      actorType: actor.actorType,
+                      level: "info",
+                      action: "ASSET_UPDATED",
+                      entityType: "asset",
+                      entityId: after.id,
+                      message: `Asset updated: ${after.name}`,
+                      meta: auditMeta(before, after, { requestId }),
+                      timestamp: new Date(),
+                    },
+                  });
+        } catch (err) {
+          req.log.error({ err }, "AUDIT DB WRITE FAILED (non-fatal)");
+        }
 
         await tx.ledgerEntry.create({
           data: {
@@ -398,21 +410,25 @@ export async function assetsRoutes(app: FastifyInstance) {
           null;
 
         if (costAction) {
-          await tx.auditLog.create({
-            data: {
-              tenantId: after.tenantId,
-              actorUserId: actor.actorUserId,
-              actorExternalId: actor.actorExternalId,
-              actorType: actor.actorType,
-              level: "info",
-              action: costAction,
-              entityType: "asset",
-              entityId: after.id,
-              message: `Asset cost event: ${after.name}`,
-              meta: auditMeta(beforeCost, afterCost, { requestId }),
-              timestamp: new Date(),
-            },
-          });
+          try {
+            await tx.auditLog.create({
+                        data: {
+                          tenantId: after.tenantId,
+                          actorUserId: actor.actorUserId,
+                          actorExternalId: actor.actorExternalId,
+                          actorType: actor.actorType,
+                          level: "info",
+                          action: costAction,
+                          entityType: "asset",
+                          entityId: after.id,
+                          message: `Asset cost event: ${after.name}`,
+                          meta: auditMeta(beforeCost, afterCost, { requestId }),
+                          timestamp: new Date(),
+                        },
+                      });
+          } catch (err) {
+            req.log.error({ err }, "AUDIT DB WRITE FAILED (non-fatal)");
+          }
 
           // Write ledger debit for added/updated; for removed, write $0 marker.
           const cents = afterCost?.monthlyCents ? Number(afterCost.monthlyCents) : 0;
@@ -469,21 +485,25 @@ export async function assetsRoutes(app: FastifyInstance) {
 
         await tx.asset.delete({ where: { id } });
 
-        await tx.auditLog.create({
-          data: {
-            tenantId: before.tenantId,
-            actorUserId: actor.actorUserId,
-            actorExternalId: actor.actorExternalId,
-            actorType: actor.actorType,
-            level: "info",
-            action: "ASSET_DELETED",
-            entityType: "asset",
-            entityId: before.id,
-            message: `Asset deleted: ${before.name}`,
-            meta: auditMeta(before, null, { requestId }),
-            timestamp: new Date(),
-          },
-        });
+        try {
+          await tx.auditLog.create({
+                    data: {
+                      tenantId: before.tenantId,
+                      actorUserId: actor.actorUserId,
+                      actorExternalId: actor.actorExternalId,
+                      actorType: actor.actorType,
+                      level: "info",
+                      action: "ASSET_DELETED",
+                      entityType: "asset",
+                      entityId: before.id,
+                      message: `Asset deleted: ${before.name}`,
+                      meta: auditMeta(before, null, { requestId }),
+                      timestamp: new Date(),
+                    },
+                  });
+        } catch (err) {
+          req.log.error({ err }, "AUDIT DB WRITE FAILED (non-fatal)");
+        }
 
         await tx.ledgerEntry.create({
           data: {
