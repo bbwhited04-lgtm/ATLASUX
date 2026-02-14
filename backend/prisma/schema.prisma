@@ -64,6 +64,7 @@ model Tenant {
   audits       AuditLog[] @relation("TenantAudits")
   jobs         Job[]
   ledger       LedgerEntry[]
+  assets       Asset[]
 
   @@map("tenants")
 }
@@ -142,4 +143,22 @@ model LedgerEntry {
   occurredAt    DateTime         @default(now())
   createdAt     DateTime         @default(now())
   tenant        Tenant           @relation(fields: [tenantId], references: [id])
+}
+
+model Asset {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid @map("tenant_id")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  type      String
+  name      String
+  url       String
+  platform  String?
+  metrics   Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("assets")
 }

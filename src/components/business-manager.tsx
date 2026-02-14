@@ -61,6 +61,15 @@ interface Tenant {
 
 export function BusinessManager() {
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
+
+  async function selectBusiness(tenantId: string) {
+    setSelectedBusiness(tenantId);
+    await loadAssetsForTenant(tenantId).catch((err) => {
+      console.error("Failed to load assets:", err);
+      setWarning(err instanceof Error ? err.message : String(err));
+    });
+  }
+
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [showAddAsset, setShowAddAsset] = useState(false);
   const [newBusinessForm, setNewBusinessForm] = useState({
@@ -208,6 +217,46 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [tenantsLoading, setTenantsLoading] = useState(false);
 
+  // Assets are stored per-tenant in memory (loaded on selection)
+  const [assetsByTenant, setAssetsByTenant] = useState<Record<string, Asset[]>>({});
+  const [assetsLoading, setAssetsLoading] = useState(false);
+
+  async function loadAssetsForTenant(tenantId: string) {
+    if (!tenantId) return;
+    setAssetsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/assets?tenantId=${encodeURIComponent(tenantId)}`);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.ok === false) {
+        throw new Error(json?.error || json?.message || "Failed to load assets");
+      }
+      const assets = Array.isArray(json?.assets) ? json.assets : [];
+      setAssetsByTenant((prev) => ({ ...prev, [tenantId]: assets }));
+    } finally {
+      setAssetsLoading(false);
+    }
+  }
+
+  async function createAsset(payload: { tenantId: string; type: string; name: string; url: string; platform?: string }) {
+    const res = await fetch(`${API_BASE}/v1/assets`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json?.ok === false) {
+      throw new Error(json?.error || json?.message || "Create asset failed");
+    }
+    return json.asset as Asset;
+  }
+
+  async function deleteAsset(assetId: string, tenantId: string) {
+    await fetch(`${API_BASE}/v1/assets/${encodeURIComponent(assetId)}`, { method: "DELETE" }).catch(() => null);
+    // refresh selected tenant assets
+    await loadAssetsForTenant(tenantId).catch(() => null);
+  }
+
+
   async function loadTenants() {
     setTenantsLoading(true);
     try {
@@ -229,12 +278,12 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
       name: t.name,
       description: "",
       color: "from-cyan-500 to-blue-500",
-      assets: [],
+      assets: (assetsByTenant[t.id] ?? []) as any,
       createdAt: String((t as any).created_at ?? (t as any).createdAt ?? ""),
       totalValue: "$0",
       status: "active",
     }));
-  }, [tenants]);
+  }, [tenants, assetsByTenant]);
 
   const selectedBusinessData = selectedBusiness 
     ? businesses.find(b => b.id === selectedBusiness)
@@ -408,7 +457,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                 {businesses.map((business) => (
                   <div
                     key={business.id}
-                    onClick={() => setSelectedBusiness(business.id)}
+                    onClick={() => selectBusiness(business.id)}
                     className={`bg-slate-900/50 border rounded-xl p-4 cursor-pointer transition-all ${
                       selectedBusiness === business.id
                         ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/20'
@@ -504,7 +553,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                                 <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
                                   <Edit className="w-4 h-4 text-slate-400" />
                                 </button>
-                                <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                                <button onClick={() => deleteAsset(asset.id, selectedBusinessData.id)} className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
                                   <Trash2 className="w-4 h-4 text-red-400" />
                                 </button>
                               </div>
@@ -862,5 +911,124 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
 
 </Tabs>
     </div>
+
+          {/* Add Asset Modal */}
+          {showAddAsset && selectedBusinessData && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-slate-900 border border-cyan-500/30 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
+                      <Database className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white">Add New Asset</h3>
+                      <p className="text-xs text-slate-400">Business: {selectedBusinessData.name}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowAddAsset(false)}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Asset Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Asset Type</label>
+                    <select
+                      value={newAssetForm.type}
+                      onChange={(e) =>
+                        setNewAssetForm({ ...newAssetForm, type: e.target.value as any })
+                      }
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                    >
+                      <option value="domain">Domain / Website</option>
+                      <option value="social">Social</option>
+                      <option value="store">Store</option>
+                      <option value="email">Email</option>
+                      <option value="app">App</option>
+                    </select>
+                  </div>
+
+                  {/* Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., deadapp.pro"
+                      value={newAssetForm.name}
+                      onChange={(e) => setNewAssetForm({ ...newAssetForm, name: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                    />
+                  </div>
+
+                  {/* URL */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">URL</label>
+                    <input
+                      type="text"
+                      placeholder="https://..."
+                      value={newAssetForm.url}
+                      onChange={(e) => setNewAssetForm({ ...newAssetForm, url: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                    />
+                  </div>
+
+                  {/* Platform */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Platform (optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., instagram, facebook, shopify"
+                      value={newAssetForm.platform}
+                      onChange={(e) => setNewAssetForm({ ...newAssetForm, platform: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="text-xs text-slate-400">
+                      {assetsLoading ? "Saving/refreshing…" : "Assets will be scoped to this business."}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setShowAddAsset(false)}
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-white font-medium transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            if (!selectedBusinessData?.id) return;
+                            await createAsset({
+                              tenantId: selectedBusinessData.id,
+                              type: newAssetForm.type,
+                              name: newAssetForm.name,
+                              url: newAssetForm.url,
+                              platform: newAssetForm.platform || undefined,
+                            });
+                            await loadAssetsForTenant(selectedBusinessData.id);
+                            setNewAssetForm({ type: "domain", name: "", url: "", platform: "" });
+                            setShowAddAsset(false);
+                          } catch (err) {
+                            console.error(err);
+                            setWarning(err instanceof Error ? err.message : String(err));
+                          }
+                        }}
+                        className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 rounded-lg text-slate-900 font-bold transition-colors"
+                      >
+                        Save Asset
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
   );
 }
