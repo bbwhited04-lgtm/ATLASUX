@@ -48,6 +48,17 @@ interface Business {
   status: 'active' | 'archived';
 }
 
+interface Tenant {
+  id: string;
+  slug: string;
+  name: string;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
+}
+
+
 export function BusinessManager() {
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
   const [showAddBusiness, setShowAddBusiness] = useState(false);
@@ -61,6 +72,16 @@ export function BusinessManager() {
 
 // -------------------- Backend-backed dashboards (Neptune internals, surfaced as Atlas Core / Business Manager) --------------------
 const { org_id, user_id } = useMemo(() => getOrgUser(), []);
+
+  // Load tenants (businesses) once on mount
+  useEffect(() => {
+    loadTenants().catch((err) => {
+      console.error("Failed to load tenants:", err);
+      setWarning(err instanceof Error ? err.message : String(err));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 const [integrations, setIntegrations] = useState<Array<{ provider: string; connected: boolean }>>([]);
 const [accounting, setAccounting] = useState<any>(null);
 const [jobs, setJobs] = useState<any[]>([]);
@@ -123,21 +144,26 @@ async function disconnect(provider: "google" | "meta") {
     name: string;
     description?: string;
     color?: string;
-    }) {
-  const res = await fetch(`${API_BASE}/v1/tenants`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  }) {
+    const res = await fetch(`${API_BASE}/v1/tenants`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-  const json = await res.json().catch(() => ({}));
+    const json = await res.json().catch(() => ({}));
 
-  if (!res.ok || json?.ok === false) {
-    throw new Error(json?.error || json?.message || "Create business failed");
+    // If tenant already exists, treat as non-fatal (UI should still show it after refresh)
+    if (res.status === 409) {
+      return null;
+    }
+
+    if (!res.ok || json?.ok === false) {
+      throw new Error(json?.error || json?.message || "Create business failed");
+    }
+
+    return json.tenant ?? null;
   }
-
-  return json.tenant;
-}
 
 
 async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
@@ -178,7 +204,37 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
     | 'email-client'
   >('hub');
 
-  const businesses: Business[] = [];
+  // Tenants (Businesses) are the source-of-truth for "Total businesses"
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [tenantsLoading, setTenantsLoading] = useState(false);
+
+  async function loadTenants() {
+    setTenantsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/tenants`, { method: "GET" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.ok === false) {
+        throw new Error(json?.error || json?.message || "Failed to load businesses");
+      }
+      setTenants(Array.isArray(json?.tenants) ? json.tenants : []);
+    } finally {
+      setTenantsLoading(false);
+    }
+  }
+
+
+  const businesses: Business[] = useMemo(() => {
+    return (tenants ?? []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: "",
+      color: "from-cyan-500 to-blue-500",
+      assets: [],
+      createdAt: String((t as any).created_at ?? (t as any).createdAt ?? ""),
+      totalValue: "$0",
+      status: "active",
+    }));
+  }, [tenants]);
 
   const selectedBusinessData = selectedBusiness 
     ? businesses.find(b => b.id === selectedBusiness)
@@ -594,6 +650,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
         color: newBusinessForm.color,
       });
 
+      await loadTenants();
       await refreshAll();
 
       setShowAddBusiness(false);
