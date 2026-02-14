@@ -73,7 +73,38 @@ export async function assetsRoutes(app: FastifyInstance) {
   /**
    * DELETE /v1/assets/:id
    */
-  app.delete("/:id", async (req, reply) => {
+  /**
+   * PATCH /v1/assets/:id
+   * { type?, name?, url?, platform?, metrics? }
+   */
+  app.patch("/:id", async (req, reply) => {
+    const params = (req.params ?? {}) as AnyObj;
+    const id = typeof params.id === "string" ? params.id : null;
+    if (!id) return reply.code(400).send({ ok: false, error: "id_required" });
+
+    const body = (req.body ?? {}) as AnyObj;
+
+    const data: AnyObj = {};
+    if (typeof body.type === "string") data.type = body.type.trim();
+    if (typeof body.name === "string") data.name = body.name.trim();
+    if (typeof body.url === "string") data.url = body.url.trim();
+    if (typeof body.platform === "string") data.platform = body.platform.trim() || null;
+    if (body.metrics !== undefined) data.metrics = body.metrics;
+
+    // Prevent empty updates
+    if (Object.keys(data).length === 0) {
+      return reply.code(400).send({ ok: false, error: "no_fields_to_update" });
+    }
+
+    const asset = await prisma.asset.update({
+      where: { id },
+      data,
+    });
+
+    return reply.send({ ok: true, asset });
+  });
+
+app.delete("/:id", async (req, reply) => {
     const params = (req.params ?? {}) as AnyObj;
     const id = typeof params.id === "string" ? params.id : null;
     if (!id) return reply.code(400).send({ ok: false, error: "id_required" });

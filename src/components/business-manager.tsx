@@ -72,6 +72,9 @@ export function BusinessManager() {
 
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [showAddAsset, setShowAddAsset] = useState(false);
+  const [showEditAsset, setShowEditAsset] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [editAssetForm, setEditAssetForm] = useState({ type: 'domain', name: '', url: '', platform: '' });
   const [newBusinessForm, setNewBusinessForm] = useState({
     name: '',
     description: '',
@@ -248,6 +251,30 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
       throw new Error(json?.error || json?.message || "Create asset failed");
     }
     return json.asset as Asset;
+  }
+
+  async function updateAsset(assetId: string, payload: { type?: string; name?: string; url?: string; platform?: string | null }) {
+    const res = await fetch(`${API_BASE}/v1/assets/${encodeURIComponent(assetId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json?.ok === false) {
+      throw new Error(json?.error || json?.message || "Update asset failed");
+    }
+    return json.asset as Asset;
+  }
+
+  function openEditAsset(asset: Asset) {
+    setEditingAsset(asset);
+    setEditAssetForm({
+      type: asset.type ?? 'domain',
+      name: asset.name ?? '',
+      url: asset.url ?? '',
+      platform: (asset.platform ?? '') as any,
+    });
+    setShowEditAsset(true);
   }
 
   async function deleteAsset(assetId: string, tenantId: string) {
@@ -550,7 +577,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                                 </div>
                               </div>
                               <div className="flex gap-2">
-                                <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                                <button onClick={() => openEditAsset(asset)} className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
                                   <Edit className="w-4 h-4 text-slate-400" />
                                 </button>
                                 <button onClick={() => deleteAsset(asset.id, selectedBusinessData.id)} className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
@@ -1021,6 +1048,115 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                         className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 rounded-lg text-slate-900 font-bold transition-colors"
                       >
                         Save Asset
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+
+          {/* Edit Asset Modal */}
+          {showEditAsset && editingAsset && selectedBusinessData && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-slate-900 border border-cyan-500/30 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
+                      <Edit className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white">Edit Asset</h3>
+                      <p className="text-xs text-slate-400">Business: {selectedBusinessData.name}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setShowEditAsset(false); setEditingAsset(null); }}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Asset Type</label>
+                    <select
+                      value={editAssetForm.type}
+                      onChange={(e) => setEditAssetForm({ ...editAssetForm, type: e.target.value as any })}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                    >
+                      <option value="domain">Domain / Website</option>
+                      <option value="social">Social</option>
+                      <option value="store">Store</option>
+                      <option value="email">Email</option>
+                      <option value="app">App</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Name</label>
+                    <input
+                      type="text"
+                      value={editAssetForm.name}
+                      onChange={(e) => setEditAssetForm({ ...editAssetForm, name: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">URL</label>
+                    <input
+                      type="text"
+                      value={editAssetForm.url}
+                      onChange={(e) => setEditAssetForm({ ...editAssetForm, url: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Platform (optional)</label>
+                    <input
+                      type="text"
+                      value={editAssetForm.platform}
+                      onChange={(e) => setEditAssetForm({ ...editAssetForm, platform: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="text-xs text-slate-400">
+                      {assetsLoading ? "Saving/refreshing…" : "Updates apply immediately."}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => { setShowEditAsset(false); setEditingAsset(null); }}
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-white font-medium transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            if (!editingAsset?.id) return;
+                            await updateAsset(editingAsset.id, {
+                              type: editAssetForm.type,
+                              name: editAssetForm.name,
+                              url: editAssetForm.url,
+                              platform: editAssetForm.platform || null,
+                            });
+                            await loadAssetsForTenant(selectedBusinessData.id);
+                            setShowEditAsset(false);
+                            setEditingAsset(null);
+                          } catch (err) {
+                            console.error(err);
+                            setWarning(err instanceof Error ? err.message : String(err));
+                          }
+                        }}
+                        className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 rounded-lg text-slate-900 font-bold transition-colors"
+                      >
+                        Save Changes
                       </button>
                     </div>
                   </div>
