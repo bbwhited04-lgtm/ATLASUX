@@ -89,12 +89,13 @@ function toCostFromBody(body: AnyObj) {
   const category = (nested?.category ?? body.costCategory) as any;
   const currency = (nested?.currency ?? body.costCurrency ?? "USD") as any;
 
-  // "null" means clear cost
+  // Clearing cost should be explicit.
+  // We treat `body.cost === null` (or nested cost.monthlyCents/amountCents === null) as an explicit clear.
+  // Flat `cost*` fields being null are treated as "not provided" because many UIs send null by default.
   const wantsClear =
     body.cost === null ||
-    body.costMonthlyCents === null ||
-    body.costAmountCents === null ||
-    (nested && (nested.monthlyCents === null || nested.amountCents === null));
+    (nested && (nested.monthlyCents === null || nested.amountCents === null)) ||
+    body.clearCost === true;
 
   if (wantsClear) return { clear: true } as const;
 
