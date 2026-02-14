@@ -34,9 +34,14 @@ interface Asset {
     followers?: number;
     revenue?: string;
     traffic?: string;
+    cost?: {
+      monthlyCents?: number | string;
+      vendor?: string;
+      cadence?: "monthly" | "yearly" | "one_time" | string;
+      category?: string;
+    };
   };
 }
-
 type LedgerEntry = {
   id: string;
   tenantId: string;
@@ -92,7 +97,7 @@ export function BusinessManager() {
   const [showAddAsset, setShowAddAsset] = useState(false);
   const [showEditAsset, setShowEditAsset] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
-  const [editAssetForm, setEditAssetForm] = useState({ type: 'domain', name: '', url: '', platform: '' });
+  const [editAssetForm, setEditAssetForm] = useState({ type: 'domain', name: '', url: '', platform: '', costMonthlyUsd: '', costVendor: '', costCadence: 'monthly', costCategory: 'hosting' });
   const [newBusinessForm, setNewBusinessForm] = useState({
     name: '',
     description: '',
@@ -307,13 +312,23 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
     return json.asset as Asset;
   }
 
-  function openEditAsset(asset: Asset) {
+    function openEditAsset(asset: Asset) {
     setEditingAsset(asset);
+    const monthlyCentsRaw = (asset.metrics as any)?.cost?.monthlyCents;
+    const monthlyCentsNum =
+      typeof monthlyCentsRaw === "string" ? Number(monthlyCentsRaw) :
+      typeof monthlyCentsRaw === "number" ? monthlyCentsRaw :
+      null;
+
     setEditAssetForm({
       type: asset.type ?? 'domain',
       name: asset.name ?? '',
       url: asset.url ?? '',
       platform: (asset.platform ?? '') as any,
+      costMonthlyUsd: monthlyCentsNum != null && Number.isFinite(monthlyCentsNum) ? (monthlyCentsNum / 100).toFixed(2).replace(/\.00$/, "") : '',
+      costVendor: ((asset.metrics as any)?.cost?.vendor ?? '') as any,
+      costCadence: (((asset.metrics as any)?.cost?.cadence ?? 'monthly')) as any,
+      costCategory: (((asset.metrics as any)?.cost?.category ?? 'hosting')) as any,
     });
     setShowEditAsset(true);
   }
@@ -1308,7 +1323,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                           step="0.01"
                           placeholder="e.g., 14.00"
                           value={editAssetForm.costMonthlyUsd}
-                          onChange={(e) => SETeditAssetForm({ ...editAssetForm, costMonthlyUsd: e.target.value })}
+                          onChange={(e) => setEditAssetForm({ ...editAssetForm, costMonthlyUsd: e.target.value })}
                           className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
                         />
                         <div className="text-xs text-slate-500 mt-1">For monthly costs, enter monthly amount. For yearly, enter yearly amount.</div>
@@ -1320,7 +1335,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                           type="text"
                           placeholder="e.g., Render, Vercel, AWS, Sprout, QuickBooks"
                           value={editAssetForm.costVendor}
-                          onChange={(e) => SETeditAssetForm({ ...editAssetForm, costVendor: e.target.value })}
+                          onChange={(e) => setEditAssetForm({ ...editAssetForm, costVendor: e.target.value })}
                           className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
                         />
                       </div>
@@ -1329,7 +1344,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                         <label className="block text-sm font-medium text-white mb-2">Cadence</label>
                         <select
                           value={editAssetForm.costCadence}
-                          onChange={(e) => SETeditAssetForm({ ...editAssetForm, costCadence: e.target.value })}
+                          onChange={(e) => setEditAssetForm({ ...editAssetForm, costCadence: e.target.value })}
                           className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
                         >
                           <option value="monthly">Monthly</option>
@@ -1342,7 +1357,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                         <label className="block text-sm font-medium text-white mb-2">Category</label>
                         <select
                           value={editAssetForm.costCategory}
-                          onChange={(e) => SETeditAssetForm({ ...editAssetForm, costCategory: e.target.value })}
+                          onChange={(e) => setEditAssetForm({ ...editAssetForm, costCategory: e.target.value })}
                           className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
                         >
                           <option value="hosting">Hosting</option>
@@ -1373,11 +1388,11 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                               type: editAssetForm.type,
                               name: editAssetForm.name,
                               url: editAssetForm.url,
-                              platform: editAssetForm.platform || null,
-                              costMonthlyCents: editAssetForm.costMonthlyUsd && String(editAssetForm.costMonthlyUsd).trim().length ? Math.round(Number(editAssetForm.costMonthlyUsd) * 100) : null,
-                              costVendor: editAssetForm.costVendor || null,
-                              costCadence: editAssetForm.costCadence || null,
-                              costCategory: editAssetForm.costCategory || null,
+                              platform: editAssetForm.platform && String(editAssetForm.platform).trim().length ? editAssetForm.platform : undefined,
+                              costMonthlyCents: editAssetForm.costMonthlyUsd && String(editAssetForm.costMonthlyUsd).trim().length ? Math.round(Number(editAssetForm.costMonthlyUsd) * 100) : undefined,
+                              costVendor: editAssetForm.costVendor && String(editAssetForm.costVendor).trim().length ? editAssetForm.costVendor : undefined,
+                              costCadence: editAssetForm.costCadence && String(editAssetForm.costCadence).trim().length ? editAssetForm.costCadence : undefined,
+                              costCategory: editAssetForm.costCategory && String(editAssetForm.costCategory).trim().length ? editAssetForm.costCategory : undefined,
                             });
                             await loadAssetsForTenant(selectedBusinessData.id);
                             setShowEditAsset(false);
