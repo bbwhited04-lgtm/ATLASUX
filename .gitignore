@@ -1,0 +1,105 @@
+########################################
+# OS / Editor junk
+########################################
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*.tmp
+*.log
+
+########################################
+# Environment variables / secrets
+########################################
+.env
+.env.*
+!.env.example
+
+########################################
+# Node / JS
+########################################
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+########################################
+# Vite / Next / Frontend builds
+########################################
+dist/
+build/
+out/
+.next/
+.vite/
+.turbo/
+.cache/
+
+########################################
+# Backend builds
+########################################
+backend/dist/
+backend/build/
+backend/.cache/
+
+########################################
+# Supabase local artifacts
+########################################
+.supabase/
+supabase/.branches
+supabase/.temp
+supabase/.env
+
+########################################
+# Tauri (explicitly kill this junk)
+########################################
+src-tauri/target/
+src-tauri/.cargo/
+src-tauri/gen/
+src-tauri/dist/
+src-tauri/release/
+src-tauri/debug/
+**/.tauri/
+
+########################################
+# Electron (explicitly kill this junk)
+########################################
+electron/dist/
+electron/build/
+electron/out/
+electron/.webpack/
+electron/.cache/
+
+########################################
+# Rust (if pulled in via tauri)
+########################################
+target/
+Cargo.lock
+
+########################################
+# Python (just in case)
+########################################
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+########################################
+# IDEs
+########################################
+.vscode/
+.idea/
+*.iml
+
+########################################
+# GitHub / CI
+########################################
+.github/workflows/*.log
+
+########################################
+# Misc
+########################################
+coverage/
+reports/
+tmp/

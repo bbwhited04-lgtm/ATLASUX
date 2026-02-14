@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum IntegrationProvider {
+  google
+  microsoft
+  icloud
+  facebook
+  instagram
+  tiktok
+  youtube
+  twilio
+  stripe
+  openai
+  deepseek
+  supabase
+}
+
+enum AuditLevel {
+  info
+  warn
+  error
+  security
+}
+
+enum JobStatus {
+  queued
+  running
+  succeeded
+  failed
+  canceled
+}
+
+enum LedgerEntryType {
+  credit
+  debit
+}
+
+enum LedgerCategory {
+  subscription
+  token_spend
+  api_spend
+  refund
+  chargeback
+  payout
+  misc
+}
+
+model Tenant {
+  id           String     @id @default(uuid()) @db.Uuid
+  slug         String     @unique
+  name         String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  integrations Integration[]
+  audits       AuditLog[] @relation("TenantAudits")
+  jobs         Job[]
+  ledger       LedgerEntry[]
+}
+model Integration {
+  id            String              @id @default(uuid())
+  tenantId      String
+  provider      IntegrationProvider
+  connected     Boolean             @default(false)
+  accessToken   String?
+  refreshToken  String?
+  tokenExpires  DateTime?
+  scopes        Json?
+  config        Json?
+  status        Json?
+  lastSyncAt    DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  tenant        Tenant              @relation(fields: [tenantId], references: [id])
+  @@unique([tenantId, provider])
+}
+
+model AuditLog {
+  id              String     @id @default(uuid()) @db.Uuid
+
+  tenantId        String?    @db.Uuid @map("tenant_id")
+  tenant          Tenant?    @relation("TenantAudits", fields: [tenantId], references: [id])
+
+  actorUserId     String?    @db.Uuid @map("actor_user_id")
+  actorExternalId String?    @map("actor_external_id")
+  actorType       String?    @map("actor_type")
+
+  level           AuditLevel @map("level")
+  action          String
+
+  entityType      String?    @map("entity_type")
+  entityId        String?    @db.Uuid @map("entity_id")
+
+  message         String?
+  meta            Json?      @map("meta")
+
+  createdAt       DateTime   @default(now()) @map("created_at")
+  timestamp       DateTime?  @map("timestamp")
+
+  @@map("audit_log")
+}
+
+model Job {
+  id            String      @id @default(uuid())
+  tenantId      String
+  requestedBy   String?
+  status        JobStatus   @default(queued)
+  jobType       String
+  priority      Int         @default(0)
+  input         Json?
+  output        Json?
+  error         Json?
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+}
+
+model LedgerEntry {
+  id            String           @id @default(uuid())
+  tenantId      String
+  entryType     LedgerEntryType
+  category      LedgerCategory
+  amountCents   BigInt
+  currency      String           @default("USD")
+  description   String?
+  externalRef   String?
+  meta          Json?
+  occurredAt    DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+  tenant        Tenant           @relation(fields: [tenantId], references: [id])
+}
