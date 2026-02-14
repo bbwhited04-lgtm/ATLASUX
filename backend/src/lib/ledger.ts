@@ -1,4 +1,44 @@
 import { prisma } from "../prisma.js"; // adjust import to your prisma client
+import { Prisma, LedgerCategory, LedgerEntryType } from "@prisma/client";
+
+
+function normalizeLedgerCategory(input: unknown): LedgerCategory {
+  const v = String(input ?? "").trim().toLowerCase();
+  switch (v) {
+    case "hosting":
+      return LedgerCategory.hosting;
+    case "saas":
+      return LedgerCategory.saas;
+    case "domain":
+      return LedgerCategory.domain;
+    case "email":
+      return LedgerCategory.email;
+    case "social":
+      return LedgerCategory.social;
+    case "infra":
+      return LedgerCategory.infra;
+    case "ads":
+      return LedgerCategory.ads;
+    case "other":
+      return LedgerCategory.other;
+    case "subscription":
+      return LedgerCategory.subscription;
+    case "ai_spend":
+    case "token_spend":
+    case "api_spend":
+    case "tokens":
+    case "api":
+      return LedgerCategory.ai_spend;
+    case "misc":
+    default:
+      return LedgerCategory.misc;
+  }
+}
+
+function normalizeLedgerEntryType(input: unknown): LedgerEntryType {
+  const v = String(input ?? "").trim().toLowerCase();
+  return v === "credit" ? LedgerEntryType.credit : LedgerEntryType.debit;
+}
 
 type LedgerStatus = "SUCCESS" | "FAILED";
 type LedgerEventType =
@@ -23,14 +63,12 @@ export async function writeLedgerEvent(args: {
   metadata?: Record<string, any>; // tokens, model, endpoint, latency, etc
 }) {
   const amountUsd = args.amount ?? 0;
-  const amountCents = BigInt(Math.round(amountUsd * 100));
-  // Define union types
-    type EntryType = "credit" | "debit";
-    type Category = "token_spend" | "api_spend";
-  const entryType: EntryType = amountUsd < 0 ? "credit" : "debit";
-  const category: Category =
-    /token/i.test(args.eventType) ? "token_spend" : "api_spend";
-  const tenantId = args.orgId ?? (args.metadata as any)?.orgId ?? "demo_org";
+  const amountCents = BigInt(Math.round(amountUsd * 100));  const entryType: LedgerEntryType = amountUsd < 0 ? LedgerEntryType.credit : LedgerEntryType.debit;
+    const category: LedgerCategory = normalizeLedgerCategory(/token/i.test(args.eventType) ? LedgerCategory.ai_spend : LedgerCategory.ai_spend);
+    const tenantId = args.orgId ?? (args.metadata as any)?.orgId ?? (args.metadata as any)?.tenantId ?? null;
+  if (!tenantId) {
+    throw new Error("tenantId/orgId is required to write a ledger entry");
+  }
 
   return prisma.ledgerEntry.create({
     data: {
@@ -38,6 +76,8 @@ export async function writeLedgerEvent(args: {
       entryType,
       category,
       amountCents,
+      occurredAt: new Date(),
+      createdAt: new Date(),
       currency: args.currency ?? "USD",
       description: `${args.eventType} (${args.status})`,
       externalRef: args.relatedJobId ?? null,

@@ -46,21 +46,18 @@ enum LedgerEntryType {
 
 enum LedgerCategory {
   hosting
-  supabase
+  saas
   domain
   email
   social
   infra
-  ads 
+  ads
   other
-  ai_spend 
+  ai_spend
   subscription
-  token_spend
-  api_spend
-  refund
-  chargeback
-  payout
   misc
+
+  @@map("ledger_category")
 }
 
 model Tenant {

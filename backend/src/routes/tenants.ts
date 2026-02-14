@@ -1,7 +1,46 @@
 import type { FastifyInstance } from "fastify";
-import { Prisma } from "@prisma/client";
+import { Prisma, LedgerCategory, LedgerEntryType } from "@prisma/client";
 import { prisma } from "../db/prisma.js";
 import { randomUUID } from "crypto";
+
+
+function normalizeLedgerCategory(input: unknown): LedgerCategory {
+  const v = String(input ?? "").trim().toLowerCase();
+  switch (v) {
+    case "hosting":
+      return LedgerCategory.hosting;
+    case "saas":
+      return LedgerCategory.saas;
+    case "domain":
+      return LedgerCategory.domain;
+    case "email":
+      return LedgerCategory.email;
+    case "social":
+      return LedgerCategory.social;
+    case "infra":
+      return LedgerCategory.infra;
+    case "ads":
+      return LedgerCategory.ads;
+    case "other":
+      return LedgerCategory.other;
+    case "subscription":
+      return LedgerCategory.subscription;
+    case "ai_spend":
+    case "token_spend":
+    case "api_spend":
+    case "tokens":
+    case "api":
+      return LedgerCategory.ai_spend;
+    case "misc":
+    default:
+      return LedgerCategory.misc;
+  }
+}
+
+function normalizeLedgerEntryType(input: unknown): LedgerEntryType {
+  const v = String(input ?? "").trim().toLowerCase();
+  return v === "credit" ? LedgerEntryType.credit : LedgerEntryType.debit;
+}
 
 type Actor = {
   actorUserId?: string | null;
@@ -91,14 +130,15 @@ export async function tenantsRoutes(app: FastifyInstance) {
         await tx.ledgerEntry.create({
           data: {
             tenantId: tenant.id,
-            entryType: "debit",
-            category: "misc",
+            entryType: LedgerEntryType.debit,
+            category: LedgerCategory.misc,
             amountCents: BigInt(0),
             currency: "USD",
             description: `Tenant created: ${tenant.name}`,
             externalRef: requestId,
             meta: { action: "TENANT_CREATED", entityType: "tenant", entityId: tenant.id },
             occurredAt: new Date(),
+            createdAt: new Date(),
           },
         });
 

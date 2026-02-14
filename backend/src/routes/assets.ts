@@ -1,7 +1,46 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "../db/prisma.js";
-import { Prisma } from "@prisma/client";
+import { Prisma, LedgerCategory, LedgerEntryType } from "@prisma/client";
 import { randomUUID } from "crypto";
+
+
+function normalizeLedgerCategory(input: unknown): LedgerCategory {
+  const v = String(input ?? "").trim().toLowerCase();
+  switch (v) {
+    case "hosting":
+      return LedgerCategory.hosting;
+    case "saas":
+      return LedgerCategory.saas;
+    case "domain":
+      return LedgerCategory.domain;
+    case "email":
+      return LedgerCategory.email;
+    case "social":
+      return LedgerCategory.social;
+    case "infra":
+      return LedgerCategory.infra;
+    case "ads":
+      return LedgerCategory.ads;
+    case "other":
+      return LedgerCategory.other;
+    case "subscription":
+      return LedgerCategory.subscription;
+    case "ai_spend":
+    case "token_spend":
+    case "api_spend":
+    case "tokens":
+    case "api":
+      return LedgerCategory.ai_spend;
+    case "misc":
+    default:
+      return LedgerCategory.misc;
+  }
+}
+
+function normalizeLedgerEntryType(input: unknown): LedgerEntryType {
+  const v = String(input ?? "").trim().toLowerCase();
+  return v === "credit" ? LedgerEntryType.credit : LedgerEntryType.debit;
+}
 
 type AnyObj = Record<string, any>;
 
@@ -96,12 +135,8 @@ const LEDGER_CATEGORIES = new Set([
   "misc",
 ]);
 
-function toLedgerCategory(input: any): any {
-  const v = typeof input === "string" ? input : String(input ?? "");
-  if (LEDGER_CATEGORIES.has(v)) return v;
-  // Map common cost buckets to subscription by default
-  if (["hosting", "saas", "domain", "email", "social", "infra", "ads", "other"].includes(v)) return "subscription";
-  return "misc";
+function toLedgerCategory(input: unknown): LedgerCategory {
+  return normalizeLedgerCategory(input);
 }
 
 export async function assetsRoutes(app: FastifyInstance) {
@@ -190,14 +225,15 @@ export async function assetsRoutes(app: FastifyInstance) {
         await tx.ledgerEntry.create({
           data: {
             tenantId,
-            entryType: "debit",
-            category: "misc",
+            entryType: LedgerEntryType.debit,
+            category: LedgerCategory.misc,
             amountCents: BigInt(0),
             currency: "USD",
             description: `Asset created: ${created.name}`,
             externalRef: requestId,
             meta: { action: "ASSET_CREATED", entityType: "asset", entityId: created.id },
             occurredAt: new Date(),
+            createdAt: new Date(),
           },
         });
 
@@ -228,7 +264,7 @@ export async function assetsRoutes(app: FastifyInstance) {
           await tx.ledgerEntry.create({
             data: {
               tenantId,
-              entryType: "debit",
+              entryType: LedgerEntryType.debit,
               category: toLedgerCategory(category),
               amountCents: BigInt(mc),
               currency: String(currency),
@@ -236,6 +272,7 @@ export async function assetsRoutes(app: FastifyInstance) {
               externalRef: requestId,
               meta: { action: "ASSET_COST_ADDED", cadence, vendor, category, assetId: created.id },
               occurredAt: new Date(),
+            createdAt: new Date(),
             },
           });
         }
@@ -334,14 +371,15 @@ export async function assetsRoutes(app: FastifyInstance) {
         await tx.ledgerEntry.create({
           data: {
             tenantId: after.tenantId,
-            entryType: "debit",
-            category: "misc",
+            entryType: LedgerEntryType.debit,
+            category: LedgerCategory.misc,
             amountCents: BigInt(0),
             currency: "USD",
             description: `Asset updated: ${after.name}`,
             externalRef: requestId,
             meta: { action: "ASSET_UPDATED", entityType: "asset", entityId: after.id },
             occurredAt: new Date(),
+            createdAt: new Date(),
           },
         });
 
@@ -385,7 +423,7 @@ export async function assetsRoutes(app: FastifyInstance) {
           await tx.ledgerEntry.create({
             data: {
               tenantId: after.tenantId,
-              entryType: "debit",
+              entryType: LedgerEntryType.debit,
               category: toLedgerCategory(category),
               amountCents: BigInt(Math.max(0, Math.round(Number(cents) || 0))),
               currency: String(currency),
@@ -396,6 +434,7 @@ export async function assetsRoutes(app: FastifyInstance) {
               externalRef: requestId,
               meta: { action: costAction, cadence, vendor, category, assetId: after.id, beforeMonthlyCents: beforeMc, afterMonthlyCents: afterMc },
               occurredAt: new Date(),
+            createdAt: new Date(),
             },
           });
         }
@@ -448,14 +487,15 @@ export async function assetsRoutes(app: FastifyInstance) {
         await tx.ledgerEntry.create({
           data: {
             tenantId: before.tenantId,
-            entryType: "debit",
-            category: "misc",
+            entryType: LedgerEntryType.debit,
+            category: LedgerCategory.misc,
             amountCents: BigInt(0),
             currency: "USD",
             description: `Asset deleted: ${before.name}`,
             externalRef: requestId,
             meta: { action: "ASSET_DELETED", entityType: "asset", entityId: before.id },
             occurredAt: new Date(),
+            createdAt: new Date(),
           },
         });
 

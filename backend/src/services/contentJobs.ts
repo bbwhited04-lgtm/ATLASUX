@@ -1,4 +1,43 @@
 import { Prisma, PrismaClient } from "@prisma/client";
+
+function normalizeLedgerCategory(input: unknown): LedgerCategory {
+  const v = String(input ?? "").trim().toLowerCase();
+  switch (v) {
+    case "hosting":
+      return LedgerCategory.hosting;
+    case "saas":
+      return LedgerCategory.saas;
+    case "domain":
+      return LedgerCategory.domain;
+    case "email":
+      return LedgerCategory.email;
+    case "social":
+      return LedgerCategory.social;
+    case "infra":
+      return LedgerCategory.infra;
+    case "ads":
+      return LedgerCategory.ads;
+    case "other":
+      return LedgerCategory.other;
+    case "subscription":
+      return LedgerCategory.subscription;
+    case "ai_spend":
+    case "token_spend":
+    case "api_spend":
+    case "tokens":
+    case "api":
+      return LedgerCategory.ai_spend;
+    case "misc":
+    default:
+      return LedgerCategory.misc;
+  }
+}
+
+function normalizeLedgerEntryType(input: unknown): LedgerEntryType {
+  const v = String(input ?? "").trim().toLowerCase();
+  return v === "credit" ? LedgerEntryType.credit : LedgerEntryType.debit;
+}
+
 const prisma = new PrismaClient();
 type CompleteJobInput = {
   jobId: string;
@@ -60,9 +99,11 @@ export async function completeContentJob(input: CompleteJobInput) {
       await tx.ledgerEntry.create({
         data: {
           tenantId: job.tenantId,
-          entryType: "debit",
-          category: "token_spend",
+          entryType: LedgerEntryType.debit,
+          category: LedgerCategory.ai_spend,
           amountCents,
+          occurredAt: new Date(),
+          createdAt: new Date(),
           currency: "USD",
           description: `content_job_cost (${nextStatus})`,
           externalRef: job.id,
