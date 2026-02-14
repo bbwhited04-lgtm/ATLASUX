@@ -910,7 +910,6 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
         </TabsContent>
 
 </Tabs>
-    </div>
 
           {/* Add Asset Modal */}
           {showAddAsset && selectedBusinessData && (
@@ -1029,6 +1028,9 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
               </div>
             </div>
           )}
+
+    </div>
+
 
   );
 }
