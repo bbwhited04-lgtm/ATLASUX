@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "../db/prisma.js";
+import { Prisma } from "@prisma/client";
 import { randomUUID } from "crypto";
 
 type AnyObj = Record<string, any>;
@@ -29,6 +30,54 @@ function getActor(req: any): Actor {
   return { actorUserId, actorExternalId, actorType };
 }
 
+function safeNumber(v: any): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  return n;
+}
+
+function toCostFromBody(body: AnyObj) {
+  // Supports both flat fields and nested cost object.
+  const nested = (body.cost ?? null) as AnyObj | null;
+
+  const monthlyCents =
+    safeNumber(nested?.monthlyCents ?? body.costMonthlyCents) ??
+    safeNumber(nested?.amountCents ?? body.costAmountCents);
+
+  const vendor = (nested?.vendor ?? body.costVendor) as any;
+  const cadence = (nested?.cadence ?? body.costCadence) as any;
+  const category = (nested?.category ?? body.costCategory) as any;
+  const currency = (nested?.currency ?? body.costCurrency ?? "USD") as any;
+
+  // "null" means clear cost
+  const wantsClear =
+    body.cost === null ||
+    body.costMonthlyCents === null ||
+    body.costAmountCents === null ||
+    (nested && (nested.monthlyCents === null || nested.amountCents === null));
+
+  if (wantsClear) return { clear: true } as const;
+
+  // No cost fields provided
+  const anyProvided =
+    monthlyCents !== null ||
+    typeof vendor === "string" ||
+    typeof cadence === "string" ||
+    typeof category === "string";
+
+  if (!anyProvided) return null;
+
+  return {
+    clear: false as const,
+    monthlyCents: monthlyCents !== null ? Math.max(0, Math.round(monthlyCents)) : undefined,
+    vendor: typeof vendor === "string" ? vendor.trim() : undefined,
+    cadence: typeof cadence === "string" ? cadence.trim() : undefined,
+    category: typeof category === "string" ? category.trim() : undefined,
+    currency: typeof currency === "string" ? currency.trim() : "USD",
+  };
+}
+
 function auditMeta(before: any, after: any, extra?: Record<string, any>) {
   return {
     before: before ?? null,
@@ -37,72 +86,40 @@ function auditMeta(before: any, after: any, extra?: Record<string, any>) {
   };
 }
 
-function normalizeCostFromBody(body: AnyObj) {
-  // Supports either flat fields or nested body.cost
-  const src = (body.cost && typeof body.cost === "object") ? (body.cost as AnyObj) : body;
+const LEDGER_CATEGORIES = new Set([
+  "subscription",
+  "token_spend",
+  "api_spend",
+  "refund",
+  "chargeback",
+  "payout",
+  "misc",
+]);
 
-  const centsRaw = src.costMonthlyCents ?? src.monthlyCents ?? src.amountCents ?? null;
-  const vendorRaw = src.costVendor ?? src.vendor ?? null;
-  const cadenceRaw = src.costCadence ?? src.cadence ?? "monthly";
-  const categoryRaw = src.costCategory ?? src.category ?? "hosting";
-  const currencyRaw = src.costCurrency ?? src.currency ?? "USD";
-
-  const monthlyCents =
-    typeof centsRaw === "number" ? Math.round(centsRaw) :
-    (typeof centsRaw === "string" && centsRaw.trim().length ? Math.round(Number(centsRaw)) : null);
-
-  const vendor = typeof vendorRaw === "string" ? vendorRaw.trim() : null;
-  const cadence = typeof cadenceRaw === "string" ? cadenceRaw.trim() : "monthly";
-  const category = typeof categoryRaw === "string" ? categoryRaw.trim() : "hosting";
-  const currency = typeof currencyRaw === "string" ? currencyRaw.trim() : "USD";
-
-  // if user explicitly sends null/0/empty -> treat as removal
-  const provided = ("cost" in body) || ("costMonthlyCents" in body) || ("monthlyCents" in body) || ("amountCents" in body);
-  const hasCost = monthlyCents !== null && !Number.isNaN(monthlyCents) && monthlyCents > 0;
-
-  return {
-    provided,
-    hasCost,
-    cost: hasCost ? { monthlyCents, vendor, cadence, category, currency } : null,
-  };
-}
-
-function ledgerCategoryForCost(category: string) {
-  // Prisma enum LedgerCategory: subscription, token_spend, api_spend, refund, chargeback, payout, misc
-  const c = (category || "").toLowerCase();
-  if (["hosting", "saas", "subscription", "domain", "email", "social", "infra", "platform"].includes(c)) return "subscription";
+function toLedgerCategory(input: any): any {
+  const v = typeof input === "string" ? input : String(input ?? "");
+  if (LEDGER_CATEGORIES.has(v)) return v;
+  // Map common cost buckets to subscription by default
+  if (["hosting", "saas", "domain", "email", "social", "infra", "ads", "other"].includes(v)) return "subscription";
   return "misc";
 }
 
 export async function assetsRoutes(app: FastifyInstance) {
   /**
    * GET /v1/assets?tenantId=...  (uuid)
-   * Optional: ?tenantSlug=...
    */
   app.get("/", async (req, reply) => {
     const q = (req.query ?? {}) as AnyObj;
     const tenantId = typeof q.tenantId === "string" ? q.tenantId : null;
-    const tenantSlug = typeof q.tenantSlug === "string" ? q.tenantSlug : null;
 
-    if (!tenantId && !tenantSlug) {
-      return reply.code(400).send({ ok: false, error: "tenant_required" });
-    }
-
-    const tenant =
-      tenantId
-        ? await prisma.tenant.findUnique({ where: { id: tenantId } })
-        : await prisma.tenant.findUnique({ where: { slug: tenantSlug! } });
-
-    if (!tenant) {
-      return reply.code(404).send({ ok: false, error: "tenant_not_found" });
-    }
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId_required" });
 
     const assets = await prisma.asset.findMany({
-      where: { tenantId: tenant.id },
+      where: { tenantId },
       orderBy: { createdAt: "desc" },
     });
 
-    return reply.send({ ok: true, tenantId: tenant.id, assets });
+    return reply.send({ ok: true, assets });
   });
 
   /**
@@ -113,43 +130,47 @@ export async function assetsRoutes(app: FastifyInstance) {
     const body = (req.body ?? {}) as AnyObj;
 
     const tenantId = typeof body.tenantId === "string" ? body.tenantId : null;
-    const type = String(body.type ?? "").trim();
-    const name = String(body.name ?? "").trim();
-    const url = String(body.url ?? "").trim();
-    const platform = typeof body.platform === "string" && body.platform.trim().length ? body.platform.trim() : null;
-    const metrics = (body.metrics && typeof body.metrics === "object") ? body.metrics : null;
+    const type = typeof body.type === "string" ? body.type.trim() : null;
+    const name = typeof body.name === "string" ? body.name.trim() : null;
+    const url = typeof body.url === "string" ? body.url.trim() : null;
+    const platform = typeof body.platform === "string" ? body.platform.trim() : null;
 
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId_required" });
     if (!type) return reply.code(400).send({ ok: false, error: "type_required" });
     if (!name) return reply.code(400).send({ ok: false, error: "name_required" });
     if (!url) return reply.code(400).send({ ok: false, error: "url_required" });
 
-    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
-    if (!tenant) return reply.code(404).send({ ok: false, error: "tenant_not_found" });
-
     const actor = getActor(req);
     const requestId = randomUUID();
 
-    const costParsed = normalizeCostFromBody(body);
-    const nextMetrics: AnyObj | null = metrics ? { ...metrics } : {};
-    if (costParsed.provided) {
-      nextMetrics.cost = costParsed.cost; // store cost profile on asset
+    const incomingMetrics = (body.metrics ?? null) as AnyObj | null;
+    const metricsObj: AnyObj = incomingMetrics && typeof incomingMetrics === "object" ? { ...incomingMetrics } : {};
+
+    const cost = toCostFromBody(body);
+    if (cost && cost.clear === false) {
+      metricsObj.cost = {
+        monthlyCents: cost.monthlyCents ?? metricsObj?.cost?.monthlyCents,
+        vendor: cost.vendor ?? metricsObj?.cost?.vendor,
+        cadence: cost.cadence ?? metricsObj?.cost?.cadence ?? "monthly",
+        category: cost.category ?? metricsObj?.cost?.category ?? "hosting",
+        currency: cost.currency ?? metricsObj?.cost?.currency ?? "USD",
+      };
     }
+    // on create, "clear" just means don't set cost.
 
     try {
-      const created = await prisma.$transaction(async (tx) => {
-        const asset = await tx.asset.create({
+      const asset = await prisma.$transaction(async (tx) => {
+        const created = await tx.asset.create({
           data: {
             tenantId,
             type,
             name,
             url,
             platform,
-            metrics: nextMetrics,
+            metrics: Object.keys(metricsObj).length ? metricsObj : Prisma.DbNull,
           },
         });
 
-        // Asset created audit + $0 ledger
         await tx.auditLog.create({
           data: {
             tenantId,
@@ -159,9 +180,9 @@ export async function assetsRoutes(app: FastifyInstance) {
             level: "info",
             action: "ASSET_CREATED",
             entityType: "asset",
-            entityId: asset.id,
-            message: `Asset created: ${asset.name}`,
-            meta: auditMeta(null, asset, { requestId }),
+            entityId: created.id,
+            message: `Asset created: ${created.name}`,
+            meta: auditMeta(null, created, { requestId }),
             timestamp: new Date(),
           },
         });
@@ -173,25 +194,20 @@ export async function assetsRoutes(app: FastifyInstance) {
             category: "misc",
             amountCents: BigInt(0),
             currency: "USD",
-            description: `Asset created: ${asset.name}`,
+            description: `Asset created: ${created.name}`,
             externalRef: requestId,
-            meta: { action: "ASSET_CREATED", entityType: "asset", entityId: asset.id },
+            meta: { action: "ASSET_CREATED", entityType: "asset", entityId: created.id },
             occurredAt: new Date(),
           },
         });
 
-        // Optional: cost profile -> audit + ledger (estimated recurring)
-        if (costParsed.hasCost && costParsed.cost) {
-          const costId = randomUUID();
-          const costMeta = {
-            costId,
-            cadence: costParsed.cost.cadence,
-            vendor: costParsed.cost.vendor,
-            category: costParsed.cost.category,
-            currency: costParsed.cost.currency,
-            monthlyCents: costParsed.cost.monthlyCents,
-            note: "estimated_recurring_cost",
-          };
+        // If cost provided on create, emit cost event + ledger debit estimate
+        if ((created as any)?.metrics?.cost?.monthlyCents) {
+          const mc = Number((created as any).metrics.cost.monthlyCents) || 0;
+          const vendor = (created as any).metrics.cost.vendor ?? null;
+          const cadence = (created as any).metrics.cost.cadence ?? "monthly";
+          const category = (created as any).metrics.cost.category ?? "hosting";
+          const currency = (created as any).metrics.cost.currency ?? "USD";
 
           await tx.auditLog.create({
             data: {
@@ -202,9 +218,9 @@ export async function assetsRoutes(app: FastifyInstance) {
               level: "info",
               action: "ASSET_COST_ADDED",
               entityType: "asset",
-              entityId: asset.id,
-              message: `Cost added: ${asset.name}`,
-              meta: auditMeta(null, costParsed.cost, { requestId, ...costMeta }),
+              entityId: created.id,
+              message: `Asset cost added: ${created.name}`,
+              meta: auditMeta(null, (created as any).metrics.cost, { requestId }),
               timestamp: new Date(),
             },
           });
@@ -213,21 +229,21 @@ export async function assetsRoutes(app: FastifyInstance) {
             data: {
               tenantId,
               entryType: "debit",
-              category: ledgerCategoryForCost(costParsed.cost.category) as any,
-              amountCents: BigInt(costParsed.cost.monthlyCents),
-              currency: costParsed.cost.currency || "USD",
-              description: `Estimated ${costParsed.cost.cadence} cost: ${asset.name}${costParsed.cost.vendor ? ` (${costParsed.cost.vendor})` : ""}`,
+              category: toLedgerCategory(category),
+              amountCents: BigInt(mc),
+              currency: String(currency),
+              description: `Estimated ${cadence} cost: ${created.name}${vendor ? ` (${vendor})` : ""}`,
               externalRef: requestId,
-              meta: { action: "ASSET_COST_ADDED", entityType: "asset", entityId: asset.id, ...costMeta },
+              meta: { action: "ASSET_COST_ADDED", cadence, vendor, category, assetId: created.id },
               occurredAt: new Date(),
             },
           });
         }
 
-        return asset;
+        return created;
       });
 
-      return reply.send({ ok: true, asset: created });
+      return reply.send({ ok: true, asset });
     } catch (err) {
       console.error(err);
       return reply.code(500).send({ ok: false, error: "internal_error" });
@@ -236,8 +252,6 @@ export async function assetsRoutes(app: FastifyInstance) {
 
   /**
    * PATCH /v1/assets/:id
-   * Supports: type, name, url, platform, metrics, and optional cost fields:
-   * - costMonthlyCents / costVendor / costCadence / costCategory / costCurrency  (or body.cost.*)
    */
   app.patch("/:id", async (req, reply) => {
     const params = (req.params ?? {}) as AnyObj;
@@ -250,122 +264,147 @@ export async function assetsRoutes(app: FastifyInstance) {
     if (typeof body.name === "string") data.name = body.name.trim();
     if (typeof body.url === "string") data.url = body.url.trim();
     if (typeof body.platform === "string") data.platform = body.platform.trim() || null;
-    if (body.metrics !== undefined) data.metrics = body.metrics;
 
     const actor = getActor(req);
     const requestId = randomUUID();
-    const costParsed = normalizeCostFromBody(body);
 
     try {
       const updated = await prisma.$transaction(async (tx) => {
         const before = await tx.asset.findUnique({ where: { id } });
-        if (!before) return { asset: null as any, before: null as any };
+        if (!before) return { before: null as any, after: null as any };
 
-        // Merge metrics if cost provided
-        if (costParsed.provided) {
-          const base = (before.metrics && typeof before.metrics === "object") ? (before.metrics as AnyObj) : {};
-          const merged = { ...base, ...(typeof data.metrics === "object" ? data.metrics : {}) };
-          merged.cost = costParsed.cost; // null removes
-          data.metrics = merged;
+        // merge metrics
+        const beforeMetrics = (before as any).metrics;
+        const nextMetrics: AnyObj = beforeMetrics && typeof beforeMetrics === "object" ? { ...beforeMetrics } : {};
+
+        // explicit metrics replacement if provided
+        if (body.metrics !== undefined) {
+          const mIn = body.metrics;
+          if (mIn === null) {
+            // clear metrics
+            data.metrics = Prisma.DbNull;
+          } else if (typeof mIn === "object") {
+            data.metrics = mIn;
+          }
         }
 
-        const asset = await tx.asset.update({ where: { id }, data });
+        const cost = toCostFromBody(body);
+        if (cost) {
+          if (cost.clear) {
+            if (nextMetrics.cost !== undefined) delete nextMetrics.cost;
+          } else {
+            nextMetrics.cost = {
+              ...(typeof nextMetrics.cost === "object" ? nextMetrics.cost : {}),
+              ...(cost.monthlyCents !== undefined ? { monthlyCents: cost.monthlyCents } : {}),
+              ...(cost.vendor !== undefined ? { vendor: cost.vendor } : {}),
+              ...(cost.cadence !== undefined ? { cadence: cost.cadence } : {}),
+              ...(cost.category !== undefined ? { category: cost.category } : {}),
+              currency: cost.currency ?? (nextMetrics.cost?.currency ?? "USD"),
+            };
+          }
+          // apply merged metrics unless caller provided explicit data.metrics
+          if (data.metrics === undefined) {
+            data.metrics = Object.keys(nextMetrics).length ? nextMetrics : Prisma.DbNull;
+          }
+        }
 
-        // base audit + $0 ledger for update
+        // if data.metrics is still unset, but we mutated nextMetrics cost removal/addition
+        if (data.metrics === undefined && (cost !== null)) {
+          data.metrics = Object.keys(nextMetrics).length ? nextMetrics : Prisma.DbNull;
+        }
+
+        const after = await tx.asset.update({ where: { id }, data });
+
         await tx.auditLog.create({
           data: {
-            tenantId: asset.tenantId,
+            tenantId: after.tenantId,
             actorUserId: actor.actorUserId,
             actorExternalId: actor.actorExternalId,
             actorType: actor.actorType,
             level: "info",
             action: "ASSET_UPDATED",
             entityType: "asset",
-            entityId: asset.id,
-            message: `Asset updated: ${asset.name}`,
-            meta: auditMeta(before, asset, { requestId }),
+            entityId: after.id,
+            message: `Asset updated: ${after.name}`,
+            meta: auditMeta(before, after, { requestId }),
             timestamp: new Date(),
           },
         });
 
         await tx.ledgerEntry.create({
           data: {
-            tenantId: asset.tenantId,
+            tenantId: after.tenantId,
             entryType: "debit",
             category: "misc",
             amountCents: BigInt(0),
             currency: "USD",
-            description: `Asset updated: ${asset.name}`,
+            description: `Asset updated: ${after.name}`,
             externalRef: requestId,
-            meta: { action: "ASSET_UPDATED", entityType: "asset", entityId: asset.id },
+            meta: { action: "ASSET_UPDATED", entityType: "asset", entityId: after.id },
             occurredAt: new Date(),
           },
         });
 
-        // If cost provided: write cost-specific audit + ledger
-        if (costParsed.provided) {
-          const beforeCost = (before.metrics && (before.metrics as AnyObj)?.cost) ? (before.metrics as AnyObj).cost : null;
-          const afterCost = costParsed.cost;
+        // cost audit/ledger if changed
+        const beforeCost = (before as any)?.metrics?.cost ?? null;
+        const afterCost = (after as any)?.metrics?.cost ?? null;
 
-          const action =
-            (!beforeCost && afterCost) ? "ASSET_COST_ADDED" :
-            (beforeCost && !afterCost) ? "ASSET_COST_REMOVED" :
-            "ASSET_COST_UPDATED";
+        const beforeMc = beforeCost?.monthlyCents ?? null;
+        const afterMc = afterCost?.monthlyCents ?? null;
 
+        const costAction =
+          beforeCost && !afterCost ? "ASSET_COST_REMOVED" :
+          !beforeCost && afterCost ? "ASSET_COST_ADDED" :
+          JSON.stringify(beforeCost) !== JSON.stringify(afterCost) ? "ASSET_COST_UPDATED" :
+          null;
+
+        if (costAction) {
           await tx.auditLog.create({
             data: {
-              tenantId: asset.tenantId,
+              tenantId: after.tenantId,
               actorUserId: actor.actorUserId,
               actorExternalId: actor.actorExternalId,
               actorType: actor.actorType,
               level: "info",
-              action,
+              action: costAction,
               entityType: "asset",
-              entityId: asset.id,
-              message: `${action.replaceAll("_", " ")}: ${asset.name}`,
+              entityId: after.id,
+              message: `Asset cost event: ${after.name}`,
               meta: auditMeta(beforeCost, afterCost, { requestId }),
               timestamp: new Date(),
             },
           });
 
-          // ledger entry only when adding/updating with positive cost
-          if (afterCost && typeof afterCost.monthlyCents === "number" && afterCost.monthlyCents > 0) {
-            await tx.ledgerEntry.create({
-              data: {
-                tenantId: asset.tenantId,
-                entryType: "debit",
-                category: ledgerCategoryForCost(afterCost.category) as any,
-                amountCents: BigInt(afterCost.monthlyCents),
-                currency: afterCost.currency || "USD",
-                description: `Estimated ${afterCost.cadence} cost: ${asset.name}${afterCost.vendor ? ` (${afterCost.vendor})` : ""}`,
-                externalRef: requestId,
-                meta: { action, entityType: "asset", entityId: asset.id, cadence: afterCost.cadence, vendor: afterCost.vendor, category: afterCost.category },
-                occurredAt: new Date(),
-              },
-            });
-          } else {
-            // still record a $0 ledger marker for removal
-            await tx.ledgerEntry.create({
-              data: {
-                tenantId: asset.tenantId,
-                entryType: "debit",
-                category: "misc",
-                amountCents: BigInt(0),
-                currency: "USD",
-                description: `Cost removed/cleared: ${asset.name}`,
-                externalRef: requestId,
-                meta: { action, entityType: "asset", entityId: asset.id },
-                occurredAt: new Date(),
-              },
-            });
-          }
+          // Write ledger debit for added/updated; for removed, write $0 marker.
+          const cents = afterCost?.monthlyCents ? Number(afterCost.monthlyCents) : 0;
+          const vendor = afterCost?.vendor ?? null;
+          const cadence = afterCost?.cadence ?? "monthly";
+          const category = afterCost?.category ?? "hosting";
+          const currency = afterCost?.currency ?? "USD";
+
+          await tx.ledgerEntry.create({
+            data: {
+              tenantId: after.tenantId,
+              entryType: "debit",
+              category: toLedgerCategory(category),
+              amountCents: BigInt(Math.max(0, Math.round(Number(cents) || 0))),
+              currency: String(currency),
+              description:
+                costAction === "ASSET_COST_REMOVED"
+                  ? `Estimated cost removed: ${after.name}`
+                  : `Estimated ${cadence} cost: ${after.name}${vendor ? ` (${vendor})` : ""}`,
+              externalRef: requestId,
+              meta: { action: costAction, cadence, vendor, category, assetId: after.id, beforeMonthlyCents: beforeMc, afterMonthlyCents: afterMc },
+              occurredAt: new Date(),
+            },
+          });
         }
 
-        return { asset, before };
+        return { before, after };
       });
 
-      if (!updated.asset) return reply.code(404).send({ ok: false, error: "asset_not_found" });
-      return reply.send({ ok: true, asset: updated.asset });
+      if (!updated.after) return reply.code(404).send({ ok: false, error: "asset_not_found" });
+      return reply.send({ ok: true, asset: updated.after });
     } catch (err) {
       console.error(err);
       return reply.code(500).send({ ok: false, error: "internal_error" });

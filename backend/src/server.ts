@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 
-// Routes (adjust paths if your filenames differ)
+// Routes
 import { chatRoutes } from "./routes/chatRoutes.js";
 import { auditRoutes } from "./routes/auditRoutes.js";
 import { businessManagerRoutes } from "./routes/businessManagerRoutes.js";
@@ -14,61 +14,26 @@ import { ledgerRoutes } from "./routes/ledger.js";
 // Plugin (default export)
 import auditPlugin from "./plugins/auditPlugin.js";
 
-export async function buildServer() {
-  const app = Fastify({ logger: true });
+const app = Fastify({ logger: true });
 
-  // --- CORS (global) ---
-  await app.register(cors, {
-    origin: [
-      "https://www.atlasux.cloud",
-      "https://atlasux.cloud",
-      "http://localhost:5173",
-      "http://localhost:3000",
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  });
+await app.register(cors, { origin: true, credentials: true });
 
-  // --- Health / sanity endpoints ---
-  app.get("/", async () => ({
-    ok: true,
-    service: "atlasux-backend",
-    ts: new Date().toISOString(),
-  }));
-  app.get("/site_integration", async (req, reply) => {
-  // forward/alias to the v1 handler response shape
-  const q = (req.query ?? {}) as any;
-  return reply.send({
-    ok: true,
-    org_id: q.org_id ?? "demo_org",
-    user_id: q.user_id ?? "demo_user",
-    providers: [],
-    ts: new Date().toISOString(),
-  });
+// Plugins
+await app.register(auditPlugin);
+
+// Route prefixes
+await app.register(chatRoutes, { prefix: "/v1/chat" });
+await app.register(auditRoutes, { prefix: "/v1/audit" });
+await app.register(businessManagerRoutes, { prefix: "/v1/business" });
+await app.register(jobsRoutes, { prefix: "/v1/jobs" });
+await app.register(accountingRoutes, { prefix: "/v1/accounting" });
+await app.register(tenantsRoutes, { prefix: "/v1/tenants" });
+await app.register(assetsRoutes, { prefix: "/v1/assets" });
+await app.register(ledgerRoutes, { prefix: "/v1/ledger" });
+
+const port = Number(process.env.PORT ?? 8787);
+const host = "0.0.0.0";
+
+app.listen({ port, host }).then(() => {
+  app.log.info(`AtlasUX backend listening on :${port}`);
 });
-  app.get("/__version", async () => ({
-    ok: true,
-    stamp: process.env.BUILD_STAMP || "no_stamp",
-    node: process.version,
-    env: process.env.NODE_ENV || "unknown",
-    ts: new Date().toISOString(),
-  }));
-
-  // --- API Routes (match the UI calls) ---
-  app.register(accountingRoutes, { prefix: "/v1/accounting" });
-  app.register(jobsRoutes, { prefix: "/v1/jobs" });
-  app.register(businessManagerRoutes, { prefix: "/v1/integrations" });
-  app.register(auditRoutes, { prefix: "/v1/audit" });
-  app.register(chatRoutes, { prefix: "/v1/chat" });
-  app.register(tenantsRoutes, { prefix: "/v1/tenants"});
-  app.register(assetsRoutes, { prefix: "/v1/assets" });
-  app.register(ledgerRoutes, { prefix: "/v1/ledger" });
-  // --- Plugins (auto audit hooks, etc.) ---
-  app.register(auditPlugin);
-
-  return app;
-}
-
-// If Render runs dist/server.js directly, this will start the server.
-// If you use dist/index.js, this still works fine (it just won’t be executed unless imported/run).
-
