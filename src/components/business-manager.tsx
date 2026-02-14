@@ -119,6 +119,27 @@ async function disconnect(provider: "google" | "meta") {
   await refreshAll();
 }
 
+  async function createBusiness(payload: {
+    name: string;
+    description?: string;
+    color?: string;
+    }) {
+  const res = await fetch(`${API_BASE}/v1/tenants`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok || json?.ok === false) {
+    throw new Error(json?.error || json?.message || "Create business failed");
+  }
+
+  return json.tenant;
+}
+
+
 async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
   const payload = { requested_from: "business_manager" };
   const res = await fetch(`${API_BASE}/v1/jobs`, {
@@ -559,27 +580,40 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                       Cancel
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!newBusinessForm.name.trim()) return;
+                   <button
+                    type="button"
+                    onClick={async () => {
+                    if (!newBusinessForm.name.trim()) return;
 
-                        // TODO: Save business to database
-                        console.log('Creating business:', newBusinessForm);
+                    try {
+                      console.log("Creating business:", newBusinessForm);
 
-                        setShowAddBusiness(false);
-                        setShowColorPicker(false);
-                        setNewBusinessForm({ name: '', description: '', color: 'from-cyan-500 to-blue-500' });
-                      }}
-                      disabled={!newBusinessForm.name.trim()}
-                      className={`px-10 py-4 rounded-xl font-medium transition-all min-w-[220px] ${
-                        newBusinessForm.name.trim()
-                          ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white'
-                          : 'bg-transparent text-slate-500 cursor-not-allowed'
-                      }`}
-                    >
-                      Create Business
-                    </button>
+      await createBusiness({
+        name: newBusinessForm.name.trim(),
+        description: newBusinessForm.description?.trim() || undefined,
+        color: newBusinessForm.color,
+      });
+
+      await refreshAll();
+
+      setShowAddBusiness(false);
+      setShowColorPicker(false);
+      setNewBusinessForm({ name: "", description: "", color: "from-cyan-500 to-blue-500" });
+    } catch (err) {
+      console.error("Create business failed:", err);
+      setWarning(err instanceof Error ? err.message : String(err));
+    }
+  }}
+  disabled={!newBusinessForm.name.trim()}
+  className={`px-10 py-4 rounded-xl font-medium transition-all min-w-[220px] ${
+    newBusinessForm.name.trim()
+      ? "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white"
+      : "bg-transparent text-slate-500 cursor-not-allowed"
+  }`}
+>
+  Create Business
+</button>
+ 
                   </div>
                 </div>
               </div>
