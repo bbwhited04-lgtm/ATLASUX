@@ -7,6 +7,7 @@ import { auditRoutes } from "./routes/auditRoutes.js";
 import { businessManagerRoutes } from "./routes/businessManagerRoutes.js";
 import { jobsRoutes } from "./routes/jobsRoutes.js";
 import { accountingRoutes } from "./routes/accountingRoutes.js";
+import { tenantsRoutes } from "./routes/tenants.js";
 
 // Plugin (default export)
 import auditPlugin from "./plugins/auditPlugin.js";
@@ -57,6 +58,7 @@ export async function buildServer() {
   app.register(businessManagerRoutes, { prefix: "/v1/integrations" });
   app.register(auditRoutes, { prefix: "/v1/audit" });
   app.register(chatRoutes, { prefix: "/v1/chat" });
+  app.register(tenantsRoutes, { prefix: "/v1/tenants"});
 
   // --- Plugins (auto audit hooks, etc.) ---
   app.register(auditPlugin);
