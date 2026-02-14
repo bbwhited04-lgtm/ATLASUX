@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient, LedgerCategory, LedgerEntryType } from "@prisma/client";
 
 function normalizeLedgerCategory(input: unknown): LedgerCategory {
   const v = String(input ?? "").trim().toLowerCase();

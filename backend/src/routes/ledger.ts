@@ -43,12 +43,6 @@ function normalizeLedgerEntryType(input: unknown): LedgerEntryType {
 
 type AnyObj = Record<string, any>;
 
-const LEDGER_CATEGORIES = new Set(["subscription","token_spend","api_spend","refund","chargeback","payout","misc"]);
-function toLedgerCategory(input: any): any {
-  const v = typeof input === "string" ? input : String(input ?? "");
-  if (LEDGER_CATEGORIES.has(v)) return v;
-  return "misc";
-}
 
 export async function ledgerRoutes(app: FastifyInstance) {
   /**
@@ -77,7 +71,7 @@ export async function ledgerRoutes(app: FastifyInstance) {
     monthStart.setHours(0, 0, 0, 0);
 
     const monthDebits = await prisma.ledgerEntry.aggregate({
-      where: { tenantId, occurredAt: { gte: monthStart }, entryType: "debit" },
+      where: { tenantId, occurredAt: { gte: monthStart }, entryType: LedgerEntryType.debit },
       _sum: { amountCents: true },
     });
 
@@ -96,9 +90,9 @@ export async function ledgerRoutes(app: FastifyInstance) {
     const body = (req.body ?? {}) as AnyObj;
 
     const tenantId = typeof body.tenantId === "string" ? body.tenantId : null;
-        const entryTypeRaw = String(body.entryType ?? "debit").trim();
-    const entryType: normalizeLedgerEntryType(LedgerEntryType) = entryTypeRaw === "credit" ? LedgerEntryType.credit : LedgerEntryType.debit;
-    const category = toLedgerCategory(body.category ?? "misc");
+    const entryTypeRaw = String(body.entryType ?? "debit").trim();
+    const entryType: LedgerEntryType = normalizeLedgerEntryType(entryTypeRaw);
+    const category: LedgerCategory = normalizeLedgerCategory(body.category ?? "misc");
     const currency = String(body.currency ?? "USD").trim();
     const description = String(body.description ?? "").trim();
 
@@ -113,7 +107,6 @@ export async function ledgerRoutes(app: FastifyInstance) {
         entryType,
         category,
         amountCents,
-        occurredAt: new Date(),
         createdAt: new Date(),
         currency,
         description,
