@@ -40,9 +40,20 @@ enum JobStatus {
 enum LedgerEntryType {
   credit
   debit
+
+  @@map("ledger_entry_type")
 }
 
 enum LedgerCategory {
+  hosting
+  supabase
+  domain
+  email
+  social
+  infra
+  ads 
+  other
+  ai_spend 
   subscription
   token_spend
   api_spend
@@ -115,7 +126,7 @@ model AuditLog {
 
 model Job {
   id            String      @id @default(uuid())
-  tenantId      String
+  tenantId      String      
   requestedBy   String?
   status        JobStatus   @default(queued)
   jobType       String
@@ -131,17 +142,17 @@ model Job {
 }
 
 model LedgerEntry {
-  id            String           @id @default(uuid())
-  tenantId      String
-  entryType     LedgerEntryType
+  id            String           @id @default(uuid()) @db.Uuid
+  tenantId      String           @map("tenant_id") @db.Uuid
+  entryType     LedgerEntryType  @map("entry_type")
   category      LedgerCategory
-  amountCents   BigInt
+  amountCents   BigInt           @map("amount_cents")
   currency      String           @default("USD")
   description   String?
-  externalRef   String?
+  externalRef   String?          @map("external_ref")
   meta          Json?
-  occurredAt    DateTime         @default(now())
-  createdAt     DateTime         @default(now())
+  occurredAt    DateTime         @map("occurred_at") @db.Timestamptz(6)
+  createdAt     DateTime         @map("created_at") @db.Timestamptz(6)
   tenant        Tenant           @relation(fields: [tenantId], references: [id])
   @@map("ledger_entries")
 }
