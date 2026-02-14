@@ -37,6 +37,21 @@ interface Asset {
   };
 }
 
+type LedgerEntry = {
+  id: string;
+  tenantId: string;
+  entryType: "debit" | "credit";
+  category: string;
+  amountCents: any; // bigint serialized from API may be string/number
+  currency: string;
+  description: string;
+  externalRef?: string | null;
+  meta?: any;
+  occurredAt: string;
+  createdAt?: string;
+};
+
+
 interface Business {
   id: string;
   name: string;
@@ -67,6 +82,9 @@ export function BusinessManager() {
     await loadAssetsForTenant(tenantId).catch((err) => {
       console.error("Failed to load assets:", err);
       setWarning(err instanceof Error ? err.message : String(err));
+    });
+    await loadLedgerForTenant(tenantId).catch((err) => {
+      console.error("Failed to load ledger:", err);
     });
   }
 
@@ -215,6 +233,29 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
     | 'smart-automation'
     | 'email-client'
   >('hub');
+
+  const [assetSubView, setAssetSubView] = useState<"assets" | "accounting">("assets");
+
+  const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [ledgerMonthDebitCents, setLedgerMonthDebitCents] = useState<number>(0);
+
+  async function loadLedgerForTenant(tenantId: string) {
+    if (!tenantId) return;
+    setLedgerLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/ledger/entries?tenantId=${encodeURIComponent(tenantId)}&limit=100`);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.ok === false) {
+        throw new Error(json?.error || json?.message || "Failed to load ledger");
+      }
+      setLedgerEntries(Array.isArray(json?.entries) ? json.entries : []);
+      setLedgerMonthDebitCents(Number(json?.monthDebitCents ?? 0));
+    } finally {
+      setLedgerLoading(false);
+    }
+  }
+
 
   // Tenants (Businesses) are the source-of-truth for "Total businesses"
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -526,7 +567,9 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                       </button>
                     </div>
 
-                    <div className="space-y-3">
+                    
+{assetSubView === "assets" ? (
+                      <div className="space-y-3">
                       {selectedBusinessData.assets.map((asset) => {
                         const AssetIcon = getAssetIcon(asset.type);
                         const PlatformIcon = asset.platform ? getPlatformIcon(asset.platform) : AssetIcon;
@@ -588,7 +631,53 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                           </div>
                         );
                       })}
-                    </div>
+                    </div>                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm text-slate-400">Month debits</div>
+                            <div className="text-xl font-bold text-white">${(ledgerMonthDebitCents / 100).toFixed(2)}</div>
+                          </div>
+                          <button
+                            onClick={() => selectedBusinessData?.id && loadLedgerForTenant(selectedBusinessData.id)}
+                            className="px-3 py-2 rounded-lg text-sm bg-slate-900/60 border border-cyan-500/20 text-slate-200 hover:bg-slate-900"
+                          >
+                            {ledgerLoading ? "Refreshing…" : "Refresh ledger"}
+                          </button>
+                        </div>
+
+                        <div className="bg-slate-800/30 border border-slate-700 rounded-xl overflow-hidden">
+                          <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-700 text-xs text-slate-400">
+                            <div className="col-span-2">Date</div>
+                            <div className="col-span-2">Type</div>
+                            <div className="col-span-2">Category</div>
+                            <div className="col-span-4">Description</div>
+                            <div className="col-span-2 text-right">Amount</div>
+                          </div>
+
+                          {ledgerLoading ? (
+                            <div className="p-4 text-slate-400">Loading…</div>
+                          ) : ledgerEntries.length === 0 ? (
+                            <div className="p-4 text-slate-400">No ledger entries yet.</div>
+                          ) : (
+                            ledgerEntries.map((e) => {
+                              const cents = Number(e.amountCents ?? 0);
+                              return (
+                                <div key={e.id} className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-700/50 text-sm text-white">
+                                  <div className="col-span-2 text-slate-300">{new Date(e.occurredAt).toLocaleDateString()}</div>
+                                  <div className="col-span-2">{e.entryType}</div>
+                                  <div className="col-span-2 text-slate-300">{e.category}</div>
+                                  <div className="col-span-4 text-slate-200 truncate" title={e.description}>{e.description}</div>
+                                  <div className="col-span-2 text-right font-mono">
+                                    {(e.entryType === "debit" ? "-" : "+")}${(cents / 100).toFixed(2)}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-12">
@@ -1019,6 +1108,74 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                     <div className="text-xs text-slate-400">
                       {assetsLoading ? "Saving/refreshing…" : "Assets will be scoped to this business."}
                     </div>
+
+                  {/* Cost (optional) */}
+                  <div className="border border-slate-800 rounded-xl p-4 bg-slate-950/30">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <div className="text-sm font-semibold text-white">Cost (optional)</div>
+                        <div className="text-xs text-slate-400">Attach recurring/one-time cost so Accounting can track it</div>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white mb-2">Amount (USD)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="e.g., 14.00"
+                          value={newAssetForm.costMonthlyUsd}
+                          onChange={(e) => SETnewAssetForm({ ...newAssetForm, costMonthlyUsd: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                        />
+                        <div className="text-xs text-slate-500 mt-1">For monthly costs, enter monthly amount. For yearly, enter yearly amount.</div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white mb-2">Vendor</label>
+                        <input
+                          type="text"
+                          placeholder="e.g., Render, Vercel, AWS, Sprout, QuickBooks"
+                          value={newAssetForm.costVendor}
+                          onChange={(e) => SETnewAssetForm({ ...newAssetForm, costVendor: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white mb-2">Cadence</label>
+                        <select
+                          value={newAssetForm.costCadence}
+                          onChange={(e) => SETnewAssetForm({ ...newAssetForm, costCadence: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                        >
+                          <option value="monthly">Monthly</option>
+                          <option value="yearly">Yearly</option>
+                          <option value="one_time">One-time</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white mb-2">Category</label>
+                        <select
+                          value={newAssetForm.costCategory}
+                          onChange={(e) => SETnewAssetForm({ ...newAssetForm, costCategory: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                        >
+                          <option value="hosting">Hosting</option>
+                          <option value="saas">SaaS</option>
+                          <option value="domain">Domain/DNS</option>
+                          <option value="email">Email</option>
+                          <option value="social">Social</option>
+                          <option value="infra">Infra</option>
+                          <option value="ads">Ads</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => setShowAddAsset(false)}
@@ -1036,9 +1193,13 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                               name: newAssetForm.name,
                               url: newAssetForm.url,
                               platform: newAssetForm.platform || undefined,
+                              costMonthlyCents: newAssetForm.costMonthlyUsd && String(newAssetForm.costMonthlyUsd).trim().length ? Math.round(Number(newAssetForm.costMonthlyUsd) * 100) : undefined,
+                              costVendor: newAssetForm.costVendor || undefined,
+                              costCadence: newAssetForm.costCadence || undefined,
+                              costCategory: newAssetForm.costCategory || undefined,
                             });
                             await loadAssetsForTenant(selectedBusinessData.id);
-                            setNewAssetForm({ type: "domain", name: "", url: "", platform: "" });
+                            setNewAssetForm({ type: "domain", name: "", url: "", platform: "", costMonthlyUsd: "", costVendor: "", costCadence: "monthly", costCategory: "hosting" });
                             setShowAddAsset(false);
                           } catch (err) {
                             console.error(err);
@@ -1129,6 +1290,74 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                     <div className="text-xs text-slate-400">
                       {assetsLoading ? "Saving/refreshing…" : "Updates apply immediately."}
                     </div>
+
+                  {/* Cost (optional) */}
+                  <div className="border border-slate-800 rounded-xl p-4 bg-slate-950/30">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <div className="text-sm font-semibold text-white">Cost (optional)</div>
+                        <div className="text-xs text-slate-400">Attach recurring/one-time cost so Accounting can track it</div>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white mb-2">Amount (USD)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="e.g., 14.00"
+                          value={editAssetForm.costMonthlyUsd}
+                          onChange={(e) => SETeditAssetForm({ ...editAssetForm, costMonthlyUsd: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                        />
+                        <div className="text-xs text-slate-500 mt-1">For monthly costs, enter monthly amount. For yearly, enter yearly amount.</div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white mb-2">Vendor</label>
+                        <input
+                          type="text"
+                          placeholder="e.g., Render, Vercel, AWS, Sprout, QuickBooks"
+                          value={editAssetForm.costVendor}
+                          onChange={(e) => SETeditAssetForm({ ...editAssetForm, costVendor: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white mb-2">Cadence</label>
+                        <select
+                          value={editAssetForm.costCadence}
+                          onChange={(e) => SETeditAssetForm({ ...editAssetForm, costCadence: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                        >
+                          <option value="monthly">Monthly</option>
+                          <option value="yearly">Yearly</option>
+                          <option value="one_time">One-time</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white mb-2">Category</label>
+                        <select
+                          value={editAssetForm.costCategory}
+                          onChange={(e) => SETeditAssetForm({ ...editAssetForm, costCategory: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
+                        >
+                          <option value="hosting">Hosting</option>
+                          <option value="saas">SaaS</option>
+                          <option value="domain">Domain/DNS</option>
+                          <option value="email">Email</option>
+                          <option value="social">Social</option>
+                          <option value="infra">Infra</option>
+                          <option value="ads">Ads</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => { setShowEditAsset(false); setEditingAsset(null); }}
@@ -1145,6 +1374,10 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                               name: editAssetForm.name,
                               url: editAssetForm.url,
                               platform: editAssetForm.platform || null,
+                              costMonthlyCents: editAssetForm.costMonthlyUsd && String(editAssetForm.costMonthlyUsd).trim().length ? Math.round(Number(editAssetForm.costMonthlyUsd) * 100) : null,
+                              costVendor: editAssetForm.costVendor || null,
+                              costCadence: editAssetForm.costCadence || null,
+                              costCategory: editAssetForm.costCategory || null,
                             });
                             await loadAssetsForTenant(selectedBusinessData.id);
                             setShowEditAsset(false);

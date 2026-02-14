@@ -9,6 +9,7 @@ import { jobsRoutes } from "./routes/jobsRoutes.js";
 import { accountingRoutes } from "./routes/accountingRoutes.js";
 import { tenantsRoutes } from "./routes/tenants.js";
 import { assetsRoutes } from "./routes/assets.js";
+import { ledgerRoutes } from "./routes/ledger.js";
 
 // Plugin (default export)
 import auditPlugin from "./plugins/auditPlugin.js";
@@ -61,7 +62,7 @@ export async function buildServer() {
   app.register(chatRoutes, { prefix: "/v1/chat" });
   app.register(tenantsRoutes, { prefix: "/v1/tenants"});
   app.register(assetsRoutes, { prefix: "/v1/assets" });
-
+  app.register(ledgerRoutes, { prefix: "/v1/ledger" });
   // --- Plugins (auto audit hooks, etc.) ---
   app.register(auditPlugin);
 
