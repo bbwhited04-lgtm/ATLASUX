@@ -32,7 +32,7 @@ await app.register(cors, {
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 });
-await app.register(cors, { origin: true, credentials: true });
+
 
 // Plugins
 await app.register(auditPlugin);
