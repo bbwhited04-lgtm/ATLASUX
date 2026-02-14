@@ -143,6 +143,7 @@ model LedgerEntry {
   occurredAt    DateTime         @default(now())
   createdAt     DateTime         @default(now())
   tenant        Tenant           @relation(fields: [tenantId], references: [id])
+  @@map("ledger_entries")
 }
 
 model Asset {
