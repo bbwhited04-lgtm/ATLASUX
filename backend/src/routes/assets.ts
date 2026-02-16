@@ -195,7 +195,7 @@ export async function assetsRoutes(app: FastifyInstance) {
     // on create, "clear" just means don't set cost.
 
     try {
-      const asset = await prisma.$transaction(async (tx) => {
+      const asset = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const created = await tx.asset.create({
           data: {
             tenantId,
@@ -315,7 +315,7 @@ export async function assetsRoutes(app: FastifyInstance) {
     const requestId = randomUUID();
 
     try {
-      const updated = await prisma.$transaction(async (tx) => {
+      const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const before = await tx.asset.findUnique({ where: { id } });
         if (!before) return { before: null as any, after: null as any };
 
@@ -479,7 +479,7 @@ export async function assetsRoutes(app: FastifyInstance) {
     const requestId = randomUUID();
 
     try {
-      const deleted = await prisma.$transaction(async (tx) => {
+      const deleted = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const before = await tx.asset.findUnique({ where: { id } });
         if (!before) return null;
 

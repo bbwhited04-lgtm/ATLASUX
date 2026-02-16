@@ -1,5 +1,12 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import "dotenv/config";
+
+// Plugins
+import auditPlugin from "./plugins/auditPlugin.js";
+import { authPlugin } from "./plugins/authPlugin.js";
+import { tenantPlugin } from "./plugins/tenantPlugin.js";
+import { engineRoutes } from "./routes/engineRoutes.js";
 
 // Routes
 import { chatRoutes } from "./routes/chatRoutes.js";
@@ -10,12 +17,7 @@ import { accountingRoutes } from "./routes/accountingRoutes.js";
 import { tenantsRoutes } from "./routes/tenants.js";
 import { assetsRoutes } from "./routes/assets.js";
 import { ledgerRoutes } from "./routes/ledger.js";
-import { authPlugin } from "./plugins/authPlugin.js";
-import { tenantPlugin } from "./plugins/tenantPlugin.js";
-await app.register(tenantPlugin);
-// Plugin (default export)
-import auditPlugin from "./plugins/auditPlugin.js";
-wait app.register(authPlugin);
+
 const app = Fastify({ logger: true });
 
 const allowed = new Set([
@@ -32,12 +34,14 @@ await app.register(cors, {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-tenant-id"],
 });
 
-
-// Plugins
+// Plugins (order matters)
 await app.register(auditPlugin);
+await app.register(authPlugin);
+await app.register(tenantPlugin);
+await app.register(engineRoutes, { prefix: "/v1/engine" });
 
 // Route prefixes
 await app.register(chatRoutes, { prefix: "/v1/chat" });

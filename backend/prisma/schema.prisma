@@ -7,6 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum IntentStatus {
+  DRAFT
+  VALIDATING
+  AWAITING_HUMAN
+  BLOCKED_SGL
+  EXECUTED
+  FAILED
+
+  @@map("intent_status")
+}
+
 enum IntegrationProvider {
   google
   microsoft
@@ -61,85 +72,112 @@ enum LedgerCategory {
 }
 
 model Tenant {
-  id        String   @id @default(uuid()) @db.Uuid
-  slug      String   @unique
+  id        String         @id @default(uuid()) @db.Uuid
+  slug      String         @unique
   name      String
-  members TenantMember[]
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  members   TenantMember[]
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
 
   integrations Integration[]
-  audits       AuditLog[] @relation("TenantAudits")
+  audits       AuditLog[]    @relation("TenantAudits")
   jobs         Job[]
   ledger       LedgerEntry[]
   assets       Asset[]
+  Intent       Intent[]
 
   @@map("tenants")
 }
 
+model Intent {
+  id        String @id @default(uuid()) @db.Uuid
+  tenantId  String @db.Uuid
+  createdBy String @db.Uuid
+
+  intentType String
+  payload    Json
+
+  status    IntentStatus @default(DRAFT)
+  sglResult String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+  @@map("intent")
+}
+
 model Integration {
-  id            String              @id @default(uuid())
-  tenantId      String?             @db.Uuid @map("tenant_id")
-  provider      IntegrationProvider
-  connected     Boolean             @default(false)
-  accessToken   String?
-  refreshToken  String?
-  tokenExpires  DateTime?
-  scopes        Json?
-  config        Json?
-  status        Json?
-  lastSyncAt    DateTime?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  tenant        Tenant?             @relation(fields: [tenantId], references: [id])
+  id           String              @id @default(uuid())
+  tenantId     String?             @map("tenant_id") @db.Uuid
+  provider     IntegrationProvider
+  connected    Boolean             @default(false)
+  accessToken  String?
+  refreshToken String?
+  tokenExpires DateTime?
+  scopes       Json?
+  config       Json?
+  status       Json?
+  lastSyncAt   DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  tenant       Tenant?             @relation(fields: [tenantId], references: [id])
+
   @@unique([tenantId, provider])
   @@map("integrations")
 }
 
 model AuditLog {
-  id              String     @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
 
-  tenantId        String?    @db.Uuid @map("tenant_id")
-  tenant          Tenant?    @relation("TenantAudits", fields: [tenantId], references: [id])
+  tenantId String? @map("tenant_id") @db.Uuid
+  tenant   Tenant? @relation("TenantAudits", fields: [tenantId], references: [id])
 
-  actorUserId     String?    @db.Uuid @map("actor_user_id")
-  actorExternalId String?    @map("actor_external_id")
-  actorType       String?    @map("actor_type")
+  actorUserId     String? @map("actor_user_id") @db.Uuid
+  actorExternalId String? @map("actor_external_id")
+  actorType       String? @map("actor_type")
 
-  level           AuditLevel @map("level")
-  action          String
+  level  AuditLevel @map("level")
+  action String
 
-  entityType      String?    @map("entity_type")
-  entityId        String?    @db.Uuid @map("entity_id")
+  entityType String? @map("entity_type")
+  entityId   String? @map("entity_id") @db.Uuid
 
-  message         String?
-  meta            Json?      @map("meta")
+  message String?
+  meta    Json?   @map("meta")
 
-  createdAt       DateTime   @default(now()) @map("created_at")
-  timestamp       DateTime?  @map("timestamp")
+  createdAt DateTime  @default(now()) @map("created_at")
+  timestamp DateTime? @map("timestamp")
 
   @@map("audit_log")
 }
 
 model Job {
-  id            String      @id @default(uuid())
-  tenantId      String      
-  requestedBy   String?
-  status        JobStatus   @default(queued)
-  jobType       String
-  priority      Int         @default(0)
-  input         Json?
-  output        Json?
-  error         Json?
-  startedAt     DateTime?
-  finishedAt    DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  requestedBy String?   @map("requested_by") @db.Uuid
+  status      JobStatus @default(queued)
+  jobType     String    @map("job_type")
+  priority    Int       @default(0)
+  input       Json?
+  output      Json?
+  error       Json?
+  startedAt   DateTime? @map("started_at")
+  finishedAt  DateTime? @map("finished_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+  @@map("jobs")
 }
+
 model TenantMember {
-  tenantId  String   @db.Uuid @map("tenant_id")
-  userId    String   @db.Uuid @map("user_id")
+  tenantId  String   @map("tenant_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
   role      String   @default("member")
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -148,32 +186,34 @@ model TenantMember {
   @@id([tenantId, userId])
   @@map("tenant_members")
 }
+
 model LedgerEntry {
-  id            String           @id @default(uuid()) @db.Uuid
-  tenantId      String           @map("tenant_id") @db.Uuid
-  entryType     LedgerEntryType  @map("entry_type")
-  category      LedgerCategory
-  amountCents   BigInt           @map("amount_cents")
-  currency      String           @default("USD")
-  description   String?
-  externalRef   String?          @map("external_ref")
-  meta          Json?
-  occurredAt    DateTime         @map("occurred_at") @db.Timestamptz(6)
-  createdAt     DateTime         @map("created_at") @db.Timestamptz(6)
-  tenant        Tenant           @relation(fields: [tenantId], references: [id])
+  id          String          @id @default(uuid()) @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  entryType   LedgerEntryType @map("entry_type")
+  category    LedgerCategory
+  amountCents BigInt          @map("amount_cents")
+  currency    String          @default("USD")
+  description String?
+  externalRef String?         @map("external_ref")
+  meta        Json?
+  occurredAt  DateTime        @map("occurred_at") @db.Timestamptz(6)
+  createdAt   DateTime        @map("created_at") @db.Timestamptz(6)
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+
   @@map("ledger_entries")
 }
 
 model Asset {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @db.Uuid @map("tenant_id")
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
-  type      String
-  name      String
-  url       String
-  platform  String?
-  metrics   Json?
+  type     String
+  name     String
+  url      String
+  platform String?
+  metrics  Json?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

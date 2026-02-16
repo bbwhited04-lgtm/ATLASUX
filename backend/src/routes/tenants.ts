@@ -106,7 +106,7 @@ export async function tenantsRoutes(app: FastifyInstance) {
     const requestId = randomUUID();
 
     try {
-      const created = await prisma.$transaction(async (tx) => {
+      const created = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const tenant = await tx.tenant.create({
           data: { name, slug },
         });
@@ -146,7 +146,7 @@ export async function tenantsRoutes(app: FastifyInstance) {
       });
 
       return reply.send({ ok: true, tenant: created });
-    } catch (e) {
+    } catch (e: any) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === "P2002"

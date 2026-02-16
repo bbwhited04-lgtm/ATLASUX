@@ -13,6 +13,9 @@ import { Settings } from "./components/Settings";
 import { BusinessManager } from "./components/business-manager";
 import { RootLayout } from "./components/RootLayout";
 import { HelpPage } from "./components/HelpPage";
+import { AgentsHub } from "./components/AgentsHub";
+import { ToolsHub } from "./components/ToolsHub";
+import { AppsHub } from "./components/AppsHub";
 import MobilePage from "./routes/mobile";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -44,6 +47,9 @@ export const router = createHashRouter([
       { index: true, Component: Dashboard },
       { path: "jobs", Component: JobRunner },
       { path: "chat", Component: ChatInterface },
+      { path: "agents", Component: AgentsHub },
+      { path: "tools", Component: ToolsHub },
+      { path: "apps", Component: AppsHub },
       { path: "monitoring", Component: SocialMonitoring },
       { path: "crm", Component: CRM },
       { path: "analytics", Component: Analytics },
