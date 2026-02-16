@@ -10,10 +10,12 @@ import { accountingRoutes } from "./routes/accountingRoutes.js";
 import { tenantsRoutes } from "./routes/tenants.js";
 import { assetsRoutes } from "./routes/assets.js";
 import { ledgerRoutes } from "./routes/ledger.js";
-
+import { authPlugin } from "./plugins/authPlugin.js";
+import { tenantPlugin } from "./plugins/tenantPlugin.js";
+await app.register(tenantPlugin);
 // Plugin (default export)
 import auditPlugin from "./plugins/auditPlugin.js";
-
+wait app.register(authPlugin);
 const app = Fastify({ logger: true });
 
 const allowed = new Set([

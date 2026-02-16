@@ -64,7 +64,7 @@ model Tenant {
   id        String   @id @default(uuid()) @db.Uuid
   slug      String   @unique
   name      String
-
+  members TenantMember[]
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -137,7 +137,17 @@ model Job {
   updatedAt     DateTime    @updatedAt
   tenant        Tenant      @relation(fields: [tenantId], references: [id])
 }
+model TenantMember {
+  tenantId  String   @db.Uuid @map("tenant_id")
+  userId    String   @db.Uuid @map("user_id")
+  role      String   @default("member")
+  createdAt DateTime @default(now()) @map("created_at")
 
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([tenantId, userId])
+  @@map("tenant_members")
+}
 model LedgerEntry {
   id            String           @id @default(uuid()) @db.Uuid
   tenantId      String           @map("tenant_id") @db.Uuid
