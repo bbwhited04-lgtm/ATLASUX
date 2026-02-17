@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "main": "dist/index.js",
+  "engines": { "node": ">=20" },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "postinstall": "prisma generate",
-    "build": "prisma generate && tsc -p tsconfig.json",
+    "build": "echo '== prisma generate ==' && prisma generate && echo '== tsc ==' && tsc -p tsconfig.json",
     "start": "node dist/index.js"
   },
   "dependencies": {
