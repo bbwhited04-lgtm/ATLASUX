@@ -43,6 +43,27 @@ function AgentCard({ agent }: { agent: AgentNode }) {
           </ul>
         </div>
       </div>
+
+      {(agent.toolsAllowed?.length || agent.toolsForbidden?.length) && (
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div className="rounded-xl bg-slate-900/40 border border-cyan-500/10 p-3">
+            <div className="text-xs text-slate-400">Tools Allowed</div>
+            <ul className="mt-2 space-y-1 text-xs text-slate-200">
+              {(agent.toolsAllowed ?? []).map((x) => (
+                <li key={x} className="leading-snug">• {x}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-xl bg-slate-900/40 border border-cyan-500/10 p-3">
+            <div className="text-xs text-slate-400">Tools Forbidden</div>
+            <ul className="mt-2 space-y-1 text-xs text-slate-200">
+              {(agent.toolsForbidden ?? []).map((x) => (
+                <li key={x} className="leading-snug">• {x}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -76,7 +97,7 @@ export function AgentsHub() {
     const s = q.trim().toLowerCase();
     if (!s) return AGENTS;
     return AGENTS.filter((a) =>
-      [a.id, a.name, a.title, a.summary, ...(a.authority ?? []), ...(a.constraints ?? [])]
+      [a.id, a.name, a.title, a.summary, ...(a.authority ?? []), ...(a.constraints ?? []), ...(a.toolsAllowed ?? []), ...(a.toolsForbidden ?? [])]
         .join(" ")
         .toLowerCase()
         .includes(s)

@@ -20,6 +20,7 @@ AGENTS/
  │    │    ├── KELLY/
  │    │    ├── TERRY/
  │    │    ├── DAILY-INTEL/
+│    │    ├── CHERYL/
 
 
 DAILY MASTER FLOW (LOCKED SEQUENCE)
