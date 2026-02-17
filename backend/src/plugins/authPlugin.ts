@@ -4,6 +4,14 @@ import { createClient } from "@supabase/supabase-js";
 export const authPlugin: FastifyPluginAsync = async (app) => {
   const url = process.env.SUPABASE_URL!;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const rawUrl = process.env.SUPABASE_URL ?? "";
+  const rawKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  console.log("[authPlugin] env check", {
+  hasSupabaseUrl: rawUrl.trim().length > 0,
+  supabaseUrlLen: rawUrl.trim().length,
+  hasServiceKey: rawKey.trim().length > 0,
+  serviceKeyLen: rawKey.trim().length,
+});
 
   const supabase = createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
