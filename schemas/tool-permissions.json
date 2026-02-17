@@ -1,0 +1,102 @@
+{
+  "version": "2026-02-17",
+  "notes": "Enforced by engine before any tool execution. UI displays a mirrored view.",
+  "agents": {
+    "atlas": {
+      "tier": "Executive",
+      "allowedTools": [
+        "jobRunner",
+        "email",
+        "auditWriter",
+        "ledgerWriter",
+        "httpClient"
+      ],
+      "forbiddenTools": [
+        "policyEditor",
+        "unloggedExternalActions"
+      ],
+      "escalationTargets": [
+        "chairman"
+      ]
+    },
+    "binky": {
+      "tier": "Executive",
+      "allowedTools": [
+        "email",
+        "docs",
+        "webResearch",
+        "reportWriter",
+        "readOnlyDashboards"
+      ],
+      "forbiddenTools": [
+        "dbWrite",
+        "ledgerWriter",
+        "deployments",
+        "policyEditor"
+      ],
+      "escalationTargets": [
+        "atlas",
+        "chairman"
+      ]
+    },
+    "cheryl": {
+      "tier": "Executive",
+      "allowedTools": [
+        "email",
+        "ticketSystem",
+        "docs",
+        "readOnlyDashboards",
+        "escalationRouter"
+      ],
+      "forbiddenTools": [
+        "dbWrite",
+        "ledgerWriter",
+        "deployments",
+        "policyEditor"
+      ],
+      "escalationTargets": [
+        "binky",
+        "tina",
+        "larry",
+        "jenny",
+        "atlas"
+      ]
+    },
+    "tina": {
+      "tier": "Executive",
+      "allowedTools": [
+        "ledgerWriter",
+        "email",
+        "accountingReports",
+        "readOnlyDashboards"
+      ],
+      "forbiddenTools": [
+        "deployments",
+        "policyEditor"
+      ],
+      "escalationTargets": [
+        "atlas",
+        "chairman"
+      ]
+    },
+    "larry": {
+      "tier": "Executive",
+      "allowedTools": [
+        "policyReader",
+        "email",
+        "docs",
+        "readOnlyDashboards"
+      ],
+      "forbiddenTools": [
+        "dbWrite",
+        "ledgerWriter",
+        "deployments",
+        "policyEditor"
+      ],
+      "escalationTargets": [
+        "atlas",
+        "chairman"
+      ]
+    }
+  }
+}

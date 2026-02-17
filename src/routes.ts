@@ -15,6 +15,7 @@ import { RootLayout } from "./components/RootLayout";
 import { HelpPage } from "./components/HelpPage";
 import { AgentsHub } from "./components/AgentsHub";
 import { ToolsHub } from "./components/ToolsHub";
+import { WorkflowsHub } from "./components/WorkflowsHub";
 import { AppsHub } from "./components/AppsHub";
 import MobilePage from "./routes/mobile";
 import Privacy from "./pages/Privacy";

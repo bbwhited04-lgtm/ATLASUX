@@ -7,6 +7,9 @@ import auditPlugin from "./plugins/auditPlugin.js";
 import { authPlugin } from "./plugins/authPlugin.js";
 import { tenantPlugin } from "./plugins/tenantPlugin.js";
 import { engineRoutes } from "./routes/engineRoutes.js";
+import { healthRoutes } from "./routes/healthRoutes.js";
+import { agentsRoutes } from "./routes/agentsRoutes.js";
+import { systemStateRoutes } from "./routes/systemStateRoutes.js";
 
 // Routes
 import { chatRoutes } from "./routes/chatRoutes.js";
@@ -42,6 +45,9 @@ await app.register(auditPlugin);
 await app.register(authPlugin);
 await app.register(tenantPlugin);
 await app.register(engineRoutes, { prefix: "/v1/engine" });
+await app.register(healthRoutes, { prefix: "/v1" });
+await app.register(agentsRoutes, { prefix: "/v1/agents" });
+await app.register(systemStateRoutes, { prefix: "/v1" });
 
 // Route prefixes
 await app.register(chatRoutes, { prefix: "/v1/chat" });
