@@ -10,6 +10,9 @@ import { engineRoutes } from "./routes/engineRoutes.js";
 import { healthRoutes } from "./routes/healthRoutes.js";
 import { agentsRoutes } from "./routes/agentsRoutes.js";
 import { systemStateRoutes } from "./routes/systemStateRoutes.js";
+import { workflowsRoutes } from "./routes/workflowsRoutes.js";
+import { tasksRoutes } from "./routes/tasksRoutes.js";
+import { commsRoutes } from "./routes/commsRoutes.js";
 
 // Routes
 import { chatRoutes } from "./routes/chatRoutes.js";
@@ -47,6 +50,9 @@ await app.register(tenantPlugin);
 await app.register(engineRoutes, { prefix: "/v1/engine" });
 await app.register(healthRoutes, { prefix: "/v1" });
 await app.register(agentsRoutes, { prefix: "/v1/agents" });
+await app.register(workflowsRoutes, { prefix: "/v1/workflows" });
+await app.register(tasksRoutes, { prefix: "/v1/tasks" });
+await app.register(commsRoutes, { prefix: "/v1/comms" });
 await app.register(systemStateRoutes, { prefix: "/v1" });
 
 // Route prefixes

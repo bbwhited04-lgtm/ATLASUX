@@ -16,7 +16,7 @@ type RunStatus = {
   error?: string;
 };
 
-const WORKFLOWS = [
+const DEFAULT_WORKFLOWS = [
   { id: "WF-001", name: "Support Intake (Cheryl)", description: "Create ticket → classify → acknowledge → route → audit." },
   { id: "WF-002", name: "Support Escalation (Cheryl)", description: "Package escalation packet and route to the correct executive owner." },
   { id: "WF-010", name: "Daily Executive Brief (Binky)", description: "Daily intel digest with internal traceability." },
@@ -31,6 +31,19 @@ export function WorkflowsHub() {
   const [runResp, setRunResp] = React.useState<RunResponse | null>(null);
   const [status, setStatus] = React.useState<RunStatus | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [workflows, setWorkflows] = React.useState<typeof DEFAULT_WORKFLOWS>(DEFAULT_WORKFLOWS as any);
+
+React.useEffect(() => {
+  // prefer backend-provided catalog if available
+  fetch(`${API_BASE}/v1/workflows`)
+    .then((r) => r.json())
+    .then((d) => {
+      if (d?.ok && Array.isArray(d.workflows) && d.workflows.length) {
+        setWorkflows(d.workflows);
+      }
+    })
+    .catch(() => {});
+}, []);
 
   async function run() {
     setLoading(true);
@@ -121,7 +134,7 @@ export function WorkflowsHub() {
               onChange={(e) => setWorkflowId(e.target.value)}
               className="mt-1 w-full rounded-xl bg-slate-900/60 border border-cyan-500/10 px-3 py-2 text-sm text-slate-100 outline-none"
             >
-              {WORKFLOWS.map((w) => (
+              {(workflows as any).map((w: any) => (
                 <option key={w.id} value={w.id}>{w.id}</option>
               ))}
             </select>
@@ -154,7 +167,7 @@ export function WorkflowsHub() {
           <div className="rounded-xl bg-slate-900/40 border border-cyan-500/10 p-3">
             <div className="text-xs text-slate-400">Workflow Map</div>
             <ul className="mt-2 space-y-2 text-xs text-slate-200">
-              {WORKFLOWS.map((w) => (
+              {(workflows as any).map((w: any) => (
                 <li key={w.id}>
                   <div className="text-slate-100">{w.id} — {w.name}</div>
                   <div className="text-slate-400">{w.description}</div>

@@ -16,6 +16,7 @@ import { HelpPage } from "./components/HelpPage";
 import { AgentsHub } from "./components/AgentsHub";
 import { ToolsHub } from "./components/ToolsHub";
 import { WorkflowsHub } from "./components/WorkflowsHub";
+import { AgentDeploymentHub } from "./components/AgentDeploymentHub";
 import { AppsHub } from "./components/AppsHub";
 import MobilePage from "./routes/mobile";
 import Privacy from "./pages/Privacy";
@@ -50,6 +51,8 @@ export const router = createHashRouter([
       { path: "chat", Component: ChatInterface },
       { path: "agents", Component: AgentsHub },
       { path: "tools", Component: ToolsHub },
+      { path: "workflows", Component: WorkflowsHub },
+      { path: "deployment", Component: AgentDeploymentHub },
       { path: "apps", Component: AppsHub },
       { path: "monitoring", Component: SocialMonitoring },
       { path: "crm", Component: CRM },

@@ -2,6 +2,7 @@ import { claimNextIntent } from "./queue.js";
 import { buildPackets } from "./packets.js";
 import { prisma } from "../../prisma.js";
 import { atlasExecuteGate } from "../exec/atlasGate.js";
+import { getWorkflowHandler } from "../../workflows/registry.js";
 
 // This is the ONLY place that should ever call execution functions later.
 export async function engineTick() {
@@ -62,28 +63,85 @@ export async function engineTick() {
       return { ran: true, result: gate };
     }
 
-    // If we get here, execution is permitted (for now we just mark executed)
-    await prisma.intent.update({
-      where: { id: intent.id },
-      data: { status: "EXECUTED" },
-    });
-
+    // If we get here, execution is permitted.
+// Execute workflow for ENGINE_RUN intents (cloud surface)
+let execOutput: any = null;
+if (intent.intentType === "ENGINE_RUN") {
+  const p: any = payload;
+  const workflowId = String(p.workflowId ?? "");
+  const agentId = String(p.agentId ?? "");
+  const handler = getWorkflowHandler(workflowId);
+  if (!handler) {
+    await prisma.intent.update({ where: { id: intent.id }, data: { status: "FAILED" } });
     await prisma.auditLog.create({
       data: {
         tenantId: intent.tenantId,
         actorUserId: intent.createdBy,
         actorType: "user",
-        level: "info",
-        action: "ENGINE_EXECUTED_INTENT",
+        level: "error",
+        action: "WORKFLOW_NOT_FOUND",
         entityType: "intent",
         entityId: intent.id,
-        message: `Executed intent ${intent.intentType}`,
-        meta: {},
+        message: `No workflow handler for ${workflowId}`,
+        meta: { workflowId, agentId },
         timestamp: new Date(),
       },
     });
+    return { ran: true, result: { ok: false, error: "WORKFLOW_NOT_FOUND", workflowId } };
+  }
 
-    return { ran: true, result: { ok: true } };
+  await prisma.intent.update({ where: { id: intent.id }, data: { status: "VALIDATING" } });
+
+  const res = await handler({
+    tenantId: intent.tenantId,
+    requestedBy: intent.createdBy,
+    agentId,
+    workflowId,
+    input: p.input ?? {},
+    traceId: p.traceId ?? null,
+    intentId: intent.id,
+  });
+
+  execOutput = res;
+
+  await prisma.auditLog.create({
+    data: {
+      tenantId: intent.tenantId,
+      actorUserId: intent.createdBy,
+      actorType: "user",
+      level: res.ok ? "info" : "error",
+      action: "WORKFLOW_COMPLETE",
+      entityType: "intent",
+      entityId: intent.id,
+      message: `[${workflowId}] ${res.ok ? "Completed" : "Failed"}: ${res.message ?? ""}`,
+      meta: { workflowId, agentId, ok: res.ok, output: res.output ?? null },
+      timestamp: new Date(),
+    },
+  });
+}
+
+await prisma.intent.update({
+  where: { id: intent.id },
+  data: { status: execOutput?.ok === false ? "FAILED" : "EXECUTED" },
+});
+
+await prisma.auditLog.create({
+  data: {
+    tenantId: intent.tenantId,
+    actorUserId: intent.createdBy,
+    actorType: "user",
+    level: "info",
+    action: "ENGINE_EXECUTED_INTENT",
+    entityType: "intent",
+    entityId: intent.id,
+    message: `Executed intent ${intent.intentType}`,
+    meta: { output: execOutput ?? null },
+    timestamp: new Date(),
+  },
+});
+
+return { ran: true, result: execOutput ?? { ok: true } };
+
   } catch (e: any) {
     await prisma.intent.update({
       where: { id: intent.id },

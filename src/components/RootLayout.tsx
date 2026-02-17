@@ -40,6 +40,7 @@ function RootLayoutInner() {
     { path: "/app/agents", icon: UserCog, label: "Agents" },
     { path: "/app/tools", icon: Wrench, label: "Tools" },
     { path: "/app/workflows", icon: Workflow, label: "Workflows" },
+    { path: "/app/deployment", icon: Bell, label: "Deployment" },
     { path: "/app/apps", icon: Puzzle, label: "Apps" },
     { path: "/app/automation", icon: Zap, label: "Automation" },
     { path: "/app/monitoring", icon: Radio, label: "Monitoring" },
