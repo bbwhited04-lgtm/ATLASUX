@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { Shield, Crown, Briefcase, Search } from "lucide-react";
-import { AGENTS, getChildren, type AgentNode } from "../core/agents/registry";
+import { AGENTS, getChildren, type AgentNode, USE_MOCKS } from "../core/agents/source";
 
 function AgentCard({ agent }: { agent: AgentNode }) {
   return (
@@ -109,6 +109,9 @@ export function AgentsHub() {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-white">Agents</h1>
+          {USE_MOCKS ? (
+            <span className="ml-3 inline-flex items-center rounded-full bg-amber-200/20 px-3 py-1 text-xs font-medium text-amber-200">Mock mode</span>
+          ) : null}
           <p className="text-sm text-slate-600">
             Constitutional hierarchy · roles · authority · constraints
           </p>

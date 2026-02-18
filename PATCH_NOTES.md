@@ -32,3 +32,8 @@ Backend env (required)
 Notes
 - Backend OAuth callbacks redirect to HashRouter URLs: /#/app/integrations?connected=...
 - Video conferencing route is /#/app/video-conferencing
+
+
+## Frontend mock mode (Agents)
+- Added VITE_USE_MOCKS toggle to run Agents UI without backend.
+- See .env.local.example.
