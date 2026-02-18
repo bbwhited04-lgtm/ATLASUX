@@ -1,43 +1,44 @@
 ATLAS — Subagent Inbox Authority & Communication Policy
 1. Identity Structure
 
-Each agent operates under a dedicated Microsoft 365 identity.
+**Licensing model:** ATLAS is the only licensed mailbox. All other agent mailboxes are **shared inboxes** with **Send As** delegated to ATLAS (and Billy).
 
-    Example:
-        atlas@deadappcorp.org
-            benny@deadappcorp.org
-            larry@deadappcorp.org
-            tina@deadappcorp.org
-            binky@deadappcorp.org
-                Sub-Agents:
+Example:
 
-        Sub-Agents:
-            archy@deadappcorp.org
-            venny@deadappcorp.org
-            penny@deadappcorp.org
-            cornwall@deadappcorp.org
-            donna@deadappcorp.org
-            sunday@deadappcorp.org
-            terry@deadappcorp.org
-            timmy@deadappcorp.org
-            reynolds@deadappcorp.org
-            link@deadappcorp.org
-            kelly@deadappcorp.org
-            fran@deadappcorp.org
-            emma@deadappcorp.org
-            dwight@deadappcorp.org
+    Licensed:
+      - atlas@deadapp.info
 
-        postmaster@deadappcorp.org
-        abuse@deadappcorp.org
-        
+    Shared inboxes (executive / core):
+      - benny.cto@deadapp.info
+      - larry.auditor@deadapp.info
+      - tina.cfo@deadapp.info
+      - binky.cro@deadapp.info
+      - jenny.clo@deadapp.info
+      - support@deadapp.info
 
+    Shared inboxes (publishers / sub-agents):
+      - archy.binkypro@deadapp.info
+      - venny.videographer@deadapp.info
+      - penny.facebook@deadapp.info
+      - cornwall.pinterest@deadapp.info
+      - donna.redditor@deadapp.info
+      - sunday.teambinky@deadapp.info
+      - terry.tumblr@deadapp.info
+      - reynolds.blogger@deadapp.info
+      - link.linkedin@deadapp.info
+      - kelly.x@deadapp.info
+      - fran.facebook@deadapp.info
+      - emma.alignable@deadapp.info
+      - dwight.threads@deadapp.info
 
+    Admin:
+      - postmaster@deadapp.info
+      - abuse@deadapp.info
 
-    No shared mailboxes.
-    No personal accounts.
-    No external aliasing.
-
-Each identity is isolated, licensed, logged, and governed.
+Rules:
+  - No personal accounts.
+  - No external forwarding.
+  - All agent actions must be traceable (email + audit log).
 
 2. Access Hierarchy
 ATLAS Authority
