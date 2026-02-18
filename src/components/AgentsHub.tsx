@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { Shield, Crown, Briefcase, Search } from "lucide-react";
-import { AGENTS, getChildren, type AgentNode, USE_MOCKS } from "../core/agents/source";
+import { AGENTS, getChildren, type AgentNode } from "../core/agents/registry";
 
 function AgentCard({ agent }: { agent: AgentNode }) {
   return (
@@ -12,15 +12,17 @@ function AgentCard({ agent }: { agent: AgentNode }) {
           <div className="text-lg font-semibold text-slate-900">{agent.name}</div>
           <div className="text-sm text-blue-700">{agent.title}</div>
         </div>
-        <div className="text-xs text-slate-400">Reports to: <span className="text-slate-200">{agent.reportsTo ?? "—"}</span></div>
+        <div className="text-xs text-slate-500">
+          Reports to: <span className="text-slate-700">{agent.reportsTo ?? "—"}</span>
+        </div>
       </div>
 
-      <p className="mt-4 text-sm text-slate-200/90">{agent.summary}</p>
+      <p className="mt-4 text-sm text-slate-700">{agent.summary}</p>
 
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         <div className="rounded-xl bg-white border border-slate-200 p-3">
           <div className="text-xs text-slate-400">Authority</div>
-          <ul className="mt-2 space-y-1 text-xs text-slate-200">
+          <ul className="mt-2 space-y-1 text-xs text-slate-700">
             {agent.authority.map((x) => (
               <li key={x} className="leading-snug">• {x}</li>
             ))}
@@ -28,7 +30,7 @@ function AgentCard({ agent }: { agent: AgentNode }) {
         </div>
         <div className="rounded-xl bg-white border border-slate-200 p-3">
           <div className="text-xs text-slate-400">Constraints</div>
-          <ul className="mt-2 space-y-1 text-xs text-slate-200">
+          <ul className="mt-2 space-y-1 text-xs text-slate-700">
             {agent.constraints.map((x) => (
               <li key={x} className="leading-snug">• {x}</li>
             ))}
@@ -36,7 +38,7 @@ function AgentCard({ agent }: { agent: AgentNode }) {
         </div>
         <div className="rounded-xl bg-white border border-slate-200 p-3">
           <div className="text-xs text-slate-400">Primary Outputs</div>
-          <ul className="mt-2 space-y-1 text-xs text-slate-200">
+          <ul className="mt-2 space-y-1 text-xs text-slate-700">
             {agent.primaryOutputs.map((x) => (
               <li key={x} className="leading-snug">• {x}</li>
             ))}
@@ -48,7 +50,7 @@ function AgentCard({ agent }: { agent: AgentNode }) {
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-xl bg-white border border-slate-200 p-3">
             <div className="text-xs text-slate-400">Tools Allowed</div>
-            <ul className="mt-2 space-y-1 text-xs text-slate-200">
+            <ul className="mt-2 space-y-1 text-xs text-slate-700">
               {(agent.toolsAllowed ?? []).map((x) => (
                 <li key={x} className="leading-snug">• {x}</li>
               ))}
@@ -56,7 +58,7 @@ function AgentCard({ agent }: { agent: AgentNode }) {
           </div>
           <div className="rounded-xl bg-white border border-slate-200 p-3">
             <div className="text-xs text-slate-400">Tools Forbidden</div>
-            <ul className="mt-2 space-y-1 text-xs text-slate-200">
+            <ul className="mt-2 space-y-1 text-xs text-slate-700">
               {(agent.toolsForbidden ?? []).map((x) => (
                 <li key={x} className="leading-snug">• {x}</li>
               ))}
@@ -109,9 +111,6 @@ export function AgentsHub() {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-white">Agents</h1>
-          {USE_MOCKS ? (
-            <span className="ml-3 inline-flex items-center rounded-full bg-amber-200/20 px-3 py-1 text-xs font-medium text-amber-200">Mock mode</span>
-          ) : null}
           <p className="text-sm text-slate-600">
             Constitutional hierarchy · roles · authority · constraints
           </p>
@@ -129,8 +128,8 @@ export function AgentsHub() {
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
         <div className="text-xs text-slate-400">Execution Rule</div>
-        <div className="mt-1 text-sm text-slate-200">
-          Only <span className="text-cyan-300 font-semibold">Atlas</span> executes. All other agents advise, review, and produce packets.
+        <div className="mt-1 text-sm text-slate-700">
+          Only <span className="text-blue-700 font-semibold">Atlas</span> executes. All other agents advise, review, and produce packets.
         </div>
       </div>
 
@@ -165,7 +164,7 @@ export function AgentsHub() {
 
         <Tabs.Content value="board" className="mt-4">
           <div className="grid gap-4 md:grid-cols-2">
-            {["chairman", "tina", "larry", "jenny", "benny"].map((id) => {
+            {["chairman", "treasurer", "secretary", "jenny", "benny"].map((id) => {
               const a = AGENTS.find((x) => x.id === id);
               return a ? <AgentCard key={id} agent={a} /> : null;
             })}
