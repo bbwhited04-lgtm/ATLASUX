@@ -162,7 +162,7 @@ export function AgentsHub() {
 
         <Tabs.Content value="board" className="mt-4">
           <div className="grid gap-4 md:grid-cols-2">
-            {["chairman", "treasurer", "secretary", "jenny", "benny"].map((id) => {
+            {["chairman", "tina", "larry", "jenny", "benny"].map((id) => {
               const a = AGENTS.find((x) => x.id === id);
               return a ? <AgentCard key={id} agent={a} /> : null;
             })}
