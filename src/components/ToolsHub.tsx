@@ -61,9 +61,9 @@ export function ToolsHub() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Tools</h1>
-          <p className="text-sm text-slate-600">Internal capabilities that agents can use (governed by SGL).</p>
+          <p className="text-sm text-slate-800">Internal capabilities that agents can use (governed by SGL).</p>
         </div>
-        <div className="flex items-center gap-2 text-slate-600">
+        <div className="flex items-center gap-2 text-slate-800">
           <Wrench className="h-5 w-5 text-cyan-300" />
           <Badge>Constitution-first</Badge>
         </div>
@@ -75,21 +75,21 @@ export function ToolsHub() {
             <ShieldCheck className="h-5 w-5 text-cyan-300" />
             <div className="font-semibold">Governance</div>
           </div>
-          <div className="mt-2 text-sm text-slate-600">Every action becomes an intent, evaluated before execution.</div>
+          <div className="mt-2 text-sm text-slate-800">Every action becomes an intent, evaluated before execution.</div>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-2 text-slate-900">
             <Lock className="h-5 w-5 text-cyan-300" />
             <div className="font-semibold">No Backdoors</div>
           </div>
-          <div className="mt-2 text-sm text-slate-600">No override switches. Bypass attempts trigger shutdown + audit.</div>
+          <div className="mt-2 text-sm text-slate-800">No override switches. Bypass attempts trigger shutdown + audit.</div>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-2 text-slate-900">
             <KeyRound className="h-5 w-5 text-cyan-300" />
             <div className="font-semibold">Two-Key Control</div>
           </div>
-          <div className="mt-2 text-sm text-slate-600">REVIEW actions require explicit human approval before execution.</div>
+          <div className="mt-2 text-sm text-slate-800">REVIEW actions require explicit human approval before execution.</div>
         </div>
       </div>
 
@@ -112,7 +112,7 @@ export function ToolsHub() {
                 {t.status}
               </span>
             </div>
-            <div className="col-span-4 text-slate-600">{t.description}</div>
+            <div className="col-span-4 text-slate-800">{t.description}</div>
           </div>
         ))}
       </div>

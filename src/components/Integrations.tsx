@@ -252,10 +252,10 @@ export default function Integrations() {
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">Integrations</h2>
-          <p className="text-sm text-slate-600">
+          <p className= "text-base text-slate-600">
             Green = connect. Red = disconnect. OAuth goes through your backend proxy.
           </p>
-          <div className="text-xs text-neutral-500">
+          <div className="text-base text-neutral-500">
             Connected: <span className="text-slate-800 font-semibold">{connectedCount}</span> / {INTEGRATIONS.length}
           </div>
         </div>
@@ -267,7 +267,7 @@ export default function Integrations() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search integrations…"
-              className="w-72 bg-transparent text-sm outline-none placeholder:text-neutral-500"
+              className="w-72 bg-transparent text-base outline-none placeholder:text-neutral-500"
             />
           </div>
 
@@ -276,7 +276,7 @@ export default function Integrations() {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as any)}
-              className="bg-transparent text-sm outline-none"
+              className="bg-transparent text-base outline-none"
             >
               {ALL_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
@@ -286,7 +286,7 @@ export default function Integrations() {
             </select>
           </div>
 
-          <button className="glass inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm" onClick={refreshStatus} title="Refresh status">
+          <button className="glass inline-flex items-center gap-2 rounded-xl px-3 py-2 text-base" onClick={refreshStatus} title="Refresh status">
             <RefreshCw className="h-4 w-4 text-slate-700" />
           </button>
         </div>
@@ -310,8 +310,8 @@ export default function Integrations() {
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <div className="text-sm font-semibold">{i.name}</div>
-                    <div className="text-xs text-slate-600">
+                    <div className="text-base font-semibold">{i.name}</div>
+                    <div className="text-base text-slate-600">
                       {i.category}
                       <span className="mx-2 text-neutral-600">•</span>
                       {i.description}
@@ -332,7 +332,7 @@ export default function Integrations() {
                 </div>
 
                 {!oauthReady ? (
-                  <div className="text-[11px] text-neutral-500">
+                  <div className="text-base font-bold text-neutral-500">
                     OAuth not wired yet (UI ready).
                   </div>
                 ) : null}
@@ -357,7 +357,7 @@ export default function Integrations() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="glass rounded-2xl p-8 text-center text-sm text-slate-600">No integrations match your search.</div>
+        <div className="glass rounded-2xl p-8 text-center text-base text-slate-800">No integrations match your search.</div>
       ) : null}
     </div>
   );
