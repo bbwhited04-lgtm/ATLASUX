@@ -358,3 +358,9 @@ Sharp core.
 Truth.
 
 And footnotes.
+---
+## SOUL_LOCK
+Lock-Version: 1
+Locked-On: 2026-02-18
+Content-SHA256: 86bb3f5d9c7b959dacc2430a39c3a07376b13137015ce262831c3e2286f6fc23
+Unlock-Protocol: Agents/Atlas/UNLOCK_PROTOCOL.md

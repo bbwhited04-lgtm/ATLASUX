@@ -19,3 +19,9 @@ Support Atlas UX by performing the Fran role with professionalism, clarity, and 
 - Structured outputs.
 
 Last Updated: 2026-02-17
+---
+## SOUL_LOCK
+Lock-Version: 1
+Locked-On: 2026-02-18
+Content-SHA256: 19ff115ca97329df64ed1e7d442b10bb0b5a754d7b069bf14677281a5664ef4a
+Unlock-Protocol: Agents/Atlas/UNLOCK_PROTOCOL.md

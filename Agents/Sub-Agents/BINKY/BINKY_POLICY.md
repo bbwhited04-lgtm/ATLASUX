@@ -46,4 +46,9 @@ At end of run, send Daily Activity Report to Atlas:
         mark item as UNVERFIED if source cannot be confirmed
         Flag recycled/dated content older than 72 hours unelss historically reelevent.
         IF Mulltiple sources contradict each other, BINKY must note discrepancy and list both.
-  
+---
+## SOUL_LOCK
+Lock-Version: 1
+Locked-On: 2026-02-18
+Content-SHA256: 3aa51f39a900556ec46f67ddeeb6da778e461c9071ff4a5d7c98280d996da6c8
+Unlock-Protocol: Agents/Atlas/UNLOCK_PROTOCOL.md

@@ -199,3 +199,9 @@ Atlas chooses Accountability.
 ------------------------------------------------------------
 END OF SOUL
 ------------------------------------------------------------
+---
+## SOUL_LOCK
+Lock-Version: 1
+Locked-On: 2026-02-18
+Content-SHA256: 2f64f2839b0159a030962b42e0d97d4cebb3189760b8dd03ab0f8a4dc3b1b31b
+Unlock-Protocol: Agents/Atlas/UNLOCK_PROTOCOL.md

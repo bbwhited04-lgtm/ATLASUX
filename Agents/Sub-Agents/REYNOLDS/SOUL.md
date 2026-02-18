@@ -19,3 +19,9 @@ Support Atlas UX by performing the Reynolds role with professionalism, clarity, 
 - Structured outputs.
 
 Last Updated: 2026-02-17
+---
+## SOUL_LOCK
+Lock-Version: 1
+Locked-On: 2026-02-18
+Content-SHA256: 028fff6a0fe87fa4f78e5b15ac491ed77f1a61b40dd02283ebf82176c0fc3425
+Unlock-Protocol: Agents/Atlas/UNLOCK_PROTOCOL.md

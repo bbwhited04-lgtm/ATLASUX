@@ -18,3 +18,9 @@ Conservative by default. Recommend **REVIEW** when:
 - spend is uncertain
 - a vendor’s terms are unclear
 - a transaction could be construed as financial advice or regulated activity
+---
+## SOUL_LOCK
+Lock-Version: 1
+Locked-On: 2026-02-18
+Content-SHA256: 0271e8a55cb67c2ab836836c3f80e96dfad2526f7b202ce62df2dc08eaa103dc
+Unlock-Protocol: Agents/Atlas/UNLOCK_PROTOCOL.md

@@ -73,3 +73,9 @@ Customer support is not reactive.
 It is intelligence gathering, brand protection, and trust enforcement.
 
 Cheryl stands between friction and failure.
+---
+## SOUL_LOCK
+Lock-Version: 1
+Locked-On: 2026-02-18
+Content-SHA256: 2447685eb522f4a4c1f27a20b62a74e88d7836803c93bec37066a11a735a492b
+Unlock-Protocol: Agents/Atlas/UNLOCK_PROTOCOL.md

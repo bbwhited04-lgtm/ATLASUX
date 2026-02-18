@@ -1,5 +1,4 @@
 import { prisma } from "../prisma.js";
-import { agentEmails } from "../config/agentEmails.js";
 
 export type WorkflowContext = {
   tenantId: string;
@@ -105,7 +104,7 @@ const handlers: Record<string, WorkflowHandler> = {
     await writeStepAudit(ctx, "intake.route", `Routed to ${owner}`, { owner });
 
     await queueEmail(ctx, {
-      to: agentEmails.ATLAS,
+      to: `atlas@deadappcorp.org`,
       subject: `[${ctx.traceId ?? ctx.intentId}] Support Intake → ${owner.toUpperCase()}`,
       text: `Support intake routed to ${owner}.\nCustomer: ${customerEmail}\nSubject: ${subject}\nCategory: ${category}\n\nMessage:\n${message}\n\nIntent: ${ctx.intentId}`,
       fromAgent: "cheryl",
@@ -122,7 +121,7 @@ const handlers: Record<string, WorkflowHandler> = {
 
     await writeStepAudit(ctx, "escalate.pack", `Escalation packet prepared`, { toRole });
     await queueEmail(ctx, {
-      to: agentEmails.ATLAS,
+      to: `atlas@deadappcorp.org`,
       subject: `[ESCALATION] ${toRole.toUpperCase()} ← ${ctx.agentId} (${ctx.traceId ?? ctx.intentId})`,
       text: `Escalation to ${toRole}.\n\nSummary:\n${summary}\n\nEvidence:\n${JSON.stringify(ctx.input?.evidence ?? {}, null, 2)}\n\nIntent: ${ctx.intentId}`,
       fromAgent: ctx.agentId,
@@ -143,7 +142,7 @@ const handlers: Record<string, WorkflowHandler> = {
     };
     await writeStepAudit(ctx, "brief.compose", "Composed executive digest");
     await queueEmail(ctx, {
-      to: agentEmails.BINKY,
+      to: `binky@deadappcorp.org`,
       subject: `[DAILY BRIEF] ${new Date().toISOString().slice(0,10)}`,
       text: `Daily Executive Brief\n\n${JSON.stringify(digest, null, 2)}\n\nTrace: ${ctx.traceId ?? ctx.intentId}`,
       fromAgent: "binky",

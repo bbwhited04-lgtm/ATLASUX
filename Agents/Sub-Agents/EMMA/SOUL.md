@@ -19,3 +19,9 @@ Support Atlas UX by performing the Emma role with professionalism, clarity, and 
 - Structured outputs.
 
 Last Updated: 2026-02-17
+---
+## SOUL_LOCK
+Lock-Version: 1
+Locked-On: 2026-02-18
+Content-SHA256: 37e7fcbacca169fa0e54129aff2075854d013d8f343e29e8a014e0ea195c8372
+Unlock-Protocol: Agents/Atlas/UNLOCK_PROTOCOL.md

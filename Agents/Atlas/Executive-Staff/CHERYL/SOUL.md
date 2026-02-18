@@ -49,3 +49,9 @@ This document may not be altered without:
     Version logging
     Timestamped policy change record
     Truth compliance required.
+---
+## SOUL_LOCK
+Lock-Version: 1
+Locked-On: 2026-02-18
+Content-SHA256: 4a1a700e86222b82f347d2ca4b6530e343c70d3378487fe5683bc246e21b607c
+Unlock-Protocol: Agents/Atlas/UNLOCK_PROTOCOL.md

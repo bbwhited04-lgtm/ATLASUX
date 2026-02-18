@@ -1,4 +1,33 @@
 # AGENTS.md
+## Shared Inbox Email Map (Source of Truth)
+
+- **ATLAS (licensed)** — atlas@deadapp.info
+- **BINKY (Chief Research Analyst)** — binky.cro@deadapp.info
+- **ARCHY (Binky Ops Research)** — archy.binkypro@deadapp.info
+- **CHERYL (Support)** — support@deadapp.info
+- **BENNY (IP Counsel / CTO)** — benny.cto@deadapp.info
+- **JENNY (Legal Counsel / CLO)** — jenny.clo@deadapp.info
+- **LARRY (Chief Auditor)** — larry.auditor@deadapp.info
+- **TINA (CFO)** — tina.cfo@deadapp.info
+- **CORNWALL (Pinterest)** — cornwall.pinterest@deadapp.info
+- **DONNA (Reddit)** — donna.redditor@deadapp.info
+- **DWIGHT (Threads)** — dwight.threads@deadapp.info
+- **EMMA (Alignable)** — emma.alignable@deadapp.info
+- **FRAN (Facebook Intel)** — fran.facebook@deadapp.info
+- **KELLY (X)** — kelly.x@deadapp.info
+- **LINK (LinkedIn)** — link.linkedin@deadapp.info
+- **PENNY (Facebook Page)** — penny.facebook@deadapp.info
+- **REYNOLDS (Blogger)** — reynolds.blogger@deadapp.info
+- **SUNDAY (Docs)** — sunday.teambinky@deadapp.info
+- **TERRY (Tumblr)** — terry.tumblr@deadapp.info
+- **VENNY (Video)** — venny.videographer@deadapp.info
+- **POSTMASTER** — postmaster@deadapp.info
+- **ABUSE** — abuse@deadapp.info
+- **DAILY-INTEL** — TBD (set when mailbox exists)
+- **TIMMY** — TBD (set when mailbox exists)
+
+Rule: Only **ATLAS** is a licensed user. All other addresses are **shared inboxes**. Billy + ATLAS have access to all shared inboxes; all work is traceable via email threads.
+
 Atlas Multi-Agent Structure
 AGENTS/
  ├── ATLAS/
@@ -309,3 +338,9 @@ Each content asset must include:
 ------------------------------------------------------------
 END OF AGENTS FILE
 ------------------------------------------------------------
+---
+## SOUL_LOCK
+Lock-Version: 1
+Locked-On: 2026-02-18
+Content-SHA256: a4e5a1c376a5643ed16fe855f2df062c38f7ed75f93b297d6d0dd7c44d5dbe20
+Unlock-Protocol: Agents/Atlas/UNLOCK_PROTOCOL.md

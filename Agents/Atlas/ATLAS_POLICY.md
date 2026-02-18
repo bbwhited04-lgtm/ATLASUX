@@ -245,3 +245,9 @@ Trust is the long-term compounding advantage.
 ------------------------------------------------------------
 END OF POLICY
 ------------------------------------------------------------
+---
+## SOUL_LOCK
+Lock-Version: 1
+Locked-On: 2026-02-18
+Content-SHA256: 5a5c877dbb55fe424deabacc128ba701c6ce352071d00a04848bbc7ec75a1057
+Unlock-Protocol: Agents/Atlas/UNLOCK_PROTOCOL.md
