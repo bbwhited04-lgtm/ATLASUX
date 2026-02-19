@@ -98,24 +98,30 @@ export function TaskAutomation() {
   // Backend mapping: Workflow -> Job
   // ----------------------------
   async function startWorkflowJob(workflow: Workflow) {
-    const res = await fetch(`${API_BASE}/v1/jobs/list`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        org_id: localStorage.getItem("atlasux_org_id") || "demo_org",
-        user_id: localStorage.getItem("atlasux_user_id") || "demo_user",
-        type: "generic",
-        payload: {
-          workflow_id: workflow.id,
-          workflow_name: workflow.name,
-          cadence: workflow.cadence,
-          enabled: workflow.enabled,
-          prompt: workflow.prompt,
-          category: workflow.category,
-          steps: workflow.steps ?? [],
-        },
-      }),
-    });
+    const tenantId =
+  localStorage.getItem("atlas_active_tenant_id") ||
+  localStorage.getItem("tenantId") ||
+  "";
+
+if (!tenantId) throw new Error("No active tenant selected. Select a Business first.");
+
+const res = await fetch(`${API_BASE}/v1/engine/run`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    tenantId,
+    agentId: "binky",
+    workflowId: workflow.id,
+    input: {
+      name: workflow.name,
+      cadence: workflow.cadence,
+      prompt: workflow.prompt,
+      steps: workflow.steps ?? [],
+      category: workflow.category,
+    },
+    runTickNow: true,
+  }),
+});
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
