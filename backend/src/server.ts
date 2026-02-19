@@ -13,8 +13,6 @@ import { systemStateRoutes } from "./routes/systemStateRoutes.js";
 import { workflowsRoutes } from "./routes/workflowsRoutes.js";
 import { tasksRoutes } from "./routes/tasksRoutes.js";
 import { commsRoutes } from "./routes/commsRoutes.js";
-import { integrationsRoutes } from "./routes/integrationsRoutes.js";
-import { oauthRoutes } from "./routes/oauthRoutes.js";
 
 // Routes
 import { chatRoutes } from "./routes/chatRoutes.js";
@@ -55,8 +53,6 @@ await app.register(agentsRoutes, { prefix: "/v1/agents" });
 await app.register(workflowsRoutes, { prefix: "/v1/workflows" });
 await app.register(tasksRoutes, { prefix: "/v1/tasks" });
 await app.register(commsRoutes, { prefix: "/v1/comms" });
-await app.register(integrationsRoutes, { prefix: "/v1/integrations" });
-await app.register(oauthRoutes, { prefix: "/v1/oauth" });
 await app.register(systemStateRoutes, { prefix: "/v1" });
 
 // Route prefixes

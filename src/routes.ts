@@ -1,5 +1,5 @@
 import React from "react";
-import { createHashRouter } from "react-router-dom";
+import { createHashRouter, Navigate } from "react-router-dom";
 import Landing from "./pages/Landing";
 import { Dashboard } from "./components/Dashboard";
 import { JobRunner } from "./components/JobRunner";
@@ -50,14 +50,14 @@ export const router = createHashRouter([
       { path: "jobs", Component: JobRunner },
       { path: "chat", Component: ChatInterface },
       { path: "agents", Component: AgentsHub },
-      { path: "tools", Component: ToolsHub },
-      { path: "workflows", Component: WorkflowsHub },
-      { path: "deployment", Component: AgentDeploymentHub },
+      { path: "tools", Component: () => React.createElement(Navigate, { to: "/app/agents?view=tools", replace: true }) },
+      { path: "workflows", Component: () => React.createElement(Navigate, { to: "/app/agents?view=workflows", replace: true }) },
+      { path: "deployment", Component: () => React.createElement(Navigate, { to: "/app/agents?view=deployment", replace: true }) },
       { path: "apps", Component: AppsHub },
       { path: "monitoring", Component: SocialMonitoring },
       { path: "crm", Component: CRM },
       { path: "analytics", Component: Analytics },
-      { path: "automation", Component: TaskAutomation },
+      { path: "automation", Component: () => React.createElement(Navigate, { to: "/app/agents?view=automation", replace: true }) },
       { path: "business-manager", Component: BusinessManager },
       { path: "settings", Component: Settings },
       { path: "help", Component: HelpPage },

@@ -1,6 +1,12 @@
 import * as React from "react";
 import * as Tabs from "@radix-ui/react-tabs";
-import { Shield, Crown, Briefcase, Search } from "lucide-react";
+import { Shield, Crown, Briefcase, Search, Wrench, Workflow as WorkflowIcon, Bell, Zap, Cpu } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ToolsHub } from "./ToolsHub";
+import { WorkflowsHub } from "./WorkflowsHub";
+import { AgentDeploymentHub } from "./AgentDeploymentHub";
+import { TaskAutomation } from "./TaskAutomation";
+import { DecisionEnginesHub } from "./DecisionEnginesHub";
 import { AGENTS, getChildren, type AgentNode } from "../core/agents/registry";
 
 function AgentCard({ agent }: { agent: AgentNode }) {
@@ -12,17 +18,15 @@ function AgentCard({ agent }: { agent: AgentNode }) {
           <div className="text-lg font-semibold text-slate-900">{agent.name}</div>
           <div className="text-sm text-blue-700">{agent.title}</div>
         </div>
-        <div className="text-xs text-slate-500">
-          Reports to: <span className="text-slate-700">{agent.reportsTo ?? "—"}</span>
-        </div>
+        <div className="text-xs text-slate-400">Reports to: <span className="text-slate-200">{agent.reportsTo ?? "—"}</span></div>
       </div>
 
-      <p className="mt-4 text-sm text-slate-700">{agent.summary}</p>
+      <p className="mt-4 text-sm text-slate-200/90">{agent.summary}</p>
 
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         <div className="rounded-xl bg-white border border-slate-200 p-3">
           <div className="text-xs text-slate-400">Authority</div>
-          <ul className="mt-2 space-y-1 text-xs text-slate-700">
+          <ul className="mt-2 space-y-1 text-xs text-slate-200">
             {agent.authority.map((x) => (
               <li key={x} className="leading-snug">• {x}</li>
             ))}
@@ -30,7 +34,7 @@ function AgentCard({ agent }: { agent: AgentNode }) {
         </div>
         <div className="rounded-xl bg-white border border-slate-200 p-3">
           <div className="text-xs text-slate-400">Constraints</div>
-          <ul className="mt-2 space-y-1 text-xs text-slate-700">
+          <ul className="mt-2 space-y-1 text-xs text-slate-200">
             {agent.constraints.map((x) => (
               <li key={x} className="leading-snug">• {x}</li>
             ))}
@@ -38,7 +42,7 @@ function AgentCard({ agent }: { agent: AgentNode }) {
         </div>
         <div className="rounded-xl bg-white border border-slate-200 p-3">
           <div className="text-xs text-slate-400">Primary Outputs</div>
-          <ul className="mt-2 space-y-1 text-xs text-slate-700">
+          <ul className="mt-2 space-y-1 text-xs text-slate-200">
             {agent.primaryOutputs.map((x) => (
               <li key={x} className="leading-snug">• {x}</li>
             ))}
@@ -50,7 +54,7 @@ function AgentCard({ agent }: { agent: AgentNode }) {
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-xl bg-white border border-slate-200 p-3">
             <div className="text-xs text-slate-400">Tools Allowed</div>
-            <ul className="mt-2 space-y-1 text-xs text-slate-700">
+            <ul className="mt-2 space-y-1 text-xs text-slate-200">
               {(agent.toolsAllowed ?? []).map((x) => (
                 <li key={x} className="leading-snug">• {x}</li>
               ))}
@@ -58,7 +62,7 @@ function AgentCard({ agent }: { agent: AgentNode }) {
           </div>
           <div className="rounded-xl bg-white border border-slate-200 p-3">
             <div className="text-xs text-slate-400">Tools Forbidden</div>
-            <ul className="mt-2 space-y-1 text-xs text-slate-700">
+            <ul className="mt-2 space-y-1 text-xs text-slate-200">
               {(agent.toolsForbidden ?? []).map((x) => (
                 <li key={x} className="leading-snug">• {x}</li>
               ))}
@@ -95,6 +99,26 @@ function Section({ title, icon: Icon, rootId }: { title: string; icon: any; root
 export function AgentsHub() {
   const [q, setQ] = React.useState("");
 
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialTab = React.useMemo(() => {
+    const sp = new URLSearchParams(location.search);
+    const v = (sp.get("view") || "atlas").toLowerCase();
+    const allowed = new Set(["atlas","binky","board","all","tools","workflows","deployment","automation","engines"]);
+    return allowed.has(v) ? v : "atlas";
+  }, [location.search]);
+  const [tab, setTab] = React.useState<string>(initialTab);
+  React.useEffect(() => { setTab(initialTab); }, [initialTab]);
+  React.useEffect(() => {
+    const sp = new URLSearchParams(location.search);
+    const current = (sp.get("view") || "atlas").toLowerCase();
+    if (current !== tab) {
+      sp.set("view", tab);
+      navigate({ pathname: location.pathname, search: `?${sp.toString()}` }, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
   const filtered = React.useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return AGENTS;
@@ -128,12 +152,12 @@ export function AgentsHub() {
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
         <div className="text-xs text-slate-400">Execution Rule</div>
-        <div className="mt-1 text-sm text-slate-700">
-          Only <span className="text-blue-700 font-semibold">Atlas</span> executes. All other agents advise, review, and produce packets.
+        <div className="mt-1 text-sm text-slate-200">
+          Only <span className="text-cyan-300 font-semibold">Atlas</span> executes. All other agents advise, review, and produce packets.
         </div>
       </div>
 
-      <Tabs.Root defaultValue="atlas" className="mt-6">
+      <Tabs.Root value={tab} onValueChange={(v) => setTab(v)} className="mt-6">
         <Tabs.List className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2">
           <Tabs.Trigger value="atlas" className="px-4 py-2 text-sm rounded-xl text-slate-700 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
             <Briefcase className="inline h-4 w-4 mr-2" /> Atlas + Staff
@@ -144,6 +168,23 @@ export function AgentsHub() {
           <Tabs.Trigger value="board" className="px-4 py-2 text-sm rounded-xl text-slate-700 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
             <Crown className="inline h-4 w-4 mr-2" /> Board & Governors
           </Tabs.Trigger>
+
+          <Tabs.Trigger value="workflows" className="px-4 py-2 text-sm rounded-xl text-slate-700 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+            <WorkflowIcon className="inline h-4 w-4 mr-2" /> Workflows
+          </Tabs.Trigger>
+          <Tabs.Trigger value="tools" className="px-4 py-2 text-sm rounded-xl text-slate-700 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+            <Wrench className="inline h-4 w-4 mr-2" /> Tools
+          </Tabs.Trigger>
+          <Tabs.Trigger value="deployment" className="px-4 py-2 text-sm rounded-xl text-slate-700 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+            <Bell className="inline h-4 w-4 mr-2" /> Deployment
+          </Tabs.Trigger>
+          <Tabs.Trigger value="automation" className="px-4 py-2 text-sm rounded-xl text-slate-700 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+            <Zap className="inline h-4 w-4 mr-2" /> Automation
+          </Tabs.Trigger>
+          <Tabs.Trigger value="engines" className="px-4 py-2 text-sm rounded-xl text-slate-700 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+            <Cpu className="inline h-4 w-4 mr-2" /> Exec Engines
+          </Tabs.Trigger>
+
           <Tabs.Trigger value="all" className="px-4 py-2 text-sm rounded-xl text-slate-700 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
             All
           </Tabs.Trigger>
@@ -164,7 +205,7 @@ export function AgentsHub() {
 
         <Tabs.Content value="board" className="mt-4">
           <div className="grid gap-4 md:grid-cols-2">
-            {["chairman", "treasurer", "secretary", "jenny", "benny"].map((id) => {
+            {["atlas", "tina", "larry", "jenny", "benny"].map((id) => {
               const a = AGENTS.find((x) => x.id === id);
               return a ? <AgentCard key={id} agent={a} /> : null;
             })}
@@ -178,6 +219,28 @@ export function AgentsHub() {
             ))}
           </div>
         </Tabs.Content>
+
+
+        <Tabs.Content value="workflows" className="mt-4">
+          <WorkflowsHub />
+        </Tabs.Content>
+
+        <Tabs.Content value="tools" className="mt-4">
+          <ToolsHub />
+        </Tabs.Content>
+
+        <Tabs.Content value="deployment" className="mt-4">
+          <AgentDeploymentHub />
+        </Tabs.Content>
+
+        <Tabs.Content value="automation" className="mt-4">
+          <TaskAutomation />
+        </Tabs.Content>
+
+        <Tabs.Content value="engines" className="mt-4">
+          <DecisionEnginesHub />
+        </Tabs.Content>
+
       </Tabs.Root>
     </div>
   );
