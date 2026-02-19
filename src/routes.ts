@@ -61,7 +61,7 @@ export const router = createHashRouter([
       { path: "business-manager", Component: BusinessManager },
       { path: "settings", Component: Settings },
       { path: "help", Component: HelpPage },
-    ],
+      ],
   },
 
   { path: "/mobile", Component: MobilePage },

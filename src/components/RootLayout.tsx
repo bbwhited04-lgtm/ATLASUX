@@ -1,5 +1,5 @@
 import { Outlet, useLocation, Link } from "react-router-dom";
-import { HelpCircle } from "lucide-react";
+import { CreditCard, HelpCircle } from "lucide-react";
 import { useState } from 'react';
 import { MobileConnectionModal } from './MobileConnectionModal';
 import { MobileInstallModal } from './MobileInstallModal';
@@ -7,6 +7,7 @@ import { MobileCompanionSetup } from "./MobileCompanionSetup";
 import { MobileConnectionProvider, useMobileConnection } from './mobile/MobileConnectionContext';
 import {
   LayoutDashboard,
+  Bell,
   Cpu,
   MessageSquare,
   Radio,
@@ -40,7 +41,7 @@ function RootLayoutInner() {
     { path: "/app/analytics", icon: BarChart3, label: "Analytics" },
     // Consolidated business tooling lives under Business Manager now.
     { path: "/app/business-manager", icon: Briefcase, label: "Business Manager" },
-  ];
+    ];
 
   // (Kept for future “setup wizard” flows; currently the modal is opened via context.)
   const [currentStatus, setCurrentStatus] = useState<"online" | "pairing" | "busy" | "error" | "offline">("online");
