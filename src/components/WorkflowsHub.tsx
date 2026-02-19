@@ -94,7 +94,7 @@ React.useEffect(() => {
             <Workflow className="h-6 w-6 text-cyan-300" />
             <h1 className="text-2xl font-semibold text-slate-900">Workflows</h1>
           </div>
-          <p className="text-sm text-slate-800">
+          <p className="text-sm text-slate-600">
             Workflow maps + engine smoke tests for the cloud surface.
           </p>
         </div>
@@ -103,7 +103,7 @@ React.useEffect(() => {
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid gap-4 md:grid-cols-3">
           <div>
-            <label className="text-xs text-slate-800">Tenant ID (uuid)</label>
+            <label className="text-xs text-slate-600">Tenant ID (uuid)</label>
             <input
               value={tenantId}
               onChange={(e) => setTenantId(e.target.value)}
@@ -113,39 +113,22 @@ React.useEffect(() => {
           </div>
 
           <div>
-            <label className="text-xs text-slate-800">Agent</label>
+            <label className="text-xs text-slate-600">Agent</label>
             <select
               value={agentId}
               onChange={(e) => setAgentId(e.target.value)}
               className="mt-1 w-full rounded-xl bg-white border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none"
             >
-              <option value="atlas">Atlas</option>
-              <option value="binky">Binky</option>
-              <option value="cheryl">Cheryl</option>
-              <option value="tina">Tina</option>
-              <option value="larry">Larry</option>
-              <option value="benny">Benny</option>
-              <option value="jenny">Jenny</option>
-              <option value="archy">Archy</option>
-              <option value="cornwall">Cornwall</option>
-              <option value="donna">Donna</option>
-              <option value="dwight">Dwight</option>
-              <option value="emma">Emma</option>
-              <option value="fran">Fran</option>
-              <option value="kelly">Kelly</option>
-              <option value="link">Link</option>
-              <option value="mercer">Mercer</option>
-              <option value="penny">Penny</option>
-              <option value="reynolds">Reynolds</option>
-              <option value="sunday">Sunday</option>
-              <option value="terry">Terry</option>
-              <option value="timmy">Timmy</option>
-              <option value="venny">Venny</option>
+              <option value="atlas">atlas</option>
+              <option value="binky">binky</option>
+              <option value="cheryl">cheryl</option>
+              <option value="tina">tina</option>
+              <option value="larry">larry</option>
             </select>
           </div>
 
           <div>
-            <label className="text-xs text-slate-800">Workflow</label>
+            <label className="text-xs text-slate-600">Workflow</label>
             <select
               value={workflowId}
               onChange={(e) => setWorkflowId(e.target.value)}
@@ -175,28 +158,28 @@ React.useEffect(() => {
             <RefreshCw className="h-4 w-4" /> Refresh status
           </button>
 
-          <div className="text-xs text-slate-800 self-center">
-            Backend: <span className="text-slate-800">{API_BASE}</span>
+          <div className="text-xs text-slate-600 self-center">
+            Backend: <span className="text-slate-700">{API_BASE}</span>
           </div>
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <div className="text-xs text-slate-800">Workflow Map</div>
-            <ul className="mt-2 space-y-2 text-xs text-slate-800">
+            <div className="text-xs text-slate-600">Workflow Map</div>
+            <ul className="mt-2 space-y-2 text-xs text-slate-700">
               {(workflows as any).map((w: any) => (
                 <li key={w.id}>
-                  <div className="text-slate-800">{w.id} — {w.name}</div>
-                  <div className="text-slate-800">{w.description}</div>
+                  <div className="text-slate-100">{w.id} — {w.name}</div>
+                  <div className="text-slate-600">{w.description}</div>
                 </li>
               ))}
             </ul>
           </div>
 
           <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <div className="text-xs text-slate-800">Latest Run</div>
-            <div className="mt-2 text-xs text-slate-800 space-y-2">
-              <div>intentId: <span className="text-slate-800">{intentId || "—"}</span></div>
+            <div className="text-xs text-slate-600">Latest Run</div>
+            <div className="mt-2 text-xs text-slate-700 space-y-2">
+              <div>intentId: <span className="text-slate-100">{intentId || "—"}</span></div>
 
               {runResp && (
                 <pre className="whitespace-pre-wrap rounded-lg bg-slate-50 border border-slate-200 p-2 text-[11px] text-slate-800">
@@ -214,8 +197,8 @@ React.useEffect(() => {
         </div>
       </div>
 
-      <div className="text-xs text-slate-800">
-        Note: For now, workflows are documented in <code className="text-slate-800">/workflows</code>. Next step is loading specs into the engine runner.
+      <div className="text-xs text-slate-500">
+        Note: For now, workflows are documented in <code className="text-slate-600">/workflows</code>. Next step is loading specs into the engine runner.
       </div>
     </div>
   );
