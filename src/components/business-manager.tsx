@@ -10,6 +10,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { API_BASE } from '@/lib/api';
 import { getOrgUser } from '@/lib/org';
+import { useActiveTenant } from '@/lib/activeTenant';
 import { BusinessIntelligence } from './premium/BusinessIntelligence';
 import { MediaProcessing } from './premium/MediaProcessing';
 import { SecurityCompliance } from './premium/SecurityCompliance';
@@ -80,10 +81,12 @@ interface Tenant {
 
 
 export function BusinessManager() {
-  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
+  const { tenantId: activeTenantId, setTenantId: setActiveTenantId } = useActiveTenant();
+  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(activeTenantId ?? null);
 
   async function selectBusiness(tenantId: string) {
     setSelectedBusiness(tenantId);
+    setActiveTenantId(tenantId);
     await loadAssetsForTenant(tenantId).catch((err) => {
       console.error("Failed to load assets:", err);
       setWarning(err instanceof Error ? err.message : String(err));
@@ -92,6 +95,15 @@ export function BusinessManager() {
       console.error("Failed to load ledger:", err);
     });
   }
+
+  // If a tenant was selected elsewhere (or persisted), adopt it.
+  useEffect(() => {
+    if (!selectedBusiness && activeTenantId) {
+      setSelectedBusiness(activeTenantId);
+      loadAssetsForTenant(activeTenantId).catch(() => null);
+      loadLedgerForTenant(activeTenantId).catch(() => null);
+    }
+  }, [activeTenantId]);
 
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [showAddAsset, setShowAddAsset] = useState(false);

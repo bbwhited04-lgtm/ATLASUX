@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { RouterProvider } from 'react-router';
 import { router } from './routes';
 import { OnboardingWizard } from './components/OnboardingWizard';
+import { ActiveTenantProvider } from './lib/activeTenant';
 
 export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -44,7 +45,9 @@ export default function App() {
   
   return (
     <div className="min-h-screen overflow-hidden bg-slate-950 text-white">
-      <RouterProvider router={router} />
+      <ActiveTenantProvider>
+        <RouterProvider router={router} />
+      </ActiveTenantProvider>
       <OnboardingWizard 
         isOpen={showOnboarding} 
         onComplete={handleOnboardingComplete}

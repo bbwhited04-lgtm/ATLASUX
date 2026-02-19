@@ -1,6 +1,7 @@
 import * as React from "react";
 import { API_BASE } from "../lib/api";
 import { Play, RefreshCw, Workflow } from "lucide-react";
+import { useActiveTenant } from "../lib/activeTenant";
 
 type RunResponse = {
   ok: boolean;
@@ -24,7 +25,8 @@ const DEFAULT_WORKFLOWS = [
 ];
 
 export function WorkflowsHub() {
-  const [tenantId, setTenantId] = React.useState<string>(""); // you can paste from Settings/DB
+  const { tenantId: activeTenantId, setTenantId: setActiveTenantId } = useActiveTenant();
+  const [tenantId, setTenantId] = React.useState<string>(activeTenantId ?? "");
   const [agentId, setAgentId] = React.useState<string>("atlas");
   const [workflowId, setWorkflowId] = React.useState<string>("WF-020");
   const [intentId, setIntentId] = React.useState<string>("");
@@ -44,6 +46,11 @@ React.useEffect(() => {
     })
     .catch(() => {});
 }, []);
+
+  // keep local input in sync if global tenant changes (but don't clobber manual edits)
+  React.useEffect(() => {
+    if (!tenantId && activeTenantId) setTenantId(activeTenantId);
+  }, [activeTenantId, tenantId]);
 
   async function run() {
     setLoading(true);
@@ -106,7 +113,12 @@ React.useEffect(() => {
             <label className="text-xs text-slate-600">Tenant ID (uuid)</label>
             <input
               value={tenantId}
-              onChange={(e) => setTenantId(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setTenantId(v);
+                // Persist once it looks like a uuid-ish value
+                if (v && v.length >= 16) setActiveTenantId(v);
+              }}
               placeholder="paste tenant uuid"
               className="mt-1 w-full rounded-xl bg-white border border-slate-400 px-3 py-2 text-base text-slate-900 outline-none"
             />

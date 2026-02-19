@@ -1,6 +1,7 @@
 import * as React from "react";
 import { API_BASE } from "../lib/api";
 import { Send, RefreshCw, PlusCircle, Mail, ClipboardList } from "lucide-react";
+import { useActiveTenant } from "../lib/activeTenant";
 
 type Agent = {
   id: string;
@@ -15,7 +16,8 @@ type Agent = {
 type Workflow = { id: string; name: string; description: string; ownerAgent?: string };
 
 export function AgentDeploymentHub() {
-  const [tenantId, setTenantId] = React.useState("");
+  const { tenantId: activeTenantId, setTenantId: setActiveTenantId } = useActiveTenant();
+  const [tenantId, setTenantId] = React.useState(activeTenantId ?? "");
   const [agents, setAgents] = React.useState<Agent[]>([]);
   const [workflows, setWorkflows] = React.useState<Workflow[]>([]);
   const [selectedAgent, setSelectedAgent] = React.useState<string>("atlas");
@@ -132,6 +134,10 @@ export function AgentDeploymentHub() {
     loadAll();
   }, []);
 
+  React.useEffect(() => {
+    if (!tenantId && activeTenantId) setTenantId(activeTenantId);
+  }, [activeTenantId, tenantId]);
+
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -156,7 +162,11 @@ export function AgentDeploymentHub() {
             <div className="text-base text-slate-800">Tenant ID</div>
             <input
               value={tenantId}
-              onChange={(e) => setTenantId(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setTenantId(v);
+                if (v && v.length >= 16) setActiveTenantId(v);
+              }}
               placeholder="paste tenant uuid"
               className="mt-2 w-full rounded-lg bg-white px-3 py-2 text-base text-slate-900 outline-none ring-1 ring-slate-200 focus:ring-blue-500/30"
             />
