@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../prisma.js";
+import { assertToolAllowed } from "../policy/toolPolicy.js";
 
 type EmailRequest = {
   tenantId: string;
@@ -16,6 +17,12 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
     const body = (req.body ?? {}) as Partial<EmailRequest>;
     if (!body.tenantId || !body.fromAgent || !body.to || !body.subject || !body.text) {
       return reply.code(400).send({ ok: false, error: "tenantId, fromAgent, to, subject, text are required" });
+    }
+
+    try {
+      assertToolAllowed(body.fromAgent, "email.send");
+    } catch (e: any) {
+      return reply.code(403).send({ ok: false, error: String(e?.message ?? e) });
     }
 
     const job = await prisma.job.create({
