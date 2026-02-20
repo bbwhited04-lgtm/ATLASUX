@@ -24,6 +24,8 @@ function normalizeStatus(input: any): KbDocumentStatus {
   if (v === "published") return KbDocumentStatus.published;
   if (v === "archived") return KbDocumentStatus.archived;
   return KbDocumentStatus.draft;
+}
+
 type KbChunkRow = { idx: number; charStart: number; charEnd: number; content: string };
 
 function makeChunksByChars(body: string, targetSize: number, softWindow: number): KbChunkRow[] {
@@ -37,7 +39,8 @@ function makeChunksByChars(body: string, targetSize: number, softWindow: number)
   while (pos < len) {
     let end = Math.min(pos + targetSize, len);
 
-    // Try to end on a newline boundary for readability
+    // Try to end on a newline boundary for readability.
+    // Prefer forward newline within softWindow; otherwise fall back to a backward newline.
     if (end < len) {
       const forward = s.indexOf("\n", end);
       if (forward !== -1 && forward - end <= softWindow) {
@@ -50,20 +53,12 @@ function makeChunksByChars(body: string, targetSize: number, softWindow: number)
 
     if (end <= pos) end = Math.min(pos + targetSize, len);
 
-    chunks.push({
-      idx,
-      charStart: pos,
-      charEnd: end,
-      content: s.slice(pos, end),
-    });
-
+    chunks.push({ idx, charStart: pos, charEnd: end, content: s.slice(pos, end) });
     idx++;
     pos = end;
   }
 
   return chunks;
-}
-
 }
 
 export async function kbRoutes(app: FastifyInstance) {
