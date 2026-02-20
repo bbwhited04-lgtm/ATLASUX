@@ -89,16 +89,86 @@ model Tenant {
   ledger       LedgerEntry[]
   assets       Asset[]
   Intent       Intent[]
+  metricsSnapshots MetricsSnapshot[]
+  decisionMemos DecisionMemo[]
+  distributionEvents DistributionEvent[]
+  growthLoopRuns GrowthLoopRun[]
   // Knowledge Base
   kbDocuments  KbDocument[]
   kbTags       KbTag[]
   kb_chunks KbChunk[]
 
-  // Daily system metrics snapshots (one row per day, per tenant)
-  metricsSnapshots MetricsSnapshot[]
-
   @@map("tenant_id")
   
+}
+
+model DecisionMemo {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  agent     String
+  title     String
+  rationale String
+
+  estimatedCostUsd Float   @default(0) @map("estimated_cost_usd")
+  billingType      String  @default("none") @map("billing_type")
+  riskTier         Int     @default(0) @map("risk_tier")
+  confidence       Float   @default(0.5)
+  expectedBenefit  String? @map("expected_benefit")
+  requiresApproval Boolean @default(false) @map("requires_approval")
+
+  status   String  @default("PROPOSED")
+  intentId String? @map("intent_id") @db.Uuid
+
+  payload Json?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+  @@map("decision_memos")
+}
+
+model DistributionEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  agent     String
+
+  channel   String   // x | blog | email | reddit | other
+  eventType String   // post | reply | publish | update | link
+  url       String?
+  meta      Json?
+
+  impressions Int?  @map("impressions")
+  clicks      Int?  @map("clicks")
+  conversions Int?  @map("conversions")
+
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, channel, occurredAt])
+  @@map("distribution_events")
+}
+
+model GrowthLoopRun {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  runDate   DateTime @map("run_date") @db.Date
+
+  status    String   @default("STARTED")
+  summary   Json?
+  decisionMemoId String? @map("decision_memo_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, runDate])
+  @@index([tenantId, status])
+  @@map("growth_loop_runs")
 }
 
 model Intent {
