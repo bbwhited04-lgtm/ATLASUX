@@ -19,10 +19,39 @@ import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import * as React from "react";
+import { API_BASE } from "../lib/api";
+import { useActiveTenant } from "../lib/activeTenant";
 const imgA = "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800";
 
 export function Dashboard() {
 const navigate = useNavigate();
+  const { tenantId } = useActiveTenant();
+  const [pendingDecisionsCount, setPendingDecisionsCount] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const fetchCount = async () => {
+      if (!tenantId) {
+        if (!cancelled) setPendingDecisionsCount(0);
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/v1/decisions?tenantId=${encodeURIComponent(tenantId)}&status=AWAITING_HUMAN&take=200`);
+        const json = await res.json();
+        const count = Array.isArray(json?.memos) ? json.memos.length : 0;
+        if (!cancelled) setPendingDecisionsCount(count);
+      } catch {
+        if (!cancelled) setPendingDecisionsCount(0);
+      }
+    };
+    fetchCount();
+    const t = window.setInterval(fetchCount, 30000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+  }, [tenantId]);
   const stats = [
     { label: "Active Jobs", value: "12", icon: Activity, color: "cyan", trend: "+3" },
     { label: "Completed Today", value: "47", icon: CheckCircle2, color: "green", trend: "+12" },
@@ -88,6 +117,72 @@ const navigate = useNavigate();
             </Card>
           );
         })}
+      </div>
+
+      {/* Operator Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-xs text-slate-400">Needs Approval</div>
+              <div className="text-2xl font-bold text-slate-100 mt-1">{pendingDecisionsCount}</div>
+              <div className="text-sm text-slate-400 mt-1">Decision memos awaiting Exec.</div>
+            </div>
+            <div className={`w-10 h-10 rounded-lg bg-red-500/15 flex items-center justify-center border border-red-500/20`}>
+              <Clock className="w-5 h-5 text-red-300" />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/app/decisions")}
+            className="mt-4 w-full px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-bold border border-cyan-500/20 flex items-center justify-center gap-2"
+          >
+            Review Decisions <ArrowRight className="w-4 h-4" />
+          </button>
+          {!tenantId && (
+            <div className="mt-2 text-xs text-amber-300">Select a Business in Business Manager to enable approvals.</div>
+          )}
+        </Card>
+
+        <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-xs text-slate-400">Daily Control</div>
+              <div className="text-lg font-bold text-slate-100 mt-1">One action per day</div>
+              <div className="text-sm text-slate-400 mt-1">Guardrails enforce a slow, safe alpha cadence.</div>
+            </div>
+            <div className={`w-10 h-10 rounded-lg bg-cyan-500/15 flex items-center justify-center border border-cyan-500/20`}>
+              <Gauge className="w-5 h-5 text-cyan-300" />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/app/agents?view=automation")}
+            className="mt-4 w-full px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-bold border border-cyan-500/20 flex items-center justify-center gap-2"
+          >
+            View Growth Loop <ArrowRight className="w-4 h-4" />
+          </button>
+        </Card>
+
+        <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-xs text-slate-400">Public Surface</div>
+              <div className="text-lg font-bold text-slate-100 mt-1">Product + Blog</div>
+              <div className="text-sm text-slate-400 mt-1">Bots can’t see /#/app — publish to /product and /blog.</div>
+            </div>
+            <div className={`w-10 h-10 rounded-lg bg-blue-500/15 flex items-center justify-center border border-blue-500/20`}>
+              <Globe className="w-5 h-5 text-blue-300" />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/blog")}
+            className="mt-4 w-full px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-bold border border-cyan-500/20 flex items-center justify-center gap-2"
+          >
+            Open Blog <ArrowRight className="w-4 h-4" />
+          </button>
+        </Card>
       </div>
       
       <div className="grid grid-cols-3 gap-6">

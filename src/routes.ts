@@ -29,6 +29,7 @@ import Product from "./pages/Product";
 import BlogHome from "./pages/blog/BlogHome";
 import BlogPost from "./pages/blog/BlogPost";
 import BlogCategory from "./pages/blog/BlogCategory";
+import { DecisionsInbox } from "./components/DecisionsInbox";
 
 export const router = createHashRouter([
   // Landing at "#/"
@@ -71,6 +72,7 @@ export const router = createHashRouter([
       { path: "kb", Component: KnowledgeBaseHub },
       { path: "settings", Component: Settings },
       { path: "help", Component: HelpPage },
+      { path: "decisions", Component: DecisionsInbox },
       ],
   },
 

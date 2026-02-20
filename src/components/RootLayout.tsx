@@ -1,6 +1,7 @@
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { CreditCard, HelpCircle } from "lucide-react";
 import { useState } from 'react';
+import * as React from 'react';
 import { MobileConnectionModal } from './MobileConnectionModal';
 import { MobileInstallModal } from './MobileInstallModal';
 import { MobileCompanionSetup } from "./MobileCompanionSetup";
@@ -20,7 +21,11 @@ import {
   ChevronRight,
   ChevronLeft,
   BookOpen,
+  ClipboardCheck,
 } from 'lucide-react';
+
+import { API_BASE } from "../lib/api";
+import { useActiveTenant } from "../lib/activeTenant";
 
 function RootLayoutInner() {
   const location = useLocation();
@@ -28,10 +33,37 @@ function RootLayoutInner() {
   const [isNeptunePanelOpen, setIsNeptunePanelOpen] = useState(false);
   const [showMobileInstall, setShowMobileInstall] = useState(false);
   const { openModal } = useMobileConnection();
+  const { tenantId } = useActiveTenant();
+
+  const [pendingDecisionsCount, setPendingDecisionsCount] = React.useState<number>(0);
+  React.useEffect(() => {
+    let cancelled = false;
+    const fetchCount = async () => {
+      if (!tenantId) {
+        if (!cancelled) setPendingDecisionsCount(0);
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/v1/decisions?tenantId=${encodeURIComponent(tenantId)}&status=AWAITING_HUMAN&take=200`);
+        const json = await res.json();
+        const count = Array.isArray(json?.memos) ? json.memos.length : 0;
+        if (!cancelled) setPendingDecisionsCount(count);
+      } catch {
+        if (!cancelled) setPendingDecisionsCount(0);
+      }
+    };
+
+    fetchCount();
+    const t = window.setInterval(fetchCount, 30000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+  }, [tenantId]);
   
   const atlasLogo = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z'/%3E%3C/svg%3E";
   
-  const navItems = [
+  const navItems: Array<{ path: string; icon: any; label: string; badge?: number }> = [
     { path: "/app", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/app/jobs", icon: Cpu, label: "Pluto Jobs" },
     { path: "/app/chat", icon: MessageSquare, label: "AI Chat" },
@@ -43,6 +75,7 @@ function RootLayoutInner() {
     // Consolidated business tooling lives under Business Manager now.
     { path: "/app/business-manager", icon: Briefcase, label: "Business Manager" },
     { path: "/app/kb", icon: BookOpen, label: "Knowledge Base" },
+    { path: "/app/decisions", icon: ClipboardCheck, label: "Decisions", badge: pendingDecisionsCount },
     ];
 
   // (Kept for future “setup wizard” flows; currently the modal is opened via context.)
@@ -90,6 +123,11 @@ function RootLayoutInner() {
       }`}
     >
       <Icon className="w-5 h-5" />
+      {!!item.badge && item.badge > 0 && (
+        <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center border border-slate-900">
+          {item.badge > 99 ? "99+" : item.badge}
+        </div>
+      )}
       {active && (
         <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-cyan-400 rounded-r" />
       )}
