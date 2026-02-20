@@ -29,6 +29,11 @@ const EnvSchema = z.object({
   META_APP_SECRET: z.string().optional(),
   META_REDIRECT_URI: z.string().optional(),
 
+  // X (Twitter) OAuth 2.0 (User context) - requires PKCE
+  X_CLIENT_ID: z.string().optional(),
+  X_CLIENT_SECRET: z.string().optional(),
+  X_REDIRECT_URI: z.string().optional(),
+
   // Stripe (optional here; can be wired later)
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional()

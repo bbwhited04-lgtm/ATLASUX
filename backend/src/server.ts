@@ -29,6 +29,8 @@ import { metricsRoutes } from "./routes/metricsRoutes.js";
 import { decisionRoutes } from "./routes/decisionRoutes.js";
 import { distributionRoutes } from "./routes/distributionRoutes.js";
 import { growthRoutes } from "./routes/growthRoutes.js";
+import { integrationsRoutes } from "./routes/integrationsRoutes.js";
+import { oauthRoutes } from "./routes/oauthRoutes.js";
 
 const app = Fastify({ logger: true });
 
@@ -76,6 +78,10 @@ await app.register(metricsRoutes, { prefix: "/v1/metrics" });
 await app.register(decisionRoutes, { prefix: "/v1/decisions" });
 await app.register(distributionRoutes, { prefix: "/v1/distribution" });
 await app.register(growthRoutes, { prefix: "/v1/growth" });
+
+// OAuth + Integrations hub (needed by Integrations UI)
+await app.register(integrationsRoutes, { prefix: "/v1/integrations" });
+await app.register(oauthRoutes, { prefix: "/v1/oauth" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

@@ -170,13 +170,13 @@ useEffect(() => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, []);
 
-async function connect(provider: "google" | "meta") {
+async function connect(provider: "google" | "meta" | "x") {
   const qs = new URLSearchParams({ org_id, user_id }).toString();
   // open provider oauth start in a new tab (backend redirects to provider consent)
   window.open(`${API_BASE}/v1/oauth/${provider}/start?${qs}`, "_blank", "noopener,noreferrer");
 }
 
-async function disconnect(provider: "google" | "meta") {
+async function disconnect(provider: "google" | "meta" | "x") {
   const qs = new URLSearchParams({ org_id, user_id }).toString();
   await fetch(`${API_BASE}/v1/integrations/${provider}/disconnect?${qs}`, { method: "POST" }).catch(() => null);
   await fetch(`${API_BASE}/v1/audit`, {

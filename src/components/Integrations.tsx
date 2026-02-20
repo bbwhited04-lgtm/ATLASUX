@@ -27,7 +27,7 @@ type Integration = {
   description: string;
   category: Category;
   // which backend oauth provider handles this integration right now
-  oauth: "google" | "meta" | null;
+  oauth: "google" | "meta" | "x" | null;
 };
 
 // Default to your deployed backend. Override locally with VITE_BACKEND_URL.
@@ -51,7 +51,7 @@ const INTEGRATIONS: Integration[] = [
   { id: "tiktok", name: "TikTok", category: "Social", description: "Post videos and view analytics.", oauth: null },
   { id: "youtube", name: "YouTube", category: "Social", description: "Upload, manage, and track.", oauth: "google" },
   { id: "youtube_studio", name: "YouTube Studio", category: "Social", description: "Channel management tools.", oauth: "google" },
-  { id: "x", name: "X (Twitter)", category: "Social", description: "Tweet, schedule, and monitor.", oauth: null },
+  { id: "x", name: "X (Twitter)", category: "Social", description: "Tweet, schedule, and monitor.", oauth: "x" },
   { id: "linkedin", name: "LinkedIn", category: "Social", description: "Company + personal publishing.", oauth: null },
   { id: "pinterest", name: "Pinterest", category: "Social", description: "Pins, boards, and trends.", oauth: null },
   { id: "reddit", name: "Reddit", category: "Social", description: "Post, comment, monitor mentions.", oauth: null },
@@ -154,7 +154,7 @@ const ALL_CATEGORIES: Array<Category | "All"> = [
   "Other",
 ];
 
-type StatusRow = { provider: "google" | "meta"; connected: boolean };
+type StatusRow = { provider: "google" | "meta" | "x"; connected: boolean };
 
 export default function Integrations() {
   const [searchParams] = useSearchParams();
@@ -175,10 +175,12 @@ export default function Integrations() {
       const map: Record<string, boolean> = {};
       const googleOn = !!rows.find((x) => x.provider === "google")?.connected;
       const metaOn = !!rows.find((x) => x.provider === "meta")?.connected;
+      const xOn = !!rows.find((x) => x.provider === "x")?.connected;
 
       for (const i of INTEGRATIONS) {
         if (i.oauth === "google") map[i.id] = googleOn;
         else if (i.oauth === "meta") map[i.id] = metaOn;
+        else if (i.oauth === "x") map[i.id] = xOn;
         else map[i.id] = false;
       }
       setStatus(map);
@@ -208,7 +210,9 @@ export default function Integrations() {
     const start =
       i.oauth === "google"
         ? `${BACKEND_URL}/v1/oauth/google/start`
-        : `${BACKEND_URL}/v1/oauth/meta/start`;
+        : i.oauth === "meta"
+          ? `${BACKEND_URL}/v1/oauth/meta/start`
+          : `${BACKEND_URL}/v1/oauth/x/start`;
 
     window.location.href = `${start}?org_id=${encodeURIComponent(org_id)}&user_id=${encodeURIComponent(user_id)}`;
   };
