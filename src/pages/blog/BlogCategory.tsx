@@ -1,0 +1,68 @@
+import React, { useMemo } from "react";
+import { useParams, Link, Navigate } from "react-router-dom";
+import PublicHeader from "../../components/public/PublicHeader";
+import BlogCard from "../../components/blog/BlogCard";
+import BlogSidebar from "../../components/blog/BlogSidebar";
+import { getCategories, loadAllBlogPosts } from "../../lib/blog/loadPosts";
+
+export default function BlogCategory() {
+  const { category } = useParams();
+  const posts = useMemo(() => loadAllBlogPosts(), []);
+  const categories = useMemo(() => getCategories(posts), [posts]);
+
+  if (!category) return <Navigate to="/blog" replace />;
+  const decoded = decodeURIComponent(category);
+
+  const filtered = posts.filter((p) => p.frontmatter.category === decoded);
+  if (filtered.length === 0) return <Navigate to="/blog" replace />;
+
+  const editorsChoice = posts.filter((p) => p.frontmatter.featured).slice(0, 4);
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <PublicHeader />
+
+      <main className="mx-auto max-w-6xl px-4 py-8">
+        <div className="text-sm text-slate-600">
+          <Link to="/blog" className="font-semibold text-slate-700 hover:underline">
+            Blog
+          </Link>
+          <span className="mx-2 text-slate-400">/</span>
+          <span className="font-semibold text-slate-700">{decoded}</span>
+        </div>
+
+        <div className="mt-4 flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">{decoded}</h1>
+            <p className="mt-1 text-base text-slate-700">
+              {filtered.length} post{filtered.length === 1 ? "" : "s"}
+            </p>
+          </div>
+        </div>
+
+        <section className="mt-8 grid gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <div className="grid gap-4 md:grid-cols-2">
+              {filtered.map((p) => (
+                <BlogCard key={p.slug} post={p} />
+              ))}
+            </div>
+          </div>
+          <div className="lg:col-span-1">
+            <BlogSidebar
+              editorsChoice={editorsChoice.length ? editorsChoice : posts.slice(0, 4)}
+              latest={posts}
+              categories={categories}
+            />
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-slate-500">
+          © {new Date().getFullYear()} ATLAS UX
+        </div>
+      </footer>
+    </div>
+  );
+}

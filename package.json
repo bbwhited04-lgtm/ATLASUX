@@ -58,8 +58,7 @@
     "recharts": "^2.15.4",
     "slick-carousel": "^1.8.1",
     "sonner": "^1.7.3",
-    "tailwind-merge": "^3.4.0",
-    "marked": "^12.0.2"
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.10.0",

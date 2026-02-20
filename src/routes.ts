@@ -25,6 +25,9 @@ import Terms from "./pages/Terms";
 import AcceptableUse from "./pages/AcceptableUse";
 import Payment from "./pages/Payment";
 import Store from "./pages/Store";
+import BlogHome from "./pages/blog/BlogHome";
+import BlogPost from "./pages/blog/BlogPost";
+import BlogCategory from "./pages/blog/BlogCategory";
 
 export const router = createHashRouter([
   // Landing at "#/"
@@ -36,6 +39,9 @@ export const router = createHashRouter([
   { path: "/acceptable-use", Component: AcceptableUse },
   { path: "/payment", Component: Payment },
   { path: "/store", Component: Store },
+  { path: "/blog", Component: BlogHome },
+  { path: "/blog/category/:category", Component: BlogCategory },
+  { path: "/blog/:slug", Component: BlogPost },
 
   // App at "#/app"
   {
