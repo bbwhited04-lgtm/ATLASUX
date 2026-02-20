@@ -25,6 +25,7 @@ import { assetsRoutes } from "./routes/assets.js";
 import { ledgerRoutes } from "./routes/ledger.js";
 import { kbRoutes } from "./routes/kbRoutes.js";
 import { stripeRoutes } from "./routes/stripeRoutes.js";
+import { metricsRoutes } from "./routes/metricsRoutes.js";
 
 const app = Fastify({ logger: true });
 
@@ -68,6 +69,7 @@ await app.register(assetsRoutes, { prefix: "/v1/assets" });
 await app.register(ledgerRoutes, { prefix: "/v1/ledger" });
 await app.register(kbRoutes, { prefix: "/v1/kb" });
 await app.register(stripeRoutes, { prefix: "/v1/stripe" });
+await app.register(metricsRoutes, { prefix: "/v1/metrics" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
