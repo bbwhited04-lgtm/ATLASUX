@@ -1,5 +1,4 @@
 import { prisma } from "../prisma.js";
-import { assertToolAllowed } from "../policy/toolPolicy.js";
 
 export type WorkflowContext = {
   tenantId: string;
@@ -44,7 +43,6 @@ async function writeStepAudit(ctx: WorkflowContext, step: string, message: strin
 }
 
 async function queueEmail(ctx: WorkflowContext, email: { to: string; subject: string; text: string; fromAgent?: string }) {
-  assertToolAllowed(email.fromAgent ?? ctx.agentId, "email.send");
   // We store "emails" as Jobs so they are traceable and can be delivered by a later SMTP worker.
   const job = await prisma.job.create({
     data: {

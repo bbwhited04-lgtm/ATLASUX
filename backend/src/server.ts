@@ -24,7 +24,7 @@ import { tenantsRoutes } from "./routes/tenants.js";
 import { assetsRoutes } from "./routes/assets.js";
 import { ledgerRoutes } from "./routes/ledger.js";
 import { kbRoutes } from "./routes/kbRoutes.js";
-import { startEmailWorker } from "./workers/emailWorker.js";
+import { stripeRoutes } from "./routes/stripeRoutes.js";
 
 const app = Fastify({ logger: true });
 
@@ -67,6 +67,7 @@ await app.register(tenantsRoutes, { prefix: "/v1/tenants" });
 await app.register(assetsRoutes, { prefix: "/v1/assets" });
 await app.register(ledgerRoutes, { prefix: "/v1/ledger" });
 await app.register(kbRoutes, { prefix: "/v1/kb" });
+await app.register(stripeRoutes, { prefix: "/v1/stripe" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
@@ -74,7 +75,3 @@ const host = "0.0.0.0";
 app.listen({ port, host }).then(() => {
   app.log.info(`AtlasUX backend listening on :${port}`);
 });
-
-// Background workers (server-side only)
-// Email delivery: drains EMAIL_SEND jobs and sends via Microsoft Graph.
-startEmailWorker({ logger: app.log, intervalMs: Number(process.env.EMAIL_WORKER_INTERVAL_MS ?? 5000) });
