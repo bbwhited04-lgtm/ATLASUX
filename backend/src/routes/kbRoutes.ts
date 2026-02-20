@@ -24,6 +24,46 @@ function normalizeStatus(input: any): KbDocumentStatus {
   if (v === "published") return KbDocumentStatus.published;
   if (v === "archived") return KbDocumentStatus.archived;
   return KbDocumentStatus.draft;
+type KbChunkRow = { idx: number; charStart: number; charEnd: number; content: string };
+
+function makeChunksByChars(body: string, targetSize: number, softWindow: number): KbChunkRow[] {
+  const s = body ?? "";
+  const len = s.length;
+  if (len === 0) return [];
+  const chunks: KbChunkRow[] = [];
+  let pos = 0;
+  let idx = 0;
+
+  while (pos < len) {
+    let end = Math.min(pos + targetSize, len);
+
+    // Try to end on a newline boundary for readability
+    if (end < len) {
+      const forward = s.indexOf("\n", end);
+      if (forward !== -1 && forward - end <= softWindow) {
+        end = forward + 1;
+      } else {
+        const back = s.lastIndexOf("\n", end);
+        if (back > pos + 200) end = back + 1;
+      }
+    }
+
+    if (end <= pos) end = Math.min(pos + targetSize, len);
+
+    chunks.push({
+      idx,
+      charStart: pos,
+      charEnd: end,
+      content: s.slice(pos, end),
+    });
+
+    idx++;
+    pos = end;
+  }
+
+  return chunks;
+}
+
 }
 
 export async function kbRoutes(app: FastifyInstance) {
@@ -100,7 +140,9 @@ export async function kbRoutes(app: FastifyInstance) {
 
     if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
 
-    return reply.send({
+        const chunkCount = await prisma.kbChunk.count({ where: { tenantId, documentId: doc.id } });
+
+return reply.send({
       ok: true,
       document: {
         id: doc.id,
@@ -111,9 +153,94 @@ export async function kbRoutes(app: FastifyInstance) {
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
         tags: doc.tags.map((t) => t.tag.name),
+        chunkCount,
+        isChunked: chunkCount > 0,
       },
     });
   });
+
+// Get chunks for a document (read-only)
+app.get("/documents/:id/chunks", async (req, reply) => {
+  const tenantId = (req as any).tenantId as string;
+  const id = String((req.params as any)?.id ?? "").trim();
+
+  const doc = await prisma.kbDocument.findFirst({
+    where: { id, tenantId },
+    select: { id: true, updatedAt: true },
+  });
+  if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
+
+  const chunks = await prisma.kbChunk.findMany({
+    where: { tenantId, documentId: id },
+    orderBy: { idx: "asc" },
+    select: { idx: true, charStart: true, charEnd: true, content: true, sourceUpdatedAt: true },
+    take: 2000,
+  });
+
+  return reply.send({
+    ok: true,
+    documentId: id,
+    sourceUpdatedAt: chunks[0]?.sourceUpdatedAt ?? null,
+    chunks,
+  });
+});
+
+// Regenerate chunks for a document (write roles only)
+app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
+  const tenantId = (req as any).tenantId as string;
+  const role = (req as any).tenantRole;
+  const userId = (req as any).auth?.userId as string | undefined;
+  const id = String((req.params as any)?.id ?? "").trim();
+
+  if (!canWrite(role)) {
+    return reply.code(403).send({ ok: false, error: "role_cannot_write_kb" });
+  }
+  if (!userId) {
+    return reply.code(401).send({ ok: false, error: "missing_user" });
+  }
+
+  const doc = await prisma.kbDocument.findFirst({
+    where: { id, tenantId },
+    select: { id: true, body: true, updatedAt: true, title: true, slug: true },
+  });
+  if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
+
+  const targetSize = Number((req.body as any)?.chunkSize ?? process.env.KB_CHUNK_SIZE ?? 4000);
+  const softWindow = Number((req.body as any)?.softWindow ?? process.env.KB_CHUNK_SOFT_WINDOW ?? 600);
+
+  const body = doc.body ?? "";
+  const chunks = makeChunksByChars(body, targetSize, softWindow);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.kbChunk.deleteMany({ where: { tenantId, documentId: id } });
+    if (chunks.length > 0) {
+      await tx.kbChunk.createMany({
+        data: chunks.map((c) => ({
+          tenantId,
+          documentId: id,
+          idx: c.idx,
+          charStart: c.charStart,
+          charEnd: c.charEnd,
+          content: c.content,
+          sourceUpdatedAt: doc.updatedAt,
+        })),
+      });
+    }
+    // Touch the document updatedBy for audit trace
+    await tx.kbDocument.update({
+      where: { id },
+      data: { updatedBy: userId },
+    });
+  });
+
+  return reply.send({
+    ok: true,
+    documentId: id,
+    chunksWritten: chunks.length,
+    chunkSize: targetSize,
+    softWindow,
+  });
+});
 
   // Create
   app.post("/documents", async (req, reply) => {

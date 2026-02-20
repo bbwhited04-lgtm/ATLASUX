@@ -82,7 +82,7 @@ model Tenant {
   members   TenantMember[]
   createdAt DateTime       @default(now()) @map("created_at")
   updatedAt DateTime       @updatedAt @map("updated_at")
-
+  
   integrations Integration[]
   audits       AuditLog[]    @relation("TenantAudits")
   jobs         Job[]
@@ -92,8 +92,10 @@ model Tenant {
   // Knowledge Base
   kbDocuments  KbDocument[]
   kbTags       KbTag[]
+  kb_chunks KbChunk[]
 
-  @@map("tenants")
+  @@map("tenant_id")
+  
 }
 
 model Intent {
@@ -253,11 +255,34 @@ model KbDocument {
 
   tenant Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tags   KbTagOnDocument[]
+  chunks KbChunk[]
 
   @@unique([tenantId, slug])
   @@index([tenantId, status, updatedAt])
   @@map("kb_documents")
 }
+
+model KbChunk {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  documentId String   @map("document_id") @db.Uuid
+  idx        Int
+  charStart  Int      @map("char_start")
+  charEnd    Int      @map("char_end")
+  content    String
+  sourceUpdatedAt DateTime @map("source_updated_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document KbDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, idx])
+  @@index([tenantId, documentId])
+  @@index([tenantId, updatedAt])
+  @@map("kb_chunks")
+}
+
 
 model KbTag {
   id        String   @id @default(uuid()) @db.Uuid
