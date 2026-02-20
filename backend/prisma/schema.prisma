@@ -94,6 +94,9 @@ model Tenant {
   kbTags       KbTag[]
   kb_chunks KbChunk[]
 
+  // Daily system metrics snapshots (one row per day, per tenant)
+  metricsSnapshots MetricsSnapshot[]
+
   @@map("tenant_id")
   
 }
