@@ -19,6 +19,7 @@ import {
   Settings as SettingsIcon,
   ChevronRight,
   ChevronLeft,
+  BookOpen,
 } from 'lucide-react';
 
 function RootLayoutInner() {
@@ -41,6 +42,7 @@ function RootLayoutInner() {
     { path: "/app/analytics", icon: BarChart3, label: "Analytics" },
     // Consolidated business tooling lives under Business Manager now.
     { path: "/app/business-manager", icon: Briefcase, label: "Business Manager" },
+    { path: "/app/kb", icon: BookOpen, label: "Knowledge Base" },
     ];
 
   // (Kept for future “setup wizard” flows; currently the modal is opened via context.)

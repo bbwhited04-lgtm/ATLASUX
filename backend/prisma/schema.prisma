@@ -221,3 +221,59 @@ model Asset {
   @@index([tenantId])
   @@map("assets")
 }
+
+enum KbDocumentStatus {
+  draft
+  published
+  archived
+
+  @@map("kb_document_status")
+}
+
+model KbDocument {
+  id        String           @id @default(uuid()) @db.Uuid
+  tenantId  String           @map("tenant_id") @db.Uuid
+  title     String
+  slug      String
+  body      String
+  status    KbDocumentStatus @default(draft)
+
+  createdBy String  @map("created_by") @db.Uuid
+  updatedBy String? @map("updated_by") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tags   KbTagOnDocument[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, status, updatedAt])
+  @@map("kb_documents")
+}
+
+model KbTag {
+  id       String   @id @default(uuid()) @db.Uuid
+  tenantId String   @map("tenant_id") @db.Uuid
+  name     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  docs   KbTagOnDocument[]
+
+  @@unique([tenantId, name])
+  @@map("kb_tags")
+}
+
+model KbTagOnDocument {
+  documentId String @map("document_id") @db.Uuid
+  tagId      String @map("tag_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  document KbDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  tag      KbTag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([documentId, tagId])
+  @@index([tagId])
+  @@map("kb_tag_on_document")
+}

@@ -18,6 +18,7 @@ import { ToolsHub } from "./components/ToolsHub";
 import { WorkflowsHub } from "./components/WorkflowsHub";
 import { AgentDeploymentHub } from "./components/AgentDeploymentHub";
 import { AppsHub } from "./components/AppsHub";
+import { KnowledgeBaseHub } from "./components/KnowledgeBaseHub";
 import MobilePage from "./routes/mobile";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -59,6 +60,7 @@ export const router = createHashRouter([
       { path: "analytics", Component: Analytics },
       { path: "automation", Component: () => React.createElement(Navigate, { to: "/app/agents?view=automation", replace: true }) },
       { path: "business-manager", Component: BusinessManager },
+      { path: "kb", Component: KnowledgeBaseHub },
       { path: "settings", Component: Settings },
       { path: "help", Component: HelpPage },
       ],

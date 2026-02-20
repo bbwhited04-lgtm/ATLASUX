@@ -23,6 +23,7 @@ import { accountingRoutes } from "./routes/accountingRoutes.js";
 import { tenantsRoutes } from "./routes/tenants.js";
 import { assetsRoutes } from "./routes/assets.js";
 import { ledgerRoutes } from "./routes/ledger.js";
+import { kbRoutes } from "./routes/kbRoutes.js";
 
 const app = Fastify({ logger: true });
 
@@ -40,7 +41,7 @@ await app.register(cors, {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "x-tenant-id"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-tenant-id", "x-user-id", "x-actor-user-id", "x-external-id", "x-actor-external-id", "x-actor-type", "x-device-id", "x-request-id", "x-client-source"],
 });
 
 // Plugins (order matters)
@@ -64,6 +65,7 @@ await app.register(accountingRoutes, { prefix: "/v1/accounting" });
 await app.register(tenantsRoutes, { prefix: "/v1/tenants" });
 await app.register(assetsRoutes, { prefix: "/v1/assets" });
 await app.register(ledgerRoutes, { prefix: "/v1/ledger" });
+await app.register(kbRoutes, { prefix: "/v1/kb" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
