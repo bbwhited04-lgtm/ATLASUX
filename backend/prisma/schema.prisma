@@ -6,6 +6,10 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+enum KbStatus {
+  DRAFT
+  PUBLISHED
+}
 
 enum IntentStatus {
   DRAFT

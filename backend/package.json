@@ -4,11 +4,19 @@
   "private": true,
   "type": "module",
   "main": "dist/index.js",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
+    "kb:ingest-agents": "ts-node scripts/ingestAgentsToKb.ts",
     "dev": "tsx watch src/index.ts",
     "build": "echo '== prisma generate ==' && npx prisma generate && echo '== tsc ==' && npx tsc -p tsconfig.json",
     "start": "node dist/index.js"
+    
+  },
+
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
@@ -29,6 +37,8 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/node": "^25.3.0",
+    "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }
