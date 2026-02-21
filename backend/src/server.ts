@@ -33,7 +33,21 @@ import { integrationsRoutes } from "./routes/integrationsRoutes.js";
 import { oauthRoutes } from "./routes/oauthRoutes.js";
 
 const app = Fastify({ logger: true });
+app.addHook("onSend", async (_req, reply, payload) => {
+  // Only touch JSON responses
+  const contentType = reply.getHeader("content-type");
+  if (typeof payload === "string" || !contentType?.toString().includes("application/json")) {
+    return payload;
+  }
 
+  try {
+    return JSON.stringify(payload, (_k, v) =>
+      typeof v === "bigint" ? Number(v) : v
+    );
+  } catch {
+    return payload;
+  }
+});
 const allowed = new Set([
   "https://www.atlasux.cloud",
   "https://atlasux.cloud",
