@@ -34,6 +34,14 @@ const EnvSchema = z.object({
   X_CLIENT_SECRET: z.string().optional(),
   X_REDIRECT_URI: z.string().optional(),
 
+  // Tumblr OAuth 1.0a
+  TUMBLR_REQUEST_TOKEN_URL: z.string().optional(),
+  TUMBLR_AUTHORIZE_URL: z.string().optional(),
+  TUMBLR_ACCESS_TOKEN_URL: z.string().optional(),
+  TUMBLR_AUTH_KEY: z.string().optional(),
+  TUMBLR_OAUTH_SECRET: z.string().optional(),
+  TUMBLR_REDIRECT_URI: z.string().optional(), // full callback URL
+
   // Stripe (optional here; can be wired later)
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional()

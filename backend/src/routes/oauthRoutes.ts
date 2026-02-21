@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { loadEnv } from "../env.js";
 import { buildXAuthUrl, exchangeXCode, makePkcePair, storeTokenVault } from "../oauth.js";
+import { tumblrAccessToken, tumblrAuthorizeUrl, tumblrRequestToken } from "../integrations/tumblr.client.js";
 
 // Local OAuth stubs.
 // In real deployments this redirects to provider consent; for local alpha we simply mark connected
@@ -12,6 +13,9 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
   // PKCE verifier store (alpha-grade). Keyed by nonce.
   const pkce = new Map<string, { code_verifier: string; createdAt: number }>();
+
+  // Tumblr request-token secret store (alpha-grade). Keyed by oauth_token.
+  const tumblrTmp = new Map<string, { tokenSecret: string; createdAt: number; org_id: string; user_id: string }>();
 
   function b64urlJson(obj: any) {
     const json = JSON.stringify(obj);
@@ -141,6 +145,65 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
       return reply.redirect(url.toString());
     } catch (e: any) {
       url.searchParams.set("oauth_error", e?.message ? String(e.message) : "token_exchange_failed");
+      return reply.redirect(url.toString());
+    }
+  });
+
+  // Tumblr OAuth 1.0a (real)
+  app.get("/tumblr/start", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const org_id = String(q.org_id ?? q.orgId ?? "");
+    const user_id = String(q.user_id ?? q.userId ?? "");
+
+    const tok = await tumblrRequestToken(env);
+    tumblrTmp.set(tok.oauth_token, { tokenSecret: tok.oauth_token_secret, createdAt: Date.now(), org_id, user_id });
+
+    // prune old entries
+    for (const [k, v] of tumblrTmp.entries()) {
+      if (Date.now() - v.createdAt > 15 * 60 * 1000) tumblrTmp.delete(k);
+    }
+
+    reply.redirect(tumblrAuthorizeUrl(env, tok.oauth_token));
+  });
+
+  app.get("/tumblr/callback", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const oauth_token = String(q.oauth_token ?? "");
+    const oauth_verifier = String(q.oauth_verifier ?? "");
+
+    const url = new URL(FRONTEND_URL);
+    url.hash = "#/app/integrations";
+
+    const tmp = tumblrTmp.get(oauth_token);
+    if (!oauth_token || !oauth_verifier || !tmp) {
+      url.searchParams.set("oauth_error", "tumblr_missing_or_expired");
+      return reply.redirect(url.toString());
+    }
+
+    try {
+      const acc = await tumblrAccessToken(env, oauth_token, oauth_verifier, tmp.tokenSecret);
+      tumblrTmp.delete(oauth_token);
+
+      await storeTokenVault(env, {
+        org_id: tmp.org_id,
+        user_id: tmp.user_id,
+        provider: "tumblr",
+        access_token: acc.oauth_token,
+        refresh_token: null,
+        expires_at: null,
+        scope: null,
+        meta: {
+          oauth_token_secret: acc.oauth_token_secret,
+          raw: acc,
+        },
+      });
+
+      url.searchParams.set("connected", "tumblr");
+      url.searchParams.set("org_id", tmp.org_id);
+      url.searchParams.set("user_id", tmp.user_id);
+      return reply.redirect(url.toString());
+    } catch (e: any) {
+      url.searchParams.set("oauth_error", e?.message ? String(e.message) : "tumblr_token_exchange_failed");
       return reply.redirect(url.toString());
     }
   });

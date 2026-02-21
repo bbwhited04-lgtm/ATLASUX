@@ -54,6 +54,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (app) => {
       { provider: "google", connected: await isConnectedVault(org_id, user_id, "google") },
       { provider: "meta", connected: await isConnectedVault(org_id, user_id, "meta") },
       { provider: "x", connected: await isConnectedVault(org_id, user_id, "x") },
+      { provider: "tumblr", connected: await isConnectedVault(org_id, user_id, "tumblr") },
     ];
   });
 
@@ -65,7 +66,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (app) => {
     const org_id = q.org_id ?? q.orgId ?? null;
     const user_id = q.user_id ?? q.userId ?? null;
 
-    if (provider !== "google" && provider !== "meta" && provider !== "x") {
+    if (provider !== "google" && provider !== "meta" && provider !== "x" && provider !== "tumblr") {
       return { ok: false, error: "unsupported_provider" };
     }
 

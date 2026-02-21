@@ -2,12 +2,22 @@ import type { Env } from "./env.js";
 import { makeSupabase } from "./supabase.js";
 import { webcrypto } from "node:crypto";
 
-export type Provider = "google" | "meta" | "x";
+export type Provider = "google" | "meta" | "x" | "tumblr";
 
 export function oauthEnabled(provider: Provider, env: Env): boolean {
   if (provider === "google") return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI);
   if (provider === "meta") return !!(env.META_APP_ID && env.META_APP_SECRET && env.META_REDIRECT_URI);
   if (provider === "x") return !!(env.X_CLIENT_ID && env.X_CLIENT_SECRET && env.X_REDIRECT_URI);
+  if (provider === "tumblr") {
+    return !!(
+      env.TUMBLR_AUTH_KEY &&
+      env.TUMBLR_OAUTH_SECRET &&
+      env.TUMBLR_REQUEST_TOKEN_URL &&
+      env.TUMBLR_AUTHORIZE_URL &&
+      env.TUMBLR_ACCESS_TOKEN_URL &&
+      env.TUMBLR_REDIRECT_URI
+    );
+  }
   return false;
 }
 

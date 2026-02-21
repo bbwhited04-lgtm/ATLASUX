@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   BookOpen,
   ClipboardCheck,
+  Newspaper,
 } from 'lucide-react';
 
 import { API_BASE } from "../lib/api";
@@ -75,6 +76,7 @@ function RootLayoutInner() {
     // Consolidated business tooling lives under Business Manager now.
     { path: "/app/business-manager", icon: Briefcase, label: "Business Manager" },
     { path: "/app/kb", icon: BookOpen, label: "Knowledge Base" },
+    { path: "/blog", icon: Newspaper, label: "Blog" },
     { path: "/app/decisions", icon: ClipboardCheck, label: "Decisions", badge: pendingDecisionsCount },
     ];
 
