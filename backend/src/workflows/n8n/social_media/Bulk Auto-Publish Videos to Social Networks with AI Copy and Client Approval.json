@@ -1,0 +1,1557 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Flow 2: Approval & auto-publish\n\nEvery 15 minutes the workflow reads VideosTable, filters Status=approved, downloads the file and schedules it to the enabled platforms via Upload-Post. After a successful schedule, it updates the row to Status=scheduled.",
+        "height": 180,
+        "width": 468
+      },
+      "id": "19427280-0db3-45e8-8aef-edc7fa5c7013",
+      "name": "PUBLISHER NOTE",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        80,
+        960
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Flow 1: Save drafts\n\nFormats the AI output plus schedule info and appends a new row in VideosTable with Status=draft. Change Status to approved when you want Flow 2 to publish it.",
+        "height": 580,
+        "width": 420
+      },
+      "id": "66518d7d-fa59-4b52-a3fb-d65ddbb9c0ac",
+      "name": "SAVE NOTE",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2576,
+        304
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Flow 1: AI analysis & copy\n\nEach video is downloaded, analyzed with Gemini Flash, then Gemini Pro generates unique TikTok/Instagram/YouTube titles, descriptions and hashtags. The parser enforces valid JSON before saving.",
+        "height": 584,
+        "width": 712
+      },
+      "id": "c01b9298-7407-407f-8998-2ad77bfc900b",
+      "name": "AI NOTE",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1840,
+        304
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Flow 1: Campaign intake & Drive fetch\n\nThe form collects campaign inputs. Google Drive lists files in the folder, then the filter keeps only video files before building the posting calendar.",
+        "height": 516,
+        "width": 460
+      },
+      "id": "2a4b1fdb-27ee-49db-86fa-43150833e642",
+      "name": "FETCH NOTE",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        640,
+        368
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## How it works\nThis template has two flows. Flow 1 starts with a Form, reads all videos from a Google Drive folder, filters to keep video files, and builds a posting calendar using the start date, cadence and publish hour. Each file is downloaded, analyzed with Gemini, and used to generate platform-specific titles, descriptions and hashtags for TikTok, Instagram Reels and YouTube Shorts. The workflow then formats the results and appends them to a Google Sheet as drafts.\n\n## Setup steps\n1) Prepare a Google Drive folder with your videos.\n2) Copy this template sheet in your drive: https://docs.google.com/spreadsheets/d/1cegJHxj7Kx4Tg8gMr3uixpzToNc62VEvuuz37iFvnRw/edit?usp=sharing\n3) Connect Google Drive, Google Sheets and Google Gemini credentials.\n4) Run the Form and provide the Drive Folder ID, Upload-Post profile username, platforms, timezone, start date, cadence, publish hour, and Sheet ID.\n5) Activate the workflow. Set any draft row Status to approved; Flow 2 checks every 15 minutes, schedules it via Upload-Post, and updates the row to scheduled.",
+        "height": 456,
+        "width": 560,
+        "color": 4
+      },
+      "id": "768f5e17-5bb2-442f-b090-bd961de46b72",
+      "name": "WORKFLOW INFO",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "formTitle": "Social Video Autopilot",
+        "formDescription": "Batch process and schedule your videos across TikTok, Instagram & YouTube with AI-powered optimization",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Google Drive Folder ID",
+              "placeholder": "1jojIQ8TUjC_O-HfuhcjZfJSGSOl-h0Om",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Profile Username (Upload-Post)",
+              "placeholder": "mi_perfil_whitelabel",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Platforms",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "TikTok, Instagram, YouTube"
+                  },
+                  {
+                    "option": "TikTok, Instagram"
+                  },
+                  {
+                    "option": "TikTok, YouTube"
+                  },
+                  {
+                    "option": "Instagram, YouTube"
+                  },
+                  {
+                    "option": "TikTok"
+                  },
+                  {
+                    "option": "Instagram"
+                  },
+                  {
+                    "option": "YouTube"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Start Date (YYYY-MM-DD)",
+              "placeholder": "2025-12-09",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Cadence",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "1_daily"
+                  },
+                  {
+                    "option": "5_per_week"
+                  },
+                  {
+                    "option": "3_per_week"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Publish Hour (HH:MM)",
+              "placeholder": "09:00",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Google Sheet ID (for tracking)",
+              "placeholder": "1lg_YOUR_AWS_SECRET_KEY_HERE",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c2514ef0-db49-46b5-99f5-b02e438a00a3",
+      "name": "Start Campaign",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        272,
+        544
+      ],
+      "webhookId": "8ab742a3-8535-4f48-83b2-568a4848a68c",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "drive_folder_id",
+              "name": "drive_folder_id",
+              "type": "string",
+              "value": "={{ $json['Google Drive Folder ID'] }}"
+            },
+            {
+              "id": "profile_username",
+              "name": "profile_username",
+              "type": "string",
+              "value": "={{ $json['Profile Username (Upload-Post)'] }}"
+            },
+            {
+              "id": "platforms_raw",
+              "name": "platforms_raw",
+              "type": "string",
+              "value": "={{ $json['Platforms'] }}"
+            },
+            {
+              "id": "timezone",
+              "name": "timezone",
+              "type": "string",
+              "value": "={{ $json['Timezone'] }}"
+            },
+            {
+              "id": "start_date",
+              "name": "start_date",
+              "type": "string",
+              "value": "={{ $json['Start Date (YYYY-MM-DD)'] }}"
+            },
+            {
+              "id": "cadence",
+              "name": "cadence",
+              "type": "string",
+              "value": "={{ $json['Cadence'] }}"
+            },
+            {
+              "id": "publish_hour",
+              "name": "publish_hour",
+              "type": "string",
+              "value": "={{ $json['Publish Hour (HH:MM)'] }}"
+            },
+            {
+              "id": "sheet_id",
+              "name": "sheet_id",
+              "type": "string",
+              "value": "={{ $json['Google Sheet ID (for tracking)'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f8358fc8-6a71-4599-9ad1-3eccad1c4682",
+      "name": "Campaign Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        432,
+        544
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "='{{ $json.drive_folder_id }}' in parents and trashed = false",
+        "returnAll": true,
+        "filter": {},
+        "options": {}
+      },
+      "id": "a8db17f7-8041-4c64-a2be-29648de09866",
+      "name": "Fetch Videos from Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        704,
+        544
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "video-mp4",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "leftValue": "={{ $json.name }}",
+              "rightValue": ".mp4"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5615edc4-ec87-4c3f-94c5-ad2f457b64d8",
+      "name": "Video Files Only",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        944,
+        544
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get configuration from Campaign Settings node\nconst config = $('Campaign Settings').first().json;\n\nconst items = $input.all();\nconst enrichedItems = [];\n\nconst startDate = new Date(config.start_date);\nlet cadenceDays = [];\n\nswitch(config.cadence) {\n  case '1_daily':\n    for(let i = 0; i < items.length; i++) cadenceDays.push(i);\n    break;\n  case '5_per_week':\n    let dayCounter5 = 0;\n    let weekDay5 = startDate.getDay();\n    for(let i = 0; i < items.length; i++) {\n      while(weekDay5 === 0 || weekDay5 === 6) {\n        dayCounter5++;\n        weekDay5 = (startDate.getDay() + dayCounter5) % 7;\n      }\n      cadenceDays.push(dayCounter5);\n      dayCounter5++;\n      weekDay5 = (startDate.getDay() + dayCounter5) % 7;\n    }\n    break;\n  case '3_per_week':\n    let dayCounter3 = 0;\n    for(let i = 0; i < items.length; i++) {\n      while(![1, 3, 5].includes((startDate.getDay() + dayCounter3) % 7)) dayCounter3++;\n      cadenceDays.push(dayCounter3);\n      dayCounter3++;\n    }\n    break;\n}\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  const scheduleDaysOffset = cadenceDays[i] ?? i;\n\n  const scheduleDate = new Date(startDate);\n  scheduleDate.setDate(scheduleDate.getDate() + scheduleDaysOffset);\n  const scheduleDateStr = scheduleDate.toISOString().split('T')[0];\n  const scheduleDateTime = `${scheduleDateStr}T${config.publish_hour}:00`;\n\n  enrichedItems.push({\n    json: {\n      ...item.json,\n      video_index: i + 1,\n      total_videos: items.length,\n      config: {\n        drive_folder_id: config.drive_folder_id,\n        profile_username: config.profile_username,\n        platforms_raw: config.platforms_raw,\n        timezone: config.timezone,\n        start_date: config.start_date,\n        cadence: config.cadence,\n        publish_hour: config.publish_hour,\n        sheet_id: config.sheet_id\n      },\n      schedule: {\n        date: scheduleDateStr,\n        datetime: scheduleDateTime\n      }\n    }\n  });\n}\n\nreturn enrichedItems;"
+      },
+      "id": "030f8651-615d-4292-a2d8-5097842c4847",
+      "name": "Build Schedule Calendar",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1184,
+        544
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "81f5d473-e690-4574-83b6-9bacd17429f0",
+      "name": "Process Each Video",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1424,
+        544
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {}
+      },
+      "id": "a38e1cbf-0baa-4141-b526-c29930602739",
+      "name": "Download from Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1664,
+        528
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-2.5-flash",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=Analyze the attached video and provide:\n\n1) DETAILED DESCRIPTION: A thorough, faithful narrative of what is seen and heard.\n2) FULL TRANSCRIPTION of the audio.\n3) KEYWORDS: 10-15 SEO-relevant keywords.\n4) KEY MOMENTS with approximate timestamps.\n5) CONTENT TYPE (tutorial, review, vlog, entertainment, educational, etc.).\n6) TONE (serious, funny, professional, casual, etc.).\n7) DETECTED PRIMARY LANGUAGE of the spoken content.\n\nImportant output rule:\nStart your answer with a single line exactly like:\nDetected language: <English|Spanish|Other>\n\nThen write the rest of the analysis in English.\nThis analysis will be used to generate social titles and descriptions in the same detected language.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "id": "3421ea97-cb06-4e03-a9ac-9b06f6513ab8",
+      "name": "AI Video Analysis",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "position": [
+        1904,
+        528
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=[VIDEO ANALYSIS]\n{{ $json.content.parts[0].text }}\n\n[FILE INFO]\nName: {{ $('Download from Drive').item.json.name }}\n\n[CAMPAIGN SETTINGS]\nPlatforms: {{ $json.config.platforms_raw }}\n\n[GOAL]\nGenerate platform-specific titles, descriptions and hashtags for the selected platforms.\n\nLanguage rule:\n- Use the SAME language as the video.\n- The analysis starts with \"Detected language:\". Follow it strictly.\n- If it says English, write everything in English.\n- If it says Spanish, write everything in Spanish (Spain).\n\nOutput rules:\n- Each platform must be UNIQUE (do not copy/paste across platforms).\n- Return ONLY valid JSON matching this exact structure:\n{\n  \"tiktok\": {\n    \"title\": \"Optimized TikTok title (max 150 chars, strong hook)\",\n    \"description\": \"Short, engaging TikTok description\",\n    \"hashtags\": \"#hashtag1 #hashtag2 ...\"\n  },\n  \"instagram\": {\n    \"title\": \"Optimized Instagram Reels caption\",\n    \"description\": \"Value-driven description with CTA\",\n    \"hashtags\": \"#hashtag1 #hashtag2 ...\"\n  },\n  \"youtube\": {\n    \"title\": \"SEO-first YouTube Shorts title\",\n    \"description\": \"YouTube description with natural keywords and CTA\",\n    \"tags\": \"tag1, tag2, tag3\"\n  },\n  \"summary\": \"Very short internal summary\"\n}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a social media content marketing expert specialized in TikTok, Instagram Reels and YouTube Shorts.\n\nYour goals:\n- Maximize CTR\n- Improve retention\n- Increase engagement\n- Improve organic reach\n- Boost SEO on YouTube\n\nPlatform guidelines:\n\nTikTok:\n- Short, punchy titles with an emotional hook\n- Use emojis sparingly if the language/style fits\n- 10-15 hashtags mixing trending + niche\n- Casual, native tone\n\nInstagram Reels:\n- Strong first line hook\n- Slightly longer caption with light storytelling\n- Clear CTA (save, share, comment)\n- 20-30 hashtags mixing large/medium/niche\n\nYouTube Shorts:\n- SEO-first title, main keyword near the start\n- Ideal 50-60 characters\n- Description with natural keywords and CTA\n- 10-15 tags comma-separated\n\nCritical rules:\n- Each platform content must be DIFFERENT\n- Do not invent facts not present in the video\n- Output ONLY valid JSON, no markdown\n- Use the language detected in the analysis line: \"Detected language:\""
+        }
+      },
+      "id": "31b7814f-c2f9-4427-91a9-f587d01b8940",
+      "name": "Generate Social Copy",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        2096,
+        528
+      ],
+      "retryOnFail": true,
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "a759dc98-8795-4c28-a810-d3e5513d9545",
+      "name": "Gemini Pro",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        2096,
+        752
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"tiktok\": {\n    \"title\": \"Optimized TikTok title (max 150 chars, strong hook)\",\n    \"description\": \"Short, engaging TikTok description\",\n    \"hashtags\": \"#hashtag1 #hashtag2 #hashtag3\"\n  },\n  \"instagram\": {\n    \"title\": \"Optimized Instagram Reels caption\",\n    \"description\": \"Value-driven description with CTA\",\n    \"hashtags\": \"#hashtag1 #hashtag2\"\n  },\n  \"youtube\": {\n    \"title\": \"SEO-first YouTube Shorts title\",\n    \"description\": \"YouTube description with natural keywords and CTA\",\n    \"tags\": \"tag1, tag2, tag3\"\n  },\n  \"summary\": \"Very short internal summary\"\n}",
+        "autoFix": true
+      },
+      "id": "d0ae1c56-6eaf-4744-ac4f-86b16575a3df",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        2240,
+        736
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const calendarInfo = $('Build Schedule Calendar').item?.json ?? {};\n  const downloadInfo = $('Download from Drive').item?.json ?? {};\n\n  const makeBaseRow = () => ({\n    \"Video ID\": calendarInfo?.id || downloadInfo?.id || 'unknown',\n    \"Video Name\": downloadInfo?.name || calendarInfo?.name || 'unknown',\n    \"Index\": String(calendarInfo?.video_index ?? ''),\n    \"Status\": 'draft',\n    \"Schedule Date\": calendarInfo?.schedule?.date || '',\n    \"Schedule DateTime\": calendarInfo?.schedule?.datetime || '',\n\n    \"TikTok Title\": '',\n    \"TikTok Description\": '',\n    \"TikTok Hashtags\": '',\n\n    \"Instagram Title\": '',\n    \"Instagram Description\": '',\n    \"Instagram Hashtags\": '',\n\n    \"YouTube Title\": '',\n    \"YouTube Description\": '',\n    \"YouTube Tags\": '',\n\n    \"Summary\": '',\n    \"Profile\": calendarInfo?.config?.profile_username || '',\n    \"Platforms\": calendarInfo?.config?.platforms_raw || '',\n    \"Created At\": new Date().toISOString()\n  });\n\n  try {\n    const rawOutput = item.json.output ?? item.json.text ?? item.json;\n\n    let content;\n    if (rawOutput && typeof rawOutput === 'object' && !Array.isArray(rawOutput)) {\n      content = rawOutput;\n    } else {\n      let cleanedOutput = String(rawOutput)\n        .replace(/```json\\n?/g, '')\n        .replace(/```\\n?/g, '')\n        .trim();\n\n      const firstBrace = cleanedOutput.indexOf('{');\n      const lastBrace = cleanedOutput.lastIndexOf('}');\n      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {\n        cleanedOutput = cleanedOutput.slice(firstBrace, lastBrace + 1);\n      }\n\n      content = JSON.parse(cleanedOutput);\n    }\n\n    const row = makeBaseRow();\n\n    row[\"TikTok Title\"] = content.tiktok?.title || '';\n    row[\"TikTok Description\"] = content.tiktok?.description || '';\n    row[\"TikTok Hashtags\"] = content.tiktok?.hashtags || '';\n\n    row[\"Instagram Title\"] = content.instagram?.title || '';\n    row[\"Instagram Description\"] = content.instagram?.description || '';\n    row[\"Instagram Hashtags\"] = content.instagram?.hashtags || '';\n\n    row[\"YouTube Title\"] = content.youtube?.title || '';\n    row[\"YouTube Description\"] = content.youtube?.description || '';\n    row[\"YouTube Tags\"] = content.youtube?.tags || '';\n\n    row[\"Summary\"] = content.summary || '';\n\n    results.push({ json: row });\n  } catch (error) {\n    const row = makeBaseRow();\n    row[\"Status\"] = 'error';\n    row[\"Summary\"] = `PARSE_ERROR: ${error.message}`;\n    results.push({ json: row });\n  }\n}\n\nreturn results;"
+      },
+      "id": "c6dac1ea-6c04-4458-88f3-0dd5c17af102",
+      "name": "Format Content Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2400,
+        528
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Campaign Settings').first().json.sheet_id }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "VideosTable"
+        },
+        "columns": {
+          "value": {},
+          "schema": [
+            {
+              "id": "Video ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Video ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Video Name",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Video Name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Index",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Index",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Schedule Date",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Schedule Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Schedule DateTime",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Schedule DateTime",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TikTok Title",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "TikTok Title",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TikTok Description",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "TikTok Description",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TikTok Hashtags",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "TikTok Hashtags",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Instagram Title",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Instagram Title",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Instagram Description",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Instagram Description",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Instagram Hashtags",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Instagram Hashtags",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "YouTube Title",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "YouTube Title",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "YouTube Description",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "YouTube Description",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "YouTube Tags",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "YouTube Tags",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Summary",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Profile",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Profile",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Platforms",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Platforms",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created At",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Created At",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "id": "947ac55b-929a-4ae0-853d-3172ea9463e6",
+      "name": "Save Draft to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2640,
+        528
+      ],
+      "typeVersion": 4.7
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sheet_id_2",
+              "name": "sheet_id",
+              "type": "string",
+              "value": "1cegJHxj7Kx4Tg8gMr3uixpzToNc62VEvuuz37iFvnRw"
+            },
+            {
+              "id": "drive_id_2",
+              "name": "drive_folder_id",
+              "type": "string",
+              "value": "1LB5YDDVnt0vLeC9qN1jc0UgLjMsnCRYn"
+            },
+            {
+              "id": "profile_2",
+              "name": "profile_username",
+              "type": "string",
+              "value": "automated-tests"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2b06b906-7dc6-4a0d-8dc2-2f43be827841",
+      "name": "Publisher Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        464,
+        1200
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.sheet_id }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "VideosTable"
+        },
+        "options": {}
+      },
+      "id": "e7bd1629-8612-42fc-954b-d5bf73fa0236",
+      "name": "Load Content Queue",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        704,
+        1200
+      ],
+      "typeVersion": 4.7
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "status-approved",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.Status }}",
+              "rightValue": "approved"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1c646599-376e-487a-a16f-a585960ef3e4",
+      "name": "Only Approved",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        944,
+        1200
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "1a515324-2bb0-4b1c-8ac1-756b6513dd14",
+      "name": "Process Queue",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1184,
+        1200
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json['Video ID'] }}"
+        },
+        "options": {}
+      },
+      "id": "d3edefd0-be69-4a3e-9e27-caf1182c5219",
+      "name": "Get Video File",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1424,
+        1200
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst sheetData = item.json;\nconst config = $('Publisher Config').first().json;\n\nconst platforms = (sheetData.Platforms || 'tiktok,instagram,youtube').toLowerCase();\n\nreturn {\n  json: {\n    video_id: sheetData['Video ID'],\n    video_name: sheetData['Video Name'],\n    row_index: sheetData.row_number,\n\n    has_tiktok: platforms.includes('tiktok'),\n    has_instagram: platforms.includes('instagram'),\n    has_youtube: platforms.includes('youtube'),\n\n    tiktok_content: [sheetData['TikTok Title'], sheetData['TikTok Description'], sheetData['TikTok Hashtags']].filter(Boolean).join('\\n\\n'),\n    instagram_content: [sheetData['Instagram Title'], sheetData['Instagram Description'], sheetData['Instagram Hashtags']].filter(Boolean).join('\\n\\n'),\n\n    youtube_title: sheetData['YouTube Title'] || '',\n    youtube_description: sheetData['YouTube Description'] || '',\n\n    schedule_datetime: sheetData['Schedule DateTime'] || '',\n\n    profile_username: sheetData.Profile || config.profile_username,\n    sheet_id: config.sheet_id\n  },\n  binary: item.binary\n};"
+      },
+      "id": "1426596c-4a72-471a-aaf2-e8d785547c9f",
+      "name": "Build Upload Payload",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1664,
+        1200
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "tiktok-check",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.has_tiktok }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5b6f5d94-237e-464a-85e2-7b1b81f56ae7",
+      "name": "TikTok Enabled?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1904,
+        1040
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ig-check",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.has_instagram }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "54034429-1f5f-4cd8-a97a-cf5d63077c6b",
+      "name": "Instagram Enabled?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1904,
+        1200
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "yt-check",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.has_youtube }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2f460513-7788-48c7-8382-2043e68c9647",
+      "name": "YouTube Enabled?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1904,
+        1360
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "user": "automated-tests",
+        "title": "={{ $json.tiktok_content }}",
+        "video": "data",
+        "platform": [
+          "tiktok"
+        ],
+        "operation": "uploadVideo",
+        "scheduledDate": "={{ $json.schedule_datetime }}",
+        "waitForCompletion": "="
+      },
+      "id": "10bf3045-8623-456c-a609-d4b490840c1a",
+      "name": "Schedule TikTok",
+      "type": "n8n-nodes-upload-post.uploadPost",
+      "position": [
+        2144,
+        1024
+      ],
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "user": "automated-tests",
+        "title": "={{ $json.instagram_content }}",
+        "video": "data",
+        "platform": [
+          "instagram"
+        ],
+        "operation": "uploadVideo",
+        "scheduledDate": "={{ $json.schedule_datetime }}",
+        "waitForCompletion": "=",
+        "instagramMediaType": "REELS"
+      },
+      "id": "ef7eda8b-7abd-4684-adb8-525a7cc50a41",
+      "name": "Schedule Instagram",
+      "type": "n8n-nodes-upload-post.uploadPost",
+      "position": [
+        2144,
+        1184
+      ],
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "user": "automated-tests",
+        "title": "={{ $json.youtube_title }}",
+        "video": "data",
+        "platform": [
+          "youtube"
+        ],
+        "operation": "uploadVideo",
+        "youtubeTitle": "={{ $json.youtube_title }}",
+        "scheduledDate": "={{ $json.schedule_datetime }}",
+        "waitForCompletion": "="
+      },
+      "id": "5e384334-2f45-44f2-a26c-aa760db1cbfc",
+      "name": "Schedule YouTube",
+      "type": "n8n-nodes-upload-post.uploadPost",
+      "position": [
+        2144,
+        1344
+      ],
+      "typeVersion": 1,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Publisher Config').item.json.sheet_id }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1275860196,
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1cegJHxj7Kx4Tg8gMr3uixpzToNc62VEvuuz37iFvnRw/edit#gid=1275860196",
+          "cachedResultName": "VideosTable"
+        },
+        "columns": {
+          "value": {
+            "Status": "scheduled",
+            "Video ID": "={{ $('Get Video File').item.json[\"Video ID\"] }}"
+          },
+          "schema": [
+            {
+              "id": "Video ID",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Video ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Video Name",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "Video Name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Index",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "Index",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Schedule Date",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "Schedule Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Schedule DateTime",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "Schedule DateTime",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TikTok Title",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "TikTok Title",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TikTok Description",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "TikTok Description",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TikTok Hashtags",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "TikTok Hashtags",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Instagram Title",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "Instagram Title",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Instagram Description",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "Instagram Description",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Instagram Hashtags",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "Instagram Hashtags",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "YouTube Title",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "YouTube Title",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "YouTube Description",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "YouTube Description",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "YouTube Tags",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "YouTube Tags",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "Summary",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Profile",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "Profile",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Platforms",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "Platforms",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created At",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "Created At",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "type": "number",
+              "display": true,
+              "removed": true,
+              "readOnly": true,
+              "required": false,
+              "displayName": "row_number",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Video ID"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "4f7fcc4f-43db-425d-a687-ae9d0cc4780a",
+      "name": "Mark as Scheduled",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2480,
+        1184
+      ],
+      "typeVersion": 4.7
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "97de94e6-4347-40ab-96af-53b84479544d",
+      "name": "15 mins check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        208,
+        1200
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "content": "## Upload to social networks\n\nIs configured Tiktok Instagram and Youtube, but you can add all : TikTok, Instagram, LinkedIn, YouTube, Facebook, X, Threads, Pinterest, Reddit, Bluesky",
+        "height": 628,
+        "width": 460
+      },
+      "id": "f4a882fa-92bb-48aa-bd7d-75b9aa9cb08f",
+      "name": "FETCH NOTE1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1824,
+        896
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Flow 1: Save Schedule\n\nFormats the AI output plus schedule info and appends a new row in VideosTable with Status=approved. Change Status to scheduled when you want Flow 2 to publish it.",
+        "height": 628,
+        "width": 420
+      },
+      "id": "01908fca-ce61-412c-bae8-88a4e90f468a",
+      "name": "SAVE NOTE1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2304,
+        896
+      ],
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {
+    "Start Campaign": [
+      {
+        "json": {
+          "Cadence": "1_daily",
+          "Timezone": "Europe/Madrid",
+          "formMode": "test",
+          "Platforms": "TikTok, Instagram, YouTube",
+          "submittedAt": "2025-12-08T23:21:42.951+01:00",
+          "Publish Hour (HH:MM)": "19:00",
+          "Google Drive Folder ID": "1LB5YDDVnt0vLeC9qN1jc0UgLjMsnCRYn",
+          "Start Date (YYYY-MM-DD)": "2025-12-09",
+          "Google Sheet ID (for tracking)": "1cegJHxj7Kx4Tg8gMr3uixpzToNc62VEvuuz37iFvnRw",
+          "Profile Username (Upload-Post)": "test"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Gemini Pro": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Social Copy",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15 mins check": {
+      "main": [
+        [
+          {
+            "node": "Publisher Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only Approved": {
+      "main": [
+        [
+          {
+            "node": "Process Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Queue": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get Video File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video File": {
+      "main": [
+        [
+          {
+            "node": "Build Upload Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Campaign": {
+      "main": [
+        [
+          {
+            "node": "Campaign Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule TikTok": {
+      "main": [
+        [
+          {
+            "node": "Mark as Scheduled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TikTok Enabled?": {
+      "main": [
+        [
+          {
+            "node": "Schedule TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publisher Config": {
+      "main": [
+        [
+          {
+            "node": "Load Content Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule YouTube": {
+      "main": [
+        [
+          {
+            "node": "Mark as Scheduled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Files Only": {
+      "main": [
+        [
+          {
+            "node": "Build Schedule Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Enabled?": {
+      "main": [
+        [
+          {
+            "node": "Schedule YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Video Analysis": {
+      "main": [
+        [
+          {
+            "node": "Generate Social Copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaign Settings": {
+      "main": [
+        [
+          {
+            "node": "Fetch Videos from Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Scheduled": {
+      "main": [
+        [
+          {
+            "node": "Process Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Enabled?": {
+      "main": [
+        [
+          {
+            "node": "Schedule Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Content Queue": {
+      "main": [
+        [
+          {
+            "node": "Only Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Each Video": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Download from Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Instagram": {
+      "main": [
+        [
+          {
+            "node": "Mark as Scheduled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download from Drive": {
+      "main": [
+        [
+          {
+            "node": "AI Video Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Content Data": {
+      "main": [
+        [
+          {
+            "node": "Save Draft to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Draft to Sheet": {
+      "main": [
+        [
+          {
+            "node": "Process Each Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Upload Payload": {
+      "main": [
+        [
+          {
+            "node": "TikTok Enabled?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Instagram Enabled?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "YouTube Enabled?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Social Copy": {
+      "main": [
+        [
+          {
+            "node": "Format Content Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Schedule Calendar": {
+      "main": [
+        [
+          {
+            "node": "Process Each Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Videos from Drive": {
+      "main": [
+        [
+          {
+            "node": "Video Files Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate Social Copy",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "00665782-1d5f-48ed-a230-d2dc789f42ce",
+  "meta": {
+    "instanceId": "0ab6c930d4b3510bd213503110294aa13c64c39cd77abd213e349cc60c946f9d"
+  },
+  "id": "aEkP9LlF439cyIav",
+  "tags": []
+}

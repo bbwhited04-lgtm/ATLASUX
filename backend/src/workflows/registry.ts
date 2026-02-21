@@ -1,4 +1,5 @@
 import { prisma } from "../prisma.js";
+import { n8nWorkflows } from "./n8n/manifest.js";
 
 export type WorkflowContext = {
   tenantId: string;
@@ -24,6 +25,16 @@ export const workflowCatalog = [
   { id: "WF-010", name: "Daily Executive Brief (Binky)", description: "Daily intel digest with traceability.", ownerAgent: "binky" },
   { id: "WF-020", name: "Engine Run Smoke Test (Atlas)", description: "Minimal end-to-end cloud surface verification.", ownerAgent: "atlas" },
 ] as const;
+
+// n8n workflow library (JSON templates + webhook paths)
+export { n8nWorkflows };
+
+export const workflowCatalogAll = [
+  ...workflowCatalog,
+  ...n8nWorkflows.map(w => ({ id: w.id, name: w.name, description: `n8n: ${w.category}`, ownerAgent: "atlas" as const })),
+] as const;
+
+
 
 async function writeStepAudit(ctx: WorkflowContext, step: string, message: string, meta: any = {}) {
   await prisma.auditLog.create({

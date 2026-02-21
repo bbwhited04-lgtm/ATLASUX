@@ -1,0 +1,559 @@
+{
+  "name": "Publish image & video to multiple social media (X, Instagram, Facebook and more)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Post Publisher",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Platform",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "instagram"
+                  },
+                  {
+                    "option": "linkedin"
+                  },
+                  {
+                    "option": "facebook"
+                  },
+                  {
+                    "option": "x"
+                  },
+                  {
+                    "option": "tiktok"
+                  },
+                  {
+                    "option": "threads"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Account",
+              "placeholder": "User Profile name set on Upload-post.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Caption",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Upload",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".jpg,.mp4",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Facebook Id",
+              "placeholder": "Facebook page Id (eg. +1234567890)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f5050652-6170-41c6-b3c3-0f6616c9d575",
+      "name": "On form submission",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        400,
+        1600
+      ],
+      "webhookId": "bb578d47-feaa-4973-96df-659089838de5",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.upload-post.com/api/upload_photos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.Caption }}"
+            },
+            {
+              "name": "user",
+              "value": "={{ $json.Account }}"
+            },
+            {
+              "name": "platform[]",
+              "value": "={{ $json.Platform }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "photos[]",
+              "inputDataFieldName": "=Upload"
+            },
+            {
+              "name": "facebook_id",
+              "value": "={{ $('On form submission').item.json['Facebook Id'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e9d8b8c9-3e40-420d-98c3-82c92f1c53c7",
+      "name": "Post photo",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        992,
+        1312
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.upload-post.com/api/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.Caption }}"
+            },
+            {
+              "name": "user",
+              "value": "={{ $json.Account }}"
+            },
+            {
+              "name": "platform[]",
+              "value": "={{ $json.Platform }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "video",
+              "inputDataFieldName": "=Upload"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "04103be2-a1d8-4b00-942b-44e13dffa666",
+      "name": "Post video",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        992,
+        1760
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "=Oops",
+        "completionMessage": "There was an error",
+        "options": {}
+      },
+      "id": "e7803375-20b0-4e12-80a4-b102ba48b6ba",
+      "name": "KO Video",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        1648,
+        1872
+      ],
+      "webhookId": "d03e4286-f252-4a35-a65e-ea8ac96222e4",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "=Congratulations!",
+        "completionMessage": "Your post has been published correctly",
+        "options": {}
+      },
+      "id": "91f2b501-4021-4ecc-9cc3-4e804d020135",
+      "name": "OK Video",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        1648,
+        1664
+      ],
+      "webhookId": "d03e4286-f252-4a35-a65e-ea8ac96222e4",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "=Oops",
+        "completionMessage": "There was an error",
+        "options": {}
+      },
+      "id": "b3eead97-f995-42dc-b937-6d05f284f601",
+      "name": "KO Photo",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        1648,
+        1408
+      ],
+      "webhookId": "d03e4286-f252-4a35-a65e-ea8ac96222e4",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "=Congratulations!",
+        "completionMessage": "Your post has been published correctly",
+        "options": {}
+      },
+      "id": "8ead4dfa-cb9e-4ab4-b52c-7a681876269f",
+      "name": "OK Photo",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        1648,
+        1200
+      ],
+      "webhookId": "d03e4286-f252-4a35-a65e-ea8ac96222e4",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "47eee8ce-0237-48f2-b67f-04021d3acda2",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.result }}\n",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "a5fba676-4e7b-42e2-af36-e9d63458870b",
+      "name": "Success Photo?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1408,
+        1312
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "47eee8ce-0237-48f2-b67f-04021d3acda2",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.result }}\n",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "310853de-ab7e-481e-8efa-5a681f08032b",
+      "name": "Success Video?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1440,
+        1760
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "551c5179-055a-415e-bf17-61f2a5dd2769",
+              "name": "=result",
+              "type": "string",
+              "value": "={{ $json.results[$('Video or Photo?').item.json.Platform].success.toBoolean() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "81ec87fc-9298-4cd6-8a46-45ee6cb050b3",
+      "name": "Result Photo",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1216,
+        1312
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "551c5179-055a-415e-bf17-61f2a5dd2769",
+              "name": "=result",
+              "type": "string",
+              "value": "={{ $json.results[$('Video or Photo?').item.json.Platform].success.toBoolean() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "936ac765-0e7c-411d-b70d-bdfbe8e180a6",
+      "name": "Result Video",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1216,
+        1760
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "879af56a-8979-4d9d-9acd-6009d821f6a7",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.Upload.mimetype }}",
+                    "rightValue": "image/jpeg"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "d7ee147d-d775-4b81-b043-0873c535b400",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.Upload.mimetype }}",
+                    "rightValue": "video/mp4"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Video"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3a3d66ae-7ecd-43aa-a905-10afdab753b3",
+      "name": "Video or Photo?",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        656,
+        1600
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "content": "## SETTINGS\n\n- Find your API key in your [Upload-Post Manage Api Keys](https://www.upload-post.com/?linkId=lp_144414&sourceId=n3witalia&tenantId=upload-post-app) 10 FREE uploads per month\n- Set the the \"Auth Header\":\n-- Name: Authorization\n-- Value: Apikey YOUR_API_KEY_HERE\n- Create profiles to manage your social media accounts. The \"Profile\" you choose will be used in the field \"Account\" on form submission (eg. test1 or test2).  \n\n![image](https://i.postimg.cc/N0BHdcQ4/uploadpost.png)\n\nApr-2025: YouTube integration is currently being verified by Google, and may not work as expected.\n",
+        "height": 680,
+        "width": 1380
+      },
+      "id": "76d1cc06-8bb5-43cd-8dcc-2da1656b0335",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        368,
+        464
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Upload video and photo on TikTok, X, Facebook, Youtube, Instagram, Threads and Linkedin\n\nSimplify your social media workflow with our powerful platform designed for content creators and marketers.\n\nUpload your video once and let Upload-Post distribute it across all your connected social media accounts effortlessly.",
+        "height": 180,
+        "width": 1380,
+        "color": 3
+      },
+      "id": "e9b40e23-cde9-459d-b490-8adda6b9253f",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        368,
+        240
+      ],
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Post photo": {
+      "main": [
+        [
+          {
+            "node": "Result Photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post video": {
+      "main": [
+        [
+          {
+            "node": "Result Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Result Photo": {
+      "main": [
+        [
+          {
+            "node": "Success Photo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Result Video": {
+      "main": [
+        [
+          {
+            "node": "Success Video?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Photo?": {
+      "main": [
+        [
+          {
+            "node": "OK Photo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "KO Photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Video?": {
+      "main": [
+        [
+          {
+            "node": "OK Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "KO Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video or Photo?": {
+      "main": [
+        [
+          {
+            "node": "Post photo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Video or Photo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "",
+  "meta": {
+    "templateId": "3669",
+    "instanceId": "0ab6c930d4b3510bd213503110294aa13c64c39cd77abd213e349cc60c946f9d"
+  },
+  "id": "1eFDn6VxdQVB24q9",
+  "tags": []
+}
