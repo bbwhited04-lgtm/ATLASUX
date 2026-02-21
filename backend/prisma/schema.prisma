@@ -3,27 +3,320 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
-enum KbStatus {
-  DRAFT
-  PUBLISHED
+
+model Tenant {
+  id                                       String         @id(map: "tenants_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                                     String         @unique(map: "tenants_slug_key")
+  name                                     String
+  createdAt                                DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                                DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  app_users_app_users_tenant_idTotenant_id app_users[]    @relation("app_users_tenant_idTotenant_id")
+  assets                                   Asset[]
+  audits                                   AuditLog[]     @relation("TenantAudits")
+  integrations                             Integration[]
+  jobs                                     Job[]
+  kbDocuments                              KbDocument[]
+  kbTags                                   KbTag[]
+  ledger                                   LedgerEntry[]
+  members                                  TenantMember[]
+
+  @@map("tenant_id")
 }
 
-enum IntentStatus {
-  DRAFT
-  VALIDATING
-  AWAITING_HUMAN
-  BLOCKED_SGL
-  EXECUTED
-  FAILED
+model Integration {
+  id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String               @map("tenant_id") @db.Uuid
+  provider         integration_provider
+  connected        Boolean              @default(false)
+  access_token     String?
+  refresh_token    String?
+  token_expires_at DateTime?            @db.Timestamptz(6)
+  scopes           Json                 @default("[]")
+  config           Json                 @default("{}")
+  status           Json                 @default("{}")
+  last_sync_at     DateTime?            @db.Timestamptz(6)
+  created_at       DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime             @default(now()) @db.Timestamptz(6)
+  tenant           Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@map("intent_status")
+  @@unique([tenantId, provider])
+  @@index([provider])
+  @@index([tenantId], map: "integrations_tenant_idx")
+  @@map("integrations")
 }
 
-enum IntegrationProvider {
+model AuditLog {
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String?    @map("tenant_id") @db.Uuid
+  actorUserId     String?    @map("actor_user_id") @db.Uuid
+  actorExternalId String?    @map("actor_external_id")
+  actorType       String?    @default("user") @map("actor_type")
+  level           AuditLevel @default(info) @map("level")
+  action          String
+  entityType      String?    @map("entity_type")
+  entityId        String?    @map("entity_id") @db.Uuid
+  message         String?
+  meta            Json       @default("{}") @map("meta")
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  timestamp       DateTime?  @map("timestamp") @db.Timestamptz(6)
+  app_users       app_users? @relation(fields: [actorUserId], references: [id], onUpdate: NoAction)
+  tenant          Tenant?    @relation("TenantAudits", fields: [tenantId], references: [id], onUpdate: NoAction)
+
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
+  @@index([entityType, entityId], map: "audit_log_entity_idx")
+  @@index([tenantId, createdAt(sort: Desc)], map: "audit_log_tenant_time_idx")
+  @@map("audit_log")
+}
+
+model Job {
+  id                   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String     @map("tenant_id") @db.Uuid
+  requested_by_user_id String?    @db.Uuid
+  status               job_status @default(queued)
+  jobType              String     @map("job_type")
+  priority             Int        @default(0)
+  input                Json       @default("{}")
+  output               Json       @default("{}")
+  error                Json       @default("{}")
+  startedAt            DateTime?  @map("started_at") @db.Timestamptz(6)
+  finishedAt           DateTime?  @map("finished_at") @db.Timestamptz(6)
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  app_users            app_users? @relation(fields: [requested_by_user_id], references: [id], onUpdate: NoAction)
+  tenant               Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([createdAt(sort: Desc)], map: "jobs_created_idx")
+  @@index([tenantId, status], map: "jobs_tenant_status_idx")
+  @@map("jobs")
+}
+
+model TenantMember {
+  tenantId  String    @map("tenant_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  role      String    @default("member")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([tenantId, userId])
+  @@map("tenant_members")
+}
+
+model LedgerEntry {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  entryType   LedgerEntryType @map("entry_type")
+  category    LedgerCategory
+  amountCents BigInt          @map("amount_cents")
+  currency    String          @default("USD")
+  description String?
+  externalRef String?         @map("external_ref")
+  meta        Json            @default("{}")
+  occurredAt  DateTime        @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([category], map: "ledger_category_idx")
+  @@index([category])
+  @@index([tenantId])
+  @@index([tenantId, occurredAt(sort: Desc)], map: "ledger_entries_tenant_occurred_at_idx")
+  @@index([tenantId, occurredAt(sort: Desc)], map: "ledger_tenant_time_idx")
+  @@map("ledger_entries")
+}
+
+model Asset {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  type      String
+  name      String
+  url       String
+  platform  String?
+  metrics   Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([tenantId])
+  @@map("assets")
+}
+
+model KbDocument {
+  id        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String            @map("tenant_id") @db.Uuid
+  title     String
+  slug      String
+  body      String
+  status    KbDocumentStatus  @default(draft)
+  createdBy String            @map("created_by") @db.Uuid
+  updatedBy String?           @map("updated_by") @db.Uuid
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tags      KbTagOnDocument[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, status, updatedAt])
+  @@map("kb_documents")
+}
+
+model KbTag {
+  id        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String            @map("tenant_id") @db.Uuid
+  name      String
+  createdAt DateTime          @default(now()) @map("created_at")
+  docs      KbTagOnDocument[]
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, name])
+  @@map("kb_tags")
+}
+
+model KbTagOnDocument {
+  documentId String     @map("document_id") @db.Uuid
+  tagId      String     @map("tag_id") @db.Uuid
+  assignedAt DateTime   @default(now()) @map("assigned_at")
+  document   KbDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  tag        KbTag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([documentId, tagId])
+  @@index([tagId])
+  @@map("kb_tag_on_document")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model agent_registry {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String    @db.Uuid
+  name       String
+  role       String?
+  status     String?   @default("DRAFT")
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model app_users {
+  id                                       String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                                String     @db.Uuid
+  external_user_id                         String?
+  email                                    String?
+  display_name                             String?
+  role                                     String?    @default("user")
+  created_at                               DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at                               DateTime   @default(now()) @db.Timestamptz(6)
+  tenant_id_app_users_tenant_idTotenant_id Tenant     @relation("app_users_tenant_idTotenant_id", fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  audit_log                                AuditLog[]
+  jobs                                     Job[]
+
+  @@unique([tenant_id, external_user_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model approvals {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id    String    @db.Uuid
+  intent_type  String
+  payload_hash String
+  approved_by  String    @db.Uuid
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  expires_at   DateTime? @db.Timestamptz(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model audit_events {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String    @db.Uuid
+  intent_id  String?   @db.Uuid
+  event_type String?
+  event_data Json?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model intents {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String    @db.Uuid
+  agent_id    String?   @db.Uuid
+  intent_type String?
+  payload     Json?
+  sgl_result  String?
+  status      String?   @default("DRAFT")
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model publish_events {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  action          String    @default("publish")
+  platform        String
+  destination     String?
+  asset_url       String
+  asset_type      String?
+  asset_hash      String?
+  campaign        String?
+  utm_campaign    String?
+  status          String    @default("pending")
+  dry_run         Boolean   @default(false)
+  response_id     String?
+  response_status Int?
+  response_body   Json?
+  error_message   String?
+  triggered_by    String?   @default("atlas")
+  workflow_name   String?
+  run_id          String?
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  completed_at    DateTime? @db.Timestamptz(6)
+
+  @@index([campaign], map: "idx_publish_events_campaign")
+  @@index([created_at(sort: Desc)], map: "idx_publish_events_created_at")
+  @@index([platform], map: "idx_publish_events_platform")
+  @@index([status], map: "idx_publish_events_status")
+}
+
+enum AuditLevel {
+  info
+  warn
+  error
+  security
+}
+
+enum LedgerEntryType {
+  credit
+  debit
+
+  @@map("ledger_entry_type")
+}
+
+enum LedgerCategory {
+  subscription
+  token_spend
+  api_spend
+  refund
+  chargeback
+  payout
+  misc
+
+  @@map("ledger_category")
+}
+
+enum KbDocumentStatus {
+  draft
+  published
+  archived
+
+  @@map("kb_document_status")
+}
+
+enum audit_level {
+  info
+  warn
+  error
+  security
+}
+
+enum integration_provider {
   google
   microsoft
   icloud
@@ -38,364 +331,10 @@ enum IntegrationProvider {
   supabase
 }
 
-enum AuditLevel {
-  info
-  warn
-  error
-  security
-}
-
-enum JobStatus {
+enum job_status {
   queued
   running
   succeeded
   failed
   canceled
-}
-
-enum LedgerEntryType {
-  credit
-  debit
-
-  @@map("ledger_entry_type")
-}
-
-enum LedgerCategory {
-  hosting
-  saas
-  domain
-  email
-  social
-  infra
-  ads
-  other
-  ai_spend
-  subscription
-  misc
-
-  @@map("ledger_category")
-}
-
-model Tenant {
-  id        String         @id @default(uuid()) @db.Uuid
-  slug      String         @unique
-  name      String
-  members   TenantMember[]
-  createdAt DateTime       @default(now()) @map("created_at")
-  updatedAt DateTime       @updatedAt @map("updated_at")
-  
-  integrations Integration[]
-  audits       AuditLog[]    @relation("TenantAudits")
-  jobs         Job[]
-  ledger       LedgerEntry[]
-  assets       Asset[]
-  Intent       Intent[]
-  metricsSnapshots MetricsSnapshot[]
-  decisionMemos DecisionMemo[]
-  distributionEvents DistributionEvent[]
-  growthLoopRuns GrowthLoopRun[]
-  // Knowledge Base
-  kbDocuments  KbDocument[]
-  kbTags       KbTag[]
-  kb_chunks KbChunk[]
-
-  @@map("tenant_id")
-  
-}
-
-model DecisionMemo {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  agent     String
-  title     String
-  rationale String
-
-  estimatedCostUsd Float   @default(0) @map("estimated_cost_usd")
-  billingType      String  @default("none") @map("billing_type")
-  riskTier         Int     @default(0) @map("risk_tier")
-  confidence       Float   @default(0.5)
-  expectedBenefit  String? @map("expected_benefit")
-  requiresApproval Boolean @default(false) @map("requires_approval")
-
-  status   String  @default("PROPOSED")
-  intentId String? @map("intent_id") @db.Uuid
-
-  payload Json?
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId, status, createdAt])
-  @@map("decision_memos")
-}
-
-model DistributionEvent {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  agent     String
-
-  channel   String   // x | blog | email | reddit | other
-  eventType String   // post | reply | publish | update | link
-  url       String?
-  meta      Json?
-
-  impressions Int?  @map("impressions")
-  clicks      Int?  @map("clicks")
-  conversions Int?  @map("conversions")
-
-  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId, channel, occurredAt])
-  @@map("distribution_events")
-}
-
-model GrowthLoopRun {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  runDate   DateTime @map("run_date") @db.Date
-
-  status    String   @default("STARTED")
-  summary   Json?
-  decisionMemoId String? @map("decision_memo_id") @db.Uuid
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([tenantId, runDate])
-  @@index([tenantId, status])
-  @@map("growth_loop_runs")
-}
-
-model Intent {
-  id        String @id @default(uuid()) @db.Uuid
-  tenantId  String @db.Uuid
-  createdBy String @db.Uuid
-
-  intentType String
-  payload    Json
-
-  status    IntentStatus @default(DRAFT)
-  sglResult String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId, status, createdAt])
-  @@map("intent")
-}
-
-model Integration {
-  id           String              @id @default(uuid())
-  tenantId     String?             @map("tenant_id") @db.Uuid
-  provider     IntegrationProvider
-  connected    Boolean             @default(false)
-  accessToken  String?
-  refreshToken String?
-  tokenExpires DateTime?
-  scopes       Json?
-  config       Json?
-  status       Json?
-  lastSyncAt   DateTime?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  tenant       Tenant?             @relation(fields: [tenantId], references: [id])
-
-  @@unique([tenantId, provider])
-  @@map("integrations")
-}
-
-model AuditLog {
-  id String @id @default(uuid()) @db.Uuid
-
-  tenantId String? @map("tenant_id") @db.Uuid
-  tenant   Tenant? @relation("TenantAudits", fields: [tenantId], references: [id])
-
-  actorUserId     String? @map("actor_user_id") @db.Uuid
-  actorExternalId String? @map("actor_external_id")
-  actorType       String? @map("actor_type")
-
-  level  AuditLevel @map("level")
-  action String
-
-  entityType String? @map("entity_type")
-  entityId   String? @map("entity_id") @db.Uuid
-
-  message String?
-  meta    Json?   @map("meta")
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  timestamp DateTime? @map("timestamp")
-
-  @@map("audit_log")
-}
-
-model Job {
-  id          String    @id @default(uuid()) @db.Uuid
-  tenantId    String    @map("tenant_id") @db.Uuid
-  requestedBy String?   @map("requested_by") @db.Uuid
-  status      JobStatus @default(queued)
-  jobType     String    @map("job_type")
-  priority    Int       @default(0)
-  input       Json?
-  output      Json?
-  error       Json?
-  startedAt   DateTime? @map("started_at")
-  finishedAt  DateTime? @map("finished_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId, status, createdAt])
-  @@map("jobs")
-}
-
-model TenantMember {
-  tenantId  String   @map("tenant_id") @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  role      String   @default("member")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@id([tenantId, userId])
-  @@map("tenant_members")
-}
-
-model LedgerEntry {
-  id          String          @id @default(uuid()) @db.Uuid
-  tenantId    String          @map("tenant_id") @db.Uuid
-  entryType   LedgerEntryType @map("entry_type")
-  category    LedgerCategory
-  amountCents BigInt          @map("amount_cents")
-  currency    String          @default("USD")
-  description String?
-  externalRef String?         @map("external_ref")
-  meta        Json?
-  occurredAt  DateTime        @map("occurred_at") @db.Timestamptz(6)
-  createdAt   DateTime        @map("created_at") @db.Timestamptz(6)
-  tenant      Tenant          @relation(fields: [tenantId], references: [id])
-
-  @@map("ledger_entries")
-}
-
-model Asset {
-  id       String @id @default(uuid()) @db.Uuid
-  tenantId String @map("tenant_id") @db.Uuid
-  tenant   Tenant @relation(fields: [tenantId], references: [id])
-
-  type     String
-  name     String
-  url      String
-  platform String?
-  metrics  Json?
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([tenantId])
-  @@map("assets")
-}
-
-model MetricsSnapshot {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  /// Snapshot date (UTC), stored as a DATE.
-  date      DateTime @db.Date
-  /// Arbitrary metrics payload (JSON).
-  data      Json
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([tenantId, date])
-  @@index([tenantId, date])
-  @@map("metrics_snapshots")
-}
-
-enum KbDocumentStatus {
-  draft
-  published
-  archived
-
-  @@map("kb_document_status")
-}
-
-model KbDocument {
-  id       String           @id @default(uuid()) @db.Uuid
-  tenantId String           @map("tenant_id") @db.Uuid
-  title    String
-  slug     String
-  body     String
-  status   KbDocumentStatus @default(draft)
-
-  createdBy String  @map("created_by") @db.Uuid
-  updatedBy String? @map("updated_by") @db.Uuid
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  tenant Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tags   KbTagOnDocument[]
-  chunks KbChunk[]
-
-  @@unique([tenantId, slug])
-  @@index([tenantId, status, updatedAt])
-  @@map("kb_documents")
-}
-
-model KbChunk {
-  id         String   @id @default(uuid()) @db.Uuid
-  tenantId   String   @map("tenant_id") @db.Uuid
-  documentId String   @map("document_id") @db.Uuid
-  idx        Int
-  charStart  Int      @map("char_start")
-  charEnd    Int      @map("char_end")
-  content    String
-  sourceUpdatedAt DateTime @map("source_updated_at")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-
-  tenant   Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  document KbDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-
-  @@unique([documentId, idx])
-  @@index([tenantId, documentId])
-  @@index([tenantId, updatedAt])
-  @@map("kb_chunks")
-}
-
-
-model KbTag {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  name      String
-  createdAt DateTime @default(now()) @map("created_at")
-
-  tenant Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  docs   KbTagOnDocument[]
-
-  @@unique([tenantId, name])
-  @@map("kb_tags")
-}
-
-model KbTagOnDocument {
-  documentId String   @map("document_id") @db.Uuid
-  tagId      String   @map("tag_id") @db.Uuid
-  assignedAt DateTime @default(now()) @map("assigned_at")
-
-  document KbDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  tag      KbTag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([documentId, tagId])
-  @@index([tagId])
-  @@map("kb_tag_on_document")
 }

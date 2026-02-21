@@ -1,0 +1,180 @@
+{
+  "name": "Pinterest Publish - Webhook \u2192 Pinterest API (template)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pinterest-publish",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "title",
+              "value": "={{$json[\"title\"] || $json[\"pin_title\"]}}"
+            },
+            {
+              "name": "description",
+              "value": "={{$json[\"description\"] || $json[\"pin_description\"]}}"
+            },
+            {
+              "name": "link",
+              "value": "={{$json[\"link\"] || $json[\"destination_url\"] || $json[\"url\"]}}"
+            },
+            {
+              "name": "image_url",
+              "value": "={{$json[\"image_url\"] || $json[\"image\"] || $json[\"media_url\"]}}"
+            },
+            {
+              "name": "alt_text",
+              "value": "={{$json[\"alt_text\"] || $json[\"title\"] || $json[\"description\"]}}"
+            },
+            {
+              "name": "board_id",
+              "value": "={{$json[\"board_id\"] || \"<YOUR_BOARD_ID_HERE>\"}}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{$json[\"access_token\"] || \"<OPTIONAL_PLACEHOLDER_ACCESS_TOKEN>\"}}"
+            },
+            {
+              "name": "utm_campaign",
+              "value": "={{$json[\"utm_campaign\"] || \"{{campaign}}\"}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Prepare Pin Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const item = items[0].json;\n\n// Guards (Atlas-grade): fail fast if required inputs are missing\nif (!item.access_token) {\n  throw new Error('Missing Pinterest access_token');\n}\nif (!item.board_id) {\n  throw new Error('Missing Pinterest board_id');\n}\nif (!item.image_url) {\n  throw new Error('Missing image_url for Pinterest pin');\n}\n\n// Build canonical link with UTM if utm_campaign provided\nlet link = item.link || '';\nif (item.utm_campaign && link) {\n  const u = new URL(link);\n  const params = u.searchParams;\n  if (!params.has('utm_source')) params.set('utm_source', 'pinterest');\n  if (!params.has('utm_medium')) params.set('utm_medium', 'organic');\n  params.set('utm_campaign', item.utm_campaign);\n  u.search = params.toString();\n  link = u.toString();\n}\n\nconst body = {\n  board_id: item.board_id,\n  title: item.title || '',\n  description: item.description || '',\n  alt_text: item.alt_text || (item.title || item.description || ''),\n  link: link || item.link || '',\n  media_source: {\n    source_type: 'image_url',\n    url: item.image_url\n  }\n};\n\n// Minimal audit payload you can store/log downstream\nconst audit = {\n  platform: 'pinterest',\n  action: 'pin_create',\n  board_id: body.board_id,\n  title: body.title,\n  link: body.link,\n  media_source_type: body.media_source?.source_type,\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: { body, access_token: item.access_token, audit, original: item } }];\n"
+      },
+      "name": "Build Request Body",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "=https://api.pinterest.com/v5/pins",
+        "responseFormat": "json",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={{ $json[\"body\"] }}",
+        "headerParameters": [
+          {
+            "name": "Authorization",
+            "value": "={{ `Bearer ${$json[\"access_token\"]}` }}"
+          },
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
+      "name": "Create Pin (Pinterest API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "={{$json[\"statusCode\"] || ''}}"
+            },
+            {
+              "name": "api_response",
+              "value": "={{ JSON.stringify($json[\"body\"] || $json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Pin Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Pin Data": {
+      "main": [
+        [
+          {
+            "node": "Build Request Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Request Body": {
+      "main": [
+        [
+          {
+            "node": "Create Pin (Pinterest API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Pin (Pinterest API)": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "tags": []
+}
