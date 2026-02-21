@@ -39,12 +39,6 @@ app.addHook("onSend", async (_req, reply, payload) => {
   if (typeof payload === "string" || !contentType?.toString().includes("application/json")) {
     return payload;
   }
-app.post('/v1/discord/webhook', async (req, res) => {
-  console.log('Discord webhook hit');
-
-  // During verification Discord expects fast 200
-  return res.status(200).json({ ok: true });
-});
   try {
     return JSON.stringify(payload, (_k, v) =>
       typeof v === "bigint" ? Number(v) : v
@@ -52,6 +46,15 @@ app.post('/v1/discord/webhook', async (req, res) => {
   } catch {
     return payload;
   }
+});
+app.post("/v1/discord/webhook", async (request, reply) => {
+  request.log.info("Discord webhook hit");
+  return reply.code(200).send({ ok: true });
+});
+
+// Optional: some validators try GET too
+app.get("/v1/discord/webhook", async (_request, reply) => {
+  return reply.code(200).send({ ok: true });
 });
 const allowed = new Set([
   "https://www.atlasux.cloud",
