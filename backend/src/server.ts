@@ -39,7 +39,12 @@ app.addHook("onSend", async (_req, reply, payload) => {
   if (typeof payload === "string" || !contentType?.toString().includes("application/json")) {
     return payload;
   }
+app.post('/v1/discord/webhook', async (req, res) => {
+  console.log('Discord webhook hit');
 
+  // During verification Discord expects fast 200
+  return res.status(200).json({ ok: true });
+});
   try {
     return JSON.stringify(payload, (_k, v) =>
       typeof v === "bigint" ? Number(v) : v
