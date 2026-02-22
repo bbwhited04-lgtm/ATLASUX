@@ -10,7 +10,7 @@
   "scripts": {
     "kb:ingest-agents": "ts-node scripts/ingestAgentsToKb.ts",
     "dev": "tsx watch src/index.ts",
-    "build": "echo '== prisma generate ==' && npx prisma generate && echo '== tsc ==' && npx tsc -p tsconfig.json && node scripts/copyAssets.mjs",
+    "build": "echo '== prisma generate ==' && npx prisma generate && echo '== tsc ==' && npx tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "kb:chunk-docs": "ts-node scripts/chunkKbDocuments.ts"
   },

@@ -1,0 +1,653 @@
+{
+  "name": "ATLAS Orchestrator - FULL (Email Endpoint)",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [{ "mode": "everyDay", "hour": 8, "minute": 5 }]
+        }
+      },
+      "id": "n_cron",
+      "name": "Cron Daily",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 180]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "run_id", "value": "={{$now.toISO() + '::' + $execution.id}}" },
+            { "name": "atlas_email", "value": "atlas@deadapp.info" },
+            { "name": "audit_cc", "value": "larry.auditor@deadapp.info" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n_set_meta",
+      "name": "Set Meta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [480, 180]
+    },
+    {
+      "parameters": {
+        "functionCode": "const run_id = $json.run_id;\nconst agents = {\n  // core\n  BINKY:  { email: 'binky.cro@deadapp.info', role: 'Chief Research Analyst' },\n  TINA:   { email: 'tina.cfo@deadapp.info', role: 'CFO' },\n  LARRY:  { email: 'larry.auditor@deadapp.info', role: 'Chief Auditor' },\n  BENNY:  { email: 'benny.cto@deadapp.info', role: 'CTO/IP Counsel' },\n  JENNY:  { email: 'jenny.clo@deadapp.info', role: 'CLO' },\n  CHERYL: { email: 'support@deadapp.info', role: 'Support' },\n\n  // platform intel gatherers\n  CORNWALL: { email: 'cornwall.pinterest@deadapp.info', role: 'Pinterest Intel' },\n  DONNA:    { email: 'donna.redditor@deadapp.info', role: 'Reddit Intel' },\n  DWIGHT:   { email: 'dwight@deadapp.info', role: 'Threads Intel' },\n  EMMA:     { email: 'emma.alignable@deadapp.info', role: 'Alignable Intel' },\n  FRAN:     { email: 'fran.facebook@deadapp.info', role: 'Facebook Scraper' },\n  KELLY:    { email: 'kelly.x@deadapp.info', role: 'X Intel' },\n  LINK:     { email: 'link.linkedin@deadapp.info', role: 'LinkedIn Intel' },\n  TERRY:    { email: 'terry.tumblr@deadapp.info', role: 'Tumblr' },\n  TIMMY:    { email: 'timmy.tiktok@deadapp.info', role: 'TikTok' },\n\n  // subagents producing drafts\n  SUNDAY:   { email: 'sunday.teambinky@deadapp.info', role: 'Documentation' },\n  ARCHY:    { email: 'archy.binkypro@deadapp.info', role: 'Instagram Ops' },\n  REYNOLDS: { email: 'reynolds.blogger@deadapp.info', role: 'Blog Writer' },\n  PENNY:    { email: 'penny.facebook@deadapp.info', role: 'Facebook Page Manager' },\n  VENNY:    { email: 'venny.videographer@deadapp.info', role: 'Video Production' },\n  MERCER:   { email: 'mercer.teambinky@deadapp.info', role: 'Customer Acquisition Specialist' }\n};\n\nconst stages = {\n  intel_agents: ['CORNWALL','DONNA','DWIGHT','EMMA','FRAN','KELLY','LINK','TERRY','TIMMY'],\n  draft_agents: ['SUNDAY','ARCHY','REYNOLDS','PENNY','VENNY','MERCER'],\n  publish_agents: ['PENNY','ARCHY','TERRY','DWIGHT','KELLY','CORNWALL','TIMMY']\n};\n\nreturn [{\n  json: {\n    ...$json,\n    agents,\n    stages,\n    state: {\n      run_id,\n      intel: {},\n      binky_summary: null,\n      drafts: {},\n      receipts: {},\n      attempts: { intel: 0, binky: 0, drafts: 0, approval: 0, receipts: 0 }\n    }\n  }\n}];"
+      },
+      "id": "n_registry",
+      "name": "Build Agent Registry",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [720, 180]
+    },
+    {
+      "parameters": {
+        "functionCode": "const run_id = $json.run_id;\nconst toList = $json.stages.intel_agents.map(k => $json.agents[k].email);\nreturn [{ json: { ...$json, stage: 'INTEL_REQUEST', toList, subject: `[ATLAS][${run_id}] INTEL_REQUEST`,\nbody: `Return ONLY JSON between markers.\\n\\n---BEGIN_JSON---\\n{\\n  \\\\\\\"agent\\\\\\\": \\\\\\\"<YOUR_NAME>\\\\\\\",\\n  \\\\\\\"platform\\\\\\\": \\\\\\\"<PLATFORM>\\\\\\\",\\n  \\\\\\\"items\\\\\\\": [ {\\\\\\\"title\\\\\\\":\\\\\\\"...\\\\\\\",\\\\\\\"url\\\\\\\":\\\\\\\"...\\\\\\\"} ],\\n  \\\\\\\"notes\\\\\\\": \\\\\\\"...\\\\\\\"\\n}\\n---END_JSON---\\n\\nNo publishing. Include sources/links.` } }];"
+      },
+      "id": "n_prep_intel",
+      "name": "Prep Intel Email",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [960, 180]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.toList.join(',')}}",
+        "subject": "={{$json.subject}}",
+        "text": "={{$json.body}}",
+        "options": { "ccEmail": "={{$json.audit_cc}}" }
+      },
+      "id": "n_send_intel",
+      "name": "Email Send: Intel Request",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1200, 180],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    },
+    {
+      "parameters": { "amount": 60, "unit": "seconds" },
+      "id": "n_wait_intel",
+      "name": "Wait: Intel Poll",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1440, 180]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "mailbox": "INBOX",
+        "searchCriteria": "={{'SUBJECT \"[ATLAS][' + $json.run_id + '] INTEL_\"'}}",
+        "options": { "downloadAttachments": false }
+      },
+      "id": "n_imap_intel",
+      "name": "IMAP Search: Intel Replies",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [1680, 180],
+      "credentials": {
+        "imap": { "id": "REPLACE_IMAP_CRED_ID", "name": "IMAP Atlas Inbox" }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "function extractJson(text){\n  const m = (text||'').match(/---BEGIN_JSON---([\\s\\S]*?)---END_JSON---/);\n  if(!m) return null;\n  try { return JSON.parse(m[1].trim()); } catch(e){ return null; }\n}\n\nconst required = $json.stages.intel_agents;\nconst emails = items.map(i => i.json);\nconst state = $json.state;\n\nfor (const e of emails) {\n  const from = (e.from && (e.from.email || e.from.text)) ? (e.from.email || e.from.text) : (e.from || '');\n  const body = (e.text || e.html || '').toString();\n  const parsed = extractJson(body);\n  if (!parsed) continue;\n\n  // map sender -> agent key\n  const key = Object.keys($json.agents).find(k => $json.agents[k].email === from);\n  if (!key) continue;\n  if (required.includes(key)) state.intel[key] = parsed;\n}\n\nstate.attempts.intel = (state.attempts.intel || 0) + 1;\nconst got = Object.keys(state.intel);\nconst missing = required.filter(k => !got.includes(k));\n\nreturn [{ json: { ...$json, state, intel_status: { got, missing, attempt: state.attempts.intel } } }];"
+      },
+      "id": "n_accum_intel",
+      "name": "Accumulate Intel",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [1920, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            { "value1": "={{$json.intel_status.missing.length === 0}}", "value2": true }
+          ]
+        }
+      },
+      "id": "n_if_intel_complete",
+      "name": "IF Intel Complete",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2160, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            { "value1": "={{$json.state.attempts.intel}}", "operation": "smaller", "value2": 10 }
+          ]
+        }
+      },
+      "id": "n_if_intel_retry",
+      "name": "IF Intel Retry < 10",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2400, 60]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.audit_cc}}",
+        "subject": "={{'[ATLAS][' + $json.run_id + '] WARN: INTEL_INCOMPLETE'}}",
+        "text": "={{'Intel missing after retries: ' + JSON.stringify($json.intel_status.missing) + '\\nAttempt: ' + $json.intel_status.attempt}}"
+      },
+      "id": "n_intel_escalate",
+      "name": "Email Escalate: Intel Missing -> Larry",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2640, 20],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const run_id = $json.run_id;\nreturn [{ json: { ...$json, subject: `[ATLAS][${run_id}] REQUEST_BINKY_DAILY_SUMMARY_JSON`,\nbody: `BINKY — produce the Daily Structured Summary JSON with citations.\\n\\n---BEGIN_JSON---\\n{\\n  \\\\\\\"headlines\\\\\\\":[],\\n  \\\\\\\"trends\\\\\\\":[],\\n  \\\\\\\"hashtags\\\\\\\":[],\\n  \\\\\\\"viral_content\\\\\\\":[],\\n  \\\\\\\"sentiment_analysis\\\\\\\":{},\\n  \\\\\\\"risk_flags\\\\\\\":[],\\n  \\\\\\\"opportunities\\\\\\\":[]\\n}\\n---END_JSON---\\n\\nUse gathered intel and your research. Return ONLY JSON in markers.` } }];"
+      },
+      "id": "n_prep_binky",
+      "name": "Prep Email: Binky Summary",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [2400, 180]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.agents.BINKY.email}}",
+        "subject": "={{$json.subject}}",
+        "text": "={{$json.body}}",
+        "options": { "ccEmail": "={{$json.audit_cc}}" }
+      },
+      "id": "n_send_binky",
+      "name": "Email Send: Binky Summary Request",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2640, 180],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    },
+    { "parameters": { "amount": 90, "unit": "seconds" }, "id": "n_wait_binky", "name": "Wait: Binky Poll", "type": "n8n-nodes-base.wait", "typeVersion": 1, "position": [2880, 180] },
+    {
+      "parameters": {
+        "operation": "search",
+        "mailbox": "INBOX",
+        "searchCriteria": "={{'SUBJECT \"[ATLAS][' + $json.run_id + '] REQUEST_BINKY_\"'}}",
+        "options": { "downloadAttachments": false }
+      },
+      "id": "n_imap_binky",
+      "name": "IMAP Search: Binky Reply",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [3120, 180],
+      "credentials": {
+        "imap": { "id": "REPLACE_IMAP_CRED_ID", "name": "IMAP Atlas Inbox" }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "function extractJson(text){\n  const m = (text||'').match(/---BEGIN_JSON---([\\s\\S]*?)---END_JSON---/);\n  if(!m) return null;\n  try { return JSON.parse(m[1].trim()); } catch(e){ return null; }\n}\n\nconst state = $json.state;\nstate.attempts.binky = (state.attempts.binky||0) + 1;\n\nlet found = null;\nfor (const it of items) {\n  const e = it.json;\n  const body = (e.text || e.html || '').toString();\n  const parsed = extractJson(body);\n  if (parsed) { found = parsed; break; }\n}\n\nif (found) state.binky_summary = found;\n\nconst required = [\"headlines\",\"trends\",\"hashtags\",\"viral_content\",\"sentiment_analysis\",\"risk_flags\",\"opportunities\"]; \nconst ok = !!state.binky_summary && required.every(k => Object.prototype.hasOwnProperty.call(state.binky_summary, k));\n\nreturn [{ json: { ...$json, state, binky_status: { ok, attempt: state.attempts.binky } } }];"
+      },
+      "id": "n_validate_binky",
+      "name": "Validate Binky JSON",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [3360, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            { "value1": "={{$json.binky_status.ok}}", "value2": true }
+          ]
+        }
+      },
+      "id": "n_if_binky_ok",
+      "name": "IF Binky OK",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3600, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            { "value1": "={{$json.state.attempts.binky}}", "operation": "smaller", "value2": 10 }
+          ]
+        }
+      },
+      "id": "n_if_binky_retry",
+      "name": "IF Binky Retry < 10",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3840, 60]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.agents.BINKY.email}}",
+        "subject": "={{'[ATLAS][' + $json.run_id + '] RETRY: BINKY_SUMMARY_INVALID'}}",
+        "text": "={{'Your summary is missing required fields. Return ONLY JSON in markers. Run: ' + $json.run_id}}",
+        "options": { "ccEmail": "={{$json.audit_cc}}" }
+      },
+      "id": "n_binky_retry_email",
+      "name": "Email Send: Binky Retry",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [4080, 20],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const run_id = $json.run_id;\nconst summary = $json.state.binky_summary;\nconst tasks = $json.stages.draft_agents.map(k => ({ key: k, to: $json.agents[k].email }));\nreturn tasks.map(t => ({ json: { ...$json, task: t, subject: `[ATLAS][${run_id}] TASK_DISPATCH::${t.key}`, body: `${t.key} — Use Binky Summary JSON. Return ONLY DRAFT in markers.\\n\\n---BEGIN_JSON---\\n${JSON.stringify(summary)}\\n---END_JSON---\\n\\n---BEGIN_DRAFT---\\n...\\n---END_DRAFT---\\n\\nNo publishing.` } }));"
+      },
+      "id": "n_make_tasks",
+      "name": "Build Draft Tasks",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [3840, 180]
+    },
+    { "parameters": { "batchSize": 1, "options": {} }, "id": "n_split_tasks", "name": "Split Tasks", "type": "n8n-nodes-base.splitInBatches", "typeVersion": 3, "position": [4080, 180] },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.task.to}}",
+        "subject": "={{$json.subject}}",
+        "text": "={{$json.body}}",
+        "options": { "ccEmail": "={{$json.audit_cc}}" }
+      },
+      "id": "n_send_task",
+      "name": "Email Send: Draft Task",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [4320, 180],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    },
+    { "parameters": { "amount": 5, "unit": "seconds" }, "id": "n_wait_task_pace", "name": "Wait: Pace", "type": "n8n-nodes-base.wait", "typeVersion": 1, "position": [4560, 180] },
+    { "parameters": { "amount": 90, "unit": "seconds" }, "id": "n_wait_drafts", "name": "Wait: Draft Poll", "type": "n8n-nodes-base.wait", "typeVersion": 1, "position": [4800, 180] },
+    {
+      "parameters": {
+        "operation": "search",
+        "mailbox": "INBOX",
+        "searchCriteria": "={{'SUBJECT \"[ATLAS][' + $json.run_id + '] TASK_DISPATCH\"'}}",
+        "options": { "downloadAttachments": false }
+      },
+      "id": "n_imap_drafts",
+      "name": "IMAP Search: Draft Replies",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [5040, 180],
+      "credentials": {
+        "imap": { "id": "REPLACE_IMAP_CRED_ID", "name": "IMAP Atlas Inbox" }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "function extractDraft(text){\n  const m = (text||'').match(/---BEGIN_DRAFT---([\\s\\S]*?)---END_DRAFT---/);\n  return m ? m[1].trim() : null;\n}\n\nconst required = $json.stages.draft_agents;\nconst emails = items.map(i => i.json);\nconst state = $json.state;\n\nfor (const e of emails) {\n  const from = (e.from && (e.from.email || e.from.text)) ? (e.from.email || e.from.text) : (e.from || '');\n  const body = (e.text || e.html || '').toString();\n  const draft = extractDraft(body);\n  if (!draft) continue;\n  const key = Object.keys($json.agents).find(k => $json.agents[k].email === from);\n  if (!key) continue;\n  if (required.includes(key)) state.drafts[key] = { draft, receivedAt: new Date().toISOString() };\n}\n\nstate.attempts.drafts = (state.attempts.drafts || 0) + 1;\nconst got = Object.keys(state.drafts);\nconst missing = required.filter(k => !got.includes(k));\n\nreturn [{ json: { ...$json, state, draft_status: { got, missing, attempt: state.attempts.drafts } } }];"
+      },
+      "id": "n_accum_drafts",
+      "name": "Accumulate Drafts",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [5280, 180]
+    },
+    {
+      "parameters": { "conditions": { "boolean": [{ "value1": "={{$json.draft_status.missing.length === 0}}", "value2": true }] } },
+      "id": "n_if_drafts_complete",
+      "name": "IF Drafts Complete",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [5520, 180]
+    },
+    {
+      "parameters": { "conditions": { "number": [{ "value1": "={{$json.state.attempts.drafts}}", "operation": "smaller", "value2": 10 }] } },
+      "id": "n_if_drafts_retry",
+      "name": "IF Draft Retry < 10",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [5760, 60]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.audit_cc}}",
+        "subject": "={{'[ATLAS][' + $json.run_id + '] WARN: DRAFTS_INCOMPLETE'}}",
+        "text": "={{'Drafts missing: ' + JSON.stringify($json.draft_status.missing) + '\\nAttempt: ' + $json.draft_status.attempt + '\\nProceeding to approval package with partial drafts (logged).'}}"
+      },
+      "id": "n_drafts_escalate",
+      "name": "Email Escalate: Drafts Missing -> Larry",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [6000, 20],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.agents.BENNY.email + ',' + $json.agents.JENNY.email}}",
+        "subject": "={{'[ATLAS][' + $json.run_id + '] POLICY/LEGAL REVIEW PING'}}",
+        "text": "={{'Review draft package for policy/legal risk. Reply with JSON: {\"run_id\":\"...\",\"ok\":true/false,\"notes\":\"...\"} in markers.\\n\\n---BEGIN_JSON---\\n{\\n  \"run_id\":\"' + $json.run_id + '\",\\n  \"ok\": true,\\n  \"notes\": \"\"\\n}\\n---END_JSON---'}}",
+        "options": { "ccEmail": "={{$json.audit_cc}}" }
+      },
+      "id": "n_ping_legal",
+      "name": "Email Send: Benny+Jenny Review Ping",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [5760, 180],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.atlas_email}}",
+        "subject": "={{'[ATLAS][' + $json.run_id + '] APPROVAL_REQUIRED'}}",
+        "text": "={{'Reply with EXACTLY one line:\\nAPPROVE ' + $json.run_id + '\\nor\\nDENY ' + $json.run_id + ' <notes>\\n\\nAudit CC: Larry'}}",
+        "options": { "ccEmail": "={{$json.audit_cc}}" }
+      },
+      "id": "n_send_approval",
+      "name": "Email Send: Approval Request",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [6000, 180],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    },
+    { "parameters": { "amount": 60, "unit": "seconds" }, "id": "n_wait_approval", "name": "Wait: Approval Poll", "type": "n8n-nodes-base.wait", "typeVersion": 1, "position": [6240, 180] },
+    {
+      "parameters": {
+        "operation": "search",
+        "mailbox": "INBOX",
+        "searchCriteria": "={{'SUBJECT \"[ATLAS][' + $json.run_id + '] APPROVAL_REQUIRED\"'}}",
+        "options": { "downloadAttachments": false }
+      },
+      "id": "n_imap_approval",
+      "name": "IMAP Search: Approval Reply",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [6480, 180],
+      "credentials": {
+        "imap": { "id": "REPLACE_IMAP_CRED_ID", "name": "IMAP Atlas Inbox" }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const state = $json.state;\nstate.attempts.approval = (state.attempts.approval||0) + 1;\n\nlet decision = null;\nlet notes = '';\nfor (const it of items) {\n  const e = it.json;\n  const body = (e.text || e.html || '').toString();\n  const m1 = body.match(/\\bAPPROVE\\s+(.+)/i);\n  const m2 = body.match(/\\bDENY\\s+(.+)/i);\n  if (m1 && m1[1].includes($json.run_id)) { decision = 'APPROVE'; break; }\n  if (m2 && m2[1].includes($json.run_id)) { decision = 'DENY'; notes = m2[0]; break; }\n}\n\nreturn [{ json: { ...$json, state, approval: { decision, notes, attempt: state.attempts.approval } } }];"
+      },
+      "id": "n_parse_approval",
+      "name": "Parse Approval",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [6720, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{$json.approval.decision}}", "operation": "equals", "value2": "APPROVE" }
+          ]
+        }
+      },
+      "id": "n_if_approved",
+      "name": "IF Approved",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [6960, 180]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.audit_cc}}",
+        "subject": "={{'[ATLAS][' + $json.run_id + '] STOP: DENIED OR NO APPROVAL'}}",
+        "text": "={{'Approval status: ' + JSON.stringify($json.approval) + '\\nNo publish commands sent.'}}"
+      },
+      "id": "n_denied_notify",
+      "name": "Email Notify: Denied/No Approval",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [7200, 40],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const run_id = $json.run_id;\nconst toList = $json.stages.publish_agents.map(k => $json.agents[k].email);\nreturn [{ json: { ...$json, toList, subject: `[ATLAS][${run_id}] PUBLISH_COMMAND`, body: `Publish ONLY the approved assets for run ${run_id}.\\nReturn receipt JSON in markers.\\n\\n---BEGIN_JSON---\\n{\\n  \"agent\":\"<YOUR_NAME>\",\\n  \"run_id\":\"${run_id}\",\\n  \"platform\":\"...\",\\n  \"status\":\"posted\",\\n  \"url\":\"...\"\\n}\\n---END_JSON---` } }];"
+      },
+      "id": "n_prep_publish",
+      "name": "Prep Publish Command",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [7200, 180]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.toList.join(',')}}",
+        "subject": "={{$json.subject}}",
+        "text": "={{$json.body}}",
+        "options": { "ccEmail": "={{$json.audit_cc}}" }
+      },
+      "id": "n_send_publish",
+      "name": "Email Send: Publish Commands",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [7440, 180],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    },
+    { "parameters": { "amount": 90, "unit": "seconds" }, "id": "n_wait_receipts", "name": "Wait: Receipt Poll", "type": "n8n-nodes-base.wait", "typeVersion": 1, "position": [7680, 180] },
+    {
+      "parameters": {
+        "operation": "search",
+        "mailbox": "INBOX",
+        "searchCriteria": "={{'SUBJECT \"[ATLAS][' + $json.run_id + '] PUBLISH_COMMAND\"'}}",
+        "options": { "downloadAttachments": false }
+      },
+      "id": "n_imap_receipts",
+      "name": "IMAP Search: Publish Receipts",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [7920, 180],
+      "credentials": {
+        "imap": { "id": "REPLACE_IMAP_CRED_ID", "name": "IMAP Atlas Inbox" }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "function extractJson(text){\n  const m = (text||'').match(/---BEGIN_JSON---([\\s\\S]*?)---END_JSON---/);\n  if(!m) return null;\n  try { return JSON.parse(m[1].trim()); } catch(e){ return null; }\n}\n\nconst required = $json.stages.publish_agents;\nconst emails = items.map(i => i.json);\nconst state = $json.state;\n\nfor (const e of emails) {\n  const from = (e.from && (e.from.email || e.from.text)) ? (e.from.email || e.from.text) : (e.from || '');\n  const body = (e.text || e.html || '').toString();\n  const parsed = extractJson(body);\n  if (!parsed) continue;\n  const key = Object.keys($json.agents).find(k => $json.agents[k].email === from);\n  if (!key) continue;\n  if (required.includes(key)) state.receipts[key] = parsed;\n}\n\nstate.attempts.receipts = (state.attempts.receipts || 0) + 1;\nconst got = Object.keys(state.receipts);\nconst missing = required.filter(k => !got.includes(k));\n\nreturn [{ json: { ...$json, state, receipt_status: { got, missing, attempt: state.attempts.receipts } } }];"
+      },
+      "id": "n_accum_receipts",
+      "name": "Accumulate Receipts",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [8160, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            { "value1": "={{$json.receipt_status.missing.length === 0}}", "value2": true }
+          ]
+        }
+      },
+      "id": "n_if_receipts_complete",
+      "name": "IF Receipts Complete",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [8400, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            { "value1": "={{$json.state.attempts.receipts}}", "operation": "smaller", "value2": 10 }
+          ]
+        }
+      },
+      "id": "n_if_receipts_retry",
+      "name": "IF Receipt Retry < 10",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [8640, 60]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.audit_cc}}",
+        "subject": "={{'[ATLAS][' + $json.run_id + '] WARN: RECEIPTS_INCOMPLETE'}}",
+        "text": "={{'Missing receipts after retries: ' + JSON.stringify($json.receipt_status.missing)}}"
+      },
+      "id": "n_receipts_escalate",
+      "name": "Email Escalate: Missing Receipts -> Larry",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [8880, 20],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.agents.LARRY.email}}",
+        "subject": "={{'[ATLAS][' + $json.run_id + '] EOD_AUDIT_VALIDATE'}}",
+        "text": "={{'Validate full chain for run ' + $json.run_id + '. Receipts: ' + JSON.stringify($json.state.receipts)}}"
+      },
+      "id": "n_eod_larry",
+      "name": "Email Send: EOD Audit -> Larry",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [8880, 180],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$json.atlas_email}}",
+        "toEmail": "={{$json.agents.TINA.email}}",
+        "subject": "={{'[ATLAS][' + $json.run_id + '] EOD_FINANCE_REVIEW'}}",
+        "text": "={{'Review ledger refs / monetization impacts for run ' + $json.run_id}}"
+      },
+      "id": "n_eod_tina",
+      "name": "Email Send: EOD Finance -> Tina",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [9120, 180],
+      "credentials": {
+        "smtp": { "id": "REPLACE_SMTP_CRED_ID", "name": "SMTP Shared" }
+      }
+    }
+  ],
+  "connections": {
+    "Cron Daily": { "main": [[{ "node": "Set Meta", "type": "main", "index": 0 }]] },
+    "Set Meta": { "main": [[{ "node": "Build Agent Registry", "type": "main", "index": 0 }]] },
+    "Build Agent Registry": { "main": [[{ "node": "Prep Intel Email", "type": "main", "index": 0 }]] },
+    "Prep Intel Email": { "main": [[{ "node": "Email Send: Intel Request", "type": "main", "index": 0 }]] },
+    "Email Send: Intel Request": { "main": [[{ "node": "Wait: Intel Poll", "type": "main", "index": 0 }]] },
+    "Wait: Intel Poll": { "main": [[{ "node": "IMAP Search: Intel Replies", "type": "main", "index": 0 }]] },
+    "IMAP Search: Intel Replies": { "main": [[{ "node": "Accumulate Intel", "type": "main", "index": 0 }]] },
+    "Accumulate Intel": { "main": [[{ "node": "IF Intel Complete", "type": "main", "index": 0 }]] },
+    "IF Intel Complete": {
+      "main": [
+        [{ "node": "Prep Email: Binky Summary", "type": "main", "index": 0 }],
+        [{ "node": "IF Intel Retry < 10", "type": "main", "index": 0 }]
+      ]
+    },
+    "IF Intel Retry < 10": {
+      "main": [
+        [{ "node": "Wait: Intel Poll", "type": "main", "index": 0 }],
+        [{ "node": "Email Escalate: Intel Missing -> Larry", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prep Email: Binky Summary": { "main": [[{ "node": "Email Send: Binky Summary Request", "type": "main", "index": 0 }]] },
+    "Email Send: Binky Summary Request": { "main": [[{ "node": "Wait: Binky Poll", "type": "main", "index": 0 }]] },
+    "Wait: Binky Poll": { "main": [[{ "node": "IMAP Search: Binky Reply", "type": "main", "index": 0 }]] },
+    "IMAP Search: Binky Reply": { "main": [[{ "node": "Validate Binky JSON", "type": "main", "index": 0 }]] },
+    "Validate Binky JSON": { "main": [[{ "node": "IF Binky OK", "type": "main", "index": 0 }]] },
+    "IF Binky OK": {
+      "main": [
+        [{ "node": "Build Draft Tasks", "type": "main", "index": 0 }],
+        [{ "node": "IF Binky Retry < 10", "type": "main", "index": 0 }]
+      ]
+    },
+    "IF Binky Retry < 10": {
+      "main": [
+        [{ "node": "Email Send: Binky Retry", "type": "main", "index": 0 }],
+        [{ "node": "Email Send: Binky Retry", "type": "main", "index": 0 }]
+      ]
+    },
+    "Email Send: Binky Retry": { "main": [[{ "node": "Wait: Binky Poll", "type": "main", "index": 0 }]] },
+    "Build Draft Tasks": { "main": [[{ "node": "Split Tasks", "type": "main", "index": 0 }]] },
+    "Split Tasks": { "main": [[{ "node": "Email Send: Draft Task", "type": "main", "index": 0 }], [{ "node": "Wait: Draft Poll", "type": "main", "index": 1 }]] },
+    "Email Send: Draft Task": { "main": [[{ "node": "Wait: Pace", "type": "main", "index": 0 }]] },
+    "Wait: Pace": { "main": [[{ "node": "Split Tasks", "type": "main", "index": 0 }]] },
+    "Wait: Draft Poll": { "main": [[{ "node": "IMAP Search: Draft Replies", "type": "main", "index": 0 }]] },
+    "IMAP Search: Draft Replies": { "main": [[{ "node": "Accumulate Drafts", "type": "main", "index": 0 }]] },
+    "Accumulate Drafts": { "main": [[{ "node": "IF Drafts Complete", "type": "main", "index": 0 }]] },
+    "IF Drafts Complete": {
+      "main": [
+        [{ "node": "Email Send: Benny+Jenny Review Ping", "type": "main", "index": 0 }],
+        [{ "node": "IF Draft Retry < 10", "type": "main", "index": 0 }]
+      ]
+    },
+    "IF Draft Retry < 10": {
+      "main": [
+        [{ "node": "Wait: Draft Poll", "type": "main", "index": 0 }],
+        [{ "node": "Email Escalate: Drafts Missing -> Larry", "type": "main", "index": 0 }]
+      ]
+    },
+    "Email Send: Benny+Jenny Review Ping": { "main": [[{ "node": "Email Send: Approval Request", "type": "main", "index": 0 }]] },
+    "Email Send: Approval Request": { "main": [[{ "node": "Wait: Approval Poll", "type": "main", "index": 0 }]] },
+    "Wait: Approval Poll": { "main": [[{ "node": "IMAP Search: Approval Reply", "type": "main", "index": 0 }]] },
+    "IMAP Search: Approval Reply": { "main": [[{ "node": "Parse Approval", "type": "main", "index": 0 }]] },
+    "Parse Approval": { "main": [[{ "node": "IF Approved", "type": "main", "index": 0 }]] },
+    "IF Approved": {
+      "main": [
+        [{ "node": "Prep Publish Command", "type": "main", "index": 0 }],
+        [{ "node": "Email Notify: Denied/No Approval", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prep Publish Command": { "main": [[{ "node": "Email Send: Publish Commands", "type": "main", "index": 0 }]] },
+    "Email Send: Publish Commands": { "main": [[{ "node": "Wait: Receipt Poll", "type": "main", "index": 0 }]] },
+    "Wait: Receipt Poll": { "main": [[{ "node": "IMAP Search: Publish Receipts", "type": "main", "index": 0 }]] },
+    "IMAP Search: Publish Receipts": { "main": [[{ "node": "Accumulate Receipts", "type": "main", "index": 0 }]] },
+    "Accumulate Receipts": { "main": [[{ "node": "IF Receipts Complete", "type": "main", "index": 0 }]] },
+    "IF Receipts Complete": {
+      "main": [
+        [{ "node": "Email Send: EOD Audit -> Larry", "type": "main", "index": 0 }],
+        [{ "node": "IF Receipt Retry < 10", "type": "main", "index": 0 }]
+      ]
+    },
+    "IF Receipt Retry < 10": {
+      "main": [
+        [{ "node": "Wait: Receipt Poll", "type": "main", "index": 0 }],
+        [{ "node": "Email Escalate: Missing Receipts -> Larry", "type": "main", "index": 0 }]
+      ]
+    },
+    "Email Send: EOD Audit -> Larry": { "main": [[{ "node": "Email Send: EOD Finance -> Tina", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": {
+    "executionTimeout": 14400,
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "versionId": "atlas-orchestrator-email-full-v1"
+}
