@@ -24,6 +24,7 @@ export const workflowCatalog = [
   { id: "WF-002", name: "Support Escalation (Cheryl)", description: "Package escalation and route to executive owner.", ownerAgent: "cheryl" },
   { id: "WF-010", name: "Daily Executive Brief (Binky)", description: "Daily intel digest with traceability.", ownerAgent: "binky" },
   { id: "WF-020", name: "Engine Run Smoke Test (Atlas)", description: "Minimal end-to-end cloud surface verification.", ownerAgent: "atlas" },
+  { id: "WF-021", name: "Bootstrap Atlas (Atlas)", description: "Boot → discover agents → seed tasks → queue boot email → await command.", ownerAgent: "atlas" },
 ] as const;
 
 // n8n workflow library (JSON templates + webhook paths)

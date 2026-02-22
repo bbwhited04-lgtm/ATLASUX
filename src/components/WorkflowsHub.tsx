@@ -22,13 +22,14 @@ const DEFAULT_WORKFLOWS = [
   { id: "WF-002", name: "Support Escalation (Cheryl)", description: "Package escalation packet and route to the correct executive owner." },
   { id: "WF-010", name: "Daily Executive Brief (Binky)", description: "Daily intel digest with internal traceability." },
   { id: "WF-020", name: "Engine Run Smoke Test (Atlas)", description: "Minimal end-to-end cloud surface verification." },
+  { id: "WF-021", name: "Bootstrap Atlas (Atlas)", description: "Boot → discover agents → seed tasks → queue boot email → await command." },
 ];
 
 export function WorkflowsHub() {
   const { tenantId: activeTenantId, setTenantId: setActiveTenantId } = useActiveTenant();
   const [tenantId, setTenantId] = React.useState<string>(activeTenantId ?? "");
   const [agentId, setAgentId] = React.useState<string>("atlas");
-  const [workflowId, setWorkflowId] = React.useState<string>("WF-020");
+  const [workflowId, setWorkflowId] = React.useState<string>("WF-021");
   const [intentId, setIntentId] = React.useState<string>("");
   const [runResp, setRunResp] = React.useState<RunResponse | null>(null);
   const [status, setStatus] = React.useState<RunStatus | null>(null);
