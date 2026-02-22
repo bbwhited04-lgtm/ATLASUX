@@ -24,7 +24,7 @@ model Tenant {
   ledger                                   LedgerEntry[]
   members                                  TenantMember[]
 
-  @@map("tenant_id")
+  @@map("tenants")
 }
 
 model Integration {
