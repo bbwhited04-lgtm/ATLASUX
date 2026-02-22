@@ -1,14 +1,19 @@
 import { prisma } from "../../prisma.js";
 import { AuditLevel } from "@prisma/client";
+
 export type AuditStatus = "SUCCESS" | "FAILED" | "PENDING";
+
+const isUuid = (v?: string | null) =>
+  !!v &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
 export async function auditLog(args: {
   tenantId?: string | null;
 
-  actorType: "system" | "user" | "atlas";
+  actorType?: "system" | "user" | "atlas";
   actorId?: string | null; // legacy (uuid OR string)
 
-  level?: AuditLevel;       // if AuditLevel is in scope; otherwise use: any
+  level?: AuditLevel;
   action: string;
 
   entityType?: string | null;
@@ -20,42 +25,49 @@ export async function auditLog(args: {
   userAgent?: string | null;
   metadata?: Record<string, any>;
 }) {
+  // Keep the actorId as a string for traceability
+  const actorIdStr = args.actorId == null ? "" : String(args.actorId);
 
-  const level: "info" | "warn" | "error" =
-    args.status === "FAILED"
-      ? "error"
+  // IMPORTANT: To avoid P2003 until app_users is wired, keep this NULL always.
+  // Later, you can look up app_users by external id and set actorUserId to a real row id.
+  const actorUserId: string | null = null;
+
+  // Use provided actorType or derive a safe default
+  const actorType: "system" | "user" | "atlas" =
+    args.actorType ?? (isUuid(args.actorId) ? "user" : "system");
+
+  // If caller passed a Prisma enum, use it; otherwise map from status.
+  const level: AuditLevel =
+    args.level ??
+    (args.status === "FAILED"
+      ? AuditLevel.error
       : args.status === "PENDING"
-        ? "warn"
-        : "info";
-// Prisma schema uses `level` (enum) + `action` + optional entity fields
-  const isUuid = (v?: string | null) =>
-  !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+        ? AuditLevel.warn
+        : AuditLevel.info);
 
-return prisma.auditLog.create({
-  data: {
-    tenantId: args.tenantId ?? null,
-    actorType: args.actorType ?? "system",
-    level: (args.level ?? "AuditLevel.info") as any,
+  return prisma.auditLog.create({
+    data: {
+      tenantId: args.tenantId ?? null,
 
-    actorUserId: isUuid(args.actorId) ? args.actorId : null,
-    actorExternalId: String(args.actorId ?? ""),
-    actorType: "user",
-    actorExternalId: !isUuid(args.actorId) ? args.actorId ?? null : null,
-    
-    action: args.action,
+      actorUserId,
+      actorExternalId: actorIdStr || null,
+      actorType,
 
-    entityType: args.entityType ?? null,
-    entityId: args.entityId ?? null,
-    message: args.message ?? null,
+      level,
+      action: args.action,
 
-    timestamp: new Date(),
+      entityType: args.entityType ?? null,
+      entityId: args.entityId ?? null,
+      message: args.message ?? null,
 
-    meta: {
-      status: args.status,
-      ipAddress: args.ipAddress ?? null,
-      userAgent: args.userAgent ?? null,
-      ...(args.metadata ?? {}),
+      timestamp: new Date(),
+
+      meta: {
+        status: args.status,
+        ipAddress: args.ipAddress ?? null,
+        userAgent: args.userAgent ?? null,
+        ...(args.metadata ?? {}),
+      },
     },
-  },
-});
+  });
 }
