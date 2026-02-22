@@ -107,7 +107,24 @@ await app.register(oauthRoutes, { prefix: "/v1/oauth" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
+// backend/src/server.ts
+import { engineTick } from "./core/engine/engine.js";
 
+const engineEnabled = (process.env.ENGINE_ENABLED ?? "false").toLowerCase() === "true";
+const tickMs = Number(process.env.ENGINE_TICK_INTERVAL_MS ?? process.env.EMAIL_WORKER_INTERVAL_MS ?? 5000);
+
+if (engineEnabled) {
+  app.log.info(`Engine enabled. Ticking every ${tickMs}ms`);
+  setInterval(async () => {
+    try {
+      await engineTick();
+    } catch (err) {
+      app.log.error({ err }, "engineTick failed");
+    }
+  }, tickMs);
+} else {
+  app.log.info("Engine disabled (ENGINE_ENABLED != true)");
+}
 app.listen({ port, host }).then(() => {
   app.log.info(`AtlasUX backend listening on :${port}`);
 });
