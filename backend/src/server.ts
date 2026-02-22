@@ -31,6 +31,7 @@ import { distributionRoutes } from "./routes/distributionRoutes.js";
 import { growthRoutes } from "./routes/growthRoutes.js";
 import { integrationsRoutes } from "./routes/integrationsRoutes.js";
 import { oauthRoutes } from "./routes/oauthRoutes.js";
+import { ticketsRoutes } from "./routes/ticketsRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -100,6 +101,9 @@ await app.register(metricsRoutes, { prefix: "/v1/metrics" });
 await app.register(decisionRoutes, { prefix: "/v1/decisions" });
 await app.register(distributionRoutes, { prefix: "/v1/distribution" });
 await app.register(growthRoutes, { prefix: "/v1/growth" });
+
+// Lightweight beta feedback tickets
+await app.register(ticketsRoutes, { prefix: "/v1/tickets" });
 
 // OAuth + Integrations hub (needed by Integrations UI)
 await app.register(integrationsRoutes, { prefix: "/v1/integrations" });

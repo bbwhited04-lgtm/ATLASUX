@@ -9,14 +9,14 @@ datasource db {
 }
 
 model Tenant {
-  id                                       String         @id(map: "tenants_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug                                     String         @unique(map: "tenants_slug_key")
+  id                                       String          @id(map: "tenants_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                                     String          @unique(map: "tenants_slug_key")
   name                                     String
-  createdAt                                DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                                DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  app_users_app_users_tenant_idTotenant_id app_users[]    @relation("app_users_tenant_idTotenant_id")
+  createdAt                                DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                                DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  app_users_app_users_tenant_idTotenant_id app_users[]     @relation("app_users_tenant_idTotenant_id")
   assets                                   Asset[]
-  audits                                   AuditLog[]     @relation("TenantAudits")
+  audits                                   AuditLog[]      @relation("TenantAudits")
   integrations                             Integration[]
   jobs                                     Job[]
   kbDocuments                              KbDocument[]
@@ -24,8 +24,10 @@ model Tenant {
   ledger                                   LedgerEntry[]
   members                                  TenantMember[]
   KbChunk                                  KbChunk[]
+  Ticket                                   Ticket[]
+  TicketComment                            TicketComment[]
 
-  @@map("tenants")
+  @@map("tenant_id")
 }
 
 model Integration {
@@ -202,17 +204,19 @@ model agent_registry {
 }
 
 model app_users {
-  id                                       String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id                                String     @db.Uuid
+  id                                       String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                                String          @db.Uuid
   external_user_id                         String?
   email                                    String?
   display_name                             String?
-  role                                     String?    @default("user")
-  created_at                               DateTime   @default(now()) @db.Timestamptz(6)
-  updated_at                               DateTime   @default(now()) @db.Timestamptz(6)
-  tenant_id_app_users_tenant_idTotenant_id Tenant     @relation("app_users_tenant_idTotenant_id", fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  role                                     String?         @default("user")
+  created_at                               DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at                               DateTime        @default(now()) @db.Timestamptz(6)
+  tenant_id_app_users_tenant_idTotenant_id Tenant          @relation("app_users_tenant_idTotenant_id", fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   audit_log                                AuditLog[]
   jobs                                     Job[]
+  Ticket                                   Ticket[]
+  TicketComment                            TicketComment[]
 
   @@unique([tenant_id, external_user_id])
 }
@@ -299,6 +303,49 @@ model DecisionMemo {
 
   @@index([tenantId, createdAt(sort: Desc)], map: "decision_memos_tenant_time_idx")
   @@map("decision_memos")
+}
+
+// Lightweight beta feedback tickets (NOT a full helpdesk)
+model Ticket {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String         @map("tenant_id") @db.Uuid
+  reporterUserId String?        @map("reporter_user_id") @db.Uuid
+  runId          String?        @map("run_id")
+  agent          String?
+  status         TicketStatus   @default(OPEN)
+  severity       TicketSeverity @default(MEDIUM)
+  category       TicketCategory @default(BUG)
+  title          String
+  description    String?
+  meta           Json           @default("{}") @map("meta")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  reporter app_users?      @relation(fields: [reporterUserId], references: [id], onUpdate: NoAction)
+  comments TicketComment[]
+
+  @@index([tenantId, createdAt(sort: Desc)], map: "tickets_tenant_time_idx")
+  @@index([tenantId, status, createdAt(sort: Desc)], map: "tickets_tenant_status_idx")
+  @@index([tenantId, severity, createdAt(sort: Desc)], map: "tickets_tenant_severity_idx")
+  @@map("tickets")
+}
+
+model TicketComment {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  ticketId     String   @map("ticket_id") @db.Uuid
+  authorUserId String?  @map("author_user_id") @db.Uuid
+  body         String
+  meta         Json     @default("{}") @map("meta")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  ticket Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  author app_users? @relation(fields: [authorUserId], references: [id], onUpdate: NoAction)
+
+  @@index([ticketId, createdAt(sort: Asc)], map: "ticket_comments_ticket_time_idx")
+  @@map("ticket_comments")
 }
 
 /// Distribution events (publishes/posts)
@@ -440,4 +487,32 @@ enum job_status {
   succeeded
   failed
   canceled
+}
+
+enum TicketStatus {
+  OPEN
+  TRIAGED
+  IN_PROGRESS
+  CLOSED
+
+  @@map("ticket_status")
+}
+
+enum TicketSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  BLOCKER
+
+  @@map("ticket_severity")
+}
+
+enum TicketCategory {
+  BUG
+  UX
+  GUARDRAIL
+  PERFORMANCE
+  OTHER
+
+  @@map("ticket_category")
 }
