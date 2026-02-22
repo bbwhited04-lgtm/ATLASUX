@@ -41,8 +41,9 @@ export const tasksRoutes: FastifyPluginAsync = async (app) => {
     await prisma.auditLog.create({
       data: {
         tenantId: body.tenantId,
-        actorUserId: (req as any).user?.id ?? body.createdBy ?? body.tenantId,
-        actorType: "user",
+        actorUserId: null,
+        actorExternalId: String((req as any).user?.id ?? body.createdBy ?? body.tenantId ?? ""),
+        actorType: "system",
         level: "info",
         action: "TASK_CREATED",
         entityType: "job",

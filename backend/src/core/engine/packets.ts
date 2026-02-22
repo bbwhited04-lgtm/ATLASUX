@@ -9,8 +9,9 @@ export async function buildPackets(intent: IntentRecord): Promise<PacketBundle> 
   await prisma.auditLog.create({
     data: {
       tenantId: intent.tenantId,
-      actorUserId: intent.createdBy,
-      actorType: "user",
+      actorUserId: null,
+      actorExternalId: String(intent.createdBy ?? ""),
+      actorType: "system",
       level: "info",
       action: "PACKETS_BUILT",
       entityType: "intent",

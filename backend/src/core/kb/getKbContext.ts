@@ -223,8 +223,9 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
       await prisma.auditLog.create({
         data: {
           tenantId,
-          actorUserId: args.requestedBy,
-          actorType: "user",
+          actorUserId: null,
+          actorExternalId: String(args.requestedBy ?? ""),
+          actorType: "system",
           level: "info",
           action: "KB_CONTEXT_BUILT",
           entityType: "intent",

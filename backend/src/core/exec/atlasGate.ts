@@ -29,8 +29,9 @@ export async function atlasExecuteGate(params: {
   await prisma.auditLog.create({
     data: {
       tenantId: params.tenantId,
-      actorUserId: params.userId,
-      actorType: "user",
+      actorUserId: null,
+      actorExternalId: String(params.userId ?? ""),
+      actorType: "system",
       level: sgl.decision === "BLOCK" ? "security" : sgl.decision === "REVIEW" ? "warn" : "info",
       action: "SGL_EVALUATED",
       entityType: "intent",

@@ -37,7 +37,9 @@ return prisma.auditLog.create({
     actorType: args.actorType ?? "system",
     level: (args.level ?? "AuditLevel.info") as any,
 
-    actorUserId: isUuid(args.actorId) ? args.actorId : null,
+    actorUserId: null,
+    actorExternalId: String(args.actorId ?? ""),
+    actorType: "system",
     actorExternalId: !isUuid(args.actorId) ? args.actorId ?? null : null,
     
     action: args.action,

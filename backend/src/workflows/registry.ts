@@ -41,8 +41,9 @@ async function writeStepAudit(ctx: WorkflowContext, step: string, message: strin
   await prisma.auditLog.create({
     data: {
       tenantId: ctx.tenantId,
-      actorUserId: ctx.requestedBy,
-      actorType: "user",
+      actorUserId: null,
+      actorExternalId: String(ctx.requestedBy ?? ""),
+      actorType: "system",
       level: "info",
       action: "WORKFLOW_STEP",
       entityType: "intent",

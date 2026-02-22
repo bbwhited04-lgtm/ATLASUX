@@ -25,8 +25,9 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
     await prisma.auditLog.create({
       data: {
         tenantId,
-        actorUserId: userId,
-        actorType: "user",
+        actorUserId: null,
+        actorExternalId: String(userId ?? ""),
+        actorType: "system",
         level: sgl.decision === "BLOCK" ? "security" : sgl.decision === "REVIEW" ? "warn" : "info",
         action: "SGL_EVALUATED",
         entityType: "intent",

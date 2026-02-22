@@ -114,7 +114,7 @@ export async function tenantsRoutes(app: FastifyInstance) {
         await tx.auditLog.create({
           data: {
             tenantId: tenant.id,
-            actorUserId: actor.actorUserId,
+            actorUserId: null,
             actorExternalId: actor.actorExternalId,
             actorType: actor.actorType,
             level: "info",

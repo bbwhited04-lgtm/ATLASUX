@@ -46,8 +46,9 @@ export const engineRoutes: FastifyPluginAsync = async (app) => {
     await prisma.auditLog.create({
       data: {
         tenantId: body.tenantId,
-        actorUserId: (req as any).user?.id ?? body.tenantId,
-        actorType: "user",
+        actorUserId: null,
+        actorExternalId: String((req as any).user?.id ?? body.tenantId ?? ""),
+        actorType: "system",
         level: "info",
         action: "ENGINE_RUN_REQUESTED",
         entityType: "intent",

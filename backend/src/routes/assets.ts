@@ -211,7 +211,7 @@ export async function assetsRoutes(app: FastifyInstance) {
           await tx.auditLog.create({
                     data: {
                       tenantId,
-                      actorUserId: actor.actorUserId,
+                      actorUserId: null,
                       actorExternalId: actor.actorExternalId,
                       actorType: actor.actorType,
                       level: "info",
@@ -254,7 +254,7 @@ export async function assetsRoutes(app: FastifyInstance) {
             await tx.auditLog.create({
                         data: {
                           tenantId,
-                          actorUserId: actor.actorUserId,
+                          actorUserId: null,
                           actorExternalId: actor.actorExternalId,
                           actorType: actor.actorType,
                           level: "info",
@@ -365,7 +365,7 @@ export async function assetsRoutes(app: FastifyInstance) {
           await tx.auditLog.create({
                     data: {
                       tenantId: after.tenantId,
-                      actorUserId: actor.actorUserId,
+                      actorUserId: null,
                       actorExternalId: actor.actorExternalId,
                       actorType: actor.actorType,
                       level: "info",
@@ -414,7 +414,7 @@ export async function assetsRoutes(app: FastifyInstance) {
             await tx.auditLog.create({
                         data: {
                           tenantId: after.tenantId,
-                          actorUserId: actor.actorUserId,
+                          actorUserId: null,
                           actorExternalId: actor.actorExternalId,
                           actorType: actor.actorType,
                           level: "info",
@@ -489,7 +489,7 @@ export async function assetsRoutes(app: FastifyInstance) {
           await tx.auditLog.create({
                     data: {
                       tenantId: before.tenantId,
-                      actorUserId: actor.actorUserId,
+                      actorUserId: null,
                       actorExternalId: actor.actorExternalId,
                       actorType: actor.actorType,
                       level: "info",

@@ -62,8 +62,9 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
     await prisma.auditLog.create({
       data: {
         tenantId,
-        actorUserId: userId,
-        actorType: "user",
+        actorUserId: null,
+        actorExternalId: String(userId ?? ""),
+        actorType: "system",
         level: "info",
         action: "STRIPE_PRODUCT_REQUESTED",
         entityType: "intent",
@@ -101,8 +102,9 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
     await prisma.auditLog.create({
       data: {
         tenantId,
-        actorUserId: userId,
-        actorType: "user",
+        actorUserId: null,
+        actorExternalId: String(userId ?? ""),
+        actorType: "system",
         level: "info",
         action: "STRIPE_PRODUCT_CREATED",
         entityType: "external",
