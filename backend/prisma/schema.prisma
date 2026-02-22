@@ -27,7 +27,7 @@ model Tenant {
   Ticket                                   Ticket[]
   TicketComment                            TicketComment[]
 
-  @@map("tenant_id")
+  @@map("tenants")
 }
 
 model Integration {
