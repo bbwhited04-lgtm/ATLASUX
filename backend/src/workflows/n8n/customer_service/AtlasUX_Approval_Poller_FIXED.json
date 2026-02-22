@@ -1,0 +1,328 @@
+{
+  "name": "AtlasUX \u2014 Approval Poller",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": "*/1",
+              "minute": "*/1",
+              "weekDays": []
+            }
+          ]
+        }
+      },
+      "name": "Cron \u2014 Poll Mailbox",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT suggestion_id, ticket_id, ticket_subject, one_line_summary, approval_token, created_at, expires_at FROM public.atlas_suggestions WHERE status = 'pending' AND expires_at > now() ORDER BY created_at ASC LIMIT 100;"
+      },
+      "name": "Get Pending Suggestions (Supabase)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        520,
+        280
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "SUPABASE_POSTGRES",
+          "name": "SUPABASE_POSTGRES"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Split items into single items to iterate\nreturn items;"
+      },
+      "name": "Split Items",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        760,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "filters": {}
+      },
+      "name": "Search Mailbox for Replies",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 1,
+      "position": [
+        1060,
+        280
+      ],
+      "credentials": {
+        "microsoftOutlook": {
+          "id": "MICROSOFT_OUTLOOK",
+          "name": "MICROSOFT_OUTLOOK"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Determine if any messages contain the suggestion_id and the words approve/deny\nconst suggestion = items[0].json; // from DB\nconst suggestionId = suggestion.suggestion_id;\nconst messages = $node[\"Search Mailbox for Replies\"].json || [];\nlet decision = null;\nlet matchingMessage = null;\n\nfor (const m of messages) {\n  const subject = (m.subject || '').toString().toLowerCase();\n  const body = ((m.body && (m.body.content || m.bodyPreview)) || '').toString().toLowerCase();\n  // Check if message references the suggestion id (either subject or body)\n  if (subject.includes(suggestionId.toLowerCase()) || body.includes(suggestionId.toLowerCase())) {\n    if (/\\bapprove\\b/.test(body)) {\n      decision = 'approved';\n      matchingMessage = m;\n      break;\n    }\n    if (/\\bdeny\\b/.test(body)) {\n      decision = 'denied';\n      matchingMessage = m;\n      break;\n    }\n  }\n}\n\nitems[0].json.decision = decision;\nitems[0].json.matching_message = matchingMessage;\nreturn items;"
+      },
+      "name": "Determine Decision",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.decision}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Decision?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "atlas_suggestions",
+        "updateFields": "status,updated_at",
+        "updateValues": "'approved', now()",
+        "where": "suggestion_id = {{$json.suggestion_id}}"
+      },
+      "name": "Mark Approved (Supabase)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        120
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "SUPABASE_POSTGRES",
+          "name": "SUPABASE_POSTGRES"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "support@deadapp.info",
+        "toEmail": "support@deadapp.info",
+        "subject": "Suggestion Approved \u2014 {{$json.suggestion_id}} \u2014 {{$json.one_line_summary}}",
+        "text": "Hello team,\\n\\nAtlas has APPROVED suggestion {{$json.suggestion_id}} for ticket {{$json.ticket_id}}.\\n\\nSummary:\\n{{$json.one_line_summary}}\\n\\nNext steps: implement the plan from the suggestion.\\n\\nThis notification was generated automatically.\\n\\nBest,\\nAtlas UX Support Automation"
+      },
+      "name": "Notify Support \u2014 Approved",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        2040,
+        120
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_SUPPORT",
+          "name": "SMTP_SUPPORT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "atlas_suggestions",
+        "updateFields": "status,updated_at",
+        "updateValues": "'denied', now()",
+        "where": "suggestion_id = {{$json.suggestion_id}}"
+      },
+      "name": "Mark Denied (Supabase)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        440
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "SUPABASE_POSTGRES",
+          "name": "SUPABASE_POSTGRES"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "support@deadapp.info",
+        "toEmail": "support@deadapp.info",
+        "subject": "Suggestion Denied \u2014 {{$json.suggestion_id}} \u2014 {{$json.one_line_summary}}",
+        "text": "Hello team,\\n\\nAtlas has DENIED suggestion {{$json.suggestion_id}} for ticket {{$json.ticket_id}}.\\n\\nCheck the matching message for details.\\n\\nThis notification was generated automatically.\\n\\nBest,\\nAtlas UX Support Automation"
+      },
+      "name": "Notify Support \u2014 Denied",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        2040,
+        440
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_SUPPORT",
+          "name": "SMTP_SUPPORT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// No-op final node\nreturn items;"
+      },
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2280,
+        280
+      ]
+    }
+  ],
+  "connections": {
+    "Cron \u2014 Poll Mailbox": {
+      "main": [
+        [
+          {
+            "node": "Get Pending Suggestions (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Pending Suggestions (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Split Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Items": {
+      "main": [
+        [
+          {
+            "node": "Search Mailbox for Replies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Mailbox for Replies": {
+      "main": [
+        [
+          {
+            "node": "Determine Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Decision": {
+      "main": [
+        [
+          {
+            "node": "Decision?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision?": {
+      "main": [
+        [
+          {
+            "node": "Mark Approved (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Denied (Supabase)",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Mark Approved (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Notify Support \u2014 Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Denied (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Notify Support \u2014 Denied",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Support \u2014 Approved": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Support \u2014 Denied": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "workflow-approval-poller-atlasux"
+}

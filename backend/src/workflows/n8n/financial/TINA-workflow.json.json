@@ -1,0 +1,172 @@
+{
+  "name": "TINA — Finance Intake + Risk Gate + Advisory Reply (Audit-First)",
+  "nodes": [
+    {
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "nothing",
+        "downloadAttachments": false,
+        "options": {
+          "allowUnauthorizedCerts": false
+        }
+      },
+      "name": "Email Trigger (IMAP) — tina.cfo@deadapp.info",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [260, 300],
+      "credentials": {
+        "imap": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Tina IMAP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = items[0].json;\n\nconst fromRaw = msg.from?.text || msg.from || '';\nconst subject = msg.subject || '';\nconst text = msg.text || msg.textPlain || msg.body || '';\nconst messageId = msg.messageId || msg.headers?.['message-id'] || msg.header?.messageId || '';\nconst inReplyTo = msg.inReplyTo || msg.headers?.['in-reply-to'] || '';\nconst references = msg.references || msg.headers?.references || '';\nconst date = msg.date || new Date().toISOString();\n\nconst emailMatch = String(fromRaw).match(/<([^>]+)>/);\nconst fromEmail = (emailMatch ? emailMatch[1] : fromRaw).trim().toLowerCase();\n\nreturn [{\n  json: {\n    fromRaw,\n    fromEmail,\n    subject,\n    text,\n    messageId,\n    inReplyTo,\n    references,\n    receivedAt: date,\n    threadKey: inReplyTo || references || messageId || `${fromEmail}|${subject}`\n  }\n}];"
+      },
+      "name": "Normalize Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "operation": "in",
+              "value1": "={{$json.fromEmail}}",
+              "value2": [
+                "atlas@deadappcorp.org",
+                "atlas@deadapp.info",
+                "billy@deadapp.info",
+                "bbwhited@icloud.com",
+                "bbwhited@live.com"
+              ]
+            }
+          ]
+        }
+      },
+      "name": "Authorize Sender (ATLAS Required)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [760, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { subject, text } = items[0].json;\n\nconst secretPatterns = [\n  /api[_-]?key\\s*[:=]/i,\n  /secret\\s*[:=]/i,\n  /client[_-]?secret\\s*[:=]/i,\n  /password\\s*[:=]/i,\n  /-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----/i,\n  /sk-[A-Za-z0-9]{20,}/\n];\n\nconst content = `${subject}\\n\\n${text}`;\nconst containsSecrets = secretPatterns.some((re) => re.test(content));\n\nreturn [{ json: { ...items[0].json, containsSecrets } }];"
+      },
+      "name": "Secret Check (Never Transmit Secrets)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 220]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "operation": "equal",
+              "value1": "={{$json.containsSecrets}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "If Secrets Detected → Compliance Stop",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1220, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = items[0].json;\n\nconst body = `Tina (CFO/Treasurer) — COMPLIANCE/AUDIT STOP\\n\\n` +\n`Detected content that appears to include secrets/credentials (or private keys). ` +\n`Per policy: I cannot process or retransmit secrets.\\n\\n` +\n`Action Required:\\n` +\n`1) Remove secrets from the thread (redact keys/passwords/tokens).\\n` +\n`2) Resubmit the request from ATLAS with only non-sensitive context.\\n\\n` +\n`Audit:\\n` +\n`- Thread Key: ${j.threadKey}\\n` +\n`- Received: ${j.receivedAt}\\n`;\n\nreturn [{ json: { ...j, replySubject: `RE: ${j.subject}`, replyBody: body, blockExecution: true } }];"
+      },
+      "name": "Build Compliance Stop Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, 140]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = items[0].json;\n\nconst body = `Tina (CFO/Treasurer) — Financial Review\\n\\n` +\n`Summary of Request (as received):\\n` +\n`- (1–3 sentences; do not invent facts)\\n\\n` +\n`Cost / Budget Impact:\\n` +\n`- One-time cost: $____\\n` +\n`- Monthly recurring: $____\\n` +\n`- Budget category: ____\\n` +\n`- Estimated ROI / benefit: ____\\n\\n` +\n`Risk Flags:\\n` +\n`- Risk: [Low/Med/High] — Reason\\n` +\n`- Vendor lock-in / terms concerns: ____\\n` +\n`- Data/ops cost exposure: ____\\n\\n` +\n`Decision Options:\\n` +\n`1) Approve — Conditions (if any) — Required approvals\\n` +\n`2) Approve w/ cap — Spend ceiling — Required approvals\\n` +\n`3) Deny / Defer — What would change my decision\\n\\n` +\n`Recommendation (CFO Gate):\\n` +\n`- Recommend: [Proceed / Proceed w/ cap / Block] — Reason\\n\\n` +\n`Audit:\\n` +\n`- Thread Key: ${j.threadKey}\\n` +\n`- Received: ${j.receivedAt}\\n` +\n`- Referenced docs/links: (titles + links + dates)\\n`;\n\nreturn [{ json: { ...j, replySubject: `RE: ${j.subject}`, replyBody: body, blockExecution: false } }];"
+      },
+      "name": "Draft CFO Response (Template Output)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, 360]
+    },
+    {
+      "parameters": {
+        "authentication": "none",
+        "requestMethod": "POST",
+        "url": "https://atlas-ux.onrender.com/api/audit/log",
+        "options": {
+          "timeout": 20000
+        },
+        "jsonParameters": true,
+        "bodyParametersJson": "={\"agent\":\"TINA\",\"role\":\"Chief Financial Officer / Treasurer\",\"event\":\"EMAIL_RECEIVED\",\"threadKey\":$json.threadKey,\"from\":$json.fromEmail,\"subject\":$json.subject,\"receivedAt\":$json.receivedAt,\"messageId\":$json.messageId,\"containsSecrets\":$json.containsSecrets}"
+      },
+      "name": "Audit Log — Email Received",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1000, 420]
+    },
+    {
+      "parameters": {
+        "fromEmail": "tina.cfo@deadapp.info",
+        "toEmail": "={{$json.fromEmail}}",
+        "subject": "={{$json.replySubject}}",
+        "text": "={{$json.replyBody}}",
+        "options": {
+          "inReplyTo": "={{$json.messageId || $json.inReplyTo}}",
+          "references": "={{$json.references}}"
+        }
+      },
+      "name": "Send Reply Email (Audit Chain)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1680, 300],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Tina SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "none",
+        "requestMethod": "POST",
+        "url": "https://atlas-ux.onrender.com/api/audit/log",
+        "options": {
+          "timeout": 20000
+        },
+        "jsonParameters": true,
+        "bodyParametersJson": "={\"agent\":\"TINA\",\"role\":\"Chief Financial Officer / Treasurer\",\"event\":\"EMAIL_REPLY_SENT\",\"threadKey\":$json.threadKey,\"to\":$json.fromEmail,\"subject\":$json.replySubject,\"sentAt\":$now,\"blocked\":$json.blockExecution}"
+      },
+      "name": "Audit Log — Reply Sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1920, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = items[0].json;\nreturn [{ json: { ...j, unauthorized: true, stop: true } }];"
+      },
+      "name": "Unauthorized — Stop",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 120]
+    }
+  ],
+  "connections": {},
+  "active": false,
+  "settings": {
+    "executionTimeout": 3600,
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true
+  },
+  "versionId": "1"
+}

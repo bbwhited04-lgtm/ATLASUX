@@ -1,0 +1,109 @@
+{
+  "workflowId": "larry-audit-intake-v1",
+  "name": "LARRY — Audit Intake + Compliance Stop + Audit Reply (Audit-First)",
+  "agent": "LARRY",
+  "role": "Chief Auditor / Corporate Secretary",
+  "version": "1.0.0",
+  "status": "ready",
+  "trigger": {
+    "type": "email_received",
+    "inbox": "larry.auditor@deadapp.info",
+    "source": "imap"
+  },
+  "guards": {
+    "authorizedSenders": [
+      "atlas@deadappcorp.org",
+      "atlas@deadapp.info",
+      "billy@deadapp.info",
+      "bbwhited@icloud.com",
+      "bbwhited@live.com"
+    ],
+    "onUnauthorized": "halt_silent"
+  },
+  "compliance": {
+    "neverTransmitSecrets": true,
+    "secretDetection": {
+      "enabled": true,
+      "patterns": [
+        "api[_-]?key\\s*[:=]",
+        "secret\\s*[:=]",
+        "client[_-]?secret\\s*[:=]",
+        "password\\s*[:=]",
+        "-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----",
+        "sk-[A-Za-z0-9]{20,}"
+      ]
+    },
+    "onSecretDetected": {
+      "action": "compliance_stop_reply",
+      "blockExecution": true
+    }
+  },
+  "audit": {
+    "required": true,
+    "traceThread": true,
+    "threadKeyStrategy": "inReplyTo || references || messageId || `${fromEmail}|${subject}`",
+    "events": [
+      {
+        "event": "EMAIL_RECEIVED",
+        "endpoint": "https://atlas-ux.onrender.com/api/audit/log"
+      },
+      {
+        "event": "EMAIL_REPLY_SENT",
+        "endpoint": "https://atlas-ux.onrender.com/api/audit/log"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "normalize_email",
+      "type": "transform",
+      "description": "Extract fromEmail, subject, body, messageId, inReplyTo, references, receivedAt; compute threadKey."
+    },
+    {
+      "id": "authorize_sender",
+      "type": "guard",
+      "description": "Allow only ATLAS/Billy sender allowlist; otherwise halt silently."
+    },
+    {
+      "id": "secret_check",
+      "type": "compliance_scan",
+      "description": "Scan subject+body for secrets (keys/tokens/password/private key markers)."
+    },
+    {
+      "id": "branch_on_secret",
+      "type": "branch",
+      "description": "If secrets: compliance stop reply + blockExecution. Else: draft audit response."
+    },
+    {
+      "id": "compose_compliance_stop",
+      "type": "template",
+      "description": "Build COMPLIANCE/AUDIT STOP reply message (includes threadKey + receivedAt)."
+    },
+    {
+      "id": "compose_audit_response",
+      "type": "template",
+      "description": "Build audit review reply template (checks, options, recommendation; includes threadKey + receivedAt)."
+    },
+    {
+      "id": "send_reply_email",
+      "type": "email_reply",
+      "description": "Reply in-thread using In-Reply-To/References to preserve audit chain.",
+      "config": {
+        "from": "larry.auditor@deadapp.info",
+        "threading": true
+      }
+    },
+    {
+      "id": "write_audit_events",
+      "type": "audit_log",
+      "description": "Write EMAIL_RECEIVED and EMAIL_REPLY_SENT events to Atlas audit endpoint."
+    }
+  ],
+  "sourceArtifact": {
+    "type": "n8n",
+    "originalWorkflowName": "LARRY — Audit Intake + Compliance Stop + Audit Reply (Audit-First)",
+    "raw": {
+      "file": "LARRY-workflow.json"
+    }
+  }
+}

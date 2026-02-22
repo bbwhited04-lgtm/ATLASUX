@@ -1,0 +1,90 @@
+{
+  "workflowId": "jenny-clo-intake-v1",
+  "name": "Jenny — CLO Intake + Advisory Reply",
+  "agent": "JENNY",
+  "role": "Legal Counsel (CLO Office)",
+  "version": "1.0.0",
+  "status": "ready",
+  "trigger": {
+    "type": "email_received",
+    "inbox": "jenny.clo@deadapp.info",
+    "requiredSender": [
+      "atlas@deadappcorp.org",
+      "atlas@deadapp.info",
+      "billy@deadapp.info",
+      "bbwhited@icloud.com",
+      "bbwhited@live.com"
+    ]
+  },
+  "policy": {
+    "truthRequired": true,
+    "neverTransmitSecrets": true,
+    "advisoryOnly": true,
+    "canBlockExecution": true,
+    "auditRequired": true
+  },
+  "steps": [
+    {
+      "id": "normalize_email",
+      "type": "transform",
+      "description": "Normalize inbound email and generate thread key"
+    },
+    {
+      "id": "authorize_sender",
+      "type": "guard",
+      "description": "Verify email originates from ATLAS-authorized sender",
+      "onFail": "halt_silent"
+    },
+    {
+      "id": "secret_scan",
+      "type": "compliance_scan",
+      "description": "Detect presence of credentials or secrets",
+      "onMatch": "compliance_stop"
+    },
+    {
+      "id": "draft_advisory",
+      "type": "generate",
+      "description": "Produce CLO advisory response with risks, options, approvals"
+    },
+    {
+      "id": "send_reply",
+      "type": "email_reply",
+      "description": "Reply in-thread to preserve audit chain",
+      "inbox": "jenny.clo@deadapp.info"
+    },
+    {
+      "id": "write_audit_log",
+      "type": "audit_log",
+      "description": "Persist full trace with timestamp and thread key"
+    }
+  ],
+  "complianceStop": {
+    "enabled": true,
+    "messageTemplate": "Jenny (CLO) — COMPLIANCE/AUDIT STOP\n\nDetected potential secrets or restricted data. Per ATLAS_POLICY I cannot process this request.\n\nAction Required:\n1) Remove secrets\n2) Resubmit via ATLAS\n\nThread Key: {{threadKey}}\nTimestamp: {{timestamp}}"
+  },
+  "outputs": {
+    "primary": "email_reply",
+    "secondary": [
+      "audit_log",
+      "risk_flags",
+      "decision_options"
+    ]
+  },
+  "authority": {
+    "mode": "advisory",
+    "blockOnCompliance": true,
+    "escalationTarget": "ATLAS"
+  },
+  "audit": {
+    "traceThread": true,
+    "requireTimestamp": true,
+    "retainIndefinitely": true
+  },
+  "metadata": {
+    "createdBy": "Billy E. Whited",
+    "system": "Atlas UX",
+    "agentInbox": "jenny.clo@deadapp.info",
+    "trustMode": "maximum",
+    "lastUpdated": "2026-02-21"
+  }
+}

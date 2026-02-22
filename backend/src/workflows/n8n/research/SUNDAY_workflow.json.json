@@ -1,0 +1,206 @@
+{
+  "name": "SUNDAY — Docs Intake + Draft Reply + Approval Gate (Audit-First)",
+  "nodes": [
+    {
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "nothing",
+        "downloadAttachments": false,
+        "options": {
+          "allowUnauthorizedCerts": false
+        }
+      },
+      "name": "Email Trigger (IMAP) — sunday.teambinky@deadapp.info",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [260, 300],
+      "credentials": {
+        "imap": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Sunday IMAP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = items[0].json;\n\nconst fromRaw = msg.from?.text || msg.from || '';\nconst subject = msg.subject || '';\nconst text = msg.text || msg.textPlain || msg.body || '';\nconst messageId = msg.messageId || msg.headers?.['message-id'] || msg.header?.messageId || '';\nconst inReplyTo = msg.inReplyTo || msg.headers?.['in-reply-to'] || '';\nconst references = msg.references || msg.headers?.references || '';\nconst date = msg.date || new Date().toISOString();\n\nconst emailMatch = String(fromRaw).match(/<([^>]+)>/);\nconst fromEmail = (emailMatch ? emailMatch[1] : fromRaw).trim().toLowerCase();\n\n// tracking ID heuristic: looks for [ID: xxxx] or (ID: xxxx)\nconst idMatch = String(subject).match(/\\bID\\s*[:#]\\s*([A-Za-z0-9_-]{4,})\\b/);\nconst trackingId = idMatch ? idMatch[1] : '';\n\nreturn [{\n  json: {\n    fromRaw,\n    fromEmail,\n    subject,\n    text,\n    messageId,\n    inReplyTo,\n    references,\n    receivedAt: date,\n    trackingId,\n    threadKey: inReplyTo || references || messageId || `${fromEmail}|${subject}`\n  }\n}];"
+      },
+      "name": "Normalize Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "operation": "in",
+              "value1": "={{$json.fromEmail}}",
+              "value2": [
+                "atlas@deadappcorp.org",
+                "atlas@deadapp.info",
+                "billy@deadapp.info",
+                "bbwhited@icloud.com",
+                "bbwhited@live.com"
+              ]
+            }
+          ]
+        }
+      },
+      "name": "Authorize Sender (ATLAS Required)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [760, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { subject, text } = items[0].json;\n\nconst secretPatterns = [\n  /api[_-]?key\\s*[:=]/i,\n  /secret\\s*[:=]/i,\n  /client[_-]?secret\\s*[:=]/i,\n  /password\\s*[:=]/i,\n  /-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----/i,\n  /sk-[A-Za-z0-9]{20,}/\n];\n\nconst content = `${subject}\\n\\n${text}`;\nconst containsSecrets = secretPatterns.some((re) => re.test(content));\n\nreturn [{ json: { ...items[0].json, containsSecrets } }];"
+      },
+      "name": "Secret Check (Never Email Secrets)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 220]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "operation": "equal",
+              "value1": "={{$json.containsSecrets}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "If Secrets Detected → Compliance Stop",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1220, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = items[0].json;\n\nconst body = `Sunday (Docs) — COMPLIANCE/AUDIT STOP\\n\\n` +\n`Detected content that appears to include secrets/credentials (or private keys). ` +\n`Per policy: I cannot process or retransmit secrets.\\n\\n` +\n`Action Required:\\n` +\n`1) Remove secrets from the email thread (redact keys/passwords/tokens).\\n` +\n`2) Resubmit the request from ATLAS with only approved, non-sensitive context.\\n\\n` +\n`Audit:\\n` +\n`- Thread Key: ${j.threadKey}\\n` +\n`- Received: ${j.receivedAt}\\n`;\n\nreturn [{ json: { ...j, replySubject: `RE: ${j.subject}`, replyBody: body, blocked: true } }];"
+      },
+      "name": "Build Compliance Stop Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, 140]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = items[0].json;\n\nconst tracking = j.trackingId ? `Tracking ID: ${j.trackingId}\\n` : '';\n\nconst body = `Sunday (Docs) — Draft Delivery\\n\\n` +\ntracking +\n`Bulleted Summary:\\n` +\n`- Purpose: ____\\n` +\n`- Audience: ____\\n` +\n`- Key points: ____\\n\\n` +\n`Draft Content:\\n` +\n`(Write the draft here. Keep to provided/approved source material. Cite links + access date for factual claims.)\\n\\n` +\n`Sources (if factual claims):\\n` +\n`- Source 1: <link> (accessed YYYY-MM-DD)\\n` +\n`- Source 2: <link> (accessed YYYY-MM-DD)\\n\\n` +\n`Approval Status:\\n` +\n`- Publish/Post: NOT AUTHORIZED (requires explicit ATLAS approval)\\n\\n` +\n`Audit:\\n` +\n`- Thread Key: ${j.threadKey}\\n` +\n`- Received: ${j.receivedAt}\\n`;\n\nreturn [{ json: { ...j, replySubject: `RE: ${j.subject}`, replyBody: body, blocked: false } }];"
+      },
+      "name": "Draft Docs Response (Template Output)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, 360]
+    },
+    {
+      "parameters": {
+        "authentication": "none",
+        "requestMethod": "POST",
+        "url": "https://atlas-ux.onrender.com/api/audit/log",
+        "options": {
+          "timeout": 20000
+        },
+        "jsonParameters": true,
+        "bodyParametersJson": "={\n  \"agent\": \"SUNDAY\",\n  \"role\": \"Technical Documentation Writer\",\n  \"event\": \"EMAIL_RECEIVED\",\n  \"threadKey\": $json.threadKey,\n  \"from\": $json.fromEmail,\n  \"subject\": $json.subject,\n  \"receivedAt\": $json.receivedAt,\n  \"messageId\": $json.messageId,\n  \"containsSecrets\": $json.containsSecrets,\n  \"trackingId\": $json.trackingId\n}"
+      },
+      "name": "Audit Log — Email Received",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1000, 420]
+    },
+    {
+      "parameters": {
+        "fromEmail": "sunday.teambinky@deadapp.info",
+        "toEmail": "={{$json.fromEmail}}",
+        "subject": "={{$json.replySubject}}",
+        "text": "={{$json.replyBody}}",
+        "options": {
+          "inReplyTo": "={{$json.messageId || $json.inReplyTo}}",
+          "references": "={{$json.references}}"
+        }
+      },
+      "name": "Send Reply Email (Audit Chain)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1680, 300],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Sunday SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "none",
+        "requestMethod": "POST",
+        "url": "https://atlas-ux.onrender.com/api/audit/log",
+        "options": {
+          "timeout": 20000
+        },
+        "jsonParameters": true,
+        "bodyParametersJson": "={\n  \"agent\": \"SUNDAY\",\n  \"role\": \"Technical Documentation Writer\",\n  \"event\": \"EMAIL_REPLY_SENT\",\n  \"threadKey\": $json.threadKey,\n  \"to\": $json.fromEmail,\n  \"subject\": $json.replySubject,\n  \"sentAt\": $now,\n  \"blocked\": $json.blocked,\n  \"trackingId\": $json.trackingId\n}"
+      },
+      "name": "Audit Log — Reply Sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1920, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = items[0].json;\nreturn [{ json: { ...j, unauthorized: true, stop: true } }];"
+      },
+      "name": "Unauthorized — Stop",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 120]
+    }
+  ],
+  "connections": {
+    "Email Trigger (IMAP) — sunday.teambinky@deadapp.info": {
+      "main": [[{ "node": "Normalize Email", "type": "main", "index": 0 }]]
+    },
+    "Normalize Email": {
+      "main": [[
+        { "node": "Authorize Sender (ATLAS Required)", "type": "main", "index": 0 },
+        { "node": "Audit Log — Email Received", "type": "main", "index": 0 }
+      ]]
+    },
+    "Authorize Sender (ATLAS Required)": {
+      "main": [
+        [{ "node": "Secret Check (Never Email Secrets)", "type": "main", "index": 0 }],
+        [{ "node": "Unauthorized — Stop", "type": "main", "index": 0 }]
+      ]
+    },
+    "Secret Check (Never Email Secrets)": {
+      "main": [[{ "node": "If Secrets Detected → Compliance Stop", "type": "main", "index": 0 }]]
+    },
+    "If Secrets Detected → Compliance Stop": {
+      "main": [
+        [{ "node": "Build Compliance Stop Reply", "type": "main", "index": 0 }],
+        [{ "node": "Draft Docs Response (Template Output)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Compliance Stop Reply": {
+      "main": [[{ "node": "Send Reply Email (Audit Chain)", "type": "main", "index": 0 }]]
+    },
+    "Draft Docs Response (Template Output)": {
+      "main": [[{ "node": "Send Reply Email (Audit Chain)", "type": "main", "index": 0 }]]
+    },
+    "Send Reply Email (Audit Chain)": {
+      "main": [[{ "node": "Audit Log — Reply Sent", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionTimeout": 3600,
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true
+  },
+  "versionId": "1"
+}

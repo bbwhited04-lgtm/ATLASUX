@@ -1,0 +1,363 @@
+{ "name": "ATLAS -> Benny IP Triage & Evidence Pack (starter)", "nodes": [
+
+{
+  "parameters": {
+    "httpMethod": "POST",
+    "path": "atlas-ip-intake",
+    "responseMode": "onReceived",
+    "responseData": "={{ { status: 'received', note: 'Processing started' } }}",
+    "options": {}
+  },
+  "name": "ATLAS Intake (Webhook)",
+  "type": "n8n-nodes-base.webhook",
+  "typeVersion": 1,
+  "position": [
+    250,
+    250
+  ]
+},
+{
+  "parameters": {
+    "functionCode": "/* Validate required fields: jurisdiction, asset_type, question */\nconst payload = items[0].json;\nconst missing = [];\n['jurisdiction','asset_type','question','request_id','company'].forEach(k=>{\n  if(!payload[k]) missing.push(k);\n});\nif(missing.length){\n  return [{ json: { valid: false, missing } }];\n}\n// Pass through original payload and create a generated receipt_id if not present\nconst receiptId = payload.receipt_id || `rcpt_${Date.now()}`;\nreturn [{ json: { valid: true, payload, receipt_id: receiptId } }];"
+  },
+  "name": "Validate Payload",
+  "type": "n8n-nodes-base.function",
+  "typeVersion": 1,
+  "position": [
+    520,
+    250
+  ]
+},
+{
+  "parameters": {
+    "authentication": "headerAuth",
+    "requestMethod": "POST",
+    "url": "https://YOUR-SUPABASE-URL/rest/v1/atlas_ip_requests",
+    "jsonParameters": true,
+    "options": {
+      "bodyContentType": "json"
+    },
+    "headerParametersJson": "=\n[\n  {\"name\":\"apikey\",\"value\":\"{{ $credentials.supabaseApi.key }}\"},\n  {\"name\":\"Authorization\",\"value\":\"Bearer {{ $credentials.supabaseApi.key }}\"},\n  {\"name\":\"Content-Type\",\"value\":\"application/json\"}\n]\n",
+    "bodyParametersJson": "={\n  \"request_id\": $json.payload.request_id,\n  \"raw_payload\": $json.payload,\n  \"company\": $json.payload.company || null,\n  \"asset_type\": $json.payload.asset_type || null,\n  \"jurisdiction\": $json.payload.jurisdiction || null,\n  \"question\": $json.payload.question || null,\n  \"received_at\": new Date().toISOString(),\n  \"receipt_id\": $json.receipt_id\n}"
+  },
+  "name": "Store Request (Supabase)",
+  "type": "n8n-nodes-base.httpRequest",
+  "typeVersion": 1,
+  "position": [
+    820,
+    160
+  ],
+  "credentials": {
+    "httpHeaderAuth": {
+      "id": "supabase-header-auth-placeholder"
+    }
+  }
+},
+{
+  "parameters": {
+    "statusCode": 202,
+    "responseBody": "={\"status\":\"accepted\",\"receipt_id\":$json.receipt_id}",
+    "responseHeadersJson": "{}"
+  },
+  "name": "Respond to Webhook (ack)",
+  "type": "n8n-nodes-base.respondToWebhook",
+  "typeVersion": 1,
+  "position": [
+    1120,
+    160
+  ]
+},
+{
+  "parameters": {
+    "functionCode": "/* Compute simple SHA256 hashes for any link list in payload.links */\nconst crypto = require('crypto');\nconst payload = $json.payload;\nconst links = payload.links || [];\nconst hashes = links.map(l => {\n  const h = crypto.createHash('sha256');\n  h.update(String(l));\n  return { link: l, sha256: h.digest('hex') };\n});\nreturn [{ json: { payload, hashes, receipt_id: $json.receipt_id } }];"
+  },
+  "name": "Compute Hashes",
+  "type": "n8n-nodes-base.function",
+  "typeVersion": 1,
+  "position": [
+    1120,
+    320
+  ]
+},
+{
+  "parameters": {
+    "authentication": "headerAuth",
+    "requestMethod": "POST",
+    "url": "https://YOUR-SUPABASE-URL/rest/v1/atlas_ip_artifacts",
+    "jsonParameters": true,
+    "options": {
+      "bodyContentType": "json"
+    },
+    "headerParametersJson": "=\n[\n  {\"name\":\"apikey\",\"value\":\"{{ $credentials.supabaseApi.key }}\"},\n  {\"name\":\"Authorization\",\"value\":\"Bearer {{ $credentials.supabaseApi.key }}\"},\n  {\"name\":\"Content-Type\",\"value\":\"application/json\"}\n]\n",
+    "bodyParametersJson": "={\n  \"request_id\": $json.payload.request_id,\n  \"artifacts\": $json.hashes,\n  \"created_at\": new Date().toISOString()\n}"
+  },
+  "name": "Store Artifacts (Supabase)",
+  "type": "n8n-nodes-base.httpRequest",
+  "typeVersion": 1,
+  "position": [
+    1420,
+    320
+  ],
+  "credentials": {
+    "httpHeaderAuth": {
+      "id": "supabase-header-auth-placeholder"
+    }
+  }
+},
+{
+  "parameters": {
+    "functionCode": "/* Placeholder: run domain-class searches. In production replace with real API calls (USPTO, EUIPO, WHOIS, Domain history). This node should collect & attach raw results. */\nconst req = $json.payload;\n// Dummy example results\nconst findings = [];\n// If company name resembles a known mark, add dummy finding\nif(req.company && req.company.toLowerCase().includes('dead')){\n  findings.push({ source: 'USPTO-TESS', query: req.company, found: false, retrieved_at: new Date().toISOString() });\n}\nreturn [{ json: { payload: req, findings } }];"
+  },
+  "name": "Domain-class Research (placeholder)",
+  "type": "n8n-nodes-base.function",
+  "typeVersion": 1,
+  "position": [
+    1120,
+    520
+  ]
+},
+{
+  "parameters": {
+    "functionCode": "/* Simple risk classification placeholder based on findings count and missing facts. Replace with your rules. */\nconst p = $json.payload || {};\nconst findings = $json.findings || [];\nconst missing = (p.facts || '').length === 0 ? ['facts'] : [];\nlet risk = 'low';\nif(findings.length > 0) risk = 'medium';\nif(missing.length > 0) risk = 'medium';\n// Example escalation: if a critical indicator found, mark high\n// (Replace with your real detection)\nreturn [{ json: { payload: p, findings, missing, risk } }];"
+  },
+  "name": "Risk Classification",
+  "type": "n8n-nodes-base.function",
+  "typeVersion": 1,
+  "position": [
+    1420,
+    520
+  ]
+},
+{
+  "parameters": {
+    "functionCode": "/* Build short Evidence Pack summary (one-page style) and decision options. This is a stub; adapt for PDF generation or storage. */\nconst r = $json;\nconst summary = {\n  request_id: r.payload.request_id || null,\n  exec_summary: `Preliminary triage: risk=${r.risk}. Findings: ${r.findings.length}`,\n  risk_level: r.risk,\n  unknowns: r.missing,\n  decision_options: [\n    { option: 'Do nothing', rationale: 'Low immediate risk', impact: 'low' },\n    { option: 'Collect evidence', rationale: 'Confirm creation/use dates', impact: 'medium' },\n    { option: 'File TM', rationale: 'If used in commerce & priority established', impact: 'high' }\n  ],\n  generated_at: new Date().toISOString()\n};\nreturn [{ json: { request_id: r.payload.request_id, evidence_pack: summary } }];"
+  },
+  "name": "Build Evidence Pack",
+  "type": "n8n-nodes-base.function",
+  "typeVersion": 1,
+  "position": [
+    1720,
+    520
+  ]
+},
+{
+  "parameters": {
+    "authentication": "headerAuth",
+    "requestMethod": "POST",
+    "url": "https://YOUR-SUPABASE-URL/rest/v1/atlas_ip_reports",
+    "jsonParameters": true,
+    "options": {
+      "bodyContentType": "json"
+    },
+    "headerParametersJson": "=\n[\n  {\"name\":\"apikey\",\"value\":\"{{ $credentials.supabaseApi.key }}\"},\n  {\"name\":\"Authorization\",\"value\":\"Bearer {{ $credentials.supabaseApi.key }}\"},\n  {\"name\":\"Content-Type\",\"value\":\"application/json\"}\n]\n",
+    "bodyParametersJson": "={\n  \"report_id\": `rep_${Date.now()}`,\n  \"request_id\": $json.request_id,\n  \"summary\": $json.evidence_pack.exec_summary,\n  \"risk_level\": $json.evidence_pack.risk_level,\n  \"decision_options\": $json.evidence_pack.decision_options,\n  \"evidence_index\": [],\n  \"created_at\": new Date().toISOString()\n}"
+  },
+  "name": "Store Report (Supabase)",
+  "type": "n8n-nodes-base.httpRequest",
+  "typeVersion": 1,
+  "position": [
+    2000,
+    520
+  ],
+  "credentials": {
+    "httpHeaderAuth": {
+      "id": "supabase-header-auth-placeholder"
+    }
+  }
+},
+{
+  "parameters": {
+    "functionCode": "/* Generate approval token and message payload */\nconst token = `approve_${Math.random().toString(36).slice(2,12)}`;\nreturn [{ json: { request_id: $json.request_id, approval_token: token, approve_link: `https://your-approval-ui.example/approve?token=${token}`, deny_link: `https://your-approval-ui.example/deny?token=${token}` } }];"
+  },
+  "name": "Generate Approve/Deny Token",
+  "type": "n8n-nodes-base.function",
+  "typeVersion": 1,
+  "position": [
+    2260,
+    520
+  ]
+},
+{
+  "parameters": {
+    "authentication": "headerAuth",
+    "requestMethod": "POST",
+    "url": "https://YOUR-SUPABASE-URL/rest/v1/atlas_ip_messages",
+    "jsonParameters": true,
+    "options": {
+      "bodyContentType": "json"
+    },
+    "headerParametersJson": "=\n[\n  {\"name\":\"apikey\",\"value\":\"{{ $credentials.supabaseApi.key }}\"},\n  {\"name\":\"Authorization\",\"value\":\"Bearer {{ $credentials.supabaseApi.key }}\"},\n  {\"name\":\"Content-Type\",\"value\":\"application/json\"}\n]\n",
+    "bodyParametersJson": "={\n  \"message_id\": `msg_${Date.now()}`,\n  \"request_id\": $json.request_id,\n  \"message_type\": \"approval_request\",\n  \"payload\": { approve_link: $json.approve_link, deny_link: $json.deny_link, token: $json.approval_token },\n  \"actor\": \"benny.cto@deadapp.info\",\n  \"received_at\": new Date().toISOString()\n}"
+  },
+  "name": "Store Approval Message (Supabase)",
+  "type": "n8n-nodes-base.httpRequest",
+  "typeVersion": 1,
+  "position": [
+    2520,
+    520
+  ],
+  "credentials": {
+    "httpHeaderAuth": {
+      "id": "supabase-header-auth-placeholder"
+    }
+  }
+},
+{
+  "parameters": {
+    "fromEmail": "benny.cto@deadapp.info",
+    "toEmail": "={{ $json.payload.requested_by || $json.payload.requester || '' }}",
+    "subject": "=[ATLAS receipt: {{$json.payload.receipt_id}}] IP Triage: {{$json.payload.request_id}}",
+    "text": "={{\n  `ATLAS-thread: ${$json.payload.request_id} | receipt: ${$json.payload.receipt_id}\\n\\nExec summary: ${$json.evidence_pack ? $json.evidence_pack.exec_summary : 'See attached'}\\n\\nRisk level: ${$json.evidence_pack ? $json.evidence_pack.risk_level : 'TBD'}\\n\\nApprove: ${$json.approve_link}\\nDeny: ${$json.deny_link}\\n\\nThis is an advisory evidence pack, not legal advice.`\n}}"
+  },
+  "name": "Send Reply Email (SMTP)",
+  "type": "n8n-nodes-base.smtp",
+  "typeVersion": 1,
+  "position": [
+    2780,
+    520
+  ],
+  "credentials": {
+    "smtp": {
+      "id": "smtp-credentials-placeholder"
+    }
+  }
+}
+], "connections": {
+
+"ATLAS Intake (Webhook)": {
+  "main": [
+    [
+      {
+        "node": "Validate Payload",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ]
+},
+"Validate Payload": {
+  "main": [
+    [
+      {
+        "node": "Store Request (Supabase)",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ]
+},
+"Store Request (Supabase)": {
+  "main": [
+    [
+      {
+        "node": "Respond to Webhook (ack)",
+        "type": "main",
+        "index": 0
+      },
+      {
+        "node": "Compute Hashes",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ]
+},
+"Compute Hashes": {
+  "main": [
+    [
+      {
+        "node": "Store Artifacts (Supabase)",
+        "type": "main",
+        "index": 0
+      },
+      {
+        "node": "Domain-class Research (placeholder)",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ]
+},
+"Store Artifacts (Supabase)": {
+  "main": [
+    [
+      {
+        "node": "Domain-class Research (placeholder)",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ]
+},
+"Domain-class Research (placeholder)": {
+  "main": [
+    [
+      {
+        "node": "Risk Classification",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ]
+},
+"Risk Classification": {
+  "main": [
+    [
+      {
+        "node": "Build Evidence Pack",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ]
+},
+"Build Evidence Pack": {
+  "main": [
+    [
+      {
+        "node": "Store Report (Supabase)",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ]
+},
+"Store Report (Supabase)": {
+  "main": [
+    [
+      {
+        "node": "Generate Approve/Deny Token",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ]
+},
+"Generate Approve/Deny Token": {
+  "main": [
+    [
+      {
+        "node": "Store Approval Message (Supabase)",
+        "type": "main",
+        "index": 0
+      },
+      {
+        "node": "Send Reply Email (SMTP)",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ]
+},
+"Store Approval Message (Supabase)": {
+  "main": [
+    [
+      {
+        "node": "Send Reply Email (SMTP)",
+        "type": "main",
+        "index": 0
+      }
+    ]
+  ]
+}
+}, "active": false, "settings": {}, "versionId": "1.0.0" }

@@ -1,0 +1,259 @@
+[
+  {
+    "name": "AtlasUX \u2014 Suggestion Generator",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "atlas-new-ticket",
+          "responseMode": "onReceived",
+          "responseData": "success"
+        },
+        "name": "New Ticket Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          250,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "url": "https://atlasux.cloud/api/kb/search",
+          "options": {},
+          "method": "POST",
+          "bodyParametersUi": {
+            "parameter": [
+              {
+                "name": "query",
+                "value": "={{$json[\"subject\"] + ' ' + $json[\"body\"]}}"
+              },
+              {
+                "name": "top_k",
+                "value": "5"
+              }
+            ]
+          },
+          "headers": {
+            "Authorization": "Bearer {{ $credentials.KB_API_KEY }}",
+            "Content-Type": "application/json"
+          },
+          "jsonParameters": true,
+          "sendBody": true
+        },
+        "name": "KB Search (Atlas UX KB)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [
+          520,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "functionCode": "// Build prompt for OpenAI\nconst ticket = items[0].json;\nconst kb = $node[\"KB Search (Atlas UX KB)\"].json || [];\nconst kbArray = Array.isArray(kb) ? kb : [kb];\nconst kbText = kbArray.slice(0,5).map(a => {\n  const title = a.title || a.name || (a.data && a.data.title) || '';\n  const excerpt = a.excerpt || a.summary || (a.data && a.data.excerpt) || '';\n  const url = a.url || a.link || '';\n  return `- ${title}: ${excerpt} (URL: ${url})`;\n}).join('\\n');\n\nconst prompt = `You are a support automation assistant for Atlas UX (atlasux.cloud).\\nTicket:\\nSubject: ${ticket.subject}\\nBody: ${ticket.body}\\n\\nTop KB articles:\\n${kbText}\\n\\nTask: Based on the ticket and KB evidence, propose ONE concise workflow improvement that will reduce recurrence of this issue.\\nReturn ONLY JSON with keys:\\n- one_line_summary (string)\\n- implementation_plan (array of 3 short steps)\\n- kb_references (array of KB titles or URLs)\\n- email_subject (string)\\n- email_body_approve (string)\\n- email_body_deny (string)\\nKeep each field concise.`;\n\nitems[0].json.prompt = prompt;\nreturn items;"
+        },
+        "name": "Build OpenAI Prompt",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [
+          740,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "authentication": "predefinedCredentialType",
+          "requestMethod": "POST",
+          "url": "https://api.openai.com/v1/chat/completions",
+          "options": {},
+          "bodyParametersJson": "={\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":$json.prompt}],\"max_tokens\":800,\"temperature\":0.2}",
+          "headers": {
+            "Authorization": "Bearer {{$credentials.OPENAI_API.key}}",
+            "Content-Type": "application/json"
+          }
+        },
+        "name": "OpenAI \u2014 Draft Suggestion",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [
+          980,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "functionCode": "const text = $json[\"choices\"] ? $json.choices[0].message.content : ($json.text || '');\nlet parsed;\ntry {\n  parsed = JSON.parse(text);\n} catch (err) {\n  const jsonMatch = text.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);\n  else throw new Error('OpenAI output not JSON. Check prompt.');\n}\n\nitems[0].json.one_line_summary = parsed.one_line_summary;\nitems[0].json.implementation_plan = parsed.implementation_plan || [];\nitems[0].json.kb_references = parsed.kb_references || [];\nitems[0].json.email_subject = parsed.email_subject;\nitems[0].json.email_body_approve = parsed.email_body_approve;\nitems[0].json.email_body_deny = parsed.email_body_deny;\nreturn items;"
+        },
+        "name": "Parse Suggestion Output",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [
+          1220,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "functionCode": "const { v4: uuidv4 } = require('uuid');\nconst crypto = require('crypto');\n\nconst suggestionId = uuidv4();\nconst approvalToken = crypto.randomBytes(20).toString('hex');\n\nconst expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();\n\nconst record = {\n  suggestion_id: suggestionId,\n  ticket_id: $json[\"ticket_id\"] || $json[\"ticketId\"] || $json[\"ticketIdFromWebhook\"],\n  ticket_subject: $json[\"subject\"] || $json[\"ticket_subject\"],\n  ticket_body: $json[\"body\"] || $json[\"ticket_body\"],\n  kb_results: $node[\"KB Search (Atlas UX KB)\"].json || [],\n  one_line_summary: $json.one_line_summary,\n  implementation_plan: $json.implementation_plan,\n  email_subject: $json.email_subject,\n  email_body_approve: $json.email_body_approve,\n  email_body_deny: $json.email_body_deny,\n  approval_token: approvalToken,\n  status: 'pending',\n  created_at: new Date().toISOString(),\n  updated_at: new Date().toISOString(),\n  expires_at: expiresAt\n};\n\nitems[0].json.suggestion_record = record;\nreturn items;"
+        },
+        "name": "Create Suggestion Record",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [
+          1460,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "insert",
+          "schema": "public",
+          "table": "atlas_suggestions",
+          "columns": "suggestion_id,ticket_id,ticket_subject,ticket_body,kb_results,one_line_summary,implementation_plan,email_subject,email_body_approve,email_body_deny,approval_token,status,created_at,updated_at,expires_at",
+          "values": "={{$json[\"suggestion_record\"].suggestion_id}},{{$json[\"suggestion_record\"].ticket_id}},{{$json[\"suggestion_record\"].ticket_subject}},{{$json[\"suggestion_record\"].ticket_body}},{{JSON.stringify($json[\"suggestion_record\"].kb_results)}},{{$json[\"suggestion_record\"].one_line_summary}},{{JSON.stringify($json[\"suggestion_record\"].implementation_plan)}},{{$json[\"suggestion_record\"].email_subject}},{{$json[\"suggestion_record\"].email_body_approve}},{{$json[\"suggestion_record\"].email_body_deny}},{{$json[\"suggestion_record\"].approval_token}},{{$json[\"suggestion_record\"].status}},{{$json[\"suggestion_record\"].created_at}},{{$json[\"suggestion_record\"].updated_at}},{{$json[\"suggestion_record\"].expires_at}}"
+        },
+        "name": "Store Suggestion (Supabase)",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+          1700,
+          300
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "SUPABASE_POSTGRES",
+            "name": "SUPABASE_POSTGRES"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "fromEmail": "support@deadapp.info",
+          "toEmail": "atlas.ceo@deadapp.info",
+          "subject": "={{ '[Action required] Approve workflow suggestion \u2014 ' + $json.suggestion_record.suggestion_id + ' \u2014 ' + $json.one_line_summary }}",
+          "text": "Hi Atlas,\\n\\nBased on support ticket {{$json.suggestion_record.ticket_id}}: \"{{$json.suggestion_record.ticket_subject}}\", the suggested workflow change is:\\n\\n{{$json.one_line_summary}}\\n\\nImplementation plan (3 steps):\\n1) {{$json.implementation_plan[0]}}\\n2) {{$json.implementation_plan[1]}}\\n3) {{$json.implementation_plan[2]}}\\n\\nWhy: Referenced KB articles: {{$json.kb_references ? $json.kb_references.join(', ') : ''}}\\n\\nPlease reply to this email with exactly one word:\\n- approve\\nor\\n- deny\\n\\n(Your reply will trigger the automation and the support team will be notified.)\\n\\nSuggestion ID: {{$json.suggestion_record.suggestion_id}}\\n\\nThanks,\\nAtlas UX Support Automation"
+        },
+        "name": "Email CEO (Atlas)",
+        "type": "n8n-nodes-base.emailSend",
+        "typeVersion": 1,
+        "position": [
+          1940,
+          300
+        ],
+        "credentials": {
+          "smtp": {
+            "id": "SMTP_SUPPORT",
+            "name": "SMTP_SUPPORT"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "responseCode": 200,
+          "responseBody": "Suggestion created and sent to Atlas for approval"
+        },
+        "name": "Webhook Response",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          2180,
+          300
+        ]
+      }
+    ],
+    "connections": {
+      "New Ticket Webhook": {
+        "main": [
+          [
+            {
+              "node": "KB Search (Atlas UX KB)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "KB Search (Atlas UX KB)": {
+        "main": [
+          [
+            {
+              "node": "Build OpenAI Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build OpenAI Prompt": {
+        "main": [
+          [
+            {
+              "node": "OpenAI \u2014 Draft Suggestion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI \u2014 Draft Suggestion": {
+        "main": [
+          [
+            {
+              "node": "Parse Suggestion Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parse Suggestion Output": {
+        "main": [
+          [
+            {
+              "node": "Create Suggestion Record",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create Suggestion Record": {
+        "main": [
+          [
+            {
+              "node": "Store Suggestion (Supabase)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Store Suggestion (Supabase)": {
+        "main": [
+          [
+            {
+              "node": "Email CEO (Atlas)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Email CEO (Atlas)": {
+        "main": [
+          [
+            {
+              "node": "Webhook Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {},
+    "id": "workflow-suggestion-generator-atlasux"
+  }
+]

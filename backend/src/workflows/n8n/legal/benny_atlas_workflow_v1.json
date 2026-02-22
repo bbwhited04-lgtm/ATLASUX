@@ -1,0 +1,124 @@
+{
+  "id": "benny_ip_triage_evidence_pack_v1",
+  "name": "Benny \u2014 IP Triage & Evidence Pack",
+  "owner": "benny.cto@deadapp.info",
+  "version": "1.0.0",
+  "category": "ip",
+  "policy_ref": "triageevidencepack.md",
+  "trigger": {
+    "type": "http",
+    "method": "POST",
+    "path": "/api/ip/triage"
+  },
+  "input_schema": {
+    "required": [
+      "request_id",
+      "asset_type",
+      "jurisdiction",
+      "question"
+    ],
+    "properties": {
+      "request_id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "company": {
+        "type": "string"
+      },
+      "asset_type": {
+        "type": "string"
+      },
+      "jurisdiction": {
+        "type": "string"
+      },
+      "question": {
+        "type": "string"
+      },
+      "facts": {
+        "type": "string"
+      },
+      "links": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "constraints": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "requested_by": {
+        "type": "string"
+      },
+      "receipt_id": {
+        "type": "string"
+      },
+      "atlas_thread_id": {
+        "type": "string"
+      },
+      "timestamp": {
+        "type": "string"
+      }
+    }
+  },
+  "steps": [
+    {
+      "id": "gate_validate",
+      "type": "gate.validate"
+    },
+    {
+      "id": "audit_intake",
+      "type": "audit.log"
+    },
+    {
+      "id": "db_store_request",
+      "type": "db.insert"
+    },
+    {
+      "id": "respond_ack",
+      "type": "http.respond"
+    },
+    {
+      "id": "compute_hashes",
+      "type": "transform.hash_sha256_list"
+    },
+    {
+      "id": "db_store_artifacts_stub",
+      "type": "db.insert_many"
+    },
+    {
+      "id": "research_domain_class_placeholder",
+      "type": "research.domain_class"
+    },
+    {
+      "id": "risk_classify",
+      "type": "transform.risk_classify"
+    },
+    {
+      "id": "build_evidence_pack",
+      "type": "llm.generate_json"
+    },
+    {
+      "id": "db_store_report",
+      "type": "db.insert"
+    },
+    {
+      "id": "issue_approval_token",
+      "type": "approval.issue"
+    },
+    {
+      "id": "db_store_approval_message",
+      "type": "db.insert"
+    },
+    {
+      "id": "notify_email",
+      "type": "email.send"
+    },
+    {
+      "id": "db_set_status_awaiting",
+      "type": "db.update"
+    }
+  ]
+}
