@@ -175,8 +175,8 @@ React.useEffect(() => {
           <button
             onClick={run}
             disabled={loading || !tenantId}
-            className="inline-flex items-center gap-2 rounded-xl bg-cyan-500/20 border border-cyan-500/30 px-4 py-2 text-base text-cyan-100 hover:bg-cyan-500/30 disabled:opacity-50"
-          >
+            className="inline-flex items-center gap-2 rounded-xl bg-white border border-red-500 px-4 py-2 text-base font-semibold text-red-600 hover:bg-red-50 disabled:opacity-100 disabled:bg-white disabled:text-red-400 disabled:border-red-300"
+>
             <Play className="h-4 w-4" /> Run (creates intent + 1 tick)
           </button>
 
