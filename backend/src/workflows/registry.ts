@@ -58,7 +58,7 @@ async function queueEmail(ctx: WorkflowContext, email: { to: string; subject: st
   const job = await prisma.job.create({
     data: {
       tenantId: ctx.tenantId,
-      requestedBy: ctx.requestedBy,
+      requested_by_user_id: ctx.requestedBy,
       status: "queued",
       jobType: "EMAIL_SEND",
       priority: 5,

@@ -4,21 +4,21 @@ function normalizeLedgerCategory(input: unknown): LedgerCategory {
   const v = String(input ?? "").trim().toLowerCase();
   switch (v) {
     case "hosting":
-      return LedgerCategory.hosting;
+      return LedgerCategory.api_spend;
     case "saas":
-      return LedgerCategory.saas;
+      return LedgerCategory.api_spend;
     case "domain":
-      return LedgerCategory.domain;
+      return LedgerCategory.api_spend;
     case "email":
-      return LedgerCategory.email;
+      return LedgerCategory.api_spend;
     case "social":
-      return LedgerCategory.social;
+      return LedgerCategory.api_spend;
     case "infra":
-      return LedgerCategory.infra;
+      return LedgerCategory.api_spend;
     case "ads":
-      return LedgerCategory.ads;
+      return LedgerCategory.api_spend;
     case "other":
-      return LedgerCategory.other;
+      return LedgerCategory.misc;
     case "subscription":
       return LedgerCategory.subscription;
     case "ai_spend":
@@ -26,7 +26,7 @@ function normalizeLedgerCategory(input: unknown): LedgerCategory {
     case "api_spend":
     case "tokens":
     case "api":
-      return LedgerCategory.ai_spend;
+      return LedgerCategory.token_spend;
     case "misc":
     default:
       return LedgerCategory.misc;
@@ -85,9 +85,9 @@ export async function completeContentJob(input: CompleteJobInput) {
         status: nextStatus,
         output: output ?? undefined,
         error:
-        status === "failed"
-        ? ({ message: errorMessage ?? "Job failed" } as Prisma.InputJsonValue)
-        : Prisma.DbNull,
+          status === "failed"
+            ? ({ message: errorMessage ?? "Job failed" } as Prisma.InputJsonValue)
+            : undefined,
         finishedAt: new Date(),
       },
     });
@@ -100,7 +100,7 @@ export async function completeContentJob(input: CompleteJobInput) {
         data: {
           tenantId: job.tenantId,
           entryType: LedgerEntryType.debit,
-          category: LedgerCategory.ai_spend,
+          category: LedgerCategory.token_spend,
           amountCents,
           occurredAt: new Date(),
           createdAt: new Date(),

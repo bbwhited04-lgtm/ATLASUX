@@ -23,7 +23,7 @@ export const tasksRoutes: FastifyPluginAsync = async (app) => {
     const job = await prisma.job.create({
       data: {
         tenantId: body.tenantId,
-        requestedBy: (req as any).user?.id ?? body.createdBy ?? body.tenantId,
+        requested_by_user_id: (req as any).user?.id ?? body.createdBy ?? body.tenantId,
         status: "queued",
         jobType: "AGENT_TASK",
         priority: typeof body.priority === "number" ? body.priority : 0,

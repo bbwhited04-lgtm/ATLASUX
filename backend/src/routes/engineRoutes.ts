@@ -29,13 +29,15 @@ export const engineRoutes: FastifyPluginAsync = async (app) => {
     const intent = await prisma.intent.create({
       data: {
         tenantId: body.tenantId,
-        createdBy: (req as any).user?.id ?? body.tenantId, // fallback if auth is not set up yet
+        // NOTE: schema/table has no createdBy. We store requestor in agentId + payload.
+        agentId: (req as any).user?.id ?? null,
         intentType: "ENGINE_RUN",
         payload: {
           agentId: body.agentId,
           workflowId: body.workflowId,
           input: body.input ?? {},
           traceId: body.traceId ?? null,
+          requestedBy: (req as any).user?.id ?? body.tenantId,
         },
         status: "DRAFT",
       },

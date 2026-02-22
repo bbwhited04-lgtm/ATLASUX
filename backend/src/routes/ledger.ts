@@ -7,21 +7,21 @@ function normalizeLedgerCategory(input: unknown): LedgerCategory {
   const v = String(input ?? "").trim().toLowerCase();
   switch (v) {
     case "hosting":
-      return LedgerCategory.hosting;
+      return LedgerCategory.api_spend;
     case "saas":
-      return LedgerCategory.saas;
+      return LedgerCategory.api_spend;
     case "domain":
-      return LedgerCategory.domain;
+      return LedgerCategory.api_spend;
     case "email":
-      return LedgerCategory.email;
+      return LedgerCategory.api_spend;
     case "social":
-      return LedgerCategory.social;
+      return LedgerCategory.api_spend;
     case "infra":
-      return LedgerCategory.infra;
+      return LedgerCategory.api_spend;
     case "ads":
-      return LedgerCategory.ads;
+      return LedgerCategory.api_spend;
     case "other":
-      return LedgerCategory.other;
+      return LedgerCategory.misc;
     case "subscription":
       return LedgerCategory.subscription;
     case "ai_spend":
@@ -29,7 +29,7 @@ function normalizeLedgerCategory(input: unknown): LedgerCategory {
     case "api_spend":
     case "tokens":
     case "api":
-      return LedgerCategory.ai_spend;
+      return LedgerCategory.token_spend;
     case "misc":
     default:
       return LedgerCategory.misc;

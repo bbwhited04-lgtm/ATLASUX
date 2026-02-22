@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../db/prisma.js";
 import { createStripeProductAndPrice } from "../services/stripeCatalog.js";
-import { LedgerCategory, LedgerEntryType, IntentStatus } from "@prisma/client";
+import { LedgerCategory, LedgerEntryType } from "@prisma/client";
 
 const CreateProductSchema = z.object({
   fromAgent: z.string().min(1),
@@ -55,7 +55,7 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
           ...body,
           createdAt: new Date().toISOString(),
         },
-        status: IntentStatus.AWAITING_HUMAN,
+        status: "AWAITING_HUMAN",
       },
     });
 
@@ -125,7 +125,7 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
       data: {
         tenantId,
         entryType: LedgerEntryType.debit,
-        category: LedgerCategory.saas,
+        category: LedgerCategory.api_spend,
         amountCents: BigInt(0),
         currency: "USD",
         description: `Stripe catalog: created product ${body.name}`,

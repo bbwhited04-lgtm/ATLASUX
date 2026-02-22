@@ -172,7 +172,7 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
 
     // Prefer fresh chunks when present
     const docChunks = chunksByDoc.get(d.id) ?? [];
-    const freshChunks = docChunks.filter((c) => {
+    const freshChunks = docChunks.filter((c: any) => {
       // exact match is safest; DB stores timestamps with ms precision
       return new Date(c.sourceUpdatedAt).getTime() === new Date(d.updatedAt).getTime();
     });

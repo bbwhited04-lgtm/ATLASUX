@@ -235,15 +235,112 @@ model audit_events {
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model intents {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id   String    @db.Uuid
-  agent_id    String?   @db.Uuid
-  intent_type String?
-  payload     Json?
-  sgl_result  String?
-  status      String?   @default("DRAFT")
-  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+/// Engine intent queue (Atlas engine)
+model Intent {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  agentId    String?   @map("agent_id") @db.Uuid
+  intentType String?   @map("intent_type")
+  payload    Json?     @default("{}")
+  sglResult  String?   @map("sgl_result")
+  status     String?   @default("DRAFT")
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([tenantId], map: "intents_tenant_idx")
+  @@index([status], map: "intents_status_idx")
+  @@map("intents")
+}
+
+/// Knowledge base chunks (derived from kb_documents)
+model KbChunk {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  documentId      String   @map("document_id") @db.Uuid
+  idx             Int
+  charStart       Int      @map("char_start")
+  charEnd         Int      @map("char_end")
+  content         String
+  sourceUpdatedAt DateTime @map("source_updated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @map("updated_at")
+
+  tenant   Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document KbDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, idx], map: "kb_chunks_document_id_idx_key")
+  @@index([tenantId, documentId], map: "kb_chunks_tenant_id_document_id_idx")
+  @@index([tenantId, updatedAt], map: "kb_chunks_tenant_id_updated_at_idx")
+  @@map("kb_chunks")
+}
+
+/// Decision memos (spend/approval governance)
+model DecisionMemo {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  agent            String
+  title            String
+  rationale        String
+  estimatedCostUsd Float    @default(0) @map("estimated_cost_usd")
+  billingType      String   @default("none") @map("billing_type")
+  riskTier         Int      @default(0) @map("risk_tier")
+  confidence       Float    @default(0.5)
+  expectedBenefit  String?  @map("expected_benefit")
+  requiresApproval Boolean  @default(false) @map("requires_approval")
+  status           String   @default("PROPOSED")
+  payload          Json?    @default("{}")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([tenantId, createdAt(sort: Desc)], map: "decision_memos_tenant_time_idx")
+  @@map("decision_memos")
+}
+
+/// Distribution events (publishes/posts)
+model DistributionEvent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  agent       String   @default("unknown")
+  channel     String   @default("other")
+  eventType   String   @map("event_type")
+  url         String?
+  meta        Json?    @default("{}")
+  impressions Int?
+  clicks      Int?
+  conversions Int?
+  occurredAt  DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([tenantId, occurredAt(sort: Desc)], map: "distribution_events_tenant_time_idx")
+  @@map("distribution_events")
+}
+
+/// Daily metrics snapshots (stored JSON)
+model MetricsSnapshot {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  date      DateTime @db.Date
+  data      Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, date], map: "metrics_snapshot_tenant_date_key")
+  @@index([tenantId, date(sort: Desc)], map: "metrics_snapshot_tenant_date_idx")
+  @@map("metrics_snapshots")
+}
+
+/// Growth loop runs (one per day)
+model GrowthLoopRun {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  runDate        DateTime @map("run_date") @db.Date
+  status         String   @default("STARTED")
+  decisionMemoId String?  @map("decision_memo_id") @db.Uuid
+  summary        Json?    @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, runDate], map: "growth_loop_runs_tenant_run_date_key")
+  @@map("growth_loop_runs")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.

@@ -21,7 +21,7 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
     const job = await prisma.job.create({
       data: {
         tenantId: body.tenantId,
-        requestedBy: (req as any).user?.id ?? body.tenantId,
+        requested_by_user_id: (req as any).user?.id ?? body.tenantId,
         status: "queued",
         jobType: "EMAIL_SEND",
         priority: 5,

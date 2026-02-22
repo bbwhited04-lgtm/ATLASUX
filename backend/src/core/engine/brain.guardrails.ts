@@ -12,7 +12,7 @@
  * - AUDIT_BUCKET
  */
 
-import type { LlmRoute, LlmProvider } from "./brain.registry";
+import type { LlmRoute, LlmProvider } from "./brain.registry.js";
 
 export type DenyReasonCode =
   | "DAILY_BUDGET_EXCEEDED"

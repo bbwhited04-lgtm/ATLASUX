@@ -127,8 +127,8 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
         kind: p.kind,
         connected: row?.connected ?? false,
         scopes: Array.isArray(scopes) ? scopes : p.defaultScopes,
-        lastSyncAt: row?.lastSyncAt ?? null,
-        updatedAt: row?.updatedAt ?? null,
+        last_sync_at: row?.last_sync_at ?? null,
+        updated_at: row?.updated_at ?? null,
         // Optional: include lightweight status/config (safe for UI)
         status: row?.status ?? {},
         config: row?.config ?? {},
@@ -154,7 +154,7 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
 
     const items = await prisma.integration.findMany({
       where: { tenantId: tenant.id },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { updated_at: "desc" },
     });
 
     return reply.send({
@@ -203,7 +203,7 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
       where: { tenantId_provider: { tenantId: tenant.id, provider: provider as any } },
       update: {
         connected: false,
-        accessToken: null,
+        access_token: null,
         refreshToken: null,
         tokenExpires: null,
         status: {},
@@ -258,7 +258,7 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
       org_id: orgSlug,
       provider,
       connected: updated.connected,
-      updatedAt: updated.updatedAt,
+      updated_at: updated.updated_at,
     });
   });
 };

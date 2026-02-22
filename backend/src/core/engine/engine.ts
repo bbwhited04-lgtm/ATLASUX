@@ -9,11 +9,18 @@ export async function engineTick() {
   const intent = await claimNextIntent();
   if (!intent) return { ran: false };
 
+  const requestedBy =
+    (intent.payload && typeof intent.payload === "object" && !Array.isArray(intent.payload)
+      ? (intent.payload as any).requestedBy
+      : null) ??
+    intent.agentId ??
+    intent.tenantId;
+
   try {
     await prisma.auditLog.create({
       data: {
         tenantId: intent.tenantId,
-        actorUserId: intent.createdBy,
+        actorUserId: requestedBy,
         actorType: "user",
         level: "info",
         action: "ENGINE_CLAIMED_INTENT",
@@ -42,7 +49,7 @@ export async function engineTick() {
     // Gate (SGL + human-in-loop)
     const gate = await atlasExecuteGate({
       tenantId: intent.tenantId,
-      userId: intent.createdBy,
+      userId: requestedBy,
       intentType: intent.intentType,
       payload: intent.payload,
       dataClass:
@@ -76,7 +83,7 @@ if (intent.intentType === "ENGINE_RUN") {
     await prisma.auditLog.create({
       data: {
         tenantId: intent.tenantId,
-        actorUserId: intent.createdBy,
+        actorUserId: requestedBy,
         actorType: "user",
         level: "error",
         action: "WORKFLOW_NOT_FOUND",
@@ -94,7 +101,7 @@ if (intent.intentType === "ENGINE_RUN") {
 
   const res = await handler({
     tenantId: intent.tenantId,
-    requestedBy: intent.createdBy,
+    requestedBy,
     agentId,
     workflowId,
     input: p.input ?? {},
@@ -107,7 +114,7 @@ if (intent.intentType === "ENGINE_RUN") {
   await prisma.auditLog.create({
     data: {
       tenantId: intent.tenantId,
-      actorUserId: intent.createdBy,
+      actorUserId: requestedBy,
       actorType: "user",
       level: res.ok ? "info" : "error",
       action: "WORKFLOW_COMPLETE",
@@ -128,7 +135,7 @@ await prisma.intent.update({
 await prisma.auditLog.create({
   data: {
     tenantId: intent.tenantId,
-    actorUserId: intent.createdBy,
+    actorUserId: requestedBy,
     actorType: "user",
     level: "info",
     action: "ENGINE_EXECUTED_INTENT",
@@ -151,7 +158,7 @@ return { ran: true, result: execOutput ?? { ok: true } };
     await prisma.auditLog.create({
       data: {
         tenantId: intent.tenantId,
-        actorUserId: intent.createdBy,
+        actorUserId: requestedBy,
         actorType: "user",
         level: "error",
         action: "ENGINE_FAILED",
