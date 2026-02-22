@@ -1,3 +1,9 @@
+
+function asEnumValue(e: any, v: unknown) {
+  if (typeof v !== "string") return undefined;
+  return Object.values(e).includes(v) ? v : undefined;
+}
+
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../prisma.js";
 

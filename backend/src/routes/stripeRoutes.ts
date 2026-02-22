@@ -49,7 +49,6 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
     const intent = await prisma.intent.create({
       data: {
         tenantId,
-        createdBy: userId,
         intentType: "stripe.create_product",
         payload: {
           ...body,

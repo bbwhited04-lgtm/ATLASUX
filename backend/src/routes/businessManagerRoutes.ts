@@ -204,7 +204,7 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
       update: {
         connected: false,
         access_token: null,
-        refreshToken: null,
+        refresh_token: null,
         tokenExpires: null,
         status: {},
       },
