@@ -1,16 +1,16 @@
-
-function asEnumValue(e: any, v: unknown) {
-  if (typeof v !== "string") return undefined;
-  return Object.values(e).includes(v) ? v : undefined;
-}
-
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../prisma.js";
+import { TicketCategory, TicketSeverity, TicketStatus } from "@prisma/client";
 
 // Lightweight beta ticketing (NOT a full helpdesk).
 // Goal: structured feedback + traceability tied to runs.
 
 export const ticketsRoutes: FastifyPluginAsync = async (app) => {
+  const asEnum = <T extends Record<string, string>>(e: T, v: unknown): T[keyof T] | undefined => {
+    if (typeof v !== "string") return undefined;
+    return (Object.values(e) as string[]).includes(v) ? (v as T[keyof T]) : undefined;
+  };
+
   // Create ticket
   app.post("/", async (req, reply) => {
     const body = (req.body as any) ?? {};
@@ -28,9 +28,9 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
         agent: body.agent ? String(body.agent) : null,
         title,
         description: body.description ? String(body.description) : null,
-        category: body.category ? String(body.category) : undefined,
-        severity: body.severity ? String(body.severity) : undefined,
-        status: body.status ? String(body.status) : undefined,
+	        category: asEnum(TicketCategory, body.category),
+	        severity: asEnum(TicketSeverity, body.severity),
+	        status: asEnum(TicketStatus, body.status),
         meta: body.meta ?? undefined,
       },
     });

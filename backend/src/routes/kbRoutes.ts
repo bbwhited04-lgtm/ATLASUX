@@ -209,6 +209,7 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
   await prisma.$transaction(async (tx) => {
     await tx.kbChunk.deleteMany({ where: { tenantId, documentId: id } });
     if (chunks.length > 0) {
+	    const now = new Date();
       await tx.kbChunk.createMany({
         data: chunks.map((c) => ({
           tenantId,
@@ -218,6 +219,7 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
           charEnd: c.charEnd,
           content: c.content,
           sourceUpdatedAt: doc.updatedAt,
+	        updatedAt: now,
         })),
       });
     }

@@ -9,12 +9,14 @@ export async function engineTick() {
   const intent = await claimNextIntent();
   if (!intent) return { ran: false };
 
-  const requestedBy =
+  // Ensure this is always a string (some payloads/agentId can be null/undefined)
+  const requestedBy = String(
     (intent.payload && typeof intent.payload === "object" && !Array.isArray(intent.payload)
       ? (intent.payload as any).requestedBy
       : null) ??
-    intent.agentId ??
-    intent.tenantId;
+      intent.agentId ??
+      intent.tenantId,
+  );
 
   try {
     await prisma.auditLog.create({
@@ -50,7 +52,7 @@ export async function engineTick() {
     const gate = await atlasExecuteGate({
       tenantId: intent.tenantId,
       userId: requestedBy,
-      intentType: intent.intentType,
+      intentType: intent.intentType ?? "unknown",
       payload: intent.payload,
       dataClass:
       (payload.dataClass === "NONE" || payload.dataClass === "PII" || payload.dataClass === "PHI"
