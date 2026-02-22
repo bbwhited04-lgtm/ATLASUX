@@ -23,6 +23,7 @@ model Tenant {
   kbTags                                   KbTag[]
   ledger                                   LedgerEntry[]
   members                                  TenantMember[]
+  KbChunk                                  KbChunk[]
 
   @@map("tenants")
 }
@@ -159,7 +160,7 @@ model KbDocument {
   tags      KbTagOnDocument[]
 
   // ✅ THIS is what Prisma is complaining about (the “opposite relation field”)
-  chunks    KbChunk[]         @relation("KbDocumentChunks")
+  chunks KbChunk[] @relation("KbDocumentChunks")
 
   @@unique([tenantId, slug])
   @@index([tenantId, status, updatedAt])
@@ -267,7 +268,7 @@ model KbChunk {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @map("updated_at")
 
-  tenant   Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // ✅ ADD relation name so Prisma pairs it cleanly
   document KbDocument @relation("KbDocumentChunks", fields: [documentId], references: [id], onDelete: Cascade)
@@ -277,7 +278,6 @@ model KbChunk {
   @@index([tenantId, updatedAt], map: "kb_chunks_tenant_id_updated_at_idx")
   @@map("kb_chunks")
 }
-
 
 /// Decision memos (spend/approval governance)
 model DecisionMemo {
