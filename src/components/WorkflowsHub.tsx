@@ -17,7 +17,17 @@ type RunStatus = {
   error?: string;
 };
 
-const DEFAULT_WORKFLOWS = [
+
+
+type WorkflowItem = {
+  id: string; // UI expects id; backend uses workflow_key
+  name: string;
+  description?: string;
+  agent_key?: string;
+  status?: string;
+  version?: string;
+};
+const DEFAULT_WORKFLOWS: WorkflowItem[] = [
   { id: "WF-001", name: "Support Intake (Cheryl)", description: "Create ticket → classify → acknowledge → route → audit." },
   { id: "WF-002", name: "Support Escalation (Cheryl)", description: "Package escalation packet and route to the correct executive owner." },
   { id: "WF-010", name: "Daily Executive Brief (Binky)", description: "Daily intel digest with internal traceability." },
@@ -34,15 +44,31 @@ export function WorkflowsHub() {
   const [runResp, setRunResp] = React.useState<RunResponse | null>(null);
   const [status, setStatus] = React.useState<RunStatus | null>(null);
   const [loading, setLoading] = React.useState(false);
-  const [workflows, setWorkflows] = React.useState<typeof DEFAULT_WORKFLOWS>(DEFAULT_WORKFLOWS as any);
+  const [workflows, setWorkflows] = React.useState<WorkflowItem[]>(DEFAULT_WORKFLOWS);
 
 React.useEffect(() => {
   // prefer backend-provided catalog if available
   fetch(`${API_BASE}/v1/workflows`)
     .then((r) => r.json())
     .then((d) => {
-      if (d?.ok && Array.isArray(d.workflows) && d.workflows.length) {
-        setWorkflows(d.workflows);
+      const rows = Array.isArray(d?.workflows) ? d.workflows : [];
+      const normalized: WorkflowItem[] = rows
+        .map((w: any) => {
+          const id = String(w?.workflow_key ?? w?.id ?? w?.workflowId ?? "").trim();
+          if (!id) return null;
+          return {
+            id,
+            name: String(w?.name ?? id),
+            description: w?.description ? String(w.description) : undefined,
+            agent_key: w?.agent_key ? String(w.agent_key) : (w?.agentKey ? String(w.agentKey) : undefined),
+            status: w?.status ? String(w.status) : undefined,
+            version: w?.version ? String(w.version) : undefined,
+          } as WorkflowItem;
+        })
+        .filter(Boolean) as WorkflowItem[];
+
+      if (d?.ok && normalized.length) {
+        setWorkflows(normalized);
       }
     })
     .catch(() => {});
@@ -164,8 +190,8 @@ React.useEffect(() => {
               onChange={(e) => setWorkflowId(e.target.value)}
               className="mt-1 w-full rounded-xl bg-white border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none"
             >
-              {(workflows as any).map((w: any) => (
-                <option key={w.id} value={w.id}>{w.id}</option>
+              {workflows.map((w) => (
+                <option key={w.id} value={w.id}>{w.id} — {w.name}</option>
               ))}
             </select>
           </div>
@@ -197,7 +223,7 @@ React.useEffect(() => {
           <div className="rounded-xl bg-white border border-slate-200 p-3">
             <div className="text-base text-slate-800">Workflow Map</div>
             <ul className="mt-2 space-y-2 text-xs text-slate-700">
-              {(workflows as any).map((w: any) => (
+              {workflows.map((w) => (
                 <li key={w.id}>
                   <div className="text-slate-800">{w.id} — {w.name}</div>
                   <div className="text-slate-800">{w.description}</div>
