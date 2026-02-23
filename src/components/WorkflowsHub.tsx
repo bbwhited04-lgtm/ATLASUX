@@ -1,6 +1,6 @@
 import * as React from "react";
 import { API_BASE } from "../lib/api";
-import { Play, RefreshCw, Workflow } from "lucide-react";
+import { Play, RefreshCw, Workflow, Power, Activity } from "lucide-react";
 import { useActiveTenant } from "../lib/activeTenant";
 
 type RunResponse = {
@@ -45,6 +45,9 @@ export function WorkflowsHub() {
   const [status, setStatus] = React.useState<RunStatus | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [workflows, setWorkflows] = React.useState<WorkflowItem[]>(DEFAULT_WORKFLOWS);
+  const [atlasOnline, setAtlasOnline] = React.useState<boolean | null>(null);
+  const [atlasStateLoading, setAtlasStateLoading] = React.useState(false);
+  const [atlasStateErr, setAtlasStateErr] = React.useState<string | null>(null);
 
   // Manual input payload (alpha): lets you run workflows that require fields (ex: WF-001 customerEmail)
   const storageKey = React.useMemo(
@@ -176,6 +179,42 @@ React.useEffect(() => {
     } finally {
       setLoading(false);
     }
+
+  async function fetchAtlasState() {
+    setAtlasStateLoading(true);
+    setAtlasStateErr(null);
+    try {
+      const res = await fetch(`${API_BASE}/v1/api/system/state/atlas_online`);
+      const data = (await res.json()) as any;
+      const v = String(data?.state?.value ?? "");
+      if (!data?.ok) throw new Error(data?.error ?? "Failed to read atlas state");
+      if (v === "true") setAtlasOnline(true);
+      else if (v === "false") setAtlasOnline(false);
+      else setAtlasOnline(null);
+    } catch (e: any) {
+      setAtlasStateErr(e?.message ?? String(e));
+      setAtlasOnline(null);
+    } finally {
+      setAtlasStateLoading(false);
+    }
+  }
+
+  async function setAtlasOnlineState(next: boolean) {
+    setAtlasStateLoading(true);
+    setAtlasStateErr(null);
+    try {
+      const url = next ? `${API_BASE}/v1/api/system/atlas/online` : `${API_BASE}/v1/api/system/atlas/offline`;
+      const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
+      const data = (await res.json()) as any;
+      if (!data?.ok) throw new Error(data?.error ?? "Failed to set atlas state");
+      const v = String(data?.state?.value ?? "");
+      setAtlasOnline(v === "true");
+    } catch (e: any) {
+      setAtlasStateErr(e?.message ?? String(e));
+    } finally {
+      setAtlasStateLoading(false);
+    }
+  }
   }
 
   return (
@@ -297,10 +336,35 @@ React.useEffect(() => {
             <RefreshCw className="h-4 w-4" /> Refresh status
           </button>
 
-          <div className="text-base text-slate-800 self-center">
+          
+          <button
+            onClick={() => setAtlasOnlineState(!(atlasOnline ?? false))}
+            disabled={atlasStateLoading}
+            className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-300 px-4 py-2 text-base text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+            title="Toggle Atlas online/offline (system state)"
+          >
+            <Power className="h-4 w-4" />
+            Atlas: {atlasOnline === null ? "unknown" : atlasOnline ? "online" : "offline"}
+          </button>
+
+          <button
+            onClick={fetchAtlasState}
+            disabled={atlasStateLoading}
+            className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-300 px-4 py-2 text-base text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+            title="Refresh Atlas state"
+          >
+            <Activity className="h-4 w-4" /> State
+          </button>
+<div className="text-base text-slate-800 self-center">
             Backend: <span className="text-slate-800">{API_BASE}</span>
           </div>
         </div>
+
+        {atlasStateErr ? (
+          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            Atlas state error: {atlasStateErr}
+          </div>
+        ) : null}
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-xl bg-white border border-slate-200 p-3">
