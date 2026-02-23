@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { 
   Calendar, Clock, Users, MapPin, Video,
   Brain, Sparkles, CheckCircle, AlertCircle, Plus,
   TrendingUp, Plane, Zap, FileText, Bell, Download,
   RefreshCw, Link, ExternalLink, Upload
 } from 'lucide-react';
+import { API_BASE } from '@/lib/api';
+import { getOrgUser } from '@/lib/org';
 
 export function CalendarScheduling() {
   const [connectedCalendars, setConnectedCalendars] = useState<any[]>([]);
+  const { org_id, user_id } = useMemo(() => getOrgUser(), []);
   
   const stats = {
     meetingsThisWeek: 0,
@@ -71,6 +74,12 @@ export function CalendarScheduling() {
       requiresOAuth: false
     }
   ];
+
+  function connect(providerId: string) {
+    const qs = new URLSearchParams({ org_id, user_id }).toString();
+    // Backend should implement this for real OAuth; for alpha, we at least route consistently.
+    window.open(`${API_BASE}/v1/oauth/${providerId}/start?${qs}`, "_blank", "noopener,noreferrer");
+  }
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -161,7 +170,10 @@ export function CalendarScheduling() {
                       <p className="text-xs text-slate-400">{provider.description}</p>
                     </div>
                   </div>
-                  <button className="w-full py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-sm text-cyan-400 font-medium transition-colors flex items-center justify-center gap-2 group-hover:bg-cyan-500 group-hover:text-white">
+                  <button
+                    onClick={() => connect(provider.id)}
+                    className="w-full py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-sm text-cyan-400 font-medium transition-colors flex items-center justify-center gap-2 group-hover:bg-cyan-500 group-hover:text-white"
+                  >
                     <Link className="w-4 h-4" />
                     Connect {provider.name}
                   </button>

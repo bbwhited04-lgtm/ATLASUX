@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { FileText } from "lucide-react";
 import {
   Settings as SettingsIcon,
@@ -46,6 +46,8 @@ import Integrations from './Integrations';
 import { FileManagement } from './FileManagement';
 import { ProcessingSettings } from './ProcessingSettings'; 
 import { MobileIntegration } from './premium/MobileIntegration';
+import { API_BASE } from "@/lib/api";
+import { getOrgUser } from "@/lib/org";
 
 // Icon mapping for permissions
 const iconMap: Record<string, any> = {
@@ -141,8 +143,33 @@ const defaultDriveAccess = [
 ];
 
 export function Settings() {
+  const { org_id, user_id } = useMemo(() => getOrgUser(), []);
   const [permissions, setPermissions] = useState<any[]>(defaultPermissions);
   const [driveAccess, setDriveAccess] = useState<any[]>(defaultDriveAccess);
+
+  // Audit log (read-only)
+  const [auditRows, setAuditRows] = useState<any[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
+
+  const loadAudit = async () => {
+    setAuditLoading(true);
+    setAuditError(null);
+    try {
+      const qs = new URLSearchParams({ org_id, user_id, limit: "100" }).toString();
+      const res = await fetch(`${API_BASE}/v1/audit/list?${qs}`);
+      const json = await res.json().catch(() => ({ ok: false, rows: [] }));
+      const rows = (json?.items ?? json?.rows ?? []) as any[];
+      setAuditRows(Array.isArray(rows) ? rows : []);
+      if (!res.ok || json?.ok === false) {
+        setAuditError(String(json?.error || json?.message || "audit_load_failed"));
+      }
+    } catch (e: any) {
+      setAuditError(e?.message || "audit_load_failed");
+    } finally {
+      setAuditLoading(false);
+    }
+  };
   
   // Admin login state
   const [adminEmail, setAdminEmail] = useState('');
@@ -177,6 +204,9 @@ export function Settings() {
     if (authStatus) {
       setAdminSession(adminAuth.getAdminSession());
     }
+
+    // Load audit once so the tab is instant
+    void loadAudit();
   }, []);
   
   const togglePermission = (id: string) => {
@@ -305,6 +335,10 @@ export function Settings() {
             <Plug className="w-4 h-4 mr-2" />
             Integrations
           </TabsTrigger>
+          <TabsTrigger value="audit" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <FileText className="w-4 h-4 mr-2" />
+            Audit Log
+          </TabsTrigger>
           <TabsTrigger value="performance" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Gauge className="w-4 h-4 mr-2" />
             Performance
@@ -321,6 +355,75 @@ export function Settings() {
             Security
           </TabsTrigger>
         </TabsList>
+
+        {/* Audit Log Tab */}
+        <TabsContent value="audit" className="space-y-4">
+          <Card className="bg-slate-900/50 border-cyan-500/20 p-6">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <FileText className="w-5 h-5 text-cyan-400" />
+                Audit Log
+              </h3>
+              <Button variant="outline" onClick={loadAudit} disabled={auditLoading}>
+                {auditLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Refreshing
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {auditError && (
+              <div className="p-3 mb-4 rounded-lg border border-red-500/30 bg-red-500/10 text-sm text-red-200">
+                {auditError}
+              </div>
+            )}
+
+            <div className="text-sm text-slate-400 mb-3">
+              Read-only trail of actions and engine runs. This is your alpha proof recorder.
+            </div>
+
+            <ScrollArea className="h-[520px] rounded-lg border border-cyan-500/10 bg-slate-950/30">
+              <div className="p-3 space-y-2">
+                {auditRows.length === 0 && !auditLoading ? (
+                  <div className="text-slate-400 text-sm p-6 text-center">
+                    No audit events yet.
+                  </div>
+                ) : (
+                  auditRows.map((r, idx) => (
+                    <div key={r?.id ?? idx} className="p-3 rounded-lg bg-slate-900/40 border border-slate-800">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-white font-medium truncate">
+                          {r?.action ?? r?.event ?? "audit.event"}
+                        </div>
+                        <Badge variant="outline" className="border-cyan-500/20 text-cyan-300">
+                          {String(r?.status ?? r?.level ?? "info")}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-slate-400 mt-1">
+                        {String(r?.createdAt ?? r?.created_at ?? r?.occurredAt ?? "")}
+                      </div>
+                      {r?.message && (
+                        <div className="text-sm text-slate-300 mt-2 whitespace-pre-wrap">{String(r.message)}</div>
+                      )}
+                      {r?.metadata && (
+                        <pre className="mt-2 text-xs text-slate-300 bg-slate-950/40 border border-slate-800 rounded p-2 overflow-auto">
+{JSON.stringify(r.metadata, null, 2)}
+                        </pre>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </Card>
+        </TabsContent>
         
         {/* General Tab */}
         <TabsContent value="general" className="space-y-4">
