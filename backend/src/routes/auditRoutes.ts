@@ -46,6 +46,10 @@ async function safeCreate(args: any) {
 }
 
 export const auditRoutes: FastifyPluginAsync = async (app) => {
+const isUuid = (v: any) =>
+  typeof v === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+
   /**
    * GET /v1/audit/health
    */
@@ -76,15 +80,23 @@ export const auditRoutes: FastifyPluginAsync = async (app) => {
 
     const cursor = typeof q.cursor === "string" && q.cursor.length ? q.cursor : undefined;
 
-    // Accept both naming styles coming from your UI
-    const tenantId = q.tenantId ?? q.org_id ?? q.orgId ?? null;
-    const actorId = q.actorId ?? q.user_id ?? q.userId ?? null;
+    // Accept both naming styles coming from your UI.
+// IMPORTANT: DB expects tenantId as UUID, but UI often sends demo_org.
+// So we only apply the tenantId filter if it looks like a UUID.
+const tenantIdRaw = q.tenantId ?? q.tenant_id ?? q.org_id ?? q.orgId ?? null;
+const actorRaw = q.actorId ?? q.actor_id ?? q.user_id ?? q.userId ?? null;
 
-    const where: any = {};
-    if (tenantId) where.tenantId = tenantId;
-    if (actorId) where.actorId = actorId;
-    if (q.action) where.action = q.action;
-    if (q.level) where.level = q.level;
+const where: any = {};
+if (isUuid(tenantIdRaw)) where.tenantId = tenantIdRaw;
+
+// Actor filtering: support either a UUID user (actorUserId) or a string external id (actorExternalId)
+if (actorRaw) {
+  if (isUuid(actorRaw)) where.actorUserId = actorRaw;
+  else where.actorExternalId = String(actorRaw);
+}
+
+if (q.action) where.action = q.action;
+if (q.level) where.level = q.level;
 
     // Try "createdAt" ordering first, then fallback without orderBy if schema differs
     const baseArgs: any = {
@@ -154,7 +166,7 @@ export const auditRoutes: FastifyPluginAsync = async (app) => {
     // Keep payload permissive; your plugin can enforce later.
     const data: any = {
       tenantId: body.tenantId ?? body.org_id ?? body.orgId ?? null,
-      actorId: body.actorId ?? body.user_id ?? body.userId ?? null,
+      actorExternalId: String(body.actorId ?? body.actor_id ?? body.user_id ?? body.userId ?? ''),
       actorType: body.actorType ?? null,
       action: body.action ?? "manual_event",
       level: body.level ?? "info",
