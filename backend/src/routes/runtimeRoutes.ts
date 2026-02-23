@@ -10,7 +10,7 @@ const router = Router();
 router.get("/status", async (_req, res) => {
   try {
     // 🔹 engine state
-    const state = await prisma.sytemState.findUnique({
+    const state = await prisma.sytem_state.findUnique({
       where: { key: "atlas_online" }
     });
 
