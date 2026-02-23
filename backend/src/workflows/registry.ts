@@ -87,6 +87,51 @@ const handlers: Record<string, WorkflowHandler> = {
     return { ok: true, message: "Smoke test executed", output: { traceId: ctx.traceId ?? null } };
   },
 
+  "WF-021": async (ctx) => {
+    await writeStepAudit(ctx, "bootstrap.start", "Bootstrapping Atlas");
+
+    const workflowCatalog = WORKFLOWS.map((w) => ({
+      id: w.id,
+      name: w.name,
+      description: w.description,
+      ownerAgent: w.ownerAgent,
+    }));
+
+    const n8nCount = Array.isArray(n8nWorkflows) ? n8nWorkflows.length : 0;
+
+    // Optional: queue a boot email for traceability (only if caller provides an address)
+    const to = String(ctx.input?.emailTo ?? "").trim();
+    if (to) {
+      await queueEmail(ctx, {
+        to,
+        subject: "Atlas is online",
+        text:
+          "Atlas bootstrap complete. I can see the workflow catalog and I'm ready for commands.\n\n" +
+          `Workflows: ${workflowCatalog.length}\n` +
+          `n8n templates: ${n8nCount}\n\n` +
+          "Reply with what you want me to do next.",
+        fromAgent: "atlas",
+      });
+    }
+
+    await writeStepAudit(ctx, "bootstrap.ready", "Atlas bootstrap complete", {
+      workflowCount: workflowCatalog.length,
+      n8nCount,
+    });
+
+    return {
+      ok: true,
+      message: "Bootstrap complete",
+      output: {
+        workflowCatalog,
+        n8nCount,
+        next: "AWAIT_COMMAND",
+        traceId: ctx.traceId ?? null,
+      },
+    };
+  },
+
+
   "WF-001": async (ctx) => {
     // Input expected: { customerEmail, subject, message, category? }
     const customerEmail = String(ctx.input?.customerEmail ?? "").trim();

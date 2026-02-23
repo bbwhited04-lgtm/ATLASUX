@@ -128,12 +128,20 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
 
   // Bulk fetch chunks for all picked docs.
   const docIds = picked.map((d) => d.id);
+  // NOTE: Some deployments may not have the Prisma model for kb_chunks generated.
+  // To keep alpha builds unblocked, read chunks via SQL.
   const chunks = docIds.length
-    ? await prisma.kbChunk.findMany({
-        where: { tenantId, documentId: { in: docIds } },
-        orderBy: [{ documentId: "asc" }, { idx: "asc" }],
-        select: { id: true, documentId: true, idx: true, content: true, sourceUpdatedAt: true },
-      })
+    ? ((await prisma.$queryRaw`
+        select id::text as id,
+               document_id::text as "documentId",
+               idx,
+               content,
+               source_updated_at as "sourceUpdatedAt"
+        from kb_chunks
+        where tenant_id = ${tenantId}::uuid
+          and document_id = any(${docIds}::uuid[])
+        order by document_id asc, idx asc
+      `) as any[])
     : [];
 
   const chunksByDoc = new Map<string, typeof chunks>();

@@ -135,7 +135,14 @@ export async function kbRoutes(app: FastifyInstance) {
 
     if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
 
-        const chunkCount = await prisma.kbChunk.count({ where: { tenantId, documentId: doc.id } });
+    // Read chunk count via SQL to avoid Prisma-client model drift in some deployments.
+    const chunkCountRows = (await prisma.$queryRaw`
+      select count(*)::int as count
+      from kb_chunks
+      where tenant_id = ${tenantId}::uuid
+        and document_id = ${doc.id}::uuid
+    `) as any[];
+    const chunkCount = chunkCountRows?.[0]?.count ?? 0;
 
 return reply.send({
       ok: true,
@@ -165,12 +172,18 @@ app.get("/documents/:id/chunks", async (req, reply) => {
   });
   if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
 
-  const chunks = await prisma.kbChunk.findMany({
-    where: { tenantId, documentId: id },
-    orderBy: { idx: "asc" },
-    select: { idx: true, charStart: true, charEnd: true, content: true, sourceUpdatedAt: true },
-    take: 2000,
-  });
+  const chunks = ((await prisma.$queryRaw`
+    select idx,
+           char_start as "charStart",
+           char_end as "charEnd",
+           content,
+           source_updated_at as "sourceUpdatedAt"
+    from kb_chunks
+    where tenant_id = ${tenantId}::uuid
+      and document_id = ${id}::uuid
+    order by idx asc
+    limit 2000
+  `) as any[]);
 
   return reply.send({
     ok: true,
@@ -207,22 +220,26 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
   const chunks = makeChunksByChars(body, targetSize, softWindow);
 
   await prisma.$transaction(async (tx) => {
-    await tx.kbChunk.deleteMany({ where: { tenantId, documentId: id } });
+    // Delete existing chunks
+    await tx.$executeRaw`
+      delete from kb_chunks
+      where tenant_id = ${tenantId}::uuid
+        and document_id = ${id}::uuid
+    `;
+
     if (chunks.length > 0) {
-	    const now = new Date();
-      await tx.kbChunk.createMany({
-        data: chunks.map((c) => ({
-          tenantId,
-          documentId: id,
-          idx: c.idx,
-          charStart: c.charStart,
-          charEnd: c.charEnd,
-          content: c.content,
-          sourceUpdatedAt: doc.updatedAt,
-	        updatedAt: now,
-        })),
-      });
+      const now = new Date();
+      // Insert new chunks (row-by-row keeps this simple and safe for alpha)
+      for (const c of chunks) {
+        await tx.$executeRaw`
+          insert into kb_chunks
+            (tenant_id, document_id, idx, char_start, char_end, content, source_updated_at, created_at, updated_at)
+          values
+            (${tenantId}::uuid, ${id}::uuid, ${c.idx}, ${c.charStart}, ${c.charEnd}, ${c.content}, ${doc.updatedAt}, now(), ${now})
+        `;
+      }
     }
+
     // Touch the document updatedBy for audit trace
     await tx.kbDocument.update({
       where: { id },
