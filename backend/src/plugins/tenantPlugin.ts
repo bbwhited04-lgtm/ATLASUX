@@ -11,7 +11,12 @@ export const tenantPlugin: FastifyPluginAsync = async (app) => {
     const url = req.url || "";
     if (
       url.startsWith("/v1/") &&
-      (url.startsWith("/v1/audit") || url.startsWith("/v1/health") || url === "/v1")
+      (
+        url.startsWith("/v1/audit") ||
+        url.startsWith("/v1/health") ||
+        url.startsWith("/v1/email/inbound") ||
+        url === "/v1"
+      )
     ) {
       return;
     }

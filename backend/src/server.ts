@@ -13,6 +13,7 @@ import { systemStateRoutes } from "./routes/systemStateRoutes.js";
 import { workflowsRoutes } from "./routes/workflowsRoutes.js";
 import { tasksRoutes } from "./routes/tasksRoutes.js";
 import { commsRoutes } from "./routes/commsRoutes.js";
+import { emailRoutes } from "./routes/emailRoutes.js";
 
 // Routes
 import { chatRoutes } from "./routes/chatRoutes.js";
@@ -71,7 +72,20 @@ await app.register(cors, {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "x-tenant-id", "x-user-id", "x-actor-user-id", "x-external-id", "x-actor-external-id", "x-actor-type", "x-device-id", "x-request-id", "x-client-source"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "x-tenant-id",
+    "x-user-id",
+    "x-actor-user-id",
+    "x-external-id",
+    "x-actor-external-id",
+    "x-actor-type",
+    "x-device-id",
+    "x-request-id",
+    "x-client-source",
+    "x-inbound-secret",
+  ],
 });
 
 // Plugins (order matters)
@@ -84,6 +98,7 @@ await app.register(agentsRoutes, { prefix: "/v1/agents" });
 await app.register(workflowsRoutes, { prefix: "/v1/workflows" });
 await app.register(tasksRoutes, { prefix: "/v1/tasks" });
 await app.register(commsRoutes, { prefix: "/v1/comms" });
+await app.register(emailRoutes, { prefix: "/v1/email" });
 await app.register(systemStateRoutes, { prefix: "/v1" });
 
 // Route prefixes
