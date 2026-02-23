@@ -40,6 +40,51 @@ export function WorkflowsHub() {
   const [tenantId, setTenantId] = React.useState<string>(activeTenantId ?? "");
   const [agentId, setAgentId] = React.useState<string>("atlas");
   const [workflowId, setWorkflowId] = React.useState<string>("WF-021");
+  const storageKey = React.useMemo(
+    () => `atlasux.workflowInput.${tenantId || "_"}.${agentId}.${workflowId}`,
+    [tenantId, agentId, workflowId]
+  );
+
+  const templateFor = React.useCallback((wf: string) => {
+    // Minimal, high-signal templates so you can run workflows before full ingest pipelines exist.
+    switch (wf) {
+      case "WF-001":
+        return {
+          customerEmail: "test@deadapp.info",
+          subject: "Install help",
+          message: "Need assistance installing Atlas UX",
+          source: "manual_ui",
+        };
+      case "WF-002":
+        return {
+          ticketId: "TKT-0001",
+          reason: "Escalation needed",
+          notes: "Customer blocked; needs executive review",
+          source: "manual_ui",
+        };
+      case "WF-010":
+        return {
+          date: new Date().toISOString(),
+          focus: "daily executive brief",
+          source: "manual_ui",
+        };
+      case "WF-020":
+        return { source: "manual_ui" };
+      case "WF-021":
+        return { source: "manual_ui" };
+      default:
+        return { source: "manual_ui" };
+    }
+  }, []);
+
+  const [inputText, setInputText] = React.useState<string>(() => {
+    try {
+      const v = localStorage.getItem(`atlasux.workflowInput._._.${"WF-021"}`);
+      if (v) return v;
+    } catch {}
+    return JSON.stringify(templateFor("WF-021"), null, 2);
+  });
+  const [inputError, setInputError] = React.useState<string>("");
   const [intentId, setIntentId] = React.useState<string>("");
   const [runResp, setRunResp] = React.useState<RunResponse | null>(null);
   const [status, setStatus] = React.useState<RunStatus | null>(null);
@@ -79,10 +124,50 @@ React.useEffect(() => {
     if (!tenantId && activeTenantId) setTenantId(activeTenantId);
   }, [activeTenantId, tenantId]);
 
+  // Load saved input when tenant/agent/workflow changes; otherwise use template.
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved && saved.trim()) {
+        setInputText(saved);
+        setInputError("");
+        return;
+      }
+    } catch {}
+    setInputText(JSON.stringify(templateFor(workflowId), null, 2));
+    setInputError("");
+  }, [storageKey, templateFor, workflowId]);
+
+  // Persist input as you type.
+  React.useEffect(() => {
+    try {
+      if (inputText && storageKey) localStorage.setItem(storageKey, inputText);
+    } catch {}
+  }, [inputText, storageKey]);
+
+  function parseInput(): { ok: true; value: any } | { ok: false; error: string } {
+    const txt = (inputText ?? "").trim();
+    if (!txt) return { ok: true, value: {} };
+    try {
+      const v = JSON.parse(txt);
+      return { ok: true, value: v };
+    } catch (e: any) {
+      return { ok: false, error: e?.message ?? "Invalid JSON" };
+    }
+  }
+
   async function run() {
     setLoading(true);
     setRunResp(null);
     setStatus(null);
+
+    const parsed = parseInput();
+    if (!parsed.ok) {
+      setInputError(parsed.error);
+      setLoading(false);
+      return;
+    }
+    setInputError("");
 
     try {
       const res = await fetch(`${API_BASE}/v1/engine/run`, {
@@ -92,7 +177,7 @@ React.useEffect(() => {
           tenantId,
           agentId,
           workflowId,
-          input: {},
+          input: parsed.value ?? {},
           runTickNow: true,
         }),
       });
@@ -168,7 +253,7 @@ React.useEffect(() => {
               <option value="archy">Archy ~ Team Binky</option>
               <option value="cornwall">Cornwall ~ Pinterest Agent</option>
               <option value="donna">Donna ~ Redditor</option>
-              <option value="ddwight">Dwight ~ Threads Agent</option>
+              <option value="dwight">Dwight ~ Threads Agent</option>
               <option value="emma">Emma ~ Alignable Agent</option>
               <option value="fran">Fran ~ Facebook Agent</option>
               <option value="kelly">Kelly ~ X Agent</option>
@@ -188,12 +273,66 @@ React.useEffect(() => {
             <select
               value={workflowId}
               onChange={(e) => setWorkflowId(e.target.value)}
-              className="mt-1 w-full rounded-xl bg-white border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none"
+              className="mt-1 w-full rounded-xl bg-white border border-slate-400 px-3 py-2 text-base text-slate-900 outline-none"
             >
               {workflows.map((w) => (
                 <option key={w.id} value={w.id}>{w.id} — {w.name}</option>
               ))}
             </select>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-base font-semibold text-slate-800">Input (JSON)</div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setInputText(JSON.stringify(templateFor(workflowId), null, 2))}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50"
+                >
+                  Load template
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInputText("{}")}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              spellCheck={false}
+              className="mt-2 h-44 w-full resize-y rounded-xl border border-slate-400 bg-white px-3 py-2 font-mono text-[12px] text-slate-900 outline-none"
+              placeholder='{"customerEmail":"test@deadapp.info","subject":"Install help","message":"..."}'
+            />
+            {inputError ? (
+              <div className="mt-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700">
+                Invalid JSON: {inputError}
+              </div>
+            ) : (
+              <div className="mt-2 text-xs text-slate-500">
+                Tip: WF-001 requires <code className="text-slate-700">customerEmail</code>. Until email ingest exists, paste it here.
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className="text-base font-semibold text-slate-800">How this helps</div>
+            <div className="mt-2 text-sm text-slate-700 space-y-2">
+              <p>
+                You don&apos;t have an email ingest pipeline yet, so support flows (WF-001) need manual input.
+                This box lets you inject the same payload the future email webhook/poller will send.
+              </p>
+              <p className="text-xs text-slate-500">
+                Saved per tenant + agent + workflow in your browser so you don&apos;t retype.
+              </p>
+            </div>
           </div>
         </div>
 
