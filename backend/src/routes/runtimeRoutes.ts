@@ -10,8 +10,8 @@ const router = Router();
 router.get("/status", async (_req, res) => {
   try {
     // 🔹 engine state
-    const state = await prisma.runtimeState.findUnique({
-      where: { id: "atlas" }
+    const state = await prisma.sytemState.findUnique({
+      where: { key: "atlas_online" }
     });
 
     // 🔹 HIL detection (CANONICAL)
