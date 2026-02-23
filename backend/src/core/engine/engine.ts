@@ -111,7 +111,28 @@ export async function engineTick() {
 
     // Execute workflow for ENGINE_RUN intents (cloud surface)
     if (intent.intentType === "ENGINE_RUN") {
-      const workflowId = String(payload.workflowId ?? "");
+      const isUuid = (v: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+
+let workflow;
+
+if (isUuid(workflowId)) {
+  workflow = await prisma.workflow.findUnique({
+    where: { id: workflowId },
+  });
+} else {
+  workflow = await prisma.workflow.findFirst({
+    where: { workflow_key: workflowId },
+  });
+}
+
+if (!workflow) {
+  return {
+    ok: false,
+    error: "WORKFLOW_NOT_FOUND",
+    workflowId,
+  };
+}
       const agentId = String(payload.agentId ?? "");
 
       const handler = getWorkflowHandler(workflowId);
