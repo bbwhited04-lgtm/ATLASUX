@@ -1,6 +1,6 @@
 import fp from "fastify-plugin";
 import { FastifyPluginAsync } from "fastify";
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 
 let auditDisabled = false;
 let warnedOnce = false;
@@ -25,23 +25,45 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
       const level =
         reply.statusCode >= 500 ? "error" : reply.statusCode >= 400 ? "warn" : "info";
 
-      await prisma.auditLog.create({
-        data: {
-          actorType: "system",
-          actorUserId: null, // TODO: set when auth is wired
-          actorExternalId: null,
-          // If your Prisma schema uses an enum for `level`, Prisma will coerce string values that match enum variants.
-          // If it doesn't, this still works as a plain string.
-          level: level as any,
-          action: `${req.method} ${req.url}`,
-          meta: {
-            source: "api",
-            statusCode: reply.statusCode,
-            ipAddress: req.ip,
+      const base = {
+        actorType: "system",
+        actorUserId: null, // TODO: set when auth is wired
+        actorExternalId: null,
+        // If your Prisma schema uses an enum for `level`, Prisma will coerce string values that match enum variants.
+        // If it doesn't, this still works as a plain string.
+        level: level as any,
+        action: `${req.method} ${req.url}`,
+      };
+
+      // Attempt 1: schema with status/ip/userAgent/metadata as top-level columns
+      try {
+        await prisma.auditLog.create({
+          data: {
+            ...base,
+            status: reply.statusCode >= 400 ? "FAILED" : "SUCCESS",
+            ipAddress: (req as any).ip ?? null,
             userAgent: (req.headers["user-agent"] as string) || null,
+            metadata: {
+              source: "api",
+              statusCode: reply.statusCode,
+            },
           } as any,
-        },
-      });
+        });
+      } catch (_e1) {
+        // Attempt 2: schema where everything is stored in a single JSON field (meta)
+        await prisma.auditLog.create({
+          data: {
+            ...base,
+            meta: {
+              source: "api",
+              statusCode: reply.statusCode,
+              ipAddress: (req as any).ip ?? null,
+              userAgent: (req.headers["user-agent"] as string) || null,
+            },
+          } as any,
+        });
+      }
+
     } catch (err) {
       // Never fail the request because audit logging failed.
       app.log.error({ err }, "AUDIT DB WRITE FAILED (non-fatal)");

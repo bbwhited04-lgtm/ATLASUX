@@ -1,12 +1,12 @@
 import type { FastifyPluginAsync } from "fastify";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db/prisma.js";
 
 // Use `any` so missing model names (auditLog vs audit_log) won't break TypeScript compile.
-const prisma: any = new PrismaClient();
+const prismaAny: any = prisma as any;
 
 function pickAuditModel(): any | null {
   // Try common Prisma model names (depends on your schema.prisma)
-  return prisma.auditLog ?? prisma.audit_log ?? prisma.audit ?? null;
+  return prismaAny.auditLog ?? prismaAny.audit_log ?? prismaAny.audit ?? null;
 }
 
 async function safeFindMany(args: any) {
@@ -87,7 +87,11 @@ const tenantIdRaw = q.tenantId ?? q.tenant_id ?? q.org_id ?? q.orgId ?? null;
 const actorRaw = q.actorId ?? q.actor_id ?? q.user_id ?? q.userId ?? null;
 
 const where: any = {};
-if (isUuid(tenantIdRaw)) where.tenantId = tenantIdRaw;
+
+// Prefer tenant from tenantPlugin when present (source of truth)
+const tenantFromPlugin = (req as any).tenantId;
+if (tenantFromPlugin) where.tenantId = tenantFromPlugin;
+else if (isUuid(tenantIdRaw)) where.tenantId = tenantIdRaw;
 
 // Actor filtering: support either a UUID user (actorUserId) or a string external id (actorExternalId)
 if (actorRaw) {
