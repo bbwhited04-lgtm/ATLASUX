@@ -9,23 +9,26 @@ datasource db {
 }
 
 model Tenant {
-  id                                       String          @id(map: "tenants_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug                                     String          @unique(map: "tenants_slug_key")
+  id                                       String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                                     String              @unique
   name                                     String
-  createdAt                                DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                                DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  app_users_app_users_tenant_idTotenant_id app_users[]     @relation("app_users_tenant_idTotenant_id")
+  createdAt                                DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                                DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  app_users_app_users_tenant_idTotenant_id app_users[]         @relation("app_users_tenant_idTotenant_id")
   assets                                   Asset[]
-  audits                                   AuditLog[]      @relation("TenantAudits")
+  audits                                   AuditLog[]          @relation("TenantAudits")
+  decision_memos                           DecisionMemo[]
+  distribution_events                      DistributionEvent[]
+  growth_loop_runs                         GrowthLoopRun[]
   integrations                             Integration[]
   jobs                                     Job[]
   kbDocuments                              KbDocument[]
   kbTags                                   KbTag[]
   ledger                                   LedgerEntry[]
+  metrics_snapshots                        MetricsSnapshot[]
   members                                  TenantMember[]
-  KbChunk                                  KbChunk[]
-  Ticket                                   Ticket[]
   TicketComment                            TicketComment[]
+  Ticket                                   Ticket[]
 
   @@map("tenants")
 }
@@ -110,18 +113,22 @@ model TenantMember {
 }
 
 model LedgerEntry {
-  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId    String          @map("tenant_id") @db.Uuid
-  entryType   LedgerEntryType @map("entry_type")
-  category    LedgerCategory
-  amountCents BigInt          @map("amount_cents")
-  currency    String          @default("USD")
-  description String?
-  externalRef String?         @map("external_ref")
-  meta        Json            @default("{}")
-  occurredAt  DateTime        @default(now()) @map("occurred_at") @db.Timestamptz(6)
-  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String          @map("tenant_id") @db.Uuid
+  entryType      LedgerEntryType @map("entry_type")
+  category       LedgerCategory
+  amountCents    BigInt          @map("amount_cents")
+  currency       String          @default("USD")
+  description    String?
+  externalRef    String?         @map("external_ref")
+  meta           Json            @default("{}")
+  occurredAt     DateTime        @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  reference_type String?
+  reference_id   String?
+  run_id         String?
+  metadata       Json?
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([category], map: "ledger_category_idx")
   @@index([category])
@@ -160,9 +167,6 @@ model KbDocument {
   updatedAt DateTime          @updatedAt @map("updated_at")
   tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tags      KbTagOnDocument[]
-
-  // ✅ THIS is what Prisma is complaining about (the “opposite relation field”)
-  chunks KbChunk[] @relation("KbDocumentChunks")
 
   @@unique([tenantId, slug])
   @@index([tenantId, status, updatedAt])
@@ -215,8 +219,8 @@ model app_users {
   tenant_id_app_users_tenant_idTotenant_id Tenant          @relation("app_users_tenant_idTotenant_id", fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   audit_log                                AuditLog[]
   jobs                                     Job[]
-  Ticket                                   Ticket[]
   TicketComment                            TicketComment[]
+  Ticket                                   Ticket[]
 
   @@unique([tenant_id, external_user_id])
 }
@@ -249,81 +253,55 @@ model Intent {
   tenantId   String    @map("tenant_id") @db.Uuid
   agentId    String?   @map("agent_id") @db.Uuid
   intentType String?   @map("intent_type")
-  payload    Json?     @default("{}")
+  payload    Json?
   sglResult  String?   @map("sgl_result")
   status     String?   @default("DRAFT")
   createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  @@index([tenantId], map: "intents_tenant_idx")
-  @@index([status], map: "intents_status_idx")
   @@map("intents")
-}
-
-/// Knowledge base chunks (derived from kb_documents)
-model KbChunk {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId        String   @map("tenant_id") @db.Uuid
-  documentId      String   @map("document_id") @db.Uuid
-  idx             Int
-  charStart       Int      @map("char_start")
-  charEnd         Int      @map("char_end")
-  content         String
-  sourceUpdatedAt DateTime @map("source_updated_at")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @map("updated_at")
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // ✅ ADD relation name so Prisma pairs it cleanly
-  document KbDocument @relation("KbDocumentChunks", fields: [documentId], references: [id], onDelete: Cascade)
-
-  @@unique([documentId, idx], map: "kb_chunks_document_id_idx_key")
-  @@index([tenantId, documentId], map: "kb_chunks_tenant_id_document_id_idx")
-  @@index([tenantId, updatedAt], map: "kb_chunks_tenant_id_updated_at_idx")
-  @@map("kb_chunks")
 }
 
 /// Decision memos (spend/approval governance)
 model DecisionMemo {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId         String   @map("tenant_id") @db.Uuid
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String          @map("tenant_id") @db.Uuid
   agent            String
   title            String
   rationale        String
-  estimatedCostUsd Float    @default(0) @map("estimated_cost_usd")
-  billingType      String   @default("none") @map("billing_type")
-  riskTier         Int      @default(0) @map("risk_tier")
-  confidence       Float    @default(0.5)
-  expectedBenefit  String?  @map("expected_benefit")
-  requiresApproval Boolean  @default(false) @map("requires_approval")
-  status           String   @default("PROPOSED")
-  payload          Json?    @default("{}")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  estimatedCostUsd Float           @default(0) @map("estimated_cost_usd")
+  billingType      String          @default("none") @map("billing_type")
+  riskTier         Int             @default(0) @map("risk_tier")
+  confidence       Float           @default(0.5)
+  expectedBenefit  String?         @map("expected_benefit")
+  requiresApproval Boolean         @default(false) @map("requires_approval")
+  status           String          @default("PROPOSED")
+  payload          Json            @default("{}")
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
+  tenants          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  growth_loop_runs GrowthLoopRun[]
 
   @@index([tenantId, createdAt(sort: Desc)], map: "decision_memos_tenant_time_idx")
   @@map("decision_memos")
 }
 
-// Lightweight beta feedback tickets (NOT a full helpdesk)
 model Ticket {
-  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId       String         @map("tenant_id") @db.Uuid
-  reporterUserId String?        @map("reporter_user_id") @db.Uuid
-  runId          String?        @map("run_id")
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String          @map("tenant_id") @db.Uuid
+  reporterUserId String?         @map("reporter_user_id") @db.Uuid
+  runId          String?         @map("run_id")
   agent          String?
-  status         TicketStatus   @default(OPEN)
-  severity       TicketSeverity @default(MEDIUM)
-  category       TicketCategory @default(BUG)
+  status         TicketStatus    @default(OPEN)
+  severity       TicketSeverity  @default(MEDIUM)
+  category       TicketCategory  @default(BUG)
   title          String
   description    String?
-  meta           Json           @default("{}") @map("meta")
-  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  reporter app_users?      @relation(fields: [reporterUserId], references: [id], onUpdate: NoAction)
-  comments TicketComment[]
+  meta           Json            @default("{}") @map("meta")
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  comments       TicketComment[]
+  reporter       app_users?      @relation(fields: [reporterUserId], references: [id], onUpdate: NoAction)
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([tenantId, createdAt(sort: Desc)], map: "tickets_tenant_time_idx")
   @@index([tenantId, status, createdAt(sort: Desc)], map: "tickets_tenant_status_idx")
@@ -332,19 +310,18 @@ model Ticket {
 }
 
 model TicketComment {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId     String   @map("tenant_id") @db.Uuid
-  ticketId     String   @map("ticket_id") @db.Uuid
-  authorUserId String?  @map("author_user_id") @db.Uuid
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String     @map("tenant_id") @db.Uuid
+  ticketId     String     @map("ticket_id") @db.Uuid
+  authorUserId String?    @map("author_user_id") @db.Uuid
   body         String
-  meta         Json     @default("{}") @map("meta")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  meta         Json       @default("{}") @map("meta")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  author       app_users? @relation(fields: [authorUserId], references: [id], onUpdate: NoAction)
+  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ticket       Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  ticket Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  author app_users? @relation(fields: [authorUserId], references: [id], onUpdate: NoAction)
-
-  @@index([ticketId, createdAt(sort: Asc)], map: "ticket_comments_ticket_time_idx")
+  @@index([ticketId, createdAt], map: "ticket_comments_ticket_time_idx")
   @@map("ticket_comments")
 }
 
@@ -356,12 +333,13 @@ model DistributionEvent {
   channel     String   @default("other")
   eventType   String   @map("event_type")
   url         String?
-  meta        Json?    @default("{}")
+  meta        Json     @default("{}")
   impressions Int?
   clicks      Int?
   conversions Int?
   occurredAt  DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenants     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([tenantId, occurredAt(sort: Desc)], map: "distribution_events_tenant_time_idx")
   @@map("distribution_events")
@@ -375,6 +353,7 @@ model MetricsSnapshot {
   data      Json     @default("{}")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  tenants   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, date], map: "metrics_snapshot_tenant_date_key")
   @@index([tenantId, date(sort: Desc)], map: "metrics_snapshot_tenant_date_idx")
@@ -383,14 +362,16 @@ model MetricsSnapshot {
 
 /// Growth loop runs (one per day)
 model GrowthLoopRun {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId       String   @map("tenant_id") @db.Uuid
-  runDate        DateTime @map("run_date") @db.Date
-  status         String   @default("STARTED")
-  decisionMemoId String?  @map("decision_memo_id") @db.Uuid
-  summary        Json?    @default("{}")
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  runDate        DateTime      @map("run_date") @db.Date
+  status         String        @default("STARTED")
+  decisionMemoId String?       @map("decision_memo_id") @db.Uuid
+  summary        Json          @default("{}")
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  decision_memos DecisionMemo? @relation(fields: [decisionMemoId], references: [id], onUpdate: NoAction)
+  tenants        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([tenantId, runDate], map: "growth_loop_runs_tenant_run_date_key")
   @@map("growth_loop_runs")
@@ -423,6 +404,217 @@ model publish_events {
   @@index([created_at(sort: Desc)], map: "idx_publish_events_created_at")
   @@index([platform], map: "idx_publish_events_platform")
   @@index([status], map: "idx_publish_events_status")
+}
+
+model agent_inboxes {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agent_key       String
+  inbox_email     String
+  inbox_type      String   @default("shared")
+  audit_required  Boolean  @default(true)
+  operator_access Json     @default("[]")
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+  agents          agents   @relation(fields: [agent_key], references: [agent_key], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([agent_key, inbox_email])
+}
+
+model agents {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agent_key        String          @unique
+  display_name     String
+  staff_role       String
+  description      String?
+  truth_required   Boolean         @default(true)
+  advisory_only    Boolean         @default(false)
+  can_block        Boolean         @default(false)
+  tools_allowed    Json            @default("[]")
+  tools_restricted Json            @default("[]")
+  metadata         Json            @default("{}")
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime        @default(now()) @db.Timestamptz(6)
+  agent_inboxes    agent_inboxes[]
+  workflows        workflows[]
+}
+
+model atlas_agents {
+  agent_key  String   @id
+  agent_doc  Json
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model atlas_ip_approvals {
+  approval_id       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_id        String?            @db.Uuid
+  token             String             @unique
+  status            String?            @default("pending")
+  decided_by        String?
+  decided_at        DateTime?          @db.Timestamptz(6)
+  expires_at        DateTime?          @db.Timestamptz(6)
+  created_at        DateTime?          @default(now()) @db.Timestamptz(6)
+  atlas_ip_requests atlas_ip_requests? @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([status, expires_at], map: "idx_ip_approvals_status_expires")
+}
+
+model atlas_ip_artifacts {
+  artifact_id       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_id        String?            @db.Uuid
+  source_url        String?
+  canonical_url     String?
+  filename          String?
+  uri               String?
+  sha256            String?
+  retrieved_at      DateTime?          @db.Timestamptz(6)
+  meta              Json?              @default("{}")
+  created_at        DateTime?          @default(now()) @db.Timestamptz(6)
+  atlas_ip_requests atlas_ip_requests? @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([request_id], map: "idx_ip_artifacts_request")
+}
+
+model atlas_ip_messages {
+  message_id        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_id        String?            @db.Uuid
+  message_type      String
+  payload           Json?              @default("{}")
+  actor             String?
+  received_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  atlas_ip_requests atlas_ip_requests? @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([request_id], map: "idx_ip_messages_request")
+}
+
+model atlas_ip_reports {
+  report_id         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_id        String?            @db.Uuid
+  summary           String?
+  risk_level        String?
+  decision_tree     Json?              @default("[]")
+  checklist         Json?              @default("[]")
+  missing_facts     Json?              @default("[]")
+  citations         Json?              @default("[]")
+  artifacts         Json?              @default("[]")
+  created_by        String?            @default("benny.cto@deadapp.info")
+  created_at        DateTime?          @default(now()) @db.Timestamptz(6)
+  atlas_ip_requests atlas_ip_requests? @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([request_id], map: "idx_ip_reports_request")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model atlas_ip_requests {
+  request_id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  raw_payload            Json
+  company                String?
+  asset_type             String
+  jurisdiction           String
+  question               String
+  facts                  String?
+  links                  Json?                @default("[]")
+  constraints            Json?                @default("[]")
+  requested_by           String?
+  receipt_id             String?
+  atlas_thread_id        String?
+  status                 String?              @default("open")
+  compliance_stop        Boolean?             @default(false)
+  compliance_stop_reason String?
+  received_by            String?              @default("atlas")
+  received_at            DateTime?            @default(now()) @db.Timestamptz(6)
+  created_at             DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime?            @default(now()) @db.Timestamptz(6)
+  atlas_ip_approvals     atlas_ip_approvals[]
+  atlas_ip_artifacts     atlas_ip_artifacts[]
+  atlas_ip_messages      atlas_ip_messages[]
+  atlas_ip_reports       atlas_ip_reports[]
+
+  @@index([status], map: "idx_ip_requests_status")
+}
+
+model atlas_suggestion_messages {
+  id                String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  suggestion_id     String?            @db.Uuid
+  message_id        String?
+  from_address      String?
+  subject           String?
+  body              String?
+  received_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  atlas_suggestions atlas_suggestions? @relation(fields: [suggestion_id], references: [suggestion_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([suggestion_id], map: "idx_suggestion_messages_suggestion_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model atlas_suggestions {
+  suggestion_id             String                      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  ticket_id                 String?
+  ticket_subject            String?
+  ticket_body               String?
+  kb_results                Json?
+  one_line_summary          String?
+  implementation_plan       Json?
+  email_subject             String?
+  email_body_approve        String?
+  email_body_deny           String?
+  approval_token            String                      @unique(map: "idx_suggestions_approval_token")
+  status                    String?                     @default("pending")
+  created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime?                   @default(now()) @db.Timestamptz(6)
+  expires_at                DateTime?                   @db.Timestamptz(6)
+  decided_at                DateTime?                   @db.Timestamptz(6)
+  decided_by                String?
+  decision_message_id       String?
+  atlas_suggestion_messages atlas_suggestion_messages[]
+
+  @@index([status, expires_at], map: "idx_suggestions_status_expires")
+}
+
+model atlas_workflows {
+  workflow_id  String   @id
+  agent_key    String
+  workflow_doc Json
+  status       String   @default("ready")
+  version      String?
+  name         String?
+  trigger_type String?
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model workflow_steps {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workflow_key String
+  step_order   Int
+  step_id      String
+  step_type    String
+  description  String?
+  config       Json      @default("{}")
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime  @default(now()) @db.Timestamptz(6)
+  workflows    workflows @relation(fields: [workflow_key], references: [workflow_key], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([workflow_key, step_id])
+  @@unique([workflow_key, step_order])
+}
+
+model workflows {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workflow_key   String           @unique
+  agent_key      String
+  name           String
+  version        String           @default("1.0.0")
+  status         String           @default("ready")
+  trigger        Json             @default("{}")
+  policy         Json             @default("{}")
+  outputs        Json             @default("{}")
+  metadata       Json             @default("{}")
+  created_at     DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime         @default(now()) @db.Timestamptz(6)
+  workflow_steps workflow_steps[]
+  agents         agents           @relation(fields: [agent_key], references: [agent_key], onDelete: Cascade, onUpdate: NoAction)
 }
 
 enum AuditLevel {

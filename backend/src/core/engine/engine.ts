@@ -111,29 +111,22 @@ export async function engineTick() {
 
     // Execute workflow for ENGINE_RUN intents (cloud surface)
     if (intent.intentType === "ENGINE_RUN") {
-      const isUuid = (v: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
-
-let workflow;
-
-if (isUuid(workflowId)) {
-  workflow = await prisma.workflow.findUnique({
-    where: { id: workflowId },
-  });
-} else {
-  workflow = await prisma.workflow.findFirst({
-    where: { workflow_key: workflowId },
-  });
-}
-
-if (!workflow) {
-  return {
-    ok: false,
-    error: "WORKFLOW_NOT_FOUND",
-    workflowId,
-  };
-}
+      // NOTE: workflowId can be either a DB UUID (workflows.id) OR a human key like "WF-021" (workflows.workflow_key)
+      const workflowId = String((payload.workflowId ?? (payload as any).workflow_key ?? (payload as any).workflowKey ?? "")).trim();
       const agentId = String(payload.agentId ?? "");
+
+      const isUuid = (v: string) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+
+      // We don’t have a Prisma model for `workflows`, so we validate existence via raw SQL.
+      const rows = isUuid(workflowId)
+        ? await prisma.$queryRaw`select 1 as one from workflows where id = ${workflowId}::uuid limit 1`
+        : await prisma.$queryRaw`select 1 as one from workflows where workflow_key = ${workflowId} limit 1`;
+      const workflowExists = Array.isArray(rows) && rows.length > 0;
+
+      if (!workflowId || !workflowExists) {
+        return { ran: true, result: { ok: false, error: "WORKFLOW_NOT_FOUND", workflowId } };
+      }
 
       const handler = getWorkflowHandler(workflowId);
 
