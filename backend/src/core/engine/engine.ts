@@ -112,7 +112,7 @@ export async function engineTick() {
     // Execute workflow for ENGINE_RUN intents (cloud surface)
     if (intent.intentType === "ENGINE_RUN") {
       // NOTE: workflowId can be either a DB UUID (workflows.id) OR a human key like "WF-021" (workflows.workflow_key)
-      const workflowId = String((payload.workflowId ?? (payload as any).workflow_key ?? (payload as any).workflowKey ?? "")).trim();
+      const workflowId = String( (payload.workflowId ?? (payload as any).workflow_key ?? (payload as any).workflowKey ?? "")).trim();
       const agentId = String(payload.agentId ?? "");
 
       const isUuid = (v: string) =>
