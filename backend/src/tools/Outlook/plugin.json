@@ -1,0 +1,54 @@
+{
+  "hubId": "1Id59PCaBqVOwKG6oZoP",
+  "active": false,
+  "name": "Calendar Event",
+  "version": "1.0.0",
+  "description": "A plugin to generate calendar event links for Google and Outlook",
+  "author": "MintplexLabs",
+  "author_url": "https://hub.anythingllm.com/u/MintplexLabs",
+  "license": "MIT",
+  "examples": [
+    {
+      "prompt": "Use Calendar Event to schedule a team meeting for tomorrow at 2pm for 1 hour",
+      "call": "{\"title\": \"Team Meeting\", \"date\": \"2024-03-20\", \"time\": \"14:00\", \"duration\": 60, \"description\": \"Weekly team sync\", \"location\": \"Conference Room A\"}"
+    },
+    {
+      "prompt": "Use Calendar Event to set up a project review for Friday at 3pm",
+      "call": "{\"title\": \"Project Review\", \"date\": \"2024-03-22\", \"time\": \"15:00\", \"duration\": 90, \"description\": \"End of week project status review\", \"location\": \"Virtual Meeting Room\"}"
+    },
+    {
+      "prompt": "Schedule a training session next week Tuesday morning",
+      "call": "{\"title\": \"Training Session\", \"date\": \"2024-03-26\", \"time\": \"09:00\", \"duration\": 120, \"description\": \"New system training for team members\", \"location\": \"Training Room B\"}"
+    }
+  ],
+  "setup_args": {},
+  "entrypoint": {
+    "file": "handler.js",
+    "params": {
+      "title": {
+        "description": "Event title/subject",
+        "type": "string"
+      },
+      "date": {
+        "description": "Event date (YYYY-MM-DD)",
+        "type": "string"
+      },
+      "time": {
+        "description": "Event time (HH:mm)",
+        "type": "string"
+      },
+      "duration": {
+        "description": "Event duration in minutes",
+        "type": "number"
+      },
+      "description": {
+        "description": "Event description/body",
+        "type": "string"
+      },
+      "location": {
+        "description": "Event location",
+        "type": "string"
+      }
+    }
+  }
+}

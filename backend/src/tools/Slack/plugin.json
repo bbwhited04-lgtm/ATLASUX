@@ -1,0 +1,34 @@
+{
+  "hubId": "6MBXYwv4DdEw9mK3Ujes",
+  "active": false,
+  "name": "Open Slack App",
+  "version": "1.0.0",
+  "description": "Opens a deeplink or URL to a Slack channel. A simple use case of using an agent skill to open pre-installed apps.",
+  "author": "MintplexLabs",
+  "author_url": "https://hub.anythingllm.com/u/MintplexLabs",
+  "license": "MIT",
+  "examples": [
+    {
+      "prompt": "Open Slack",
+      "call": "{}"
+    },
+    {
+      "prompt": "Open Slack channel #general",
+      "call": "{\"channel\": \"general\"}"
+    },
+    {
+      "prompt": "Open Slack channel #random",
+      "call": "{\"channel\": \"random\"}"
+    }
+  ],
+  "setup_args": {},
+  "entrypoint": {
+    "file": "handler.js",
+    "params": {
+      "channel": {
+        "type": "string",
+        "description": "The Slack channel to open. If not provided, the user will be redirected to the Slack app via deeplink."
+      }
+    }
+  }
+}
