@@ -3,51 +3,48 @@ import { prisma } from "../prisma.js";
 
 const router = Router();
 
-/**
- * GET /v1/runtime/status
- * Source of truth for Atlas heart state
- */
+// helper to safely read jsonb stored in Prisma JsonValue
+function asObj(v: unknown): Record<string, any> {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as any) : {};
+}
+
 router.get("/status", async (_req, res) => {
   try {
-    // 🔹 engine state
-    const state = await prisma.system_state.findUnique({
-      where: { key: "atlas_online" }
+    // system_state row: key='atlas_online', value={"online":false, ...optional}
+    const row = await prisma.system_state.findUnique({
+      where: { key: "atlas_online" },
+      select: { key: true, value: true, updated_at: true },
     });
 
-    // 🔹 HIL detection (CANONICAL)
-    // Using approvals table — adjust if you prefer atlas_ip_approvals
+    const value = asObj(row?.value);
+
+    // Prefer explicit engine_enabled, else fall back to online
+    const engineEnabled = Boolean(
+      value.engine_enabled ?? value.online ?? false
+    );
+
+    // last tick stored inside jsonb (or null if you haven't written it yet)
+    const lastTickAtRaw = value.last_tick_at ?? null;
+
+    // approvals table has no `status`, so do a safe count.
+    // If you have expires_at, this is a good pending heuristic:
+    const now = new Date();
     const pendingApprovals = await prisma.approvals.count({
       where: {
-        status: "PENDING"
-        // optional freshness guard later:
-        // created_at: { gt: subDays(new Date(), 7) }
-      }
+        OR: [{ expires_at: null }, { expires_at: { gt: now } }],
+      },
     });
-
-    const needsHuman = pendingApprovals > 0;
-
-    // 🔹 recent activity check
-    let recentActivity = false;
-    if (state?.last_tick_at) {
-      const ageMs =
-        Date.now() - new Date(state.last_tick_at).getTime();
-      recentActivity = ageMs < 30_000; // 30s window
-    }
 
     return res.json({
       ok: true,
-      engineEnabled: state?.engine_enabled ?? false,
-      needsHuman,
-      lastTickAt: state?.last_tick_at ?? null,
-      recentActivity
+      engineEnabled,
+      needsHuman: pendingApprovals > 0,
+      lastTickAt: lastTickAtRaw,
+      updatedAt: row?.updated_at ?? null,
     });
-
   } catch (err) {
-    console.error("runtime status failed", err);
-    return res.status(500).json({
-      ok: false,
-      error: "RUNTIME_STATUS_FAILED"
-    });
+    console.error(err);
+    return res.status(500).json({ ok: false, error: "RUNTIME_STATUS_FAILED" });
   }
 });
 
