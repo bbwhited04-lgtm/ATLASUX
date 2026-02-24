@@ -51,22 +51,12 @@ type Actor = {
 };
 
 function getActor(req: any): Actor {
-  const h = (req.headers ?? {}) as Record<string, any>;
-  const actorUserId =
-    (typeof h["x-actor-user-id"] === "string" && h["x-actor-user-id"]) ||
-    (typeof h["x-user-id"] === "string" && h["x-user-id"]) ||
-    null;
-
-  const actorExternalId =
-    (typeof h["x-actor-external-id"] === "string" && h["x-actor-external-id"]) ||
-    (typeof h["x-external-id"] === "string" && h["x-external-id"]) ||
-    null;
-
-  const actorType =
-    (typeof h["x-actor-type"] === "string" && h["x-actor-type"]) ||
-    (actorUserId ? "user" : "system");
-
-  return { actorUserId, actorExternalId, actorType };
+  const userId = (req as any).user?.id ?? null;
+  return {
+    actorUserId: userId,
+    actorExternalId: null,
+    actorType: userId ? "user" : "system",
+  };
 }
 
 function safeNumber(v: any): number | null {
@@ -146,7 +136,7 @@ export async function assetsRoutes(app: FastifyInstance) {
    */
   app.get("/", async (req, reply) => {
     const q = (req.query ?? {}) as AnyObj;
-    const tenantId = typeof q.tenantId === "string" ? q.tenantId : null;
+    const tenantId = ((req as any).tenantId ?? null) as string | null;
 
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId_required" });
 
@@ -166,7 +156,7 @@ export async function assetsRoutes(app: FastifyInstance) {
   app.post("/", async (req, reply) => {
     const body = (req.body ?? {}) as AnyObj;
 
-    const tenantId = typeof body.tenantId === "string" ? body.tenantId : null;
+    const tenantId = ((req as any).tenantId ?? null) as string | null;
     const type = typeof body.type === "string" ? body.type.trim() : null;
     const name = typeof body.name === "string" ? body.name.trim() : null;
     const url = typeof body.url === "string" ? body.url.trim() : null;
@@ -315,10 +305,13 @@ export async function assetsRoutes(app: FastifyInstance) {
     const actor = getActor(req);
     const requestId = randomUUID();
 
+    const reqTenantId = ((req as any).tenantId ?? null) as string | null;
+
     try {
       const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const before = await tx.asset.findUnique({ where: { id } });
         if (!before) return { before: null as any, after: null as any };
+        if (reqTenantId && before.tenantId !== reqTenantId) return { before: null as any, after: null as any, forbidden: true };
 
         // merge metrics
         const beforeMetrics = (before as any).metrics;
@@ -460,6 +453,7 @@ export async function assetsRoutes(app: FastifyInstance) {
         return { before, after };
       });
 
+      if ((updated as any).forbidden) return reply.code(403).send({ ok: false, error: "forbidden" });
       if (!updated.after) return reply.code(404).send({ ok: false, error: "asset_not_found" });
       return reply.send({ ok: true, asset: updated.after });
     } catch (err) {
@@ -478,11 +472,13 @@ export async function assetsRoutes(app: FastifyInstance) {
 
     const actor = getActor(req);
     const requestId = randomUUID();
+    const delTenantId = ((req as any).tenantId ?? null) as string | null;
 
     try {
       const deleted = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const before = await tx.asset.findUnique({ where: { id } });
         if (!before) return null;
+        if (delTenantId && before.tenantId !== delTenantId) return "forbidden";
 
         await tx.asset.delete({ where: { id } });
 
@@ -524,6 +520,7 @@ export async function assetsRoutes(app: FastifyInstance) {
         return before;
       });
 
+      if (deleted === "forbidden") return reply.code(403).send({ ok: false, error: "forbidden" });
       if (!deleted) return reply.code(404).send({ ok: false, error: "asset_not_found" });
       return reply.send({ ok: true });
     } catch (err) {

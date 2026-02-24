@@ -6,7 +6,7 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
   // Create a decision memo (proposal)
   app.post("/", async (req, reply) => {
     const body = (req.body as any) ?? {};
-    const tenantId = String(body.tenantId ?? "");
+    const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const memo = await createDecisionMemo({
@@ -28,7 +28,7 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
   // List decision memos
   app.get("/", async (req, reply) => {
     const q = (req.query as any) ?? {};
-    const tenantId = String(q.tenantId ?? "");
+    const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const status = q.status ? String(q.status) : undefined;
@@ -43,7 +43,7 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
   // Approve a memo (guardrails enforced)
   app.post("/:id/approve", async (req, reply) => {
     const q = (req.query as any) ?? {};
-    const tenantId = String((req.body as any)?.tenantId ?? q.tenantId ?? "");
+    const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
     const memoId = String((req.params as any).id);
 
@@ -55,7 +55,7 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
   // Reject a memo
   app.post("/:id/reject", async (req, reply) => {
     const body = (req.body as any) ?? {};
-    const tenantId = String(body.tenantId ?? "");
+    const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
     const memoId = String((req.params as any).id);
 

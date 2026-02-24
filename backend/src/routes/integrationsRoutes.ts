@@ -45,7 +45,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (app) => {
    */
   app.get("/status", async (req) => {
     const q = (req.query ?? {}) as any;
-    const tenantId = (q.tenantId ?? q.tenant_id ?? q.org_id ?? q.orgId ?? (req as any).tenantId ?? null) as string | null;
+    const tenantId = ((req as any).tenantId ?? null) as string | null;
     if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
 
     // infer providers from assets
@@ -95,7 +95,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (app) => {
   app.post("/:provider/mark_connected", async (req) => {
     const q = (req.query ?? {}) as any;
     const params = (req.params ?? {}) as any;
-    const tenantId = (q.tenantId ?? q.tenant_id ?? q.org_id ?? q.orgId ?? (req as any).tenantId ?? null) as string | null;
+    const tenantId = ((req as any).tenantId ?? null) as string | null;
     const provider = String(params.provider ?? "").toLowerCase();
     if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
 
@@ -117,7 +117,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (app) => {
   app.post("/:provider/disconnect", async (req) => {
     const q = (req.query ?? {}) as any;
     const params = (req.params ?? {}) as any;
-    const tenantId = (q.tenantId ?? q.tenant_id ?? q.org_id ?? q.orgId ?? (req as any).tenantId ?? null) as string | null;
+    const tenantId = ((req as any).tenantId ?? null) as string | null;
     const provider = String(params.provider ?? "").toLowerCase();
     if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
 

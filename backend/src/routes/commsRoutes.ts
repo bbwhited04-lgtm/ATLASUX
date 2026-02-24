@@ -13,15 +13,16 @@ type EmailRequest = {
 export const commsRoutes: FastifyPluginAsync = async (app) => {
   // Queue an email as a Job. A future SMTP worker can deliver these.
   app.post("/email", async (req, reply) => {
+    const tenantId = String((req as any).tenantId ?? "");
     const body = (req.body ?? {}) as Partial<EmailRequest>;
-    if (!body.tenantId || !body.fromAgent || !body.to || !body.subject || !body.text) {
+    if (!tenantId || !body.fromAgent || !body.to || !body.subject || !body.text) {
       return reply.code(400).send({ ok: false, error: "tenantId, fromAgent, to, subject, text are required" });
     }
 
     const job = await prisma.job.create({
       data: {
-        tenantId: body.tenantId,
-        requested_by_user_id: (req as any).user?.id ?? body.tenantId,
+        tenantId,
+        requested_by_user_id: (req as any).user?.id ?? tenantId,
         status: "queued",
         jobType: "EMAIL_SEND",
         priority: 5,
@@ -37,9 +38,9 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
 
     await prisma.auditLog.create({
       data: {
-        tenantId: body.tenantId,
+        tenantId,
         actorUserId: null,
-        actorExternalId: String((req as any).user?.id ?? body.tenantId ?? ""),
+        actorExternalId: String((req as any).user?.id ?? tenantId ?? ""),
         actorType: "system",
         level: "info",
         action: "EMAIL_QUEUED",
@@ -56,7 +57,7 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
 
   // Outbox viewer (queued emails)
   app.get("/outbox", async (req, reply) => {
-    const tenantId = String((req.query as any)?.tenantId ?? "");
+    const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const jobs = await prisma.job.findMany({
@@ -79,12 +80,12 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ ok: false, error: "to and message are required" });
     }
 
-    const tenantId = body.tenantId ?? "";
+    const tenantId = String((req as any).tenantId ?? "");
 
     const job = await prisma.job.create({
       data: {
         tenantId: tenantId || "demo_org",
-        requested_by_user_id: ((req as any).user?.id ?? tenantId) || "demo_org",
+        requested_by_user_id: (req as any).user?.id || tenantId || "demo_org",
         status: "queued",
         jobType: "SMS_SEND",
         priority: 5,
@@ -98,7 +99,7 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
         data: {
           tenantId: tenantId || "demo_org",
           actorUserId: null,
-          actorExternalId: String((req as any).user?.id ?? tenantId ?? ""),
+          actorExternalId: String((req as any).user?.id ?? ""),
           actorType: "system",
           level: "info",
           action: "SMS_QUEUED",

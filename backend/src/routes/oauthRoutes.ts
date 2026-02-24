@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { randomBytes } from "crypto";
 import { loadEnv } from "../env.js";
 import { buildXAuthUrl, exchangeXCode, makePkcePair, storeTokenVault } from "../oauth.js";
 import { tumblrAccessToken, tumblrAuthorizeUrl, tumblrRequestToken } from "../integrations/tumblr.client.js";
@@ -69,7 +70,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const org_id = q.org_id ?? q.orgId ?? null;
     const user_id = q.user_id ?? q.userId ?? null;
 
-    const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const nonce = randomBytes(32).toString("hex");
     const pair = await makePkcePair();
     pkce.set(nonce, { code_verifier: pair.code_verifier, createdAt: Date.now() });
 

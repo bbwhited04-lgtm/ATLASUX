@@ -21,7 +21,7 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
    */
   app.get("/plan", async (req) => {
     const q = (req.query ?? {}) as any;
-    const tenantId = (q.tenantId ?? q.tenant_id ?? q.org_id ?? q.orgId ?? null) as string | null;
+    const tenantId = ((req as any).tenantId ?? null) as string | null;
     if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
 
     const assets = await prisma.asset.findMany({
@@ -66,7 +66,7 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
    */
   app.post("/start", async (req) => {
     const q = (req.query ?? {}) as any;
-    const tenantId = (q.tenantId ?? q.tenant_id ?? q.org_id ?? q.orgId ?? null) as string | null;
+    const tenantId = ((req as any).tenantId ?? null) as string | null;
     if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
 
     const planRes = await (app as any).inject({ method: "GET", url: `/v1/listening/plan?tenantId=${encodeURIComponent(tenantId)}` });

@@ -14,7 +14,7 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
   // Create ticket
   app.post("/", async (req, reply) => {
     const body = (req.body as any) ?? {};
-    const tenantId = String(body.tenantId ?? "");
+    const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const title = String(body.title ?? "").trim();
@@ -41,7 +41,7 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
   // List tickets
   app.get("/", async (req, reply) => {
     const q = (req.query as any) ?? {};
-    const tenantId = String(q.tenantId ?? "");
+    const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const where: any = { tenantId };
@@ -63,7 +63,7 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
   // Get one ticket (+ optional comments)
   app.get("/:id", async (req, reply) => {
     const q = (req.query as any) ?? {};
-    const tenantId = String(q.tenantId ?? "");
+    const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
     const id = String((req.params as any).id);
 
@@ -80,7 +80,7 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
   // Update ticket (status/severity/category/title/description)
   app.patch("/:id", async (req, reply) => {
     const body = (req.body as any) ?? {};
-    const tenantId = String(body.tenantId ?? "");
+    const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
     const id = String((req.params as any).id);
 
@@ -108,7 +108,7 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
   // Add comment
   app.post("/:id/comments", async (req, reply) => {
     const body = (req.body as any) ?? {};
-    const tenantId = String(body.tenantId ?? "");
+    const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
     const ticketId = String((req.params as any).id);
 

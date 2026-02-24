@@ -49,22 +49,12 @@ type Actor = {
 };
 
 function getActor(req: any): Actor {
-  const h = (req.headers ?? {}) as Record<string, any>;
-  const actorUserId =
-    (typeof h["x-actor-user-id"] === "string" && h["x-actor-user-id"]) ||
-    (typeof h["x-user-id"] === "string" && h["x-user-id"]) ||
-    null;
-
-  const actorExternalId =
-    (typeof h["x-actor-external-id"] === "string" && h["x-actor-external-id"]) ||
-    (typeof h["x-external-id"] === "string" && h["x-external-id"]) ||
-    null;
-
-  const actorType =
-    (typeof h["x-actor-type"] === "string" && h["x-actor-type"]) ||
-    (actorUserId ? "user" : "system");
-
-  return { actorUserId, actorExternalId, actorType };
+  const userId = (req as any).user?.id ?? null;
+  return {
+    actorUserId: userId,
+    actorExternalId: null,
+    actorType: userId ? "user" : "system",
+  };
 }
 
 function auditMeta(before: any, after: any, extra?: Record<string, any>) {

@@ -15,15 +15,16 @@ type CreateTaskRequest = {
 
 export const tasksRoutes: FastifyPluginAsync = async (app) => {
   app.post("/", async (req, reply) => {
+    const tenantId = String((req as any).tenantId ?? "");
     const body = (req.body ?? {}) as Partial<CreateTaskRequest>;
-    if (!body.tenantId || !body.assignedAgentId || !body.title) {
+    if (!tenantId || !body.assignedAgentId || !body.title) {
       return reply.code(400).send({ ok: false, error: "tenantId, assignedAgentId, title are required" });
     }
 
     const job = await prisma.job.create({
       data: {
-        tenantId: body.tenantId,
-        requested_by_user_id: (req as any).user?.id ?? body.createdBy ?? body.tenantId,
+        tenantId,
+        requested_by_user_id: (req as any).user?.id ?? body.createdBy ?? tenantId,
         status: "queued",
         jobType: "AGENT_TASK",
         priority: typeof body.priority === "number" ? body.priority : 0,
@@ -40,9 +41,9 @@ export const tasksRoutes: FastifyPluginAsync = async (app) => {
 
     await prisma.auditLog.create({
       data: {
-        tenantId: body.tenantId,
+        tenantId,
         actorUserId: null,
-        actorExternalId: String((req as any).user?.id ?? body.createdBy ?? body.tenantId ?? ""),
+        actorExternalId: String((req as any).user?.id ?? body.createdBy ?? tenantId ?? ""),
         actorType: "system",
         level: "info",
         action: "TASK_CREATED",
@@ -58,7 +59,7 @@ export const tasksRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get("/", async (req, reply) => {
-    const tenantId = String((req.query as any)?.tenantId ?? "");
+    const tenantId = String((req as any).tenantId ?? "");
     const agentId = String((req.query as any)?.agentId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 

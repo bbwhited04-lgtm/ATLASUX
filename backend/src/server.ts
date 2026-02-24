@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
 import "dotenv/config";
 
 // Plugins
@@ -78,16 +79,14 @@ await app.register(cors, {
     "Authorization",
     "x-tenant-id",
     "x-user-id",
-    "x-actor-user-id",
-    "x-external-id",
-    "x-actor-external-id",
-    "x-actor-type",
     "x-device-id",
     "x-request-id",
     "x-client-source",
     "x-inbound-secret",
   ],
 });
+
+await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
 
 // Plugins (order matters)
 await app.register(auditPlugin);
