@@ -6,8 +6,11 @@ import { toast } from "sonner";
  * Safe-by-default: if backend is offline, we still provide UI feedback without leaking details.
  */
 export async function queuePremiumJob(action: string, payload: any = {}) {
-  const org_id = localStorage.getItem("atlasux_org_id") || "demo_org";
-  const user_id = localStorage.getItem("atlasux_user_id") || "demo_user";
+  const org_id =
+    localStorage.getItem("atlas_active_tenant_id") ||
+    localStorage.getItem("atlasux_org_id") ||
+    "";
+  const user_id = org_id;
 
   // Optimistic UX
   toast.message("Queued", { description: action });

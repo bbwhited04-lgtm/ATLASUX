@@ -35,9 +35,11 @@ export function EmailClient() {
 const BACKEND_URL = API_BASE;
 
 function getOrgUser() {
-  const org_id = localStorage.getItem("atlasux_org_id") || "demo_org";
-  const user_id = localStorage.getItem("atlasux_user_id") || "demo_user";
-  return { org_id, user_id };
+  const org_id =
+    localStorage.getItem("atlas_active_tenant_id") ||
+    localStorage.getItem("atlasux_org_id") ||
+    "";
+  return { org_id, user_id: org_id };
 }
 
 type Provider = "google" | "microsoft" | "smtp";

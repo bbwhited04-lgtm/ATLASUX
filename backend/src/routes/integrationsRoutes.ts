@@ -3,11 +3,15 @@ import { prisma } from "../db/prisma.js";
 import { providerForPlatform, SUPPORTED_PROVIDERS } from "../lib/providerMapping.js";
 
 async function ensureStubIntegration(tenantId: string, provider: any) {
-  await prisma.integration.upsert({
-    where: { tenantId_provider: { tenantId, provider } },
-    create: { tenantId, provider, connected: false },
-    update: {},
-  });
+  try {
+    await prisma.integration.upsert({
+      where: { tenantId_provider: { tenantId, provider } },
+      create: { tenantId, provider, connected: false },
+      update: {},
+    });
+  } catch {
+    // Provider not in DB enum — skip silently (e.g. meta, x, reddit not yet in integration_provider enum)
+  }
 }
 
 /** Shared logic: resolve tenantId from plugin-validated header or query fallback. */

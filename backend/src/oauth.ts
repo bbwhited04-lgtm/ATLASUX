@@ -284,7 +284,7 @@ export async function exchangeXCode(env: Env, args: {
 // Token vault storage (Supabase table: token_vault)
 export async function storeTokenVault(env: Env, args: {
   org_id: string;
-  user_id: string;
+  user_id?: string | null;
   provider: Provider;
   access_token: string;
   refresh_token?: string | null;
@@ -295,7 +295,7 @@ export async function storeTokenVault(env: Env, args: {
   const supabase = makeSupabase(env);
   const { error } = await supabase.from("token_vault").upsert({
     org_id: args.org_id,
-    user_id: args.user_id,
+    user_id: args.user_id || args.org_id, // fall back to org_id — no demo_user ever touches the vault
     provider: args.provider,
     access_token: args.access_token,
     refresh_token: args.refresh_token ?? null,
