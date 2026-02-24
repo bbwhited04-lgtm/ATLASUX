@@ -14,7 +14,6 @@ import {
   Radio,
   Users,
   UserCog,
-  Puzzle,
   BarChart3,
   Briefcase,
   Settings as SettingsIcon,
@@ -150,14 +149,14 @@ function RootLayoutInner() {
     { path: "/app/jobs", icon: Cpu, label: "Pluto Jobs" },
     { path: "/app/chat", icon: MessageSquare, label: "AI Chat" },
     { path: "/app/agents", icon: UserCog, label: "Agents" },
-    { path: "/app/apps", icon: Puzzle, label: "Apps" },
+    // Integrations live in Settings.
     { path: "/app/monitoring", icon: Radio, label: "Monitoring" },
     { path: "/app/crm", icon: Users, label: "CRM" },
     { path: "/app/analytics", icon: BarChart3, label: "Analytics" },
     // Consolidated business tooling lives under Business Manager now.
     { path: "/app/business-manager", icon: Briefcase, label: "Business Manager" },
     { path: "/app/kb", icon: BookOpen, label: "Knowledge Base" },
-    { path: "/blog", icon: Newspaper, label: "Blog" },
+    { path: "/app/blog", icon: Newspaper, label: "Blog" },
     { path: "/app/decisions", icon: ClipboardCheck, label: "Decisions", badge: pendingDecisionsCount },
     ];
 
