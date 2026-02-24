@@ -77,11 +77,17 @@ async function main() {
 
     // Drain a batch of intents quickly, then pause.
     let didWork = false;
-    for (let i = 0; i < maxTicksPerCycle; i++) {
-      const out = await engineTick();
-      if (!out?.ran) break;
-      didWork = true;
-      await setLastTickAt(new Date().toISOString());
+    try {
+      for (let i = 0; i < maxTicksPerCycle; i++) {
+        const out = await engineTick();
+        if (!out?.ran) break;
+        didWork = true;
+        await setLastTickAt(new Date().toISOString());
+      }
+    } catch (e: any) {
+      process.stderr.write(`[engineLoop] tick error: ${e?.message ?? e}\n`);
+      await sleep(offlineMs);
+      continue;
     }
 
     await sleep(didWork ? 0 : idleMs);

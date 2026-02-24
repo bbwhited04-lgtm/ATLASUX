@@ -80,6 +80,7 @@ export async function tenantsRoutes(app: FastifyInstance) {
   app.get("/", async (_req, reply) => {
     const tenants = await prisma.tenant.findMany({
       orderBy: { createdAt: "desc" },
+      take: 100,
     });
 
     return reply.send({ ok: true, tenants });

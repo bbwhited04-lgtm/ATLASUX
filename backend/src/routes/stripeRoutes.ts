@@ -42,6 +42,7 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
    * Creates an Intent that a human (Exec/Atlas) can approve.
    */
   app.post("/products/request", async (req, reply) => {
+    requireRole(req, ["owner", "admin", "exec", "atlas"]);
     const tenantId = (req as any).tenantId as string;
     const userId = (req as any).auth?.userId as string;
     const body = RequestCreateProductSchema.parse(req.body ?? {});

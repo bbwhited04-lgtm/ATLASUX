@@ -153,6 +153,7 @@ export async function assetsRoutes(app: FastifyInstance) {
     const assets = await prisma.asset.findMany({
       where: { tenantId },
       orderBy: { createdAt: "desc" },
+      take: 100,
     });
 
     return reply.send({ ok: true, assets });

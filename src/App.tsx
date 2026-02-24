@@ -1,8 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Component, ReactNode } from 'react';
 import { RouterProvider } from 'react-router';
 import { router } from './routes';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { ActiveTenantProvider } from './lib/activeTenant';
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="fixed inset-0 bg-slate-950 flex items-center justify-center text-white">
+          <div className="text-center max-w-md px-6">
+            <div className="text-red-400 text-5xl mb-4">⚠</div>
+            <h1 className="text-xl font-semibold mb-2">Something went wrong</h1>
+            <p className="text-slate-400 text-sm mb-6">{(this.state.error as Error).message}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-sm font-medium"
+            >
+              Reload
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -44,15 +69,17 @@ export default function App() {
   }
   
   return (
-    <div className="min-h-screen overflow-hidden bg-slate-950 text-white">
-      <ActiveTenantProvider>
-        <RouterProvider router={router} />
-      </ActiveTenantProvider>
-      <OnboardingWizard 
-        isOpen={showOnboarding} 
-        onComplete={handleOnboardingComplete}
-        onSkip={handleOnboardingSkip}
-      />
-    </div>
+    <ErrorBoundary>
+      <div className="min-h-screen overflow-hidden bg-slate-950 text-white">
+        <ActiveTenantProvider>
+          <RouterProvider router={router} />
+        </ActiveTenantProvider>
+        <OnboardingWizard
+          isOpen={showOnboarding}
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+        />
+      </div>
+    </ErrorBoundary>
   );
 }

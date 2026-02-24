@@ -71,8 +71,10 @@ export const engineRoutes: FastifyPluginAsync = async (app) => {
   // Fetch run status + related audit events
   app.get("/runs/:id", async (req, reply) => {
     const id = (req.params as any).id as string;
+    const reqTenantId = (req as any).tenantId as string;
     const intent = await prisma.intent.findUnique({ where: { id } });
     if (!intent) return reply.code(404).send({ ok: false, error: "not found" });
+    if (intent.tenantId !== reqTenantId) return reply.code(403).send({ ok: false, error: "forbidden" });
 
     const audits = await prisma.auditLog.findMany({
       where: { entityType: "intent", entityId: id },

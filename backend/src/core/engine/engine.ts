@@ -125,6 +125,10 @@ export async function engineTick() {
       const workflowExists = Array.isArray(rows) && rows.length > 0;
 
       if (!workflowId || !workflowExists) {
+        await prisma.intent.update({
+          where: { id: intent.id },
+          data: { status: "FAILED" },
+        });
         return { ran: true, result: { ok: false, error: "WORKFLOW_NOT_FOUND", workflowId } };
       }
 

@@ -70,7 +70,8 @@ export function OnboardingWizard({ isOpen, onComplete, onSkip }: OnboardingWizar
 
   const handleSimulatePairing = () => {
     setPhoneConnected(true);
-    setTimeout(() => handleNext(), 1500);
+    const t = setTimeout(() => handleNext(), 1500);
+    return () => clearTimeout(t);
   };
 
   const toggleIntegration = (id: string) => {

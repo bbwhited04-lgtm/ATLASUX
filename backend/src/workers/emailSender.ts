@@ -139,57 +139,59 @@ async function main() {
           throw new Error(`unknown OUTBOUND_EMAIL_PROVIDER: ${provider}`);
         }
 
-        await prisma.job.update({
-          where: { id: job.id },
-          data: {
-            status: "succeeded",
-            output: output ?? {},
-            error: {},
-            finishedAt: new Date(),
-          },
-        });
-
-        await prisma.auditLog.create({
-          data: {
-            tenantId: job.tenantId,
-            actorUserId: null,
-            actorExternalId: "email_worker",
-            actorType: "system",
-            level: "info",
-            action: "EMAIL_SENT",
-            entityType: "job",
-            entityId: job.id,
-            message: `Email sent to ${to}`,
-            meta: { to, subject, provider },
-            timestamp: new Date(),
-          },
-        });
+        await prisma.$transaction([
+          prisma.job.update({
+            where: { id: job.id },
+            data: {
+              status: "succeeded",
+              output: output ?? {},
+              error: {},
+              finishedAt: new Date(),
+            },
+          }),
+          prisma.auditLog.create({
+            data: {
+              tenantId: job.tenantId,
+              actorUserId: null,
+              actorExternalId: "email_worker",
+              actorType: "system",
+              level: "info",
+              action: "EMAIL_SENT",
+              entityType: "job",
+              entityId: job.id,
+              message: `Email sent to ${to}`,
+              meta: { to, subject, provider },
+              timestamp: new Date(),
+            },
+          }),
+        ]);
       } catch (e: any) {
         const errMsg = e?.message ?? String(e);
-        await prisma.job.update({
-          where: { id: job.id },
-          data: {
-            status: "failed",
-            error: { message: errMsg },
-            finishedAt: new Date(),
-          },
-        });
-
-        await prisma.auditLog.create({
-          data: {
-            tenantId: job.tenantId,
-            actorUserId: null,
-            actorExternalId: "email_worker",
-            actorType: "system",
-            level: "error",
-            action: "EMAIL_SEND_FAILED",
-            entityType: "job",
-            entityId: job.id,
-            message: `Email failed: ${errMsg}`,
-            meta: { to, subject, provider },
-            timestamp: new Date(),
-          },
-        });
+        await prisma.$transaction([
+          prisma.job.update({
+            where: { id: job.id },
+            data: {
+              status: "failed",
+              error: { message: errMsg },
+              finishedAt: new Date(),
+            },
+          }),
+          prisma.auditLog.create({
+            data: {
+              tenantId: job.tenantId,
+              actorUserId: null,
+              actorExternalId: "email_worker",
+              actorType: "system",
+              level: "error",
+              action: "EMAIL_SEND_FAILED",
+              entityType: "job",
+              entityId: job.id,
+              message: `Email failed: ${errMsg}`,
+              meta: { to, subject, provider },
+              timestamp: new Date(),
+            },
+          }),
+        ]);
       }
     }
   }
