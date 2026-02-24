@@ -1,83 +1,135 @@
 import type { FastifyPluginAsync } from "fastify";
-import { loadEnv } from "../env.js";
-import { makeSupabase } from "../supabase.js";
+import { prisma } from "../db/prisma.js";
 
-// Simple in-memory connection state for local alpha testing.
-// Keyed by org_id:user_id:provider
-const connected = new Map<string, boolean>();
+/**
+ * Integrations are stored in Postgres (prisma model Integration).
+ * UI should not depend on this table being pre-seeded. If a tenant has assets that imply
+ * a provider but there is no Integration row yet, we create a stub row with connected=false.
+ *
+ * Providers are inferred from assets.platform:
+ * - facebook/instagram/threads -> meta
+ * - youtube/google -> google
+ * - x/twitter -> x
+ * - tumblr -> tumblr
+ * - pinterest -> pinterest
+ * - linkedin -> linkedin
+ * Others are ignored.
+ */
+function normalizeProvider(p: string | null | undefined): string | null {
+  if (!p) return null;
+  const s = String(p).trim().toLowerCase();
+  if (!s) return null;
+  if (s.includes("facebook") || s.includes("instagram") || s.includes("threads") || s === "meta") return "meta";
+  if (s.includes("youtube") || s.includes("google")) return "google";
+  if (s === "x" || s.includes("twitter")) return "x";
+  if (s.includes("tumblr")) return "tumblr";
+  if (s.includes("pinterest")) return "pinterest";
+  if (s.includes("linkedin")) return "linkedin";
+  return null;
+}
 
-function key(org_id: string | null, user_id: string | null, provider: string) {
-  return `${org_id ?? ""}:${user_id ?? ""}:${provider}`;
+async function ensureStubIntegration(tenantId: string, provider: any) {
+  // provider is prisma enum integration_provider
+  await prisma.integration.upsert({
+    where: { tenantId_provider: { tenantId, provider } },
+    create: { tenantId, provider, connected: false },
+    update: {}, // no-op
+  });
 }
 
 export const integrationsRoutes: FastifyPluginAsync = async (app) => {
-  const env = loadEnv(process.env);
-  const supabase = makeSupabase(env);
-
-  async function isConnectedVault(org_id: string | null, user_id: string | null, provider: string): Promise<boolean> {
-    try {
-      const { data, error } = await supabase
-        .from("token_vault")
-        .select("provider")
-        .eq("org_id", org_id ?? "")
-        .eq("user_id", user_id ?? "")
-        .eq("provider", provider)
-        .limit(1);
-      if (error) return connected.get(key(org_id, user_id, provider)) ?? false;
-      return (data?.length ?? 0) > 0;
-    } catch {
-      return connected.get(key(org_id, user_id, provider)) ?? false;
-    }
-  }
-
-  async function disconnectVault(org_id: string | null, user_id: string | null, provider: string): Promise<void> {
-    try {
-      await supabase
-        .from("token_vault")
-        .delete()
-        .eq("org_id", org_id ?? "")
-        .eq("user_id", user_id ?? "")
-        .eq("provider", provider);
-    } catch {
-      // ignore
-    }
-  }
-
-  // GET /v1/integrations/status?org_id=...&user_id=...
-  // Returns [{provider, connected}] for providers that are wired.
+  /**
+   * GET /v1/integrations/status?tenantId=...
+   * Returns: { ok:true, tenantId, integrations:[{provider, connected}] }
+   * Also infers providers from assets and auto-creates stub Integration rows.
+   */
   app.get("/status", async (req) => {
     const q = (req.query ?? {}) as any;
-    const org_id = q.org_id ?? q.orgId ?? null;
-    const user_id = q.user_id ?? q.userId ?? null;
+    const tenantId = (q.tenantId ?? q.tenant_id ?? q.org_id ?? q.orgId ?? (req as any).tenantId ?? null) as string | null;
+    if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
 
-    return [
-      { provider: "google", connected: await isConnectedVault(org_id, user_id, "google") },
-      { provider: "meta", connected: await isConnectedVault(org_id, user_id, "meta") },
-      { provider: "x", connected: await isConnectedVault(org_id, user_id, "x") },
-      { provider: "tumblr", connected: await isConnectedVault(org_id, user_id, "tumblr") },
-    ];
+    // infer providers from assets
+    const assets = await prisma.asset.findMany({
+      where: { tenantId },
+      select: { platform: true },
+    });
+
+    const inferred = new Set<string>();
+    for (const a of assets) {
+      const p = normalizeProvider(a.platform);
+      if (p) inferred.add(p);
+    }
+
+    // ensure stubs exist for inferred providers
+    // (Only for providers we actually support in schema enum)
+    const supported = ["meta", "google", "x", "tumblr", "pinterest", "linkedin"] as const;
+    for (const p of supported) {
+      if (inferred.has(p)) {
+        await ensureStubIntegration(tenantId, p as any);
+      }
+    }
+
+    const rows = await prisma.integration.findMany({
+      where: { tenantId },
+      select: { provider: true, connected: true, updated_at: true, last_sync_at: true, status: true },
+      orderBy: { provider: "asc" },
+    });
+
+    return {
+      ok: true,
+      tenantId,
+      integrations: rows.map(r => ({
+        provider: r.provider,
+        connected: r.connected,
+        updated_at: r.updated_at,
+        last_sync_at: r.last_sync_at,
+        status: r.status,
+      })),
+    };
   });
 
-  // POST /v1/integrations/:provider/disconnect?org_id=...&user_id=...
+  /**
+   * POST /v1/integrations/:provider/mark_connected?tenantId=...
+   * For alpha/testing only (does NOT perform OAuth). It just flips connected=true.
+   */
+  app.post("/:provider/mark_connected", async (req) => {
+    const q = (req.query ?? {}) as any;
+    const params = (req.params ?? {}) as any;
+    const tenantId = (q.tenantId ?? q.tenant_id ?? q.org_id ?? q.orgId ?? (req as any).tenantId ?? null) as string | null;
+    const provider = String(params.provider ?? "").toLowerCase();
+    if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
+
+    const supported = ["meta", "google", "x", "tumblr", "pinterest", "linkedin"];
+    if (!supported.includes(provider)) return { ok: false, error: "UNSUPPORTED_PROVIDER" };
+
+    const row = await prisma.integration.upsert({
+      where: { tenantId_provider: { tenantId, provider: provider as any } },
+      create: { tenantId, provider: provider as any, connected: true },
+      update: { connected: true, updated_at: new Date() as any },
+      select: { provider: true, connected: true, updated_at: true },
+    });
+    return { ok: true, integration: row };
+  });
+
+  /**
+   * POST /v1/integrations/:provider/disconnect?tenantId=...
+   */
   app.post("/:provider/disconnect", async (req) => {
     const q = (req.query ?? {}) as any;
     const params = (req.params ?? {}) as any;
+    const tenantId = (q.tenantId ?? q.tenant_id ?? q.org_id ?? q.orgId ?? (req as any).tenantId ?? null) as string | null;
     const provider = String(params.provider ?? "").toLowerCase();
-    const org_id = q.org_id ?? q.orgId ?? null;
-    const user_id = q.user_id ?? q.userId ?? null;
+    if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
 
-    if (provider !== "google" && provider !== "meta" && provider !== "x" && provider !== "tumblr") {
-      return { ok: false, error: "unsupported_provider" };
-    }
+    const supported = ["meta", "google", "x", "tumblr", "pinterest", "linkedin"];
+    if (!supported.includes(provider)) return { ok: false, error: "UNSUPPORTED_PROVIDER" };
 
-    connected.set(key(org_id, user_id, provider), false);
-    await disconnectVault(org_id, user_id, provider);
-    return { ok: true, provider, connected: false };
-  });
-
-  // Internal helper used by oauth stubs
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (app as any).decorate("__setIntegrationConnected", (org_id: string | null, user_id: string | null, provider: string, value: boolean) => {
-    connected.set(key(org_id, user_id, provider), value);
+    const row = await prisma.integration.upsert({
+      where: { tenantId_provider: { tenantId, provider: provider as any } },
+      create: { tenantId, provider: provider as any, connected: false },
+      update: { connected: false, access_token: null, refresh_token: null, token_expires_at: null, updated_at: new Date() as any },
+      select: { provider: true, connected: true, updated_at: true },
+    });
+    return { ok: true, integration: row };
   });
 };

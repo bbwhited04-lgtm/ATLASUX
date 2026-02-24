@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useActiveTenant } from "@/lib/activeTenant";
+import { API_BASE } from "@/lib/api";
 import {
   Bell,
   Radio,
@@ -23,6 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export function SocialMonitoring() {
+  const { tenantId } = useActiveTenant();
   const [activeTab, setActiveTab] = useState("overview");
   const [isListening, setIsListening] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
@@ -35,10 +38,31 @@ export function SocialMonitoring() {
     sources: 0,
   };
 
-  const toggleListening = () => {
-    // UI-only for now
+  const toggleListening = async () => {
+  // If no business selected, keep it safe and clear.
+  if (!tenantId) {
+    alert("Select a business in Business Manager first.");
+    return;
+  }
+  try {
+    if (!isListening) {
+      const r = await fetch(`${API_BASE}/v1/listening/start?tenantId=${encodeURIComponent(tenantId)}`, { method: "POST" });
+      const j = await r.json();
+      if (j?.disconnectedProviders?.length) {
+        alert(`Listening is queued, but these providers are not connected yet: ${j.disconnectedProviders.join(", ")}.
+Go to Settings → Integrations to connect them.`);
+      } else {
+        alert("Listening is queued.");
+      }
+    } else {
+      // stop is UI-only for now (worker stop will be added later)
+    }
     setIsListening((prev) => !prev);
-  };
+  } catch (e) {
+    console.error(e);
+    alert("Failed to start listening.");
+  }
+};
 
   const toggleAlerts = () => {
     setAlertsOpen((prev) => !prev);

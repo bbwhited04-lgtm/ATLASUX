@@ -1,4 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
+import { useActiveTenant } from "../lib/activeTenant";
+import { API_BASE } from "../lib/api";
 import { useSearchParams } from "react-router-dom";
 import { FileText } from "lucide-react";
 import {
@@ -145,7 +147,7 @@ const defaultDriveAccess = [
 
 export function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { org_id, user_id } = useMemo(() => getOrgUser(), []);
+  const { tenantId, tenantId } = useMemo(() => getOrgUser(), []);
 
   const initialTab = (searchParams.get("tab") || "general").toLowerCase();
   const [tab, setTab] = useState<string>(initialTab);
@@ -167,7 +169,8 @@ export function Settings() {
     setAuditLoading(true);
     setAuditError(null);
     try {
-      const qs = new URLSearchParams({ org_id, user_id, limit: "100" }).toString();
+      if (!tenantId) { setAuditRows([]); setAuditLoading(false); return; }
+      const qs = new URLSearchParams({ tenantId, limit: "100" }).toString();
       const res = await fetch(`${API_BASE}/v1/audit/list?${qs}`);
       const json = await res.json().catch(() => ({ ok: false, rows: [] }));
       const rows = (json?.items ?? json?.rows ?? []) as any[];

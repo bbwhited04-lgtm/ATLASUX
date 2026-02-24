@@ -31,6 +31,7 @@ import { decisionRoutes } from "./routes/decisionRoutes.js";
 import { distributionRoutes } from "./routes/distributionRoutes.js";
 import { growthRoutes } from "./routes/growthRoutes.js";
 import { integrationsRoutes } from "./routes/integrationsRoutes.js";
+import { listeningRoutes } from "./routes/listeningRoutes.js";
 import { oauthRoutes } from "./routes/oauthRoutes.js";
 import { ticketsRoutes } from "./routes/ticketsRoutes.js";
 
@@ -122,6 +123,7 @@ await app.register(ticketsRoutes, { prefix: "/v1/tickets" });
 
 // OAuth + Integrations hub (needed by Integrations UI)
 await app.register(integrationsRoutes, { prefix: "/v1/integrations" });
+await app.register(listeningRoutes, { prefix: "/v1/listening" });
 await app.register(oauthRoutes, { prefix: "/v1/oauth" });
 
 const port = Number(process.env.PORT ?? 8787);

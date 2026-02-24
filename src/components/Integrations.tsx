@@ -2,6 +2,7 @@ import * as React from "react";
 import { Plus, X, Search, Filter, RefreshCw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { API_BASE } from "@/lib/api";
+import { useActiveTenant } from "@/lib/activeTenant";
 
 
 type Category =
@@ -32,12 +33,6 @@ type Integration = {
 
 // Default to your deployed backend. Override locally with VITE_BACKEND_URL.
 const BACKEND_URL = API_BASE;
-// backend scaffold expects org_id/user_id in query (per its comments)
-function getOrgUser() {
-  const org_id = localStorage.getItem("atlasux_org_id") || "demo_org";
-  const user_id = localStorage.getItem("atlasux_user_id") || "demo_user";
-  return { org_id, user_id };
-}
 
 const INTEGRATIONS: Integration[] = [
   // Social (Meta-backed)
@@ -159,34 +154,29 @@ type StatusRow = { provider: "google" | "meta" | "x" | "tumblr"; connected: bool
 
 export default function Integrations() {
   const [searchParams] = useSearchParams();
+  const { tenantId } = useActiveTenant();
   const [status, setStatus] = React.useState<Record<string, boolean>>({});
   const [loading, setLoading] = React.useState<string | null>(null);
   const [query, setQuery] = React.useState("");
   const [category, setCategory] = React.useState<Category | "All">("All");
 
   const refreshStatus = React.useCallback(async () => {
-    const { org_id, user_id } = getOrgUser();
     try {
-      const r = await fetch(`${BACKEND_URL}/v1/integrations/status?org_id=${encodeURIComponent(org_id)}&user_id=${encodeURIComponent(user_id)}`, {
+      const r = await fetch(`${BACKEND_URL}/v1/integrations/status?tenantId=${encodeURIComponent(tenantId ?? "")}`, {
         credentials: "include",
       });
-      const rows = (await r.json()) as StatusRow[];
+      const raw = await r.json() as any;
+const rows: StatusRow[] = Array.isArray(raw) ? raw : (raw?.integrations ?? []);
+const providerMap: Record<string, boolean> = {};
+for (const row of rows) providerMap[String(row.provider)] = !!row.connected;
 
-      // backend is only google/meta right now; we project that onto each integration
-      const map: Record<string, boolean> = {};
-      const googleOn = !!rows.find((x) => x.provider === "google")?.connected;
-      const metaOn = !!rows.find((x) => x.provider === "meta")?.connected;
-      const xOn = !!rows.find((x) => x.provider === "x")?.connected;
-      const tumblrOn = !!rows.find((x) => x.provider === "tumblr")?.connected;
-
-      for (const i of INTEGRATIONS) {
-        if (i.oauth === "google") map[i.id] = googleOn;
-        else if (i.oauth === "meta") map[i.id] = metaOn;
-        else if (i.oauth === "x") map[i.id] = xOn;
-        else if (i.oauth === "tumblr") map[i.id] = tumblrOn;
-        else map[i.id] = false;
-      }
-      setStatus(map);
+// project provider status down to each card
+const map: Record<string, boolean> = {};
+for (const i of INTEGRATIONS) {
+  if (i.oauth) map[i.id] = !!providerMap[i.oauth];
+  else map[i.id] = false;
+}
+setStatus(map);
     } catch {
       // if backend not reachable, still render UI
       const map: Record<string, boolean> = {};
@@ -209,7 +199,6 @@ export default function Integrations() {
     if (!i.oauth) return; // not wired yet
     setLoading(i.id);
 
-    const { org_id, user_id } = getOrgUser();
     const start =
       i.oauth === "google"
         ? `${BACKEND_URL}/v1/oauth/google/start`
@@ -219,15 +208,14 @@ export default function Integrations() {
             ? `${BACKEND_URL}/v1/oauth/tumblr/start`
           : `${BACKEND_URL}/v1/oauth/x/start`;
 
-    window.location.href = `${start}?org_id=${encodeURIComponent(org_id)}&user_id=${encodeURIComponent(user_id)}`;
+    window.location.href = `${start}?tenantId=${encodeURIComponent(tenantId ?? "")}`;
   };
 
   const disconnect = async (i: Integration) => {
     if (!i.oauth) return;
     setLoading(i.id);
 
-    const { org_id, user_id } = getOrgUser();
-    await fetch(`${BACKEND_URL}/v1/integrations/${i.oauth}/disconnect?org_id=${encodeURIComponent(org_id)}&user_id=${encodeURIComponent(user_id)}`, {
+    await fetch(`${BACKEND_URL}/v1/integrations/${i.oauth}/disconnect?tenantId=${encodeURIComponent(tenantId ?? "")}`, {
       method: "POST",
       credentials: "include",
     });
