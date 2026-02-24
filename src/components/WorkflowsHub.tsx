@@ -1,6 +1,6 @@
 import * as React from "react";
 import { API_BASE } from "../lib/api";
-import { Play, RefreshCw, Workflow, Power, Activity } from "lucide-react";
+import { Play, RefreshCw, Workflow } from "lucide-react";
 import { useActiveTenant } from "../lib/activeTenant";
 
 type RunResponse = {
@@ -17,8 +17,6 @@ type RunStatus = {
   error?: string;
 };
 
-
-
 type WorkflowItem = {
   id: string; // UI expects id; backend uses workflow_key
   name: string;
@@ -27,6 +25,7 @@ type WorkflowItem = {
   status?: string;
   version?: string;
 };
+
 const DEFAULT_WORKFLOWS: WorkflowItem[] = [
   { id: "WF-001", name: "Support Intake (Cheryl)", description: "Create ticket → classify → acknowledge → route → audit." },
   { id: "WF-002", name: "Support Escalation (Cheryl)", description: "Package escalation packet and route to the correct executive owner." },
@@ -45,9 +44,6 @@ export function WorkflowsHub() {
   const [status, setStatus] = React.useState<RunStatus | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [workflows, setWorkflows] = React.useState<WorkflowItem[]>(DEFAULT_WORKFLOWS);
-  const [atlasOnline, setAtlasOnline] = React.useState<boolean | null>(null);
-  const [atlasStateLoading, setAtlasStateLoading] = React.useState(false);
-  const [atlasStateErr, setAtlasStateErr] = React.useState<string | null>(null);
 
   // Manual input payload (alpha): lets you run workflows that require fields (ex: WF-001 customerEmail)
   const storageKey = React.useMemo(
@@ -91,33 +87,33 @@ export function WorkflowsHub() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey, workflowId]);
 
-React.useEffect(() => {
-  // prefer backend-provided catalog if available
-  fetch(`${API_BASE}/v1/workflows`)
-    .then((r) => r.json())
-    .then((d) => {
-      const rows = Array.isArray(d?.workflows) ? d.workflows : [];
-      const normalized: WorkflowItem[] = rows
-        .map((w: any) => {
-          const id = String(w?.workflow_key ?? w?.id ?? w?.workflowId ?? "").trim();
-          if (!id) return null;
-          return {
-            id,
-            name: String(w?.name ?? id),
-            description: w?.description ? String(w.description) : undefined,
-            agent_key: w?.agent_key ? String(w.agent_key) : (w?.agentKey ? String(w.agentKey) : undefined),
-            status: w?.status ? String(w.status) : undefined,
-            version: w?.version ? String(w.version) : undefined,
-          } as WorkflowItem;
-        })
-        .filter(Boolean) as WorkflowItem[];
+  React.useEffect(() => {
+    // prefer backend-provided catalog if available
+    fetch(`${API_BASE}/v1/workflows`)
+      .then((r) => r.json())
+      .then((d) => {
+        const rows = Array.isArray(d?.workflows) ? d.workflows : [];
+        const normalized: WorkflowItem[] = rows
+          .map((w: any) => {
+            const id = String(w?.workflow_key ?? w?.id ?? w?.workflowId ?? "").trim();
+            if (!id) return null;
+            return {
+              id,
+              name: String(w?.name ?? id),
+              description: w?.description ? String(w.description) : undefined,
+              agent_key: w?.agent_key ? String(w.agent_key) : (w?.agentKey ? String(w.agentKey) : undefined),
+              status: w?.status ? String(w.status) : undefined,
+              version: w?.version ? String(w.version) : undefined,
+            } as WorkflowItem;
+          })
+          .filter(Boolean) as WorkflowItem[];
 
-      if (d?.ok && normalized.length) {
-        setWorkflows(normalized);
-      }
-    })
-    .catch(() => {});
-}, []);
+        if (d?.ok && normalized.length) {
+          setWorkflows(normalized);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // keep local input in sync if global tenant changes (but don't clobber manual edits)
   React.useEffect(() => {
@@ -179,42 +175,6 @@ React.useEffect(() => {
     } finally {
       setLoading(false);
     }
-
-  async function fetchAtlasState() {
-    setAtlasStateLoading(true);
-    setAtlasStateErr(null);
-    try {
-      const res = await fetch(`${API_BASE}/v1/api/system/state/atlas_online`);
-      const data = (await res.json()) as any;
-      const v = String(data?.state?.value ?? "");
-      if (!data?.ok) throw new Error(data?.error ?? "Failed to read atlas state");
-      if (v === "true") setAtlasOnline(true);
-      else if (v === "false") setAtlasOnline(false);
-      else setAtlasOnline(null);
-    } catch (e: any) {
-      setAtlasStateErr(e?.message ?? String(e));
-      setAtlasOnline(null);
-    } finally {
-      setAtlasStateLoading(false);
-    }
-  }
-
-  async function setAtlasOnlineState(next: boolean) {
-    setAtlasStateLoading(true);
-    setAtlasStateErr(null);
-    try {
-      const url = next ? `${API_BASE}/v1/api/system/atlas/online` : `${API_BASE}/v1/api/system/atlas/offline`;
-      const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
-      const data = (await res.json()) as any;
-      if (!data?.ok) throw new Error(data?.error ?? "Failed to set atlas state");
-      const v = String(data?.state?.value ?? "");
-      setAtlasOnline(v === "true");
-    } catch (e: any) {
-      setAtlasStateErr(e?.message ?? String(e));
-    } finally {
-      setAtlasStateLoading(false);
-    }
-  }
   }
 
   return (
@@ -225,9 +185,7 @@ React.useEffect(() => {
             <Workflow className="h-6 w-6 text-cyan-300" />
             <h1 className="text-2xl font-semibold text-slate-900">Workflows</h1>
           </div>
-          <p className="text-sm text-slate-600">
-            Workflow maps + engine smoke tests for the cloud surface.
-          </p>
+          <p className="text-sm text-slate-600">Workflow maps + engine smoke tests for the cloud surface.</p>
         </div>
       </div>
 
@@ -288,7 +246,9 @@ React.useEffect(() => {
               className="mt-1 w-full rounded-xl bg-white border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none"
             >
               {workflows.map((w) => (
-                <option key={w.id} value={w.id}>{w.id} — {w.name}</option>
+                <option key={w.id} value={w.id}>
+                  {w.id} — {w.name}
+                </option>
               ))}
             </select>
           </div>
@@ -296,7 +256,9 @@ React.useEffect(() => {
 
         <div className="mt-4">
           <div className="flex items-center justify-between">
-            <label className="text-xs text-slate-600">Input (JSON) — sent as <code className="text-slate-800">payload.input</code></label>
+            <label className="text-xs text-slate-600">
+              Input (JSON) — sent as <code className="text-slate-800">payload.input</code>
+            </label>
             {templates[workflowId] ? (
               <button
                 type="button"
@@ -324,7 +286,7 @@ React.useEffect(() => {
             onClick={run}
             disabled={loading || !tenantId}
             className="inline-flex items-center gap-2 rounded-xl bg-white border border-red-500 px-4 py-2 text-base font-semibold text-red-600 hover:bg-red-50 disabled:opacity-100 disabled:bg-white disabled:text-red-400 disabled:border-red-300"
->
+          >
             <Play className="h-4 w-4" /> Run (creates intent + 1 tick)
           </button>
 
@@ -336,35 +298,10 @@ React.useEffect(() => {
             <RefreshCw className="h-4 w-4" /> Refresh status
           </button>
 
-          
-          <button
-            onClick={() => setAtlasOnlineState(!(atlasOnline ?? false))}
-            disabled={atlasStateLoading}
-            className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-300 px-4 py-2 text-base text-slate-800 hover:bg-slate-50 disabled:opacity-50"
-            title="Toggle Atlas online/offline (system state)"
-          >
-            <Power className="h-4 w-4" />
-            Atlas: {atlasOnline === null ? "unknown" : atlasOnline ? "online" : "offline"}
-          </button>
-
-          <button
-            onClick={fetchAtlasState}
-            disabled={atlasStateLoading}
-            className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-300 px-4 py-2 text-base text-slate-800 hover:bg-slate-50 disabled:opacity-50"
-            title="Refresh Atlas state"
-          >
-            <Activity className="h-4 w-4" /> State
-          </button>
-<div className="text-base text-slate-800 self-center">
+          <div className="text-base text-slate-800 self-center">
             Backend: <span className="text-slate-800">{API_BASE}</span>
           </div>
         </div>
-
-        {atlasStateErr ? (
-          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-            Atlas state error: {atlasStateErr}
-          </div>
-        ) : null}
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-xl bg-white border border-slate-200 p-3">
@@ -372,7 +309,9 @@ React.useEffect(() => {
             <ul className="mt-2 space-y-2 text-xs text-slate-700">
               {workflows.map((w) => (
                 <li key={w.id}>
-                  <div className="text-slate-800">{w.id} — {w.name}</div>
+                  <div className="text-slate-800">
+                    {w.id} — {w.name}
+                  </div>
                   <div className="text-slate-800">{w.description}</div>
                 </li>
               ))}
@@ -382,17 +321,19 @@ React.useEffect(() => {
           <div className="rounded-xl bg-white border border-slate-200 p-3">
             <div className="text-base text-slate-800">Latest Run</div>
             <div className="mt-2 text-base text-slate-800 space-y-2">
-              <div>intentId: <span className="text-slate-800">{intentId || "—"}</span></div>
+              <div>
+                intentId: <span className="text-slate-800">{intentId || "—"}</span>
+              </div>
 
               {runResp && (
                 <pre className="whitespace-pre-wrap rounded-lg bg-slate-50 border border-slate-200 p-2 text-[11px] text-slate-800">
-{JSON.stringify(runResp, null, 2)}
+                  {JSON.stringify(runResp, null, 2)}
                 </pre>
               )}
 
               {status && (
                 <pre className="whitespace-pre-wrap rounded-lg bg-slate-50 border border-slate-200 p-2 text-[11px] text-slate-800">
-{JSON.stringify(status, null, 2)}
+                  {JSON.stringify(status, null, 2)}
                 </pre>
               )}
             </div>

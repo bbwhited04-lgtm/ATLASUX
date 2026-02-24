@@ -23,6 +23,8 @@ import {
   BookOpen,
   ClipboardCheck,
   Newspaper,
+  Power,
+  Activity,
 } from 'lucide-react';
 
 import { API_BASE } from "../lib/api";
@@ -35,6 +37,61 @@ function RootLayoutInner() {
   const [showMobileInstall, setShowMobileInstall] = useState(false);
   const { openModal } = useMobileConnection();
   const { tenantId } = useActiveTenant();
+
+  // Global Atlas online/offline state (visible everywhere in the header)
+  const [atlasOnline, setAtlasOnline] = React.useState<boolean | null>(null);
+  const [atlasStateLoading, setAtlasStateLoading] = React.useState(false);
+  const [atlasStateErr, setAtlasStateErr] = React.useState<string | null>(null);
+
+  const atlasStyles = {
+    online: "bg-emerald-600 text-white",
+    offline: "bg-slate-700 text-white",
+    unknown: "bg-slate-900/40 text-slate-200",
+    error: "bg-red-600 text-white animate-pulse",
+  } as const;
+
+  async function fetchAtlasState() {
+    setAtlasStateLoading(true);
+    setAtlasStateErr(null);
+    try {
+      const res = await fetch(`${API_BASE}/v1/api/system/state/atlas_online`);
+      const data = await res.json();
+      if (!data?.ok) throw new Error(data?.error ?? "Failed to read atlas state");
+      const v = String(data?.state?.value ?? "");
+      if (v === "true") setAtlasOnline(true);
+      else if (v === "false") setAtlasOnline(false);
+      else setAtlasOnline(null);
+    } catch (e: any) {
+      setAtlasStateErr(e?.message ?? String(e));
+      setAtlasOnline(null);
+    } finally {
+      setAtlasStateLoading(false);
+    }
+  }
+
+  async function setAtlasOnlineState(next: boolean) {
+    setAtlasStateLoading(true);
+    setAtlasStateErr(null);
+    try {
+      const url = next ? `${API_BASE}/v1/api/system/atlas/online` : `${API_BASE}/v1/api/system/atlas/offline`;
+      const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
+      const data = await res.json();
+      if (!data?.ok) throw new Error(data?.error ?? "Failed to set atlas state");
+      const v = String(data?.state?.value ?? "");
+      setAtlasOnline(v === "true");
+    } catch (e: any) {
+      setAtlasStateErr(e?.message ?? String(e));
+    } finally {
+      setAtlasStateLoading(false);
+    }
+  }
+
+  React.useEffect(() => {
+    fetchAtlasState();
+    const t = window.setInterval(fetchAtlasState, 30000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [pendingDecisionsCount, setPendingDecisionsCount] = React.useState<number>(0);
   React.useEffect(() => {
@@ -190,9 +247,25 @@ function RootLayoutInner() {
             </h1>
             <p className="text-xs text-slate-400">The AI Worker who works Where You Work</p>
           </div>          <div className="flex items-center gap-4">
+            {/* Atlas State Pill */}
+            <button
+              onClick={() => {
+                if (atlasStateLoading) return;
+                if (atlasOnline === null) fetchAtlasState();
+                else setAtlasOnlineState(!atlasOnline);
+              }}
+              className={`px-5 py-2 rounded-lg font-bold tracking-wide uppercase shadow-lg transition-all duration-200 ${atlasStateErr ? atlasStyles.error : atlasOnline === true ? atlasStyles.online : atlasOnline === false ? atlasStyles.offline : atlasStyles.unknown}`}
+              title={atlasStateErr ? `Atlas state error: ${atlasStateErr}` : "Toggle Atlas online/offline (or click when unknown to refresh)"}
+            >
+              <span className="inline-flex items-center gap-2">
+                <Power className="w-4 h-4" />
+                ATLAS · {atlasOnline === null ? "unknown" : atlasOnline ? "online" : "offline"}
+              </span>
+            </button>
+
             {/* Neptune Status Pill */}
             <button
-              onClick={() => setShowNeptunePanel(true)}
+              onClick={() => setIsNeptunePanelOpen(true)}
               className={`px-5 py-2 rounded-lg font-bold tracking-wide uppercase shadow-lg transition-all duration-200 ${statusStyles[currentStatus]}`}
               >
               NEPTUNE · {currentStatus}
