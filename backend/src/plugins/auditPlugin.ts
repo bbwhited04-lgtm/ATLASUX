@@ -27,7 +27,7 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
 
       const base = {
         actorType: "system",
-        actorUserId: null, // TODO: set when auth is wired
+        actorUserId: (req as any).auth?.userId ?? null,
         actorExternalId: null,
         // If your Prisma schema uses an enum for `level`, Prisma will coerce string values that match enum variants.
         // If it doesn't, this still works as a plain string.

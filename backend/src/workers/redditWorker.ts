@@ -243,6 +243,21 @@ async function executeApproved(accessToken: string) {
             payload: { ...(memo.payload as any), posted_comment: result },
           },
         });
+        await prisma.auditLog.create({
+          data: {
+            tenantId: DONNA_TENANT_ID,
+            actorType: "system",
+            actorUserId: null,
+            actorExternalId: "donna",
+            level: "info",
+            action: "REDDIT_REPLY_POSTED",
+            entityType: "decision_memo",
+            entityId: memo.id,
+            message: `Donna posted Reddit reply to ${p.post_url}`,
+            meta: { memoId: memo.id, subreddit: p.subreddit, postId: p.post_id, postUrl: p.post_url },
+            timestamp: new Date(),
+          },
+        } as any).catch(() => null);
         process.stdout.write(`[redditWorker] Posted reply to ${p.post_url}\n`);
       } else if (p.action === "reddit_post") {
         const result = await submitPost(accessToken, p.subreddit, p.title, p.text);
@@ -253,6 +268,21 @@ async function executeApproved(accessToken: string) {
             payload: { ...(memo.payload as any), posted: result },
           },
         });
+        await prisma.auditLog.create({
+          data: {
+            tenantId: DONNA_TENANT_ID,
+            actorType: "system",
+            actorUserId: null,
+            actorExternalId: "donna",
+            level: "info",
+            action: "REDDIT_POST_PUBLISHED",
+            entityType: "decision_memo",
+            entityId: memo.id,
+            message: `Donna published post to r/${p.subreddit}: "${p.title?.slice(0, 60)}"`,
+            meta: { memoId: memo.id, subreddit: p.subreddit, title: p.title, url: result?.url ?? null },
+            timestamp: new Date(),
+          },
+        } as any).catch(() => null);
         process.stdout.write(`[redditWorker] Posted to r/${p.subreddit}: ${result.url}\n`);
       }
     } catch (e: any) {
@@ -264,6 +294,21 @@ async function executeApproved(accessToken: string) {
           payload: { ...(memo.payload as any), last_error: e.message },
         },
       });
+      await prisma.auditLog.create({
+        data: {
+          tenantId: DONNA_TENANT_ID,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: "donna",
+          level: "error",
+          action: "REDDIT_EXECUTE_FAILED",
+          entityType: "decision_memo",
+          entityId: memo.id,
+          message: `Reddit execute failed for memo ${memo.id}: ${e.message}`,
+          meta: { memoId: memo.id, action: p.action, error: e.message },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
     }
   }
 }

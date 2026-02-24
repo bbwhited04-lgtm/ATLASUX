@@ -280,10 +280,10 @@ export const emailRoutes: FastifyPluginAsync = async (app) => {
    * Pipeline: Mailbox → Ingest → Normalize → Classify → Dispatch → Audit
    */
   app.post("/inbound", async (req, reply) => {
-    // Secret validation
+    // Secret validation — fail closed: if INBOUND_EMAIL_SECRET is not set, reject all requests
     const secret   = String(req.headers["x-inbound-secret"] ?? "").trim();
     const expected = String(process.env.INBOUND_EMAIL_SECRET ?? "").trim();
-    if (expected && secret !== expected) {
+    if (!expected || secret !== expected) {
       return reply.code(401).send({ ok: false, error: "invalid_inbound_secret" });
     }
 

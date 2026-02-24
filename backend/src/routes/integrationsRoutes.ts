@@ -88,13 +88,18 @@ export const integrationsRoutes: FastifyPluginAsync = async (app) => {
 
   /**
    * POST /v1/integrations/:provider/mark_connected
-   * Alpha/testing only — flips connected=true without real OAuth.
+   * OAuth callback path only — flips connected=true after successful OAuth.
+   * Requires owner or admin tenant role.
    */
   app.post("/:provider/mark_connected", async (req) => {
     const params = (req.params ?? {}) as any;
     const tenantId = resolveTenant(req);
     const provider = String(params.provider ?? "").toLowerCase();
     if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
+    // When auth is wired, only owner/admin may flip connected state
+    const userId = (req as any).auth?.userId ?? null;
+    const role = (req as any).tenantRole as string | undefined;
+    if (userId && (!role || !["owner", "admin"].includes(role))) return { ok: false, error: "REQUIRES_ADMIN" };
     if (!(SUPPORTED_PROVIDERS as string[]).includes(provider)) return { ok: false, error: "UNSUPPORTED_PROVIDER" };
 
     const row = await prisma.integration.upsert({

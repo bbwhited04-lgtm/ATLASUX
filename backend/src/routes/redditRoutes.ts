@@ -80,10 +80,16 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
   /**
    * POST /v1/reddit/approve/:memoId
    * Approve a pending reddit memo and immediately execute it.
+   * Requires owner or admin tenant role (posts to external platform).
    */
-  app.post("/approve/:memoId", async (req) => {
+  app.post("/approve/:memoId", async (req, reply) => {
     const tenantId = resolveTenant(req);
-    if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const role = (req as any).tenantRole as string | undefined;
+    if (!role || !["owner", "admin"].includes(role)) {
+      return reply.code(403).send({ ok: false, error: "REQUIRES_ADMIN" });
+    }
 
     const { memoId } = req.params as any;
     const memo = await prisma.decisionMemo.findFirst({
