@@ -137,8 +137,6 @@ function RootLayoutInner() {
     { path: "/app/jobs", icon: Cpu, label: "Pluto Jobs" },
     { path: "/app/chat", icon: MessageSquare, label: "AI Chat" },
     { path: "/app/agents", icon: UserCog, label: "Agents" },
-    // Integrations are consolidated under Settings -> Integrations
-    { path: "/app/settings?tab=integrations", icon: Puzzle, label: "Integrations" },
     { path: "/app/monitoring", icon: Radio, label: "Monitoring" },
     { path: "/app/crm", icon: Users, label: "CRM" },
     { path: "/app/analytics", icon: BarChart3, label: "Analytics" },

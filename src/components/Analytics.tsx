@@ -54,7 +54,7 @@ export function Analytics() {
   
   // Route to the shared Integrations flow (Sprout-style)
   const handleConnectPlatform = (platformName: string) => {
-    navigate(`/app/integrations?focus=${encodeURIComponent(platformName)}`);
+    navigate(`/app/settings?tab=integrations&focus=${encodeURIComponent(platformName)}`);
   };
   
   return (
