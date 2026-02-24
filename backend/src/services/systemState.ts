@@ -1,28 +1,71 @@
 /**
- * Lightweight in-memory system state.
+ * System state stored in DB (public.system_state).
  *
- * We previously backed this with a Prisma `SystemState` model, but the
- * current schema does not include it. To keep builds green (and keep local
- * development moving), we store state in-process.
- *
- * If you want this persisted across restarts, add a Prisma model and swap
- * this implementation back to DB.
+ * IMPORTANT: This MUST be DB-backed (not in-memory) so that:
+ * - UI + API see the same state after restarts
+ * - background workers (separate process) can read the same state
  */
 
-type SystemStateRow = {
+import { prisma } from "../prisma.js";
+
+export type SystemStateRow = {
   key: string;
-  value: string;
-  updatedAt: Date;
+  value: any;
+  updated_at: Date | null;
 };
 
-const state = new Map<string, SystemStateRow>();
+function parseBoolString(v: string): boolean | null {
+  const s = String(v ?? "").trim().toLowerCase();
+  if (s === "true" || s === "1" || s === "yes" || s === "y" || s === "on") return true;
+  if (s === "false" || s === "0" || s === "no" || s === "n" || s === "off") return false;
+  return null;
+}
 
-export async function setSystemState(key: string, value: string) {
-  const row: SystemStateRow = { key, value, updatedAt: new Date() };
-  state.set(key, row);
-  return row;
+/**
+ * Set a system state value.
+ *
+ * For key='atlas_online':
+ * - if value is a boolean-ish string, we store a JSON object with
+ *   { online, engine_enabled, last_tick_at? } for backward compatibility.
+ */
+export async function setSystemState(key: string, value: unknown) {
+  let nextValue: any = value as any;
+
+  if (key === "atlas_online") {
+    // Preserve/merge existing object if present.
+    const existing = await prisma.system_state.findUnique({ where: { key }, select: { value: true } });
+    const prev = (existing?.value && typeof existing.value === "object" && !Array.isArray(existing.value))
+      ? (existing.value as any)
+      : {};
+
+    if (typeof value === "string") {
+      const b = parseBoolString(value);
+      if (b !== null) {
+        nextValue = { ...prev, online: b, engine_enabled: b };
+      } else {
+        nextValue = value;
+      }
+    } else if (typeof value === "boolean") {
+      nextValue = { ...prev, online: value, engine_enabled: value };
+    } else if (value && typeof value === "object" && !Array.isArray(value)) {
+      nextValue = { ...prev, ...(value as any) };
+    }
+  }
+
+  const row = await prisma.system_state.upsert({
+    where: { key },
+    create: { key, value: nextValue },
+    update: { value: nextValue, updated_at: new Date() },
+    select: { key: true, value: true, updated_at: true },
+  });
+
+  return row as SystemStateRow;
 }
 
 export async function getSystemState(key: string) {
-  return state.get(key) ?? null;
+  const row = await prisma.system_state.findUnique({
+    where: { key },
+    select: { key: true, value: true, updated_at: true },
+  });
+  return (row ?? null) as SystemStateRow | null;
 }

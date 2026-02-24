@@ -12,6 +12,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "echo '== prisma generate ==' && npx prisma generate && echo '== tsc ==' && npx tsc -p tsconfig.json",
     "start": "node dist/index.js",
+    "worker:engine": "node dist/workers/engineLoop.js",
+    "worker:email": "node dist/workers/emailSender.js",
     "kb:chunk-docs": "ts-node scripts/chunkKbDocuments.ts"
   },
   "prisma": {
