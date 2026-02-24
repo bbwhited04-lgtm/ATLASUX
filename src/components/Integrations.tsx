@@ -5,11 +5,11 @@ import { API_BASE } from "@/lib/api";
 import { useActiveTenant } from "@/lib/activeTenant";
 import { getOrgUser } from "@/lib/org";
 
-
 type Category =
   | "Social"
   | "Google"
   | "Microsoft"
+  | "Apple"
   | "AWS"
   | "CRM"
   | "Messaging"
@@ -19,7 +19,6 @@ type Category =
   | "Marketing"
   | "Automation"
   | "Ecommerce"
-  | "Analytics"
   | "Dev"
   | "Other";
 
@@ -28,130 +27,131 @@ type Integration = {
   name: string;
   description: string;
   category: Category;
-  // which backend oauth provider handles this integration right now
   oauth: "google" | "meta" | "x" | "tumblr" | "microsoft" | null;
+  /** Sub-services unlocked by this OAuth connection */
+  covers?: string[];
+  /** Priority groups sort above everything else */
+  group?: boolean;
 };
 
-// Default to your deployed backend. Override locally with VITE_BACKEND_URL.
 const BACKEND_URL = API_BASE;
 
 const INTEGRATIONS: Integration[] = [
-  // Social (Meta-backed)
-  { id: "facebook_pages", name: "Facebook Pages", category: "Social", description: "Manage Pages, posts, insights.", oauth: "meta" },
-  { id: "facebook_groups", name: "Facebook Groups", category: "Social", description: "Post and moderate groups.", oauth: "meta" },
-  { id: "facebook_ads", name: "Facebook Ads", category: "Social", description: "Ad accounts & campaigns.", oauth: "meta" },
-  { id: "instagram", name: "Instagram", category: "Social", description: "Publish and analyze posts.", oauth: "meta" },
-  { id: "threads", name: "Threads", category: "Social", description: "Compose and schedule posts.", oauth: "meta" },
+  // ── Priority provider groups (always shown first) ─────────────────────
+  {
+    id: "google",
+    name: "Google",
+    category: "Google",
+    description: "One OAuth connection covers all Google services.",
+    oauth: "google",
+    group: true,
+    covers: ["Gmail", "Drive", "Calendar", "Sheets", "Docs", "YouTube", "Meet", "GA4", "Search Console", "Business Profile", "Google Ads"],
+  },
+  {
+    id: "microsoft",
+    name: "Microsoft",
+    category: "Microsoft",
+    description: "One Azure AD consent covers all Microsoft 365 services.",
+    oauth: "microsoft",
+    group: true,
+    covers: ["Outlook", "OneDrive", "Teams", "SharePoint", "Calendar"],
+  },
+  {
+    id: "meta",
+    name: "Meta",
+    category: "Social",
+    description: "One Meta app approval covers all Meta-backed platforms.",
+    oauth: "meta",
+    group: true,
+    covers: ["Facebook Pages", "Facebook Groups", "Facebook Ads", "Instagram", "Threads"],
+  },
+  {
+    id: "icloud",
+    name: "iCloud",
+    category: "Apple",
+    description: "Apple cloud storage and file sync.",
+    oauth: null,
+    group: true,
+    covers: ["iCloud Drive", "Photos", "Contacts"],
+  },
+  {
+    id: "aws",
+    name: "Amazon Web Services",
+    category: "AWS",
+    description: "IAM-based access to all AWS services.",
+    oauth: null,
+    group: true,
+    covers: ["S3", "Lambda", "CloudWatch", "EC2", "IAM"],
+  },
 
-  // Social (non-oauth for now)
-  { id: "tiktok", name: "TikTok", category: "Social", description: "Post videos and view analytics.", oauth: null },
-  { id: "youtube", name: "YouTube", category: "Social", description: "Upload, manage, and track.", oauth: "google" },
-  { id: "youtube_studio", name: "YouTube Studio", category: "Social", description: "Channel management tools.", oauth: "google" },
-  { id: "x", name: "X (Twitter)", category: "Social", description: "Tweet, schedule, and monitor.", oauth: "x" },
-  { id: "tumblr", name: "Tumblr", category: "Social", description: "Publish blog posts and track distribution.", oauth: "tumblr" },
-  { id: "linkedin", name: "LinkedIn", category: "Social", description: "Company + personal publishing.", oauth: null },
-  { id: "pinterest", name: "Pinterest", category: "Social", description: "Pins, boards, and trends.", oauth: null },
-  { id: "reddit", name: "Reddit", category: "Social", description: "Post, comment, monitor mentions.", oauth: null },
-  { id: "snapchat", name: "Snapchat", category: "Social", description: "Spotlight and campaigns.", oauth: null },
-  { id: "twitch", name: "Twitch", category: "Social", description: "Streams, clips, channel ops.", oauth: null },
+  // ── Social platforms ──────────────────────────────────────────────────
+  { id: "x",        name: "X (Twitter)", category: "Social",   description: "Tweet, schedule, and monitor.",                oauth: "x" },
+  { id: "tumblr",   name: "Tumblr",      category: "Social",   description: "Publish blog posts and track distribution.",   oauth: "tumblr" },
+  { id: "linkedin", name: "LinkedIn",    category: "Social",   description: "Company + personal publishing.",               oauth: null },
+  { id: "pinterest",name: "Pinterest",   category: "Social",   description: "Pins, boards, and trends.",                   oauth: null },
+  { id: "tiktok",   name: "TikTok",      category: "Social",   description: "Post videos and view analytics.",             oauth: null },
+  { id: "reddit",   name: "Reddit",      category: "Social",   description: "Post, comment, monitor mentions.",            oauth: null },
+  { id: "snapchat", name: "Snapchat",    category: "Social",   description: "Spotlight and campaigns.",                    oauth: null },
+  { id: "twitch",   name: "Twitch",      category: "Social",   description: "Streams, clips, channel ops.",                oauth: null },
 
-  // Google (Google-backed)
-  { id: "google", name: "Google Account", category: "Google", description: "Single sign-in for Google apps.", oauth: "google" },
-  { id: "gmail", name: "Gmail", category: "Google", description: "Email sync and automations.", oauth: "google" },
-  { id: "google_calendar", name: "Google Calendar", category: "Google", description: "Scheduling and reminders.", oauth: "google" },
-  { id: "google_drive", name: "Google Drive", category: "Google", description: "File access and sharing.", oauth: "google" },
-  { id: "google_sheets", name: "Google Sheets", category: "Google", description: "Read/write spreadsheets.", oauth: "google" },
-  { id: "google_docs", name: "Google Docs", category: "Google", description: "Generate and update docs.", oauth: "google" },
-  { id: "google_business", name: "Google Business Profile", category: "Google", description: "Posts, reviews, locations.", oauth: "google" },
-  { id: "google_ads", name: "Google Ads", category: "Google", description: "Campaigns and reporting.", oauth: "google" },
-  { id: "google_search_console", name: "Google Search Console", category: "Google", description: "SEO queries and indexing.", oauth: "google" },
-  { id: "ga4", name: "Google Analytics (GA4)", category: "Analytics", description: "Traffic and conversion analytics.", oauth: "google" },
+  // ── Storage ───────────────────────────────────────────────────────────
+  { id: "dropbox",  name: "Dropbox",     category: "Storage",  description: "Files, folders, links.",                      oauth: null },
+  { id: "box",      name: "Box",         category: "Storage",  description: "Enterprise storage.",                         oauth: null },
 
-  // Microsoft (backed by Azure AD OAuth)
-  { id: "microsoft", name: "Microsoft Account", category: "Microsoft", description: "Single sign-in for Microsoft apps.", oauth: "microsoft" },
-  { id: "outlook", name: "Outlook Mail", category: "Microsoft", description: "Email and rules.", oauth: "microsoft" },
-  { id: "ms_calendar", name: "Microsoft Calendar", category: "Microsoft", description: "Scheduling and events.", oauth: "microsoft" },
-  { id: "onedrive", name: "OneDrive", category: "Microsoft", description: "Cloud file sync.", oauth: "microsoft" },
-  { id: "sharepoint", name: "SharePoint", category: "Microsoft", description: "Sites and shared documents.", oauth: "microsoft" },
-  { id: "teams", name: "Microsoft Teams", category: "Video", description: "Meetings and messaging.", oauth: "microsoft" },
+  // ── Video / Conferencing ──────────────────────────────────────────────
+  { id: "zoom",     name: "Zoom",        category: "Video",    description: "Meetings, webinars, recordings.",             oauth: null },
 
-  // AWS (added)
-  { id: "aws", name: "Amazon Web Services", category: "AWS", description: "IAM, S3, Lambda, CloudWatch.", oauth: null },
-  { id: "aws_s3", name: "AWS S3", category: "AWS", description: "Buckets, uploads, downloads.", oauth: null },
-  { id: "aws_lambda", name: "AWS Lambda", category: "AWS", description: "Serverless functions control.", oauth: null },
-  { id: "aws_cloudwatch", name: "AWS CloudWatch", category: "AWS", description: "Logs, metrics, alarms.", oauth: null },
+  // ── CRM ───────────────────────────────────────────────────────────────
+  { id: "hubspot",  name: "HubSpot",     category: "CRM",      description: "Contacts, deals, pipelines.",                 oauth: null },
+  { id: "salesforce",name:"Salesforce",  category: "CRM",      description: "Leads, accounts, automations.",               oauth: null },
+  { id: "zoho_crm", name: "Zoho CRM",   category: "CRM",      description: "Lead capture and workflows.",                 oauth: null },
+  { id: "pipedrive",name: "Pipedrive",   category: "CRM",      description: "Deals and stages.",                           oauth: null },
 
-  // Storage
-  { id: "dropbox", name: "Dropbox", category: "Storage", description: "Files, folders, links.", oauth: null },
-  { id: "box", name: "Box", category: "Storage", description: "Enterprise storage.", oauth: null },
-  { id: "icloud", name: "iCloud", category: "Storage", description: "Apple cloud sync & files.", oauth: null },
+  // ── Messaging ─────────────────────────────────────────────────────────
+  { id: "slack",    name: "Slack",       category: "Messaging",description: "Channels, alerts, workflows.",                oauth: null },
+  { id: "discord",  name: "Discord",     category: "Messaging",description: "Bots, webhooks, community.",                  oauth: null },
+  { id: "telegram", name: "Telegram",    category: "Messaging",description: "Channels, bots, automations.",               oauth: null },
+  { id: "whatsapp", name: "WhatsApp Business", category: "Messaging", description: "Messaging and templates.",            oauth: null },
+  { id: "twilio",   name: "Twilio SMS",  category: "Messaging",description: "Text messaging & verification.",              oauth: null },
 
-  // Video
-  { id: "zoom", name: "Zoom", category: "Video", description: "Meetings, webinars, recordings.", oauth: null },
-  { id: "google_meet", name: "Google Meet", category: "Video", description: "Meetings & links.", oauth: "google" },
+  // ── Payments ──────────────────────────────────────────────────────────
+  { id: "stripe",   name: "Stripe",      category: "Payments", description: "Payments, subscriptions, webhooks.",          oauth: null },
+  { id: "paypal",   name: "PayPal",      category: "Payments", description: "Payments and invoices.",                      oauth: null },
+  { id: "square",   name: "Square",      category: "Payments", description: "POS and payments.",                           oauth: null },
 
-  // CRM
-  { id: "hubspot", name: "HubSpot", category: "CRM", description: "Contacts, deals, pipelines.", oauth: null },
-  { id: "salesforce", name: "Salesforce", category: "CRM", description: "Leads, accounts, automations.", oauth: null },
-  { id: "zoho_crm", name: "Zoho CRM", category: "CRM", description: "Lead capture and workflows.", oauth: null },
-  { id: "pipedrive", name: "Pipedrive", category: "CRM", description: "Deals and stages.", oauth: null },
+  // ── Marketing ─────────────────────────────────────────────────────────
+  { id: "mailchimp",name: "Mailchimp",   category: "Marketing",description: "Email campaigns and lists.",                  oauth: null },
+  { id: "klaviyo",  name: "Klaviyo",     category: "Marketing",description: "Ecommerce email/SMS.",                       oauth: null },
+  { id: "sendgrid", name: "SendGrid",    category: "Marketing",description: "Transactional email.",                        oauth: null },
 
-  // Messaging
-  { id: "slack", name: "Slack", category: "Messaging", description: "Channels, alerts, workflows.", oauth: null },
-  { id: "discord", name: "Discord", category: "Messaging", description: "Bots, webhooks, community.", oauth: null },
-  { id: "telegram", name: "Telegram", category: "Messaging", description: "Channels, bots, automations.", oauth: null },
-  { id: "whatsapp", name: "WhatsApp Business", category: "Messaging", description: "Messaging and templates.", oauth: null },
-  { id: "twilio", name: "Twilio SMS", category: "Messaging", description: "Text messaging & verification.", oauth: null },
+  // ── Automation ────────────────────────────────────────────────────────
+  { id: "zapier",   name: "Zapier",      category: "Automation",description: "Connect apps with zaps.",                   oauth: null },
+  { id: "make",     name: "Make",        category: "Automation",description: "Advanced workflows.",                        oauth: null },
+  { id: "n8n",      name: "n8n",         category: "Automation",description: "Self-hosted automation.",                   oauth: null },
 
-  // Payments
-  { id: "stripe", name: "Stripe", category: "Payments", description: "Payments, subscriptions, webhooks.", oauth: null },
-  { id: "paypal", name: "PayPal", category: "Payments", description: "Payments and invoices.", oauth: null },
-  { id: "square", name: "Square", category: "Payments", description: "POS and payments.", oauth: null },
+  // ── Ecommerce ─────────────────────────────────────────────────────────
+  { id: "shopify",  name: "Shopify",     category: "Ecommerce",description: "Products, orders, customers.",               oauth: null },
+  { id: "woocommerce",name:"WooCommerce",category: "Ecommerce",description: "WordPress ecommerce.",                       oauth: null },
+  { id: "etsy",     name: "Etsy",        category: "Ecommerce",description: "Listings and orders.",                       oauth: null },
 
-  // Marketing
-  { id: "mailchimp", name: "Mailchimp", category: "Marketing", description: "Email campaigns and lists.", oauth: null },
-  { id: "klaviyo", name: "Klaviyo", category: "Marketing", description: "Ecommerce email/SMS.", oauth: null },
-  { id: "sendgrid", name: "SendGrid", category: "Marketing", description: "Transactional email.", oauth: null },
+  // ── Dev ───────────────────────────────────────────────────────────────
+  { id: "github",   name: "GitHub",      category: "Dev",      description: "Repos, issues, actions.",                    oauth: null },
+  { id: "gitlab",   name: "GitLab",      category: "Dev",      description: "CI/CD and repos.",                           oauth: null },
+  { id: "vercel",   name: "Vercel",      category: "Dev",      description: "Deployments and env vars.",                  oauth: null },
+  { id: "cloudflare",name:"Cloudflare",  category: "Dev",      description: "DNS, Workers, security.",                    oauth: null },
 
-  // Automation
-  { id: "zapier", name: "Zapier", category: "Automation", description: "Connect apps with zaps.", oauth: null },
-  { id: "make", name: "Make (Integromat)", category: "Automation", description: "Advanced workflows.", oauth: null },
-  { id: "n8n", name: "n8n", category: "Automation", description: "Self-hosted automation.", oauth: null },
-
-  // Ecommerce
-  { id: "shopify", name: "Shopify", category: "Ecommerce", description: "Products, orders, customers.", oauth: null },
-  { id: "woocommerce", name: "WooCommerce", category: "Ecommerce", description: "WordPress ecommerce.", oauth: null },
-  { id: "etsy", name: "Etsy", category: "Ecommerce", description: "Listings and orders.", oauth: null },
-
-  // Dev / Other
-  { id: "github", name: "GitHub", category: "Dev", description: "Repos, issues, actions.", oauth: null },
-  { id: "gitlab", name: "GitLab", category: "Dev", description: "CI/CD and repos.", oauth: null },
-  { id: "vercel", name: "Vercel", category: "Dev", description: "Deployments and env vars.", oauth: null },
-  { id: "cloudflare", name: "Cloudflare", category: "Dev", description: "DNS, Workers, security.", oauth: null },
-  { id: "notion", name: "Notion", category: "Other", description: "Docs and databases.", oauth: null },
-  { id: "airtable", name: "Airtable", category: "Other", description: "Base records and views.", oauth: null },
+  // ── Other ─────────────────────────────────────────────────────────────
+  { id: "notion",   name: "Notion",      category: "Other",    description: "Docs and databases.",                         oauth: null },
+  { id: "airtable", name: "Airtable",    category: "Other",    description: "Base records and views.",                     oauth: null },
 ];
 
 const ALL_CATEGORIES: Array<Category | "All"> = [
-  "All",
-  "Social",
-  "Google",
-  "Microsoft",
-  "AWS",
-  "CRM",
-  "Messaging",
-  "Video",
-  "Storage",
-  "Payments",
-  "Marketing",
-  "Automation",
-  "Ecommerce",
-  "Analytics",
-  "Dev",
-  "Other",
+  "All", "Social", "Google", "Microsoft", "Apple", "AWS",
+  "CRM", "Messaging", "Video", "Storage", "Payments",
+  "Marketing", "Automation", "Ecommerce", "Dev", "Other",
 ];
 
-type StatusRow = { provider: "google" | "meta" | "x" | "tumblr" | "microsoft"; connected: boolean };
+type StatusRow = { provider: string; connected: boolean };
 
 export default function Integrations() {
   const [searchParams] = useSearchParams();
@@ -167,99 +167,96 @@ export default function Integrations() {
         credentials: "include",
       });
       const raw = await r.json() as any;
-const rows: StatusRow[] = Array.isArray(raw) ? raw : (raw?.integrations ?? []);
-const providerMap: Record<string, boolean> = {};
-for (const row of rows) providerMap[String(row.provider)] = !!row.connected;
+      const rows: StatusRow[] = Array.isArray(raw) ? raw : (raw?.integrations ?? []);
+      const providerMap: Record<string, boolean> = {};
+      for (const row of rows) providerMap[String(row.provider)] = !!row.connected;
 
-// project provider status down to each card
-const map: Record<string, boolean> = {};
-for (const i of INTEGRATIONS) {
-  if (i.oauth) map[i.id] = !!providerMap[i.oauth];
-  else map[i.id] = false;
-}
-setStatus(map);
+      const map: Record<string, boolean> = {};
+      for (const i of INTEGRATIONS) {
+        map[i.id] = i.oauth ? !!providerMap[i.oauth] : false;
+      }
+      setStatus(map);
     } catch {
-      // if backend not reachable, still render UI
       const map: Record<string, boolean> = {};
       for (const i of INTEGRATIONS) map[i.id] = false;
       setStatus(map);
     }
   }, [tenantId]);
 
-  React.useEffect(() => {
-    refreshStatus();
-  }, [refreshStatus]);
+  React.useEffect(() => { refreshStatus(); }, [refreshStatus]);
 
-  // If another page links here with ?focus=..., prefill search so the user sees the right card immediately.
   React.useEffect(() => {
     const focus = searchParams.get("focus");
     if (focus) setQuery(focus);
   }, [searchParams]);
 
-  // Refresh status when returning from an OAuth callback (?connected=...)
   React.useEffect(() => {
     if (searchParams.get("connected")) refreshStatus();
   }, [searchParams, refreshStatus]);
 
   const connect = (i: Integration) => {
-    if (!i.oauth) return; // not wired yet
+    if (!i.oauth) return;
     setLoading(i.id);
-
     const { user_id } = getOrgUser();
-    // Always use the real UUID (tenantId), not "demo_org", so markConnected works
     const realTenantId = tenantId ?? "";
-
     const start =
-      i.oauth === "google"
-        ? `${BACKEND_URL}/v1/oauth/google/start`
-        : i.oauth === "meta"
-          ? `${BACKEND_URL}/v1/oauth/meta/start`
-          : i.oauth === "tumblr"
-            ? `${BACKEND_URL}/v1/oauth/tumblr/start`
-            : i.oauth === "microsoft"
-              ? `${BACKEND_URL}/v1/oauth/microsoft/start`
-              : `${BACKEND_URL}/v1/oauth/x/start`;
+      i.oauth === "google"    ? `${BACKEND_URL}/v1/oauth/google/start`
+      : i.oauth === "meta"    ? `${BACKEND_URL}/v1/oauth/meta/start`
+      : i.oauth === "tumblr"  ? `${BACKEND_URL}/v1/oauth/tumblr/start`
+      : i.oauth === "microsoft" ? `${BACKEND_URL}/v1/oauth/microsoft/start`
+      : `${BACKEND_URL}/v1/oauth/x/start`;
 
-    const params = new URLSearchParams({
-      tenantId: realTenantId,
-      org_id: realTenantId, // pass UUID here so backend's q.org_id ?? q.tenantId uses the right value
-      user_id,
-    });
+    const params = new URLSearchParams({ tenantId: realTenantId, org_id: realTenantId, user_id });
     window.location.href = `${start}?${params.toString()}`;
   };
 
   const disconnect = async (i: Integration) => {
     if (!i.oauth) return;
     setLoading(i.id);
-
     await fetch(`${BACKEND_URL}/v1/integrations/${i.oauth}/disconnect?tenantId=${encodeURIComponent(tenantId ?? "")}`, {
       method: "POST",
       credentials: "include",
     });
-
     await refreshStatus();
     setLoading(null);
   };
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    return INTEGRATIONS.filter((i) => {
+    const base = INTEGRATIONS.filter((i) => {
       const matchesQ =
         !q ||
         i.name.toLowerCase().includes(q) ||
         i.description.toLowerCase().includes(q) ||
-        i.category.toLowerCase().includes(q);
-
+        i.category.toLowerCase().includes(q) ||
+        (i.covers ?? []).some(s => s.toLowerCase().includes(q));
       const matchesC = category === "All" ? true : i.category === category;
       return matchesQ && matchesC;
+    });
+    // Groups always sort before individual cards
+    return [...base].sort((a, b) => {
+      if (a.group && !b.group) return -1;
+      if (!a.group && b.group) return 1;
+      return 0;
     });
   }, [query, category]);
 
   const connectedCount = React.useMemo(() => {
+    // Count unique providers connected, not individual cards
+    const seen = new Set<string>();
     let c = 0;
-    for (const i of INTEGRATIONS) if (status[i.id]) c++;
+    for (const i of INTEGRATIONS) {
+      const key = i.oauth ?? `__${i.id}`;
+      if (status[i.id] && !seen.has(key)) { seen.add(key); c++; }
+    }
     return c;
   }, [status]);
+
+  const totalProviders = React.useMemo(() => {
+    const seen = new Set<string>();
+    for (const i of INTEGRATIONS) seen.add(i.oauth ?? `__${i.id}`);
+    return seen.size;
+  }, []);
 
   return (
     <div className="space-y-5">
@@ -267,10 +264,10 @@ setStatus(map);
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">Integrations</h2>
           <p className="text-sm text-slate-600">
-            Green = connect. Red = disconnect. OAuth goes through your backend proxy.
+            Connect once per provider — OAuth scopes unlock all sub-services automatically.
           </p>
           <div className="text-xs text-neutral-500">
-            Connected: <span className="text-slate-800 font-semibold">{connectedCount}</span> / {INTEGRATIONS.length}
+            Connected: <span className="text-slate-800 font-semibold">{connectedCount}</span> / {totalProviders} providers
           </div>
         </div>
 
@@ -293,9 +290,7 @@ setStatus(map);
               className="bg-transparent text-sm outline-none"
             >
               {ALL_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c === "All" ? "All categories" : c}
-                </option>
+                <option key={c} value={c}>{c === "All" ? "All categories" : c}</option>
               ))}
             </select>
           </div>
@@ -306,13 +301,9 @@ setStatus(map);
         </div>
       </div>
 
-      {/* Cards + auto-fit columns (3+ when space allows) */}
       <div
         className="gap-4"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-        }}
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}
       >
         {filtered.map((i) => {
           const connected = !!status[i.id];
@@ -320,14 +311,24 @@ setStatus(map);
           const oauthReady = i.oauth !== null;
 
           return (
-            <div key={i.id} className="glass rounded-2xl p-5 flex flex-col justify-between min-h-[155px]">
+            <div
+              key={i.id}
+              className={`glass rounded-2xl p-5 flex flex-col justify-between ${i.group ? "min-h-[185px]" : "min-h-[145px]"}`}
+            >
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="text-sm font-semibold">{i.name}</div>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-semibold">{i.name}</div>
+                      {i.group && (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500 uppercase tracking-wide">
+                          Suite
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-slate-600">
                       {i.category}
-                      <span className="mx-2 text-neutral-600">•</span>
+                      <span className="mx-2 text-neutral-400">•</span>
                       {i.description}
                     </div>
                   </div>
@@ -345,11 +346,26 @@ setStatus(map);
                   )}
                 </div>
 
-                {!oauthReady ? (
-                  <div className="text-[11px] text-neutral-500">
-                    OAuth not wired yet (UI ready).
+                {/* Sub-service chips */}
+                {i.covers && i.covers.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {i.covers.map((s) => (
+                      <span
+                        key={s}
+                        className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600"
+                      >
+                        {s}
+                      </span>
+                    ))}
                   </div>
-                ) : null}
+                )}
+
+                {!oauthReady && !i.group && (
+                  <div className="text-[11px] text-neutral-500">OAuth not wired yet.</div>
+                )}
+                {!oauthReady && i.group && (
+                  <div className="text-[11px] text-neutral-500">Coming soon.</div>
+                )}
               </div>
 
               <div className="mt-4 flex items-center justify-end">
@@ -370,9 +386,11 @@ setStatus(map);
         })}
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="glass rounded-2xl p-8 text-center text-sm text-slate-600">No integrations match your search.</div>
-      ) : null}
+      {filtered.length === 0 && (
+        <div className="glass rounded-2xl p-8 text-center text-sm text-slate-600">
+          No integrations match your search.
+        </div>
+      )}
     </div>
   );
 }
