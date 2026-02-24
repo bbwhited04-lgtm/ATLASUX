@@ -5,10 +5,10 @@
  * Providers match the integration_provider enum:
  *   meta | google | x | tumblr | pinterest | linkedin
  */
-export type OAuthProvider = "meta" | "google" | "x" | "tumblr" | "pinterest" | "linkedin";
+export type OAuthProvider = "meta" | "google" | "x" | "tumblr" | "pinterest" | "linkedin" | "microsoft";
 
 export const SUPPORTED_PROVIDERS: OAuthProvider[] = [
-  "meta", "google", "x", "tumblr", "pinterest", "linkedin",
+  "meta", "google", "x", "tumblr", "pinterest", "linkedin", "microsoft",
 ];
 
 const EXACT: Record<string, OAuthProvider> = {
@@ -59,6 +59,14 @@ const EXACT: Record<string, OAuthProvider> = {
   linkedin_page:          "linkedin",
   linkedin_profile:       "linkedin",
   linkedin:               "linkedin",
+
+  // Microsoft
+  microsoft:              "microsoft",
+  outlook:                "microsoft",
+  ms_calendar:            "microsoft",
+  onedrive:               "microsoft",
+  sharepoint:             "microsoft",
+  teams:                  "microsoft",
 };
 
 /** Maps an asset platform string to the canonical OAuth provider, or null. */
@@ -78,6 +86,7 @@ export function providerForPlatform(p: string | null | undefined): OAuthProvider
   if (s.includes("tumblr")) return "tumblr";
   if (s.includes("pinterest")) return "pinterest";
   if (s.includes("linkedin")) return "linkedin";
+  if (s.includes("microsoft") || s.includes("outlook") || s.includes("onedrive") || s.includes("sharepoint") || s === "teams") return "microsoft";
 
   return null;
 }

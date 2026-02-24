@@ -29,7 +29,7 @@ type Integration = {
   description: string;
   category: Category;
   // which backend oauth provider handles this integration right now
-  oauth: "google" | "meta" | "x" | "tumblr" | null;
+  oauth: "google" | "meta" | "x" | "tumblr" | "microsoft" | null;
 };
 
 // Default to your deployed backend. Override locally with VITE_BACKEND_URL.
@@ -67,13 +67,13 @@ const INTEGRATIONS: Integration[] = [
   { id: "google_search_console", name: "Google Search Console", category: "Google", description: "SEO queries and indexing.", oauth: "google" },
   { id: "ga4", name: "Google Analytics (GA4)", category: "Analytics", description: "Traffic and conversion analytics.", oauth: "google" },
 
-  // Microsoft (placeholder)
-  { id: "microsoft", name: "Microsoft Account", category: "Microsoft", description: "Single sign-in for Microsoft apps.", oauth: null },
-  { id: "outlook", name: "Outlook Mail", category: "Microsoft", description: "Email and rules.", oauth: null },
-  { id: "ms_calendar", name: "Microsoft Calendar", category: "Microsoft", description: "Scheduling and events.", oauth: null },
-  { id: "onedrive", name: "OneDrive", category: "Microsoft", description: "Cloud file sync.", oauth: null },
-  { id: "sharepoint", name: "SharePoint", category: "Microsoft", description: "Sites and shared documents.", oauth: null },
-  { id: "teams", name: "Microsoft Teams", category: "Video", description: "Meetings and messaging.", oauth: null },
+  // Microsoft (backed by Azure AD OAuth)
+  { id: "microsoft", name: "Microsoft Account", category: "Microsoft", description: "Single sign-in for Microsoft apps.", oauth: "microsoft" },
+  { id: "outlook", name: "Outlook Mail", category: "Microsoft", description: "Email and rules.", oauth: "microsoft" },
+  { id: "ms_calendar", name: "Microsoft Calendar", category: "Microsoft", description: "Scheduling and events.", oauth: "microsoft" },
+  { id: "onedrive", name: "OneDrive", category: "Microsoft", description: "Cloud file sync.", oauth: "microsoft" },
+  { id: "sharepoint", name: "SharePoint", category: "Microsoft", description: "Sites and shared documents.", oauth: "microsoft" },
+  { id: "teams", name: "Microsoft Teams", category: "Video", description: "Meetings and messaging.", oauth: "microsoft" },
 
   // AWS (added)
   { id: "aws", name: "Amazon Web Services", category: "AWS", description: "IAM, S3, Lambda, CloudWatch.", oauth: null },
@@ -151,7 +151,7 @@ const ALL_CATEGORIES: Array<Category | "All"> = [
   "Other",
 ];
 
-type StatusRow = { provider: "google" | "meta" | "x" | "tumblr"; connected: boolean };
+type StatusRow = { provider: "google" | "meta" | "x" | "tumblr" | "microsoft"; connected: boolean };
 
 export default function Integrations() {
   const [searchParams] = useSearchParams();
@@ -184,7 +184,7 @@ setStatus(map);
       for (const i of INTEGRATIONS) map[i.id] = false;
       setStatus(map);
     }
-  }, []);
+  }, [tenantId]);
 
   React.useEffect(() => {
     refreshStatus();
@@ -205,7 +205,10 @@ setStatus(map);
     if (!i.oauth) return; // not wired yet
     setLoading(i.id);
 
-    const { org_id, user_id } = getOrgUser();
+    const { user_id } = getOrgUser();
+    // Always use the real UUID (tenantId), not "demo_org", so markConnected works
+    const realTenantId = tenantId ?? "";
+
     const start =
       i.oauth === "google"
         ? `${BACKEND_URL}/v1/oauth/google/start`
@@ -213,11 +216,13 @@ setStatus(map);
           ? `${BACKEND_URL}/v1/oauth/meta/start`
           : i.oauth === "tumblr"
             ? `${BACKEND_URL}/v1/oauth/tumblr/start`
-          : `${BACKEND_URL}/v1/oauth/x/start`;
+            : i.oauth === "microsoft"
+              ? `${BACKEND_URL}/v1/oauth/microsoft/start`
+              : `${BACKEND_URL}/v1/oauth/x/start`;
 
     const params = new URLSearchParams({
-      tenantId: tenantId ?? "",
-      org_id,
+      tenantId: realTenantId,
+      org_id: realTenantId, // pass UUID here so backend's q.org_id ?? q.tenantId uses the right value
       user_id,
     });
     window.location.href = `${start}?${params.toString()}`;
