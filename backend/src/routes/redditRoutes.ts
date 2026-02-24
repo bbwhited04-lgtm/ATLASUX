@@ -1,8 +1,15 @@
 import type { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 import { prisma } from "../db/prisma.js";
 import { makeSupabase } from "../supabase.js";
 import { loadEnv } from "../env.js";
 import { submitComment, submitPost } from "../services/reddit.js";
+
+const QueuePostSchema = z.object({
+  subreddit: z.string().min(1).max(100).regex(/^[A-Za-z0-9_]+$/, "invalid subreddit name"),
+  title:     z.string().min(1).max(300),
+  text:      z.string().min(1).max(40000),
+});
 
 function resolveTenant(req: any): string | null {
   const q = (req.query ?? {}) as any;
@@ -50,13 +57,15 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
    * Manually queue a new Reddit post (owned subs) for approval.
    * Body: { subreddit, title, text }
    */
-  app.post("/post", async (req) => {
+  app.post("/post", async (req, reply) => {
     const tenantId = resolveTenant(req);
-    if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
-    const body = req.body as any;
-    const { subreddit, title, text } = body ?? {};
-    if (!subreddit || !title || !text) return { ok: false, error: "subreddit, title, text required" };
+    let body: z.infer<typeof QueuePostSchema>;
+    try { body = QueuePostSchema.parse(req.body ?? {}); }
+    catch (e: any) { return reply.code(400).send({ ok: false, error: "INVALID_BODY", details: e.errors }); }
+
+    const { subreddit, title, text } = body;
 
     const memo = await prisma.decisionMemo.create({
       data: {
@@ -74,15 +83,16 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
       },
     });
 
-    return { ok: true, memo };
+    return reply.send({ ok: true, memo });
   });
 
   /**
    * POST /v1/reddit/approve/:memoId
    * Approve a pending reddit memo and immediately execute it.
    * Requires owner or admin tenant role (posts to external platform).
+   * Rate limited to 5 approvals per minute to prevent mass-posting.
    */
-  app.post("/approve/:memoId", async (req, reply) => {
+  app.post("/approve/:memoId", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (req, reply) => {
     const tenantId = resolveTenant(req);
     if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 

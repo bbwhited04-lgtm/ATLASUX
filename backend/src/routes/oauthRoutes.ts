@@ -18,6 +18,18 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
   // PKCE verifier store. Keyed by nonce, pruned at 15 min.
   const pkce = new Map<string, { code_verifier: string; createdAt: number }>();
 
+  // CSRF nonce store for Google / Meta / Microsoft / Reddit flows. Pruned at 15 min.
+  const csrfNonces = new Map<string, { org_id: string; user_id: string; createdAt: number }>();
+
+  function genNonce() { return randomBytes(16).toString("hex"); }
+
+  function pruneNonces() {
+    const cutoff = Date.now() - 15 * 60 * 1000;
+    for (const [k, v] of csrfNonces.entries()) {
+      if (v.createdAt < cutoff) csrfNonces.delete(k);
+    }
+  }
+
   // Tumblr request-token secret store. Keyed by oauth_token.
   const tumblrTmp = new Map<string, { tokenSecret: string; createdAt: number; org_id: string; user_id: string }>();
 
@@ -80,7 +92,10 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const user_id = String(q.user_id ?? q.userId ?? "");
 
     if (oauthEnabled("google", env)) {
-      const state = b64urlJson({ org_id, user_id });
+      const nonce = genNonce();
+      csrfNonces.set(nonce, { org_id, user_id, createdAt: Date.now() });
+      pruneNonces();
+      const state = b64urlJson({ org_id, user_id, nonce });
       const scopes = [
         "openid", "email", "profile",
         "https://www.googleapis.com/auth/youtube.readonly",
@@ -105,6 +120,13 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const org_id = String(state.org_id || "");
     const user_id = String(state.user_id || "");
 
+    // CSRF nonce check — reject if nonce missing or not in our store
+    const nonce = String(state.nonce || "");
+    if (!nonce || !csrfNonces.has(nonce)) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    csrfNonces.delete(nonce);
+
     try {
       const tok = await exchangeGoogleCode(env, String(q.code || ""));
       const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
@@ -124,7 +146,10 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const user_id = String(q.user_id ?? q.userId ?? "");
 
     if (oauthEnabled("meta", env)) {
-      const state = b64urlJson({ org_id, user_id });
+      const nonce = genNonce();
+      csrfNonces.set(nonce, { org_id, user_id, createdAt: Date.now() });
+      pruneNonces();
+      const state = b64urlJson({ org_id, user_id, nonce });
       const scopes = [
         "pages_read_engagement", "pages_manage_posts",
         "instagram_basic", "instagram_content_publish",
@@ -145,6 +170,12 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     try { state = parseState(String(q.state || "")); } catch {}
     const org_id = String(state.org_id || "");
     const user_id = String(state.user_id || "");
+
+    const nonce = String(state.nonce || "");
+    if (!nonce || !csrfNonces.has(nonce)) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    csrfNonces.delete(nonce);
 
     try {
       const tok = await exchangeMetaCode(env, String(q.code || ""));
@@ -258,7 +289,10 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
       return reply.redirect(buildReturnUrl({ connected: "reddit", org_id, user_id }));
     }
 
-    const state = b64urlJson({ org_id, user_id });
+    const nonce = genNonce();
+    csrfNonces.set(nonce, { org_id, user_id, createdAt: Date.now() });
+    pruneNonces();
+    const state = b64urlJson({ org_id, user_id, nonce });
     return reply.redirect(buildRedditAuthUrl(env, state));
   });
 
@@ -270,6 +304,12 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     try { state = parseState(String(q.state || "")); } catch {}
     const org_id = String(state.org_id || "");
     const user_id = String(state.user_id || "");
+
+    const nonce = String(state.nonce || "");
+    if (!nonce || !csrfNonces.has(nonce)) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    csrfNonces.delete(nonce);
 
     try {
       const tok = await exchangeRedditCode(env, String(q.code || ""));
@@ -301,7 +341,10 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
       return reply.redirect(buildReturnUrl({ connected: "microsoft", org_id, user_id }));
     }
 
-    const state = JSON.stringify({ org_id, user_id });
+    const nonce = genNonce();
+    csrfNonces.set(nonce, { org_id, user_id, createdAt: Date.now() });
+    pruneNonces();
+    const state = JSON.stringify({ org_id, user_id, nonce });
     const stateB64 = Buffer.from(state).toString("base64url");
     return reply.redirect(buildMicrosoftAuthUrl(env, stateB64));
   });
@@ -314,6 +357,12 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     try { state = JSON.parse(Buffer.from(String(q.state || ""), "base64url").toString()); } catch {}
     const org_id = String(state.org_id || "");
     const user_id = String(state.user_id || "");
+
+    const nonce = String(state.nonce || "");
+    if (!nonce || !csrfNonces.has(nonce)) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    csrfNonces.delete(nonce);
 
     try {
       const tok = await exchangeMicrosoftCode(env, String(q.code || ""));

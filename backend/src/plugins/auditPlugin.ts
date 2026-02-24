@@ -25,14 +25,22 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
       const level =
         reply.statusCode >= 500 ? "error" : reply.statusCode >= 400 ? "warn" : "info";
 
+      const requestId = String(req.headers["x-request-id"] ?? req.id ?? "");
+
       const base = {
         actorType: "system",
         actorUserId: (req as any).auth?.userId ?? null,
         actorExternalId: null,
-        // If your Prisma schema uses an enum for `level`, Prisma will coerce string values that match enum variants.
-        // If it doesn't, this still works as a plain string.
         level: level as any,
         action: `${req.method} ${req.url}`,
+      };
+
+      const sharedMeta = {
+        source: "api",
+        statusCode: reply.statusCode,
+        requestId: requestId || undefined,
+        ipAddress: (req as any).ip ?? null,
+        userAgent: (req.headers["user-agent"] as string) || null,
       };
 
       // Attempt 1: schema with status/ip/userAgent/metadata as top-level columns
@@ -41,12 +49,9 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
           data: {
             ...base,
             status: reply.statusCode >= 400 ? "FAILED" : "SUCCESS",
-            ipAddress: (req as any).ip ?? null,
-            userAgent: (req.headers["user-agent"] as string) || null,
-            metadata: {
-              source: "api",
-              statusCode: reply.statusCode,
-            },
+            ipAddress: sharedMeta.ipAddress,
+            userAgent: sharedMeta.userAgent,
+            metadata: sharedMeta,
           } as any,
         });
       } catch (_e1) {
@@ -54,12 +59,7 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
         await prisma.auditLog.create({
           data: {
             ...base,
-            meta: {
-              source: "api",
-              statusCode: reply.statusCode,
-              ipAddress: (req as any).ip ?? null,
-              userAgent: (req.headers["user-agent"] as string) || null,
-            },
+            meta: sharedMeta,
           } as any,
         });
       }

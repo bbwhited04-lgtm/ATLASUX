@@ -1,27 +1,61 @@
 import type { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 import { prisma } from "../prisma.js";
+
+const DistributionEventSchema = z.object({
+  agent:       z.string().min(1).max(100).default("unknown"),
+  channel:     z.string().min(1).max(100).default("other"),
+  eventType:   z.string().min(1).max(100).default("update"),
+  url:         z.string().url().optional().nullable(),
+  meta:        z.record(z.unknown()).optional(),
+  impressions: z.number().int().nonnegative().optional(),
+  clicks:      z.number().int().nonnegative().optional(),
+  conversions: z.number().int().nonnegative().optional(),
+  occurredAt:  z.string().datetime({ offset: true }).optional(),
+});
 
 export const distributionRoutes: FastifyPluginAsync = async (app) => {
   // Record a distribution event (post/publish/etc)
   app.post("/events", async (req, reply) => {
-    const body = (req.body as any) ?? {};
     const tenantId = (req as any).tenantId as string | undefined;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    let body: z.infer<typeof DistributionEventSchema>;
+    try { body = DistributionEventSchema.parse(req.body ?? {}); }
+    catch (e: any) { return reply.code(400).send({ ok: false, error: "INVALID_BODY", details: e.errors }); }
 
     const row = await prisma.distributionEvent.create({
       data: {
         tenantId,
-        agent: String(body.agent ?? "unknown"),
-        channel: String(body.channel ?? "other"),
-        eventType: String(body.eventType ?? "update"),
-        url: body.url ? String(body.url) : null,
-        meta: body.meta ?? undefined,
+        agent:       body.agent,
+        channel:     body.channel,
+        eventType:   body.eventType,
+        url:         body.url ?? null,
+        meta:        body.meta ?? undefined,
         impressions: body.impressions ?? undefined,
-        clicks: body.clicks ?? undefined,
+        clicks:      body.clicks ?? undefined,
         conversions: body.conversions ?? undefined,
-        occurredAt: body.occurredAt ? new Date(body.occurredAt) : undefined,
+        occurredAt:  body.occurredAt ? new Date(body.occurredAt) : undefined,
       },
     });
+
+    // Semantic audit — every distribution event is a write worth tracing
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: (req as any).auth?.userId ?? null,
+        actorExternalId: body.agent,
+        level: "info",
+        action: "DISTRIBUTION_EVENT_RECORDED",
+        entityType: "distribution_event",
+        entityId: row.id,
+        message: `Distribution event recorded: ${body.eventType} via ${body.channel} by ${body.agent}`,
+        meta: { channel: body.channel, eventType: body.eventType, agent: body.agent, url: body.url ?? null },
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
     return reply.send({ ok: true, event: row });
   });
 

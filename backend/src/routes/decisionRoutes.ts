@@ -1,25 +1,44 @@
 import type { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { approveDecisionMemo, createDecisionMemo, rejectDecisionMemo } from "../services/decisionMemos.js";
+
+const CreateMemoSchema = z.object({
+  agent:            z.string().min(1).max(100),
+  title:            z.string().min(1).max(500),
+  rationale:        z.string().min(1).max(5000),
+  estimatedCostUsd: z.number().nonnegative().optional(),
+  billingType:      z.enum(["none", "one_time", "recurring"]).optional(),
+  riskTier:         z.number().int().min(0).max(5).optional(),
+  confidence:       z.number().min(0).max(1).optional(),
+  expectedBenefit:  z.string().max(1000).optional(),
+  payload:          z.unknown().optional(),
+});
+
+const APPROVE_RATE_LIMIT = { max: 10, timeWindow: "1 minute" };
+const REJECT_RATE_LIMIT  = { max: 20, timeWindow: "1 minute" };
 
 export const decisionRoutes: FastifyPluginAsync = async (app) => {
   // Create a decision memo (proposal)
   app.post("/", async (req, reply) => {
-    const body = (req.body as any) ?? {};
     const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
+    let body: z.infer<typeof CreateMemoSchema>;
+    try { body = CreateMemoSchema.parse(req.body ?? {}); }
+    catch (e: any) { return reply.code(400).send({ ok: false, error: "INVALID_BODY", details: e.errors }); }
+
     const memo = await createDecisionMemo({
       tenantId,
-      agent: String(body.agent ?? "unknown"),
-      title: String(body.title ?? ""),
-      rationale: String(body.rationale ?? ""),
+      agent:            body.agent,
+      title:            body.title,
+      rationale:        body.rationale,
       estimatedCostUsd: body.estimatedCostUsd,
-      billingType: body.billingType,
-      riskTier: body.riskTier,
-      confidence: body.confidence,
-      expectedBenefit: body.expectedBenefit,
-      payload: body.payload,
+      billingType:      body.billingType,
+      riskTier:         body.riskTier,
+      confidence:       body.confidence,
+      expectedBenefit:  body.expectedBenefit,
+      payload:          body.payload,
     });
 
     return reply.send({ ok: true, memo });
@@ -40,8 +59,8 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ ok: true, memos: rows });
   });
 
-  // Approve a memo (guardrails enforced)
-  app.post("/:id/approve", async (req, reply) => {
+  // Approve a memo (guardrails enforced) — tighter rate limit
+  app.post("/:id/approve", { config: { rateLimit: APPROVE_RATE_LIMIT } }, async (req, reply) => {
     const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
     const memoId = String((req.params as any).id);
@@ -71,8 +90,8 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ ok: true, memo: res.memo, guard: res.guard });
   });
 
-  // Reject a memo
-  app.post("/:id/reject", async (req, reply) => {
+  // Reject a memo — tighter rate limit
+  app.post("/:id/reject", { config: { rateLimit: REJECT_RATE_LIMIT } }, async (req, reply) => {
     const body = (req.body as any) ?? {};
     const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });

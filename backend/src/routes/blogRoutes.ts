@@ -1,6 +1,16 @@
 import type { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 import { prisma } from "../db/prisma.js";
 import { KbDocumentStatus } from "@prisma/client";
+
+const BlogPostSchema = z.object({
+  title:    z.string().min(1).max(500),
+  body:     z.string().min(1).optional(),
+  content:  z.string().min(1).optional(),
+  category: z.string().max(100).optional(),
+  publish:  z.boolean().optional(),
+  slug:     z.string().max(120).optional(),
+}).refine(d => d.body || d.content, { message: "body or content required" });
 
 // System actor UUID used in alpha when no auth user is present.
 // No FK constraint on createdBy so any valid UUID is accepted.
@@ -61,20 +71,20 @@ export const blogRoutes: FastifyPluginAsync = async (app) => {
   app.post("/posts", async (req, reply) => {
     const tenantId = (req as any).tenantId as string | undefined;
     const q = (req.query as any) ?? {};
-    const body = req.body as any;
 
     const tid = tenantId || q.org_id || q.orgId || null;
     if (!tid || !isUUID(tid)) {
       return reply.code(400).send({ ok: false, error: "tenantId_required" });
     }
 
-    const title = String(body?.title ?? "").trim();
-    const content = String(body?.body ?? body?.content ?? "").trim();
-    const category = String(body?.category ?? "Updates").trim();
-    const publish = body?.publish !== false;
+    let parsed: z.infer<typeof BlogPostSchema>;
+    try { parsed = BlogPostSchema.parse(req.body ?? {}); }
+    catch (e: any) { return reply.code(400).send({ ok: false, error: "INVALID_BODY", details: e.errors }); }
 
-    if (!title) return reply.code(400).send({ ok: false, error: "missing_title" });
-    if (!content) return reply.code(400).send({ ok: false, error: "missing_body" });
+    const title = parsed.title.trim();
+    const content = (parsed.body ?? parsed.content ?? "").trim();
+    const category = (parsed.category ?? "Updates").trim();
+    const publish = parsed.publish !== false;
 
     // Ensure slug is unique per tenant by appending timestamp if needed
     const baseSlug = slugify(body?.slug ? String(body.slug) : title);
@@ -122,6 +132,22 @@ export const blogRoutes: FastifyPluginAsync = async (app) => {
 
       return doc;
     });
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId: tid,
+        actorType: "system",
+        actorUserId: (req as any).auth?.userId ?? null,
+        actorExternalId: null,
+        level: "info",
+        action: publish ? "BLOG_POST_PUBLISHED" : "BLOG_POST_DRAFTED",
+        entityType: "kb_document",
+        entityId: created.id,
+        message: `Blog post ${publish ? "published" : "drafted"}: "${title.slice(0, 80)}"`,
+        meta: { slug: created.slug, category, publish },
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
 
     return reply.send({ ok: true, id: created.id, slug: created.slug });
   });

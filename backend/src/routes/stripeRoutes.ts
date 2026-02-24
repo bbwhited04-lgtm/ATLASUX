@@ -40,8 +40,9 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
   /**
    * POST /v1/stripe/products/request
    * Creates an Intent that a human (Exec/Atlas) can approve.
+   * Rate limited to prevent abuse of the Stripe product creation flow.
    */
-  app.post("/products/request", async (req, reply) => {
+  app.post("/products/request", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (req, reply) => {
     requireRole(req, ["owner", "admin", "exec", "atlas"]);
     const tenantId = (req as any).tenantId as string;
     const userId = (req as any).auth?.userId as string;
@@ -83,8 +84,9 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
    * POST /v1/stripe/products
    * Directly creates a Stripe product + price using the server-owned STRIPE_SECRET_KEY.
    * RBAC: tenantRole must be one of [owner, admin, exec, atlas].
+   * Rate limited — direct creation is a high-impact operation.
    */
-  app.post("/products", async (req, reply) => {
+  app.post("/products", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (req, reply) => {
     requireRole(req, ["owner", "admin", "exec", "atlas"]);
 
     const tenantId = (req as any).tenantId as string;
