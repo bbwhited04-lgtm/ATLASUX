@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import { 
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
   Briefcase, Plus, Globe, Facebook, Instagram, Twitter,
   Youtube, TrendingUp, Users, DollarSign, Settings,
   Edit, Trash2, ExternalLink, Copy, CheckCircle,
   Store, MessageSquare, Mail, Calendar, Video, ArrowRight, Hash, Link, Zap,
   Cpu, Gauge, Activity, Database, FolderOpen, Shield, Film,
-  BarChart3, Bell, AlertCircle
+  BarChart3, Bell, AlertCircle, Key, X as XIcon
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { API_BASE } from '@/lib/api';
@@ -104,6 +104,11 @@ export function BusinessManager() {
       loadLedgerForTenant(activeTenantId).catch(() => null);
     }
   }, [activeTenantId, selectedBusiness]);
+
+  // Tenant ID quick-set widget
+  const [showTenantWidget, setShowTenantWidget] = useState(false);
+  const [tenantInputValue, setTenantInputValue] = useState(activeTenantId ?? "");
+  const tenantInputRef = useRef<HTMLInputElement>(null);
 
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [showAddAsset, setShowAddAsset] = useState(false);
@@ -428,6 +433,104 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
               Human operations hub - Manage assets, intelligence, security & media
             </p>
           </div>
+
+          {/* Tenant ID quick-set widget */}
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => {
+                setTenantInputValue(activeTenantId ?? "");
+                setShowTenantWidget(v => !v);
+                setTimeout(() => tenantInputRef.current?.focus(), 80);
+              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all ${
+                activeTenantId
+                  ? "bg-cyan-900/30 border-cyan-500/40 text-cyan-300 hover:border-cyan-400"
+                  : "bg-amber-900/30 border-amber-500/40 text-amber-300 hover:border-amber-400 animate-pulse"
+              }`}
+              title="Set active tenant ID"
+            >
+              <Key className="w-3 h-3" />
+              {activeTenantId
+                ? `${activeTenantId.slice(0, 8)}…`
+                : "No Tenant Set"}
+            </button>
+
+            {showTenantWidget && (
+              <div className="absolute right-0 top-9 z-50 w-80 rounded-xl border border-cyan-500/30 bg-slate-900 shadow-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Active Tenant ID</span>
+                  <button onClick={() => setShowTenantWidget(false)} className="text-slate-500 hover:text-white">
+                    <XIcon className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <input
+                  ref={tenantInputRef}
+                  type="text"
+                  value={tenantInputValue}
+                  onChange={e => setTenantInputValue(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && tenantInputValue.trim()) {
+                      const tid = tenantInputValue.trim();
+                      setActiveTenantId(tid);
+                      selectBusiness(tid);
+                      setShowTenantWidget(false);
+                    }
+                    if (e.key === "Escape") setShowTenantWidget(false);
+                  }}
+                  placeholder="Paste tenant UUID here…"
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                />
+
+                {activeTenantId && (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/60 border border-slate-700">
+                    <span className="text-slate-500 text-xs">Current:</span>
+                    <span className="text-cyan-300 font-mono text-xs flex-1 truncate">{activeTenantId}</span>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(activeTenantId); }}
+                      className="text-slate-400 hover:text-cyan-400"
+                      title="Copy"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const tid = tenantInputValue.trim();
+                      if (!tid) return;
+                      setActiveTenantId(tid);
+                      selectBusiness(tid);
+                      setShowTenantWidget(false);
+                    }}
+                    disabled={!tenantInputValue.trim()}
+                    className="flex-1 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors"
+                  >
+                    Apply
+                  </button>
+                  {activeTenantId && (
+                    <button
+                      onClick={() => {
+                        setActiveTenantId(null);
+                        setSelectedBusiness(null);
+                        setTenantInputValue("");
+                        setShowTenantWidget(false);
+                      }}
+                      className="px-3 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs rounded-lg transition-colors"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <p className="text-slate-500 text-xs">
+                  Tenant IDs are UUIDs. Find yours in the Businesses list below or in Supabase → tenants table.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -565,9 +668,19 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                       <div className={`w-12 h-12 bg-gradient-to-br ${business.color} rounded-lg flex items-center justify-center`}>
                         <Briefcase className="w-6 h-6 text-white" />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <h4 className="text-white font-semibold">{business.name}</h4>
                         <p className="text-xs text-slate-400">{business.description}</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-xs font-mono text-slate-500 truncate">{business.id.slice(0, 8)}…</span>
+                          <button
+                            onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(business.id); }}
+                            className="text-slate-600 hover:text-cyan-400 flex-shrink-0"
+                            title="Copy tenant ID"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-slate-400">

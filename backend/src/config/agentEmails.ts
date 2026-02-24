@@ -34,6 +34,14 @@ const fallback = {
   // Not yet provisioned (placeholder)
   DAILY_INTEL: "atlas@deadapp.info",
   TIMMY: "atlas@deadapp.info",
+
+  // New agents (2026-02-24)
+  PETRA: "petra.pm@deadapp.info",
+  PORTER: "porter.sp@deadapp.info",
+  CLAIRE: "claire.cal@deadapp.info",
+  VICTOR: "victor.video@deadapp.info",
+  FRANK: "frank.forms@deadapp.info",
+  SANDY: "sandy.bookings@deadapp.info",
 } as const;
 
 export type AgentEmailKey = keyof typeof fallback;
