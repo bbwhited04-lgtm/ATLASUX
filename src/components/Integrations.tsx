@@ -27,7 +27,7 @@ type Integration = {
   name: string;
   description: string;
   category: Category;
-  oauth: "google" | "meta" | "x" | "tumblr" | "microsoft" | null;
+  oauth: "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | null;
   /** Sub-services unlocked by this OAuth connection */
   covers?: string[];
   /** Priority groups sort above everything else */
@@ -90,7 +90,7 @@ const INTEGRATIONS: Integration[] = [
   { id: "linkedin", name: "LinkedIn",    category: "Social",   description: "Company + personal publishing.",               oauth: null },
   { id: "pinterest",name: "Pinterest",   category: "Social",   description: "Pins, boards, and trends.",                   oauth: null },
   { id: "tiktok",   name: "TikTok",      category: "Social",   description: "Post videos and view analytics.",             oauth: null },
-  { id: "reddit",   name: "Reddit",      category: "Social",   description: "Post, comment, monitor mentions.",            oauth: null },
+  { id: "reddit",   name: "Reddit",      category: "Social",   description: "Post, comment, monitor mentions.",            oauth: "reddit" },
   { id: "snapchat", name: "Snapchat",    category: "Social",   description: "Spotlight and campaigns.",                    oauth: null },
   { id: "twitch",   name: "Twitch",      category: "Social",   description: "Streams, clips, channel ops.",                oauth: null },
 
@@ -204,6 +204,7 @@ export default function Integrations() {
       : i.oauth === "meta"    ? `${BACKEND_URL}/v1/oauth/meta/start`
       : i.oauth === "tumblr"  ? `${BACKEND_URL}/v1/oauth/tumblr/start`
       : i.oauth === "microsoft" ? `${BACKEND_URL}/v1/oauth/microsoft/start`
+      : i.oauth === "reddit"    ? `${BACKEND_URL}/v1/oauth/reddit/start`
       : `${BACKEND_URL}/v1/oauth/x/start`;
 
     const params = new URLSearchParams({ tenantId: realTenantId, org_id: realTenantId, user_id });

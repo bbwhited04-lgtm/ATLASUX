@@ -2,7 +2,7 @@ import type { Env } from "./env.js";
 import { makeSupabase } from "./supabase.js";
 import { webcrypto } from "node:crypto";
 
-export type Provider = "google" | "meta" | "x" | "tumblr" | "microsoft";
+export type Provider = "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit";
 
 export function oauthEnabled(provider: Provider, env: Env): boolean {
   if (provider === "google") return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI);
@@ -21,7 +21,75 @@ export function oauthEnabled(provider: Provider, env: Env): boolean {
   if (provider === "microsoft") {
     return !!(env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET && env.MICROSOFT_REDIRECT_URI);
   }
+  if (provider === "reddit") {
+    return !!(env.REDDIT_CLIENT_ID && env.REDDIT_CLIENT_SECRET && env.REDDIT_REDIRECT_URI);
+  }
   return false;
+}
+
+// ── Reddit OAuth2 ─────────────────────────────────────────────────────────────
+
+const REDDIT_SCOPES = ["identity", "submit", "read", "history", "privatemessages", "save"].join(" ");
+const REDDIT_UA = "AtlasUX/1.0 (by u/AtlasUXBot)";
+
+export function buildRedditAuthUrl(env: Env, state: string) {
+  const params = new URLSearchParams({
+    client_id: env.REDDIT_CLIENT_ID!,
+    response_type: "code",
+    state,
+    redirect_uri: env.REDDIT_REDIRECT_URI!,
+    duration: "permanent",
+    scope: REDDIT_SCOPES,
+  });
+  return `https://www.reddit.com/api/v1/authorize?${params.toString()}`;
+}
+
+export async function exchangeRedditCode(env: Env, code: string): Promise<{
+  access_token: string;
+  refresh_token?: string;
+  expires_in: number;
+  scope: string;
+  token_type: string;
+}> {
+  const basic = Buffer.from(`${env.REDDIT_CLIENT_ID!}:${env.REDDIT_CLIENT_SECRET!}`).toString("base64");
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    code,
+    redirect_uri: env.REDDIT_REDIRECT_URI!,
+  });
+  const r = await fetch("https://www.reddit.com/api/v1/access_token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": REDDIT_UA,
+    },
+    body,
+  });
+  const data = await r.json().catch(() => ({})) as any;
+  if (!r.ok || data.error) throw new Error(`Reddit token exchange failed: ${data.error ?? JSON.stringify(data)}`);
+  return data;
+}
+
+export async function refreshRedditToken(env: Env, refreshToken: string): Promise<{
+  access_token: string;
+  expires_in: number;
+  scope: string;
+}> {
+  const basic = Buffer.from(`${env.REDDIT_CLIENT_ID!}:${env.REDDIT_CLIENT_SECRET!}`).toString("base64");
+  const body = new URLSearchParams({ grant_type: "refresh_token", refresh_token: refreshToken });
+  const r = await fetch("https://www.reddit.com/api/v1/access_token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": REDDIT_UA,
+    },
+    body,
+  });
+  const data = await r.json().catch(() => ({})) as any;
+  if (!r.ok || data.error) throw new Error(`Reddit token refresh failed: ${data.error ?? JSON.stringify(data)}`);
+  return data;
 }
 
 // ── Microsoft 365 / Graph API OAuth2 ─────────────────────────────────────────

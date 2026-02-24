@@ -184,6 +184,38 @@ export const n8nWorkflows: AtlasWorkflowDef[] = [
     file: "workflows/n8n/social_media/Universal Social Media Content Generator with AI.json",
   },
 
+  // ── Reddit / Donna ────────────────────────────────────────────────────────
+  {
+    id: "WF-051",
+    name: "Donna Reddit Subreddit Monitor",
+    description: "Polls r/atlas_ux_dev and r/atlasux for new posts and comments, surfaces activity for Donna.",
+    category: "social_media",
+    ownerAgent: "donna",
+    trigger: "cron",
+    humanInLoop: false,
+    file: "workflows/n8n/social_media/donna_reddit_owned_monitor.json",
+  },
+  {
+    id: "WF-052",
+    name: "Donna Reddit Engagement Scanner",
+    description: "Scans r/AiForSmallBusiness, r/AskProgramming, r/ChatGPTCoding and similar for relevant threads. AI drafts a reply and queues it for human approval before posting.",
+    category: "social_media",
+    ownerAgent: "donna",
+    trigger: "cron",
+    humanInLoop: true,
+    file: "workflows/n8n/social_media/donna_reddit_engage.json",
+  },
+  {
+    id: "WF-053",
+    name: "Donna Reddit Reply Approval Gate",
+    description: "Human-in-the-loop gate for all Donna Reddit replies. Approved replies are posted immediately; rejected replies are discarded.",
+    category: "social_media",
+    ownerAgent: "donna",
+    trigger: "manual",
+    humanInLoop: true,
+    file: "workflows/n8n/social_media/donna_reddit_approve.json",
+  },
+
   // ── Analytics & Intelligence ───────────────────────────────────────────────
   {
     id: "WF-060",

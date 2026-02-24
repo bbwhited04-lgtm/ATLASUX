@@ -48,6 +48,11 @@ const EnvSchema = z.object({
   MICROSOFT_TENANT_ID: z.string().optional(),   // "common" for multi-tenant
   MICROSOFT_REDIRECT_URI: z.string().optional(), // full callback URL
 
+  // Reddit OAuth2 (for Donna redditor agent)
+  REDDIT_CLIENT_ID: z.string().optional(),
+  REDDIT_CLIENT_SECRET: z.string().optional(),
+  REDDIT_REDIRECT_URI: z.string().optional(),
+
   // Stripe (optional here; can be wired later)
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional()
