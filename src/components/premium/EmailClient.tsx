@@ -50,7 +50,7 @@ const [smtpConfig, setSmtpConfig] = useState({
   host: localStorage.getItem("atlasux_smtp_host") || "",
   port: localStorage.getItem("atlasux_smtp_port") || "587",
   username: localStorage.getItem("atlasux_smtp_user") || "",
-  password: localStorage.getItem("atlasux_smtp_pass") || "",
+  password: "", // Never read from localStorage — stored server-side
   fromName: localStorage.getItem("atlasux_smtp_from_name") || "",
   fromEmail: localStorage.getItem("atlasux_smtp_from_email") || "",
   tls: (localStorage.getItem("atlasux_smtp_tls") ?? "true") === "true",
@@ -83,14 +83,24 @@ const startGoogleConnect = () => {
   window.location.href = `${BACKEND_URL}/v1/oauth/google/start?org_id=${encodeURIComponent(org_id)}&user_id=${encodeURIComponent(user_id)}`;
 };
 
-const saveSmtp = () => {
+const saveSmtp = async () => {
+  // Non-sensitive fields stored locally for form persistence
   localStorage.setItem("atlasux_smtp_host", smtpConfig.host);
   localStorage.setItem("atlasux_smtp_port", smtpConfig.port);
   localStorage.setItem("atlasux_smtp_user", smtpConfig.username);
-  localStorage.setItem("atlasux_smtp_pass", smtpConfig.password);
   localStorage.setItem("atlasux_smtp_from_name", smtpConfig.fromName);
   localStorage.setItem("atlasux_smtp_from_email", smtpConfig.fromEmail);
   localStorage.setItem("atlasux_smtp_tls", String(smtpConfig.tls));
+  // Password stored server-side only — never in localStorage
+  const { org_id } = getOrgUser();
+  if (org_id && smtpConfig.password) {
+    await fetch(`${BACKEND_URL}/v1/email/smtp-config`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ org_id, ...smtpConfig }),
+    });
+  }
   queuePremiumJob("Email SMTP config saved");
 };
 
@@ -339,7 +349,7 @@ const saveSmtp = () => {
         </div>
 
         <div className="text-xs text-slate-500">
-          Note: Stored locally for now. We’ll wire secure vault storage server-side when backend email ingest is finalized.
+          Note: Non-password settings stored locally. Password stored securely server-side.
         </div>
       </div>
     )}

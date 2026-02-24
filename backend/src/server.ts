@@ -55,14 +55,53 @@ app.addHook("onSend", async (_req, reply, payload) => {
     return payload;
   }
 });
-app.post("/v1/discord/webhook", async (request, reply) => {
-  request.log.info("Discord webhook hit");
-  return reply.code(200).send({ ok: true });
-});
+// Discord webhook — Ed25519 signature verification required
+// Registered as a scoped plugin so we can use a raw body parser without
+// affecting the JSON parsing of every other route.
+await app.register(async (discordScope) => {
+  discordScope.addContentTypeParser("application/json", { parseAs: "buffer" }, (_req, body, done) => {
+    done(null, body);
+  });
 
-// Optional: some validators try GET too
-app.get("/v1/discord/webhook", async (_request, reply) => {
-  return reply.code(200).send({ ok: true });
+  discordScope.post("/v1/discord/webhook", async (request, reply) => {
+    const pubKeyHex = process.env.DISCORD_PUBLIC_KEY ?? "";
+    if (!pubKeyHex) return reply.code(503).send({ ok: false, error: "DISCORD_NOT_CONFIGURED" });
+
+    const sig = String(request.headers["x-signature-ed25519"] ?? "");
+    const ts  = String(request.headers["x-signature-timestamp"] ?? "");
+    if (!sig || !ts) return reply.code(401).send({ ok: false, error: "MISSING_SIGNATURE" });
+
+    const rawBody = Buffer.isBuffer(request.body)
+      ? (request.body as Buffer)
+      : Buffer.from(String(request.body ?? ""));
+    const message = Buffer.concat([Buffer.from(ts), rawBody]);
+
+    const { createPublicKey, verify } = await import("node:crypto");
+    const pubKey = createPublicKey({
+      key: Buffer.concat([
+        Buffer.from("302a300506032b6570032100", "hex"),
+        Buffer.from(pubKeyHex, "hex"),
+      ]),
+      format: "der",
+      type: "spki",
+    });
+
+    let valid = false;
+    try {
+      valid = verify(null, message, pubKey, Buffer.from(sig, "hex"));
+    } catch {
+      return reply.code(401).send({ ok: false, error: "SIGNATURE_VERIFICATION_FAILED" });
+    }
+    if (!valid) return reply.code(401).send({ ok: false, error: "INVALID_SIGNATURE" });
+
+    request.log.info("Discord webhook verified");
+    return reply.code(200).send({ ok: true });
+  });
+
+  // Discord validator probe
+  discordScope.get("/v1/discord/webhook", async (_request, reply) => {
+    return reply.code(200).send({ ok: true });
+  });
 });
 const allowed = new Set([
   "https://www.atlasux.cloud",

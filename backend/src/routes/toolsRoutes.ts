@@ -142,23 +142,42 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
   // ── POST /v1/tools/m365/invoke ──────────────────────────────────────────────
   // Controlled M365 tool invocation.
   //
-  // Body: { agentId, toolId, accessToken, params? }
-  //  - agentId:     the agent requesting execution
-  //  - toolId:      e.g. "m365.outlook.read"
-  //  - accessToken: MS Graph access token (from token_vault or session)
-  //  - params:      tool-specific parameters (endpoint overrides, body, etc.)
+  // Body: { agentId, toolId, params? }
+  //  - agentId: the agent requesting execution
+  //  - toolId:  e.g. "m365.outlook.read"
+  //  - params:  tool-specific parameters (endpoint overrides, body, etc.)
   //
+  // Access token is fetched server-side from token_vault — never from the request body.
   // Write/send/admin tools are blocked unless agentId = "atlas".
   // Human-approval tools create a Decision record and return status=pending.
   app.post("/m365/invoke", async (req, reply) => {
     const tid = tenantId(req);
     const body = (req.body as any) ?? {};
-    const { agentId, toolId, accessToken, params } = body;
+    const { agentId, toolId, params } = body;
 
     if (!tid) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
-    if (!agentId || !toolId || !accessToken) {
-      return reply.code(400).send({ ok: false, error: "MISSING_FIELDS", required: ["agentId", "toolId", "accessToken"] });
+    if (!agentId || !toolId) {
+      return reply.code(400).send({ ok: false, error: "MISSING_FIELDS", required: ["agentId", "toolId"] });
     }
+
+    // Fetch Microsoft access token server-side from token_vault
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data: vaultRow } = await supabase
+      .from("token_vault")
+      .select("access_token")
+      .eq("org_id", tid)
+      .in("provider", ["microsoft", "m365"])
+      .limit(1)
+      .single();
+
+    if (!vaultRow?.access_token) {
+      return reply.code(401).send({ ok: false, error: "M365_NOT_CONNECTED", message: "Microsoft not connected for this tenant" });
+    }
+    const accessToken = vaultRow.access_token;
 
     const normalizedAgent = String(agentId).toLowerCase();
     const tool = getTool(String(toolId));

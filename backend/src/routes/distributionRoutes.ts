@@ -5,7 +5,7 @@ export const distributionRoutes: FastifyPluginAsync = async (app) => {
   // Record a distribution event (post/publish/etc)
   app.post("/events", async (req, reply) => {
     const body = (req.body as any) ?? {};
-    const tenantId = String(body.tenantId ?? "");
+    const tenantId = (req as any).tenantId as string | undefined;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const row = await prisma.distributionEvent.create({
@@ -28,7 +28,7 @@ export const distributionRoutes: FastifyPluginAsync = async (app) => {
   // Lightweight summary for the last N days
   app.get("/summary", async (req, reply) => {
     const q = (req.query as any) ?? {};
-    const tenantId = String(q.tenantId ?? "");
+    const tenantId = ((req as any).tenantId as string | undefined) || String(q.tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const days = Number(q.days ?? 7);

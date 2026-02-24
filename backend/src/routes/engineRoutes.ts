@@ -13,8 +13,15 @@ type EngineRunRequest = {
 };
 
 export const engineRoutes: FastifyPluginAsync = async (app) => {
-  // Manual tick (dev/ops)
-  app.post("/tick", async (_req, reply) => {
+  // Manual tick (dev/ops) — gated behind WORKERS_API_KEY
+  app.post("/tick", async (req, reply) => {
+    const apiKey = process.env.WORKERS_API_KEY;
+    if (apiKey) {
+      const provided = String(req.headers["x-workers-key"] ?? "");
+      if (provided !== apiKey) {
+        return reply.code(401).send({ ok: false, error: "UNAUTHORIZED" });
+      }
+    }
     const result = await engineTick();
     return reply.send(result);
   });

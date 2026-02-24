@@ -232,6 +232,50 @@ export const emailRoutes: FastifyPluginAsync = async (app) => {
   await seedWorkflows();
 
   /**
+   * POST /v1/email/smtp-config
+   * Store SMTP credentials server-side in token_vault.
+   * Password is never stored in the client browser.
+   */
+  app.post("/smtp-config", async (req, reply) => {
+    const body = (req.body ?? {}) as {
+      org_id?: string; host?: string; port?: string;
+      username?: string; password?: string;
+      fromName?: string; fromEmail?: string; tls?: boolean;
+    };
+    const org_id = String(body.org_id ?? (req as any).tenantId ?? "").trim();
+    if (!org_id) return reply.code(400).send({ ok: false, error: "org_id required" });
+    if (!body.password) return reply.code(400).send({ ok: false, error: "password required" });
+
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { error } = await supabase.from("token_vault").upsert(
+      {
+        org_id,
+        user_id: org_id,
+        provider: "smtp",
+        access_token: String(body.password),
+        meta: {
+          host: String(body.host ?? ""),
+          port: String(body.port ?? "587"),
+          username: String(body.username ?? ""),
+          fromName: String(body.fromName ?? ""),
+          fromEmail: String(body.fromEmail ?? ""),
+          tls: body.tls !== false,
+        },
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "org_id,user_id,provider" }
+    );
+
+    if (error) return reply.code(500).send({ ok: false, error: "STORE_FAILED" });
+    return reply.send({ ok: true });
+  });
+
+  /**
    * POST /v1/email/inbound
    * Pipeline: Mailbox → Ingest → Normalize → Classify → Dispatch → Audit
    */

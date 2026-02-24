@@ -16,7 +16,7 @@ import { prisma } from "../db/prisma.js";
  * req.tenantRole is set. In alpha (no auth) the member check is skipped.
  */
 const plugin: FastifyPluginAsync = async (app) => {
-  app.addHook("preHandler", async (req, _reply) => {
+  app.addHook("preHandler", async (req, reply) => {
     if (req.method === "OPTIONS") return;
 
     // Read from header first, then query param fallback
@@ -28,7 +28,6 @@ const plugin: FastifyPluginAsync = async (app) => {
 
     const userId = (req as any).auth?.userId ?? null;
 
-    // Alpha mode: when auth is not wired, skip the member check entirely
     if (userId) {
       try {
         const member = await prisma.tenantMember.findUnique({
@@ -36,10 +35,13 @@ const plugin: FastifyPluginAsync = async (app) => {
         });
         if (member) {
           (req as any).tenantRole = member.role;
+        } else {
+          // Authenticated user is not a member of this tenant — hard reject
+          return reply.code(403).send({ ok: false, error: "TENANT_ACCESS_DENIED" });
         }
-        // Non-members: still set tenantId (alpha tolerance), but no role
       } catch {
-        // Member check failure is non-fatal in alpha
+        // Member check unavailable — fail closed
+        return reply.code(503).send({ ok: false, error: "TENANT_CHECK_UNAVAILABLE" });
       }
     }
 

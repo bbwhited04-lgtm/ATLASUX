@@ -5,7 +5,7 @@ export const growthRoutes: FastifyPluginAsync = async (app) => {
   // Manually trigger the daily growth loop (cron can hit this)
   app.post("/run", async (req, reply) => {
     const body = (req.body as any) ?? {};
-    const tenantId = String(body.tenantId ?? "");
+    const tenantId = (req as any).tenantId as string | undefined;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const agent = String(body.agent ?? "atlas");
