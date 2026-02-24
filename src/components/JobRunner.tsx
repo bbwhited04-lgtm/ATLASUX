@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { 
-  Play, 
-  Pause, 
-  CheckCircle2, 
-  Clock, 
+import { useState, useEffect, useMemo } from "react";
+import {
+  Play,
+  Pause,
+  CheckCircle2,
+  Clock,
   Activity,
   Trash2,
   Plus,
@@ -12,13 +12,15 @@ import {
   Image as ImageIcon,
   FileText,
   Share2,
-  Filter
+  RefreshCw
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
+import { API_BASE } from "@/lib/api";
+import { getOrgUser } from "@/lib/org";
 
 interface Job {
   id: number;
@@ -31,12 +33,91 @@ interface Job {
   priority: "high" | "medium" | "low";
 }
 
+function inferType(jobType: string): Job["type"] {
+  const t = (jobType ?? "").toLowerCase();
+  if (t.includes("video")) return "video";
+  if (t.includes("social") || t.includes("post") || t.includes("publish") || t.includes("tweet") || t.includes("instagram")) return "social";
+  if (t.includes("doc") || t.includes("blog") || t.includes("kb") || t.includes("report") || t.includes("pdf")) return "document";
+  if (t.includes("anim") || t.includes("image") || t.includes("art")) return "animation";
+  return "task";
+}
+
+function formatJobType(jobType: string): string {
+  return (jobType ?? "task")
+    .replace(/_/g, " ")
+    .replace(/([A-Z])/g, " $1")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function JobRunner() {
+  const { org_id } = useMemo(() => getOrgUser(), []);
   const [jobs, setJobs] = useState<Job[]>([]);
-  
   const [completedJobs, setCompletedJobs] = useState<any[]>([]);
-  
+  const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<"all" | "video" | "animation" | "social" | "document" | "task">("all");
+
+  const loadJobs = async () => {
+    setLoading(true);
+    try {
+      const tenantId = localStorage.getItem("atlasux_tenant_id") || org_id;
+      const res = await fetch(`${API_BASE}/v1/jobs/list`, {
+        headers: { "x-tenant-id": tenantId },
+      });
+      const data = await res.json().catch(() => null);
+      if (!data?.ok) return;
+
+      const active: Job[] = [];
+      const done: any[] = [];
+
+      (data.items ?? []).forEach((j: any, idx: number) => {
+        const dbStatus: string = j.status ?? "queued";
+        const type = inferType(j.jobType);
+        const priority: Job["priority"] = j.priority >= 2 ? "high" : j.priority === 1 ? "medium" : "low";
+        const name = formatJobType(j.jobType);
+        const startTime = j.createdAt
+          ? new Date(j.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : "—";
+
+        if (dbStatus === "succeeded") {
+          done.push({
+            id: idx,
+            name,
+            type,
+            completedTime: j.finishedAt
+              ? new Date(j.finishedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+              : startTime,
+          });
+        } else {
+          const status: Job["status"] =
+            dbStatus === "running" ? "running" :
+            dbStatus === "queued"  ? "queued"  : "paused";
+          active.push({
+            id: idx,
+            name,
+            type,
+            status,
+            progress: dbStatus === "running" ? 50 : 0,
+            startTime,
+            priority,
+          });
+        }
+      });
+
+      setJobs(active);
+      setCompletedJobs(done);
+    } catch {
+      // Silent fail — show empty state
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [org_id]);
   
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -104,6 +185,10 @@ export function JobRunner() {
           <p className="text-slate-400 text-sm mt-1">Manage and monitor all AI tasks</p>
         </div>
         
+        <Button variant="outline" onClick={loadJobs} disabled={loading} className="border-cyan-500/20">
+          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
         <Button className="bg-cyan-500 hover:bg-cyan-400">
           <Plus className="w-4 h-4 mr-2" />
           New Job

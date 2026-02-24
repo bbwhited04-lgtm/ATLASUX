@@ -1,6 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "../db/prisma.js";
 import { KbDocumentStatus } from "@prisma/client";
+import { n8nWorkflows } from "../workflows/n8n/manifest.js";
+
+const SYSTEM_ACTOR = "00000000-0000-0000-0000-000000000001";
 
 const WRITE_ROLES = new Set(["CEO", "CRO", "CAS", "CSS"]);
 
@@ -390,5 +393,104 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
     await prisma.kbDocument.deleteMany({ where: { id, tenantId } });
 
     return reply.send({ ok: true });
+  });
+
+  // ── Atlas KB Seeder ────────────────────────────────────────────────────────
+  // POST /v1/kb/seed-atlas — seeds all workflow definitions into KB so Atlas can find them.
+  // Does an upsert by slug so re-running is safe.
+  app.post("/seed-atlas", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string;
+
+    if (!tenantId) {
+      return reply.code(400).send({ ok: false, error: "tenantId_required" });
+    }
+
+    // Upsert the atlas-workflow tag once
+    const wfTag = await prisma.kbTag.upsert({
+      where: { tenantId_name: { tenantId, name: "atlas-workflow" } },
+      create: { tenantId, name: "atlas-workflow" },
+      update: {},
+    });
+
+    let seeded = 0;
+    let skipped = 0;
+
+    for (const wf of n8nWorkflows) {
+      const slug = `atlas-wf-${wf.id.toLowerCase()}`;
+      const body = [
+        `# ${wf.name}`,
+        ``,
+        `**ID:** ${wf.id}`,
+        `**Category:** ${wf.category}`,
+        `**Owner Agent:** ${wf.ownerAgent}`,
+        `**Trigger:** ${wf.trigger}`,
+        `**Human-in-Loop:** ${wf.humanInLoop ? "Yes" : "No"}`,
+        ``,
+        `## Description`,
+        ``,
+        wf.description,
+        ``,
+        `## File`,
+        ``,
+        `\`${wf.file}\``,
+      ].join("\n");
+
+      try {
+        // Check if already exists
+        const existing = await prisma.kbDocument.findFirst({
+          where: { tenantId, slug },
+          select: { id: true },
+        });
+
+        if (existing) {
+          await prisma.kbDocument.update({
+            where: { id: existing.id },
+            data: { title: wf.name, body, status: KbDocumentStatus.published, updatedBy: SYSTEM_ACTOR },
+          });
+          skipped++;
+        } else {
+          const doc = await prisma.kbDocument.create({
+            data: {
+              tenantId,
+              title: wf.name,
+              slug,
+              body,
+              status: KbDocumentStatus.published,
+              createdBy: SYSTEM_ACTOR,
+            },
+          });
+
+          await prisma.kbTagOnDocument.upsert({
+            where: { documentId_tagId: { documentId: doc.id, tagId: wfTag.id } },
+            create: { documentId: doc.id, tagId: wfTag.id },
+            update: {},
+          });
+
+          // Category tag
+          const catTag = await prisma.kbTag.upsert({
+            where: { tenantId_name: { tenantId, name: wf.category } },
+            create: { tenantId, name: wf.category },
+            update: {},
+          });
+          await prisma.kbTagOnDocument.upsert({
+            where: { documentId_tagId: { documentId: doc.id, tagId: catTag.id } },
+            create: { documentId: doc.id, tagId: catTag.id },
+            update: {},
+          });
+
+          seeded++;
+        }
+      } catch (err) {
+        // Non-fatal — log and continue
+        console.error(`KB seed failed for ${wf.id}:`, err);
+      }
+    }
+
+    return reply.send({
+      ok: true,
+      seeded,
+      updated: skipped,
+      total: n8nWorkflows.length,
+    });
   });
 }

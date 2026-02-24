@@ -49,9 +49,9 @@ export function ChatInterface() {
     {
       id: 1,
       role: "assistant",
-      content: "Hello! I'm Neptune, your AI security control system. I understand voice commands and can respond to you through speech. Click the microphone icon to start a voice conversation, or type your message. What would you like me to do?",
-      timestamp: "10:30 AM",
-      platform: "Neptune AI"
+      content: "Hello! Select an AI model from the right panel and start chatting. You can type or use the microphone for voice input.",
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      platform: "Atlas Chat"
     }
   ]);
   
@@ -130,12 +130,28 @@ export function ChatInterface() {
       [platformId]: !prev[platformId]
     }));
   };
-const resolveProvider = (): { provider: "openai" | "deepseek"; label: string } => {
-  // If DeepSeek is selected, route to DeepSeek. Otherwise default to OpenAI.
-  const active = Object.entries(selectedPlatforms).filter(([_, v]) => v).map(([id]) => id);
-  if (active.includes("deepseek")) return { provider: "deepseek", label: "DeepSeek" };
-  // Everything else defaults to OpenAI for now (platform-owned key)
-  return { provider: "openai", label: "OpenAI" };
+const PROVIDER_MAP: Record<string, { provider: string; label: string }> = {
+  gpt4:      { provider: "openai",   label: "GPT-4" },
+  chatgpt:   { provider: "openai",   label: "ChatGPT" },
+  claude:    { provider: "claude",   label: "Claude" },
+  deepseek:  { provider: "deepseek", label: "DeepSeek" },
+  gemini:    { provider: "gemini",   label: "Gemini" },
+  llama:     { provider: "openai",   label: "Llama 3" },   // placeholder — needs local endpoint
+  mistral:   { provider: "openai",   label: "Mistral" },   // placeholder
+  perplexity:{ provider: "openai",   label: "Perplexity" },// placeholder
+  grok:      { provider: "openai",   label: "Grok" },      // placeholder
+  cohere:    { provider: "openai",   label: "Cohere" },    // placeholder
+};
+
+const resolveProvider = (): { provider: string; label: string } => {
+  const active = Object.entries(selectedPlatforms)
+    .filter(([, v]) => v)
+    .map(([id]) => id);
+
+  for (const id of active) {
+    if (PROVIDER_MAP[id]) return PROVIDER_MAP[id];
+  }
+  return { provider: "openai", label: "GPT-4" };
 };
 
 const handleSend = async () => {
@@ -427,7 +443,7 @@ const handleSend = async () => {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Ask Atlas to help with a task..."
+                placeholder={`Chat with ${resolveProvider().label}...`}
                 className="min-h-[60px] max-h-[200px] resize-none bg-slate-900/50 border-cyan-500/20 focus:border-cyan-500/40"
               />
             </div>

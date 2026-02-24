@@ -37,6 +37,7 @@ import { oauthRoutes } from "./routes/oauthRoutes.js";
 import { ticketsRoutes } from "./routes/ticketsRoutes.js";
 import { toolsRoutes } from "./routes/toolsRoutes.js";
 import { agentFlowRoutes } from "./routes/agentFlowRoutes.js";
+import { blogRoutes } from "./routes/blogRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -132,6 +133,9 @@ await app.register(toolsRoutes, { prefix: "/v1/tools" });
 
 // Atlas → M365 → Binky research flow
 await app.register(agentFlowRoutes, { prefix: "/v1/agent-flow" });
+
+// Blog publisher (stores posts in KB)
+await app.register(blogRoutes, { prefix: "/v1/blog" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
