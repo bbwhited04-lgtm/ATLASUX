@@ -18,3 +18,15 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 - Don’t change policies, agent tree, or governance files.
 - Don’t access Microsoft Admin tools.
 - Don’t publish or take irreversible actions without approval.
+
+## M365 Tools
+| Tool | Access | Notes |
+|------|--------|-------|
+| OneNote | Read + Write | Daily intelligence packet drafts |
+| Word | Read + Write | Briefing document output |
+| OneDrive | Read | Research file access |
+
+- All write actions are drafted for Atlas review. Atlas executes sends/publishes.
+- $0 spend enforced. No paid M365 add-ons without human approval.
+- No outside actions without Atlas or human-in-loop.
+- m365.admin.* tools are Atlas-only and not accessible to this agent.

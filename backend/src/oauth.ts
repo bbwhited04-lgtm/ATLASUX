@@ -2,7 +2,7 @@ import type { Env } from "./env.js";
 import { makeSupabase } from "./supabase.js";
 import { webcrypto } from "node:crypto";
 
-export type Provider = "google" | "meta" | "x" | "tumblr";
+export type Provider = "google" | "meta" | "x" | "tumblr" | "microsoft";
 
 export function oauthEnabled(provider: Provider, env: Env): boolean {
   if (provider === "google") return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI);
@@ -18,7 +18,67 @@ export function oauthEnabled(provider: Provider, env: Env): boolean {
       env.TUMBLR_REDIRECT_URI
     );
   }
+  if (provider === "microsoft") {
+    return !!(env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET && env.MICROSOFT_REDIRECT_URI);
+  }
   return false;
+}
+
+// ── Microsoft 365 / Graph API OAuth2 ─────────────────────────────────────────
+
+const M365_SCOPES = [
+  "offline_access",
+  "Mail.Read", "Mail.ReadWrite", "Mail.Send",
+  "Calendars.Read", "Calendars.ReadWrite",
+  "Team.ReadBasic.All", "ChannelMessage.Read.All", "ChannelMessage.Send",
+  "OnlineMeetings.Read", "OnlineMeetings.ReadWrite",
+  "Files.Read.All", "Files.ReadWrite.All",
+  "Sites.Read.All", "Sites.ReadWrite.All",
+  "Notes.Read.All", "Notes.ReadWrite.All",
+  "Tasks.Read", "Tasks.ReadWrite",
+  "Bookings.Read.All", "BookingsAppointment.ReadWrite.All",
+  "User.Read",
+].join(" ");
+
+export function buildMicrosoftAuthUrl(env: Env, state: string, scopes?: string) {
+  const tenant = env.MICROSOFT_TENANT_ID ?? "common";
+  const params = new URLSearchParams({
+    client_id: env.MICROSOFT_CLIENT_ID!,
+    response_type: "code",
+    redirect_uri: env.MICROSOFT_REDIRECT_URI!,
+    response_mode: "query",
+    scope: scopes ?? M365_SCOPES,
+    state,
+    prompt: "consent",
+  });
+  return `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize?${params.toString()}`;
+}
+
+export async function exchangeMicrosoftCode(env: Env, code: string) {
+  const tenant = env.MICROSOFT_TENANT_ID ?? "common";
+  const body = new URLSearchParams({
+    client_id: env.MICROSOFT_CLIENT_ID!,
+    client_secret: env.MICROSOFT_CLIENT_SECRET!,
+    code,
+    redirect_uri: env.MICROSOFT_REDIRECT_URI!,
+    grant_type: "authorization_code",
+    scope: M365_SCOPES,
+  });
+  const r = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(`Microsoft token exchange failed: ${(data as any)?.error_description ?? JSON.stringify(data)}`);
+  return data as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+    scope?: string;
+    token_type: string;
+    id_token?: string;
+  };
 }
 
 function base64Url(buf: Uint8Array) {

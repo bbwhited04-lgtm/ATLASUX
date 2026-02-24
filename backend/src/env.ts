@@ -42,6 +42,12 @@ const EnvSchema = z.object({
   TUMBLR_OAUTH_SECRET: z.string().optional(),
   TUMBLR_REDIRECT_URI: z.string().optional(), // full callback URL
 
+  // Microsoft 365 / Graph API (OAuth2 for M365 tool access)
+  MICROSOFT_CLIENT_ID: z.string().optional(),
+  MICROSOFT_CLIENT_SECRET: z.string().optional(),
+  MICROSOFT_TENANT_ID: z.string().optional(),   // "common" for multi-tenant
+  MICROSOFT_REDIRECT_URI: z.string().optional(), // full callback URL
+
   // Stripe (optional here; can be wired later)
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional()

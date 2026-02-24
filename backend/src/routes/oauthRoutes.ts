@@ -5,6 +5,7 @@ import {
   buildXAuthUrl, exchangeXCode, makePkcePair, storeTokenVault,
   oauthEnabled, buildGoogleAuthUrl, exchangeGoogleCode,
   buildMetaAuthUrl, exchangeMetaCode,
+  buildMicrosoftAuthUrl, exchangeMicrosoftCode,
 } from "../oauth.js";
 import { tumblrAccessToken, tumblrAuthorizeUrl, tumblrRequestToken } from "../integrations/tumblr.client.js";
 import { prisma } from "../db/prisma.js";
@@ -241,6 +242,50 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
       return reply.redirect(buildReturnUrl({ connected: "tumblr", org_id: tmp.org_id, user_id: tmp.user_id }));
     } catch (e: any) {
       return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "tumblr_token_exchange_failed" }));
+    }
+  });
+
+  // ── Microsoft 365 ─────────────────────────────────────────────────────────
+
+  app.get("/microsoft/start", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const org_id = String(q.org_id ?? q.tenantId ?? (req as any).tenantId ?? "");
+    const user_id = String(q.user_id ?? "");
+
+    if (!oauthEnabled("microsoft", env)) {
+      // Stub: mark connected and redirect back
+      if (org_id) await markConnected(org_id, "microsoft" as any);
+      return reply.redirect(buildReturnUrl({ connected: "microsoft", org_id, user_id }));
+    }
+
+    const state = JSON.stringify({ org_id, user_id });
+    const stateB64 = Buffer.from(state).toString("base64url");
+    return reply.redirect(buildMicrosoftAuthUrl(env, stateB64));
+  });
+
+  app.get("/microsoft/callback", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    if (q.error) return reply.redirect(buildReturnUrl({ oauth_error: String(q.error_description ?? q.error) }));
+
+    let state: any = {};
+    try { state = JSON.parse(Buffer.from(String(q.state || ""), "base64url").toString()); } catch {}
+    const org_id = String(state.org_id || "");
+    const user_id = String(state.user_id || "");
+
+    try {
+      const tok = await exchangeMicrosoftCode(env, String(q.code || ""));
+      const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
+      await storeTokenVault(env, {
+        org_id, user_id, provider: "microsoft" as any,
+        access_token: tok.access_token,
+        refresh_token: tok.refresh_token ?? null,
+        expires_at, scope: tok.scope ?? null,
+        meta: { token_type: tok.token_type },
+      });
+      await markConnected(org_id, "microsoft" as any);
+      return reply.redirect(buildReturnUrl({ connected: "microsoft", org_id, user_id }));
+    } catch (e: any) {
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "microsoft_token_exchange_failed" }));
     }
   });
 };

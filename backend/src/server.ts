@@ -35,6 +35,7 @@ import { integrationsRoutes } from "./routes/integrationsRoutes.js";
 import { listeningRoutes } from "./routes/listeningRoutes.js";
 import { oauthRoutes } from "./routes/oauthRoutes.js";
 import { ticketsRoutes } from "./routes/ticketsRoutes.js";
+import { toolsRoutes } from "./routes/toolsRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -124,6 +125,9 @@ await app.register(ticketsRoutes, { prefix: "/v1/tickets" });
 await app.register(integrationsRoutes, { prefix: "/v1/integrations" });
 await app.register(listeningRoutes, { prefix: "/v1/listening" });
 await app.register(oauthRoutes, { prefix: "/v1/oauth" });
+
+// M365 tool registry and controlled invocation
+await app.register(toolsRoutes, { prefix: "/v1/tools" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

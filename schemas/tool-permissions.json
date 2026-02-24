@@ -1,102 +1,239 @@
 {
-  "version": "2026-02-17",
-  "notes": "Enforced by engine before any tool execution. UI displays a mirrored view.",
+  "version": "2026-02-24",
+  "notes": "Enforced by engine before any tool execution. UI displays a mirrored view. M365 tools use Microsoft Graph API (https://graph.microsoft.com/v1.0). Portal: https://m365.cloud.microsoft. Rules: (1) Only Atlas invokes write/send/admin tools. (2) Human-approval required for external-facing actions. (3) Spend = $0 always. (4) No outside action without Atlas or human-in-loop.",
+  "m365Policy": {
+    "atlasOnlyActions": ["send", "manage", "admin", "create (forms/meetings/bookings)"],
+    "humanApprovalRequired": ["m365.outlook.send", "m365.outlook.calendar.write", "m365.teams.send", "m365.teams.meeting.create", "m365.sharepoint.write", "m365.admin.users", "m365.admin.groups", "m365.admin.settings", "m365.forms.create", "m365.bookings.manage"],
+    "spendUsd": 0,
+    "graphBase": "https://graph.microsoft.com/v1.0",
+    "portalUrl": "https://m365.cloud.microsoft"
+  },
   "agents": {
+    "chairman": {
+      "tier": "Board",
+      "allowedTools": ["readOnlyDashboards", "approvalDenyUI"],
+      "m365Tools": ["m365.outlook.read", "m365.sharepoint.read", "m365.onedrive.read", "m365.onenote.read"],
+      "forbiddenTools": ["directExecutionTools"],
+      "escalationTargets": []
+    },
     "atlas": {
       "tier": "Executive",
-      "allowedTools": [
-        "jobRunner",
-        "email",
-        "auditWriter",
-        "ledgerWriter",
-        "httpClient"
+      "allowedTools": ["jobRunner", "email", "auditWriter", "ledgerWriter", "httpClient"],
+      "m365Tools": [
+        "m365.outlook.read", "m365.outlook.draft", "m365.outlook.send",
+        "m365.outlook.calendar.read", "m365.outlook.calendar.write",
+        "m365.teams.read", "m365.teams.draft", "m365.teams.send",
+        "m365.teams.meeting.read", "m365.teams.meeting.create",
+        "m365.word.read", "m365.word.write",
+        "m365.excel.read", "m365.excel.write",
+        "m365.powerpoint.read", "m365.powerpoint.write",
+        "m365.onenote.read", "m365.onenote.write",
+        "m365.onedrive.read", "m365.onedrive.write",
+        "m365.sharepoint.read", "m365.sharepoint.write",
+        "m365.clipchamp.read", "m365.clipchamp.write",
+        "m365.admin.users", "m365.admin.groups", "m365.admin.settings",
+        "m365.forms.read", "m365.forms.create",
+        "m365.planner.read", "m365.planner.write",
+        "m365.bookings.read", "m365.bookings.manage"
       ],
-      "forbiddenTools": [
-        "policyEditor",
-        "unloggedExternalActions"
-      ],
-      "escalationTargets": [
-        "chairman"
-      ]
+      "forbiddenTools": ["policyEditor", "unloggedExternalActions"],
+      "escalationTargets": ["chairman"]
     },
     "binky": {
       "tier": "Executive",
-      "allowedTools": [
-        "email",
-        "docs",
-        "webResearch",
-        "reportWriter",
-        "readOnlyDashboards"
-      ],
-      "forbiddenTools": [
-        "dbWrite",
-        "ledgerWriter",
-        "deployments",
-        "policyEditor"
-      ],
-      "escalationTargets": [
-        "atlas",
-        "chairman"
-      ]
+      "allowedTools": ["email", "docs", "webResearch", "reportWriter", "readOnlyDashboards"],
+      "m365Tools": ["m365.word.read", "m365.word.write", "m365.onenote.read", "m365.onenote.write", "m365.sharepoint.read", "m365.onedrive.read"],
+      "forbiddenTools": ["dbWrite", "ledgerWriter", "deployments", "policyEditor"],
+      "escalationTargets": ["atlas", "chairman"]
+    },
+    "tina": {
+      "tier": "Governor",
+      "allowedTools": ["ledgerWriter", "email", "accountingReports", "readOnlyDashboards"],
+      "m365Tools": ["m365.excel.read", "m365.excel.write", "m365.sharepoint.read", "m365.onedrive.read", "m365.outlook.read"],
+      "forbiddenTools": ["deployments", "policyEditor"],
+      "escalationTargets": ["atlas", "chairman"]
+    },
+    "larry": {
+      "tier": "Governor",
+      "allowedTools": ["policyReader", "email", "docs", "readOnlyDashboards"],
+      "m365Tools": ["m365.word.read", "m365.sharepoint.read", "m365.onedrive.read", "m365.onenote.read"],
+      "forbiddenTools": ["dbWrite", "ledgerWriter", "deployments", "policyEditor"],
+      "escalationTargets": ["atlas", "chairman"]
+    },
+    "jenny": {
+      "tier": "Specialist",
+      "allowedTools": ["docs", "policyEditorProposal", "email"],
+      "m365Tools": ["m365.word.read", "m365.word.write", "m365.onenote.read", "m365.onenote.write", "m365.sharepoint.read", "m365.onedrive.read"],
+      "forbiddenTools": ["executionTools"],
+      "escalationTargets": ["atlas"]
+    },
+    "benny": {
+      "tier": "Specialist",
+      "allowedTools": ["docs", "ipRegisterEditorProposal"],
+      "m365Tools": ["m365.word.read", "m365.word.write", "m365.onenote.read", "m365.onenote.write", "m365.sharepoint.read", "m365.onedrive.read"],
+      "forbiddenTools": ["publishingWithoutAtlas"],
+      "escalationTargets": ["atlas"]
     },
     "cheryl": {
       "tier": "Executive",
-      "allowedTools": [
-        "email",
-        "ticketSystem",
-        "docs",
-        "readOnlyDashboards",
-        "escalationRouter"
-      ],
-      "forbiddenTools": [
-        "dbWrite",
-        "ledgerWriter",
-        "deployments",
-        "policyEditor"
-      ],
-      "escalationTargets": [
-        "binky",
-        "tina",
-        "larry",
-        "jenny",
-        "atlas"
-      ]
+      "allowedTools": ["email", "ticketSystem", "docs", "readOnlyDashboards", "escalationRouter"],
+      "m365Tools": ["m365.outlook.read", "m365.outlook.draft", "m365.teams.read", "m365.teams.draft", "m365.sharepoint.read"],
+      "forbiddenTools": ["dbWrite", "ledgerWriter", "deployments", "policyEditor"],
+      "escalationTargets": ["binky", "tina", "larry", "jenny", "atlas"]
     },
-    "tina": {
-      "tier": "Executive",
-      "allowedTools": [
-        "ledgerWriter",
-        "email",
-        "accountingReports",
-        "readOnlyDashboards"
-      ],
-      "forbiddenTools": [
-        "deployments",
-        "policyEditor"
-      ],
-      "escalationTargets": [
-        "atlas",
-        "chairman"
-      ]
+    "daily-intel": {
+      "tier": "Subagent",
+      "allowedTools": ["webResearch", "docsReading", "emailDrafting"],
+      "m365Tools": ["m365.onenote.read", "m365.onenote.write", "m365.word.read", "m365.word.write", "m365.onedrive.read"],
+      "forbiddenTools": ["executionTools"],
+      "escalationTargets": ["binky"]
     },
-    "larry": {
-      "tier": "Executive",
-      "allowedTools": [
-        "policyReader",
-        "email",
-        "docs",
-        "readOnlyDashboards"
-      ],
-      "forbiddenTools": [
-        "dbWrite",
-        "ledgerWriter",
-        "deployments",
-        "policyEditor"
-      ],
-      "escalationTargets": [
-        "atlas",
-        "chairman"
-      ]
+    "archy": {
+      "tier": "Subagent",
+      "allowedTools": ["webResearch", "docsReading"],
+      "m365Tools": ["m365.word.read", "m365.word.write", "m365.onenote.read", "m365.onenote.write", "m365.sharepoint.read", "m365.onedrive.read"],
+      "forbiddenTools": ["executionTools"],
+      "escalationTargets": ["binky"]
+    },
+    "venny": {
+      "tier": "Subagent",
+      "allowedTools": ["webResearch", "docsReading", "spreadsheetDrafting"],
+      "m365Tools": ["m365.word.read", "m365.word.write", "m365.onenote.read", "m365.onenote.write", "m365.onedrive.read"],
+      "forbiddenTools": ["purchases", "executionTools"],
+      "escalationTargets": ["binky"]
+    },
+    "penny": {
+      "tier": "Subagent",
+      "allowedTools": ["webResearch", "docsReading"],
+      "m365Tools": ["m365.word.read", "m365.word.write", "m365.onenote.read", "m365.onenote.write", "m365.sharepoint.read"],
+      "forbiddenTools": ["executionTools"],
+      "escalationTargets": ["binky"]
+    },
+    "donna": {
+      "tier": "Subagent",
+      "allowedTools": ["docsDrafting"],
+      "m365Tools": ["m365.word.read", "m365.word.write", "m365.powerpoint.read", "m365.powerpoint.write", "m365.clipchamp.read", "m365.clipchamp.write", "m365.onedrive.read", "m365.onedrive.write", "m365.sharepoint.read"],
+      "forbiddenTools": ["publishing"],
+      "escalationTargets": ["binky"]
+    },
+    "cornwall": {
+      "tier": "Subagent",
+      "allowedTools": ["ledgerViewer", "spreadsheetDrafting"],
+      "m365Tools": ["m365.excel.read", "m365.excel.write", "m365.sharepoint.read", "m365.onedrive.read"],
+      "forbiddenTools": ["transfers", "executionTools"],
+      "escalationTargets": ["atlas"]
+    },
+    "link": {
+      "tier": "Subagent",
+      "allowedTools": ["docsReading", "codeDrafting"],
+      "m365Tools": ["m365.teams.read", "m365.sharepoint.read", "m365.onedrive.read"],
+      "forbiddenTools": ["deployingToProd"],
+      "escalationTargets": ["atlas"]
+    },
+    "dwight": {
+      "tier": "Subagent",
+      "allowedTools": ["logsViewing", "runbookDrafting"],
+      "m365Tools": ["m365.sharepoint.read", "m365.onedrive.read", "m365.teams.read"],
+      "forbiddenTools": ["unapprovedProductionChanges"],
+      "escalationTargets": ["atlas"]
+    },
+    "reynolds": {
+      "tier": "Subagent",
+      "allowedTools": ["staticAnalysis", "docsReading"],
+      "m365Tools": ["m365.sharepoint.read", "m365.onedrive.read", "m365.teams.read"],
+      "forbiddenTools": ["offensiveActions"],
+      "escalationTargets": ["larry"]
+    },
+    "emma": {
+      "tier": "Subagent",
+      "allowedTools": ["docsDrafting", "emailDrafting"],
+      "m365Tools": ["m365.outlook.read", "m365.outlook.draft", "m365.outlook.calendar.read", "m365.teams.read", "m365.teams.draft", "m365.onedrive.read", "m365.onenote.read", "m365.onenote.write"],
+      "forbiddenTools": ["executionTools"],
+      "escalationTargets": ["atlas"]
+    },
+    "fran": {
+      "tier": "Subagent",
+      "allowedTools": ["designNotes", "codeDraftingUI"],
+      "m365Tools": ["m365.powerpoint.read", "m365.powerpoint.write", "m365.clipchamp.read", "m365.clipchamp.write", "m365.onedrive.read", "m365.onedrive.write", "m365.sharepoint.read"],
+      "forbiddenTools": ["directDeploys"],
+      "escalationTargets": ["atlas"]
+    },
+    "kelly": {
+      "tier": "Subagent",
+      "allowedTools": ["docsDrafting"],
+      "m365Tools": ["m365.teams.read", "m365.teams.draft", "m365.outlook.read", "m365.outlook.draft", "m365.sharepoint.read", "m365.onedrive.read"],
+      "forbiddenTools": ["legalDeterminations"],
+      "escalationTargets": ["atlas"]
+    },
+    "terry": {
+      "tier": "Subagent",
+      "allowedTools": ["testChecklistEditor", "docsReading"],
+      "m365Tools": ["m365.word.read", "m365.word.write", "m365.sharepoint.read", "m365.onedrive.read", "m365.onenote.read"],
+      "forbiddenTools": ["executionTools"],
+      "escalationTargets": ["larry"]
+    },
+    "timmy": {
+      "tier": "Subagent",
+      "allowedTools": ["codeDrafting", "docsReading"],
+      "m365Tools": ["m365.teams.read", "m365.sharepoint.read", "m365.onedrive.read"],
+      "forbiddenTools": ["destructiveExecution"],
+      "escalationTargets": ["atlas"]
+    },
+    "sunday": {
+      "tier": "Subagent",
+      "allowedTools": ["docsDrafting"],
+      "m365Tools": ["m365.outlook.read", "m365.outlook.draft", "m365.teams.read", "m365.teams.draft", "m365.clipchamp.read", "m365.clipchamp.write", "m365.sharepoint.read", "m365.powerpoint.read"],
+      "forbiddenTools": ["publishing"],
+      "escalationTargets": ["binky"]
+    },
+    "mercer": {
+      "tier": "Subagent",
+      "allowedTools": ["emailDrafting", "docsReading", "webResearch"],
+      "m365Tools": ["m365.outlook.read", "m365.outlook.draft", "m365.teams.read", "m365.teams.draft", "m365.powerpoint.read", "m365.powerpoint.write", "m365.sharepoint.read"],
+      "forbiddenTools": ["executionTools"],
+      "escalationTargets": ["atlas"]
+    },
+    "petra": {
+      "tier": "Subagent",
+      "allowedTools": ["plannerWrite", "docsReading", "teamsDraft"],
+      "m365Tools": ["m365.planner.read", "m365.planner.write", "m365.teams.read", "m365.teams.draft", "m365.word.read", "m365.word.write", "m365.sharepoint.read", "m365.onedrive.read"],
+      "forbiddenTools": ["executionTools", "ledgerWriter"],
+      "escalationTargets": ["atlas"]
+    },
+    "porter": {
+      "tier": "Subagent",
+      "allowedTools": ["sharepointRead", "docsDrafting"],
+      "m365Tools": ["m365.sharepoint.read", "m365.sharepoint.write", "m365.word.read", "m365.powerpoint.read", "m365.onedrive.read"],
+      "forbiddenTools": ["sharepointDestructive"],
+      "escalationTargets": ["larry", "atlas"]
+    },
+    "claire": {
+      "tier": "Subagent",
+      "allowedTools": ["calendarRead", "emailDrafting", "meetingCreate"],
+      "m365Tools": ["m365.outlook.calendar.read", "m365.outlook.calendar.write", "m365.outlook.read", "m365.outlook.draft", "m365.teams.meeting.read", "m365.teams.meeting.create", "m365.onenote.read"],
+      "forbiddenTools": ["executionTools"],
+      "escalationTargets": ["emma", "atlas"]
+    },
+    "victor": {
+      "tier": "Subagent",
+      "allowedTools": ["clipchampWrite", "onedriveWrite"],
+      "m365Tools": ["m365.clipchamp.read", "m365.clipchamp.write", "m365.onedrive.read", "m365.onedrive.write", "m365.sharepoint.read"],
+      "forbiddenTools": ["publishingWithoutAtlas"],
+      "escalationTargets": ["donna", "atlas"]
+    },
+    "frank": {
+      "tier": "Subagent",
+      "allowedTools": ["formsRead", "excelRead", "docsReading"],
+      "m365Tools": ["m365.forms.read", "m365.forms.create", "m365.excel.read", "m365.sharepoint.read", "m365.onedrive.read"],
+      "forbiddenTools": ["executionTools"],
+      "escalationTargets": ["binky"]
+    },
+    "sandy": {
+      "tier": "Subagent",
+      "allowedTools": ["bookingsRead", "calendarRead", "emailDrafting"],
+      "m365Tools": ["m365.bookings.read", "m365.bookings.manage", "m365.outlook.calendar.read", "m365.outlook.read", "m365.teams.read"],
+      "forbiddenTools": ["executionTools"],
+      "escalationTargets": ["emma", "mercer", "atlas"]
     }
   }
 }

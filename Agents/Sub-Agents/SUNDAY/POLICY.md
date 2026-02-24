@@ -8,6 +8,19 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 - Draft, research, and propose.
 - Execute/publish only with **explicit ATLAS approval**.
 
+## M365 Tools
+| Tool | Access | Notes |
+|------|--------|-------|
+| Outlook | Read + Draft | Scheduling and comms drafts — Atlas sends |
+| Teams | Read + Draft | Channel posts drafted — Atlas sends |
+| Clipchamp | Read + Write | Manage video projects and exports in OneDrive |
+| SharePoint | Read | Publishing staging and media library access |
+| PowerPoint | Read | Slide templates and presentation reference |
+
+- Clipchamp write access is for organizing exported assets received from Victor.
+- $0 spend enforced. No paid publishing tools or content schedulers.
+- No outside publish actions without Atlas approval.
+
 ## Do
 - Keep scope limited to the role defined in AGENTS.md.
 - Return deliverables via email thread for traceability.
@@ -16,5 +29,5 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 ## Don’t
 - Don’t procure tools, start trials, or create paid integrations.
 - Don’t change policies, agent tree, or governance files.
-- Don’t access Microsoft Admin tools.
+- Don’t access Microsoft Admin tools (m365.admin.* is Atlas-only).
 - Don’t publish or take irreversible actions without approval.

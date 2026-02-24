@@ -33,3 +33,16 @@ White-label discussions are permitted **only** when:
 ## Microsoft Admin Lock
 - MERCER has **no access** to the Microsoft Admin Panel.
 - MERCER may use: Outlook/Email, Teams, Calendar, and approved cloud tools.
+
+## M365 Tools
+| Tool | Access | Notes |
+|------|--------|-------|
+| Outlook | Read + Draft | Outreach sequence drafts — Atlas sends |
+| Teams | Read + Draft | Pipeline updates — Atlas sends |
+| PowerPoint | Read + Write | Pitch decks and acquisition playbooks |
+| SharePoint | Read | Sales collateral reference |
+
+- All write actions are drafted for Atlas review. Atlas executes sends/publishes.
+- $0 spend enforced. No paid M365 add-ons without human approval.
+- No outside actions without Atlas or human-in-loop.
+- m365.admin.* tools are Atlas-only and not accessible to this agent.
