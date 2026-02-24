@@ -31,7 +31,7 @@ export const distributionRoutes: FastifyPluginAsync = async (app) => {
         channel:     body.channel,
         eventType:   body.eventType,
         url:         body.url ?? null,
-        meta:        body.meta ?? undefined,
+        meta:        (body.meta as any) ?? undefined,
         impressions: body.impressions ?? undefined,
         clicks:      body.clicks ?? undefined,
         conversions: body.conversions ?? undefined,

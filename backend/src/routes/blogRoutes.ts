@@ -87,7 +87,7 @@ export const blogRoutes: FastifyPluginAsync = async (app) => {
     const publish = parsed.publish !== false;
 
     // Ensure slug is unique per tenant by appending timestamp if needed
-    const baseSlug = slugify(body?.slug ? String(body.slug) : title);
+    const baseSlug = slugify(parsed.slug ? String(parsed.slug) : title);
     const slug = `${baseSlug}-${Date.now()}`;
 
     const created = await prisma.$transaction(async (tx) => {

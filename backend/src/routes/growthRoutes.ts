@@ -34,7 +34,7 @@ export const growthRoutes: FastifyPluginAsync = async (app) => {
       },
     } as any).catch(() => null);
 
-    const res = await runGrowthLoop({ tenantId, agent: body.agent, proposedAction: body.proposedAction });
+    const res = await runGrowthLoop({ tenantId, agent: body.agent, proposedAction: body.proposedAction as any });
     return reply.send(res);
   });
 };
