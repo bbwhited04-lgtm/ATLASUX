@@ -21,7 +21,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import * as React from "react";
 import { API_BASE } from "../lib/api";
-import { useActiveTenant } from "../lib/activeTenant";
+import { useActiveTenant } from "@/lib/activeTenant";
 const imgA = "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800";
 
 export function Dashboard() {

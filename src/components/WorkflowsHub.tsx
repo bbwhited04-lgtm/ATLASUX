@@ -1,7 +1,7 @@
 import * as React from "react";
 import { API_BASE } from "../lib/api";
 import { Play, RefreshCw, Workflow } from "lucide-react";
-import { useActiveTenant } from "../lib/activeTenant";
+import { useActiveTenant } from "@/lib/activeTenant";
 
 type RunResponse = {
   ok: boolean;

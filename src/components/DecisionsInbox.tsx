@@ -1,6 +1,6 @@
 import * as React from "react";
 import { API_BASE } from "../lib/api";
-import { useActiveTenant } from "../lib/activeTenant";
+import { useActiveTenant } from "@/lib/activeTenant";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { CheckCircle2, XCircle, Play, RefreshCw, AlertTriangle } from "lucide-react";

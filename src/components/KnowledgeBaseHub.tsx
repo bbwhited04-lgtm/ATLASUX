@@ -1,6 +1,6 @@
 import * as React from "react";
 import { API_BASE } from "../lib/api";
-import { useActiveTenant } from "../lib/activeTenant";
+import { useActiveTenant } from "@/lib/activeTenant";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";

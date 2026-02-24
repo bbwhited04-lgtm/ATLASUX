@@ -28,7 +28,9 @@ import {
 } from 'lucide-react';
 
 import { API_BASE } from "../lib/api";
-import { useActiveTenant } from "../lib/activeTenant";
+// IMPORTANT: use the same import path everywhere to avoid duplicate module instances
+// (which can cause React Context values not to propagate across routes).
+import { useActiveTenant } from "@/lib/activeTenant";
 
 function RootLayoutInner() {
   const location = useLocation();
@@ -57,10 +59,20 @@ function RootLayoutInner() {
       const res = await fetch(`${API_BASE}/v1/api/system/state/atlas_online`);
       const data = await res.json();
       if (!data?.ok) throw new Error(data?.error ?? "Failed to read atlas state");
-      const v = String(data?.state?.value ?? "");
-      if (v === "true") setAtlasOnline(true);
-      else if (v === "false") setAtlasOnline(false);
-      else setAtlasOnline(null);
+      // Accept multiple backend shapes (legacy + current):
+      // 1) { ok:true, online:boolean }
+      // 2) { ok:true, state:{ value:boolean } }
+      // 3) { ok:true, state:{ value:{ online:boolean } } }
+      const online =
+        typeof data?.online === "boolean"
+          ? data.online
+          : typeof data?.state?.value === "boolean"
+            ? data.state.value
+            : typeof data?.state?.value?.online === "boolean"
+              ? data.state.value.online
+              : null;
+
+      setAtlasOnline(online);
     } catch (e: any) {
       setAtlasStateErr(e?.message ?? String(e));
       setAtlasOnline(null);
@@ -77,8 +89,20 @@ function RootLayoutInner() {
       const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
       const data = await res.json();
       if (!data?.ok) throw new Error(data?.error ?? "Failed to set atlas state");
-      const v = String(data?.state?.value ?? "");
-      setAtlasOnline(v === "true");
+      // Some endpoints return a full state object; normalize like fetchAtlasState.
+      const online =
+        typeof data?.online === "boolean"
+          ? data.online
+          : typeof data?.state?.value === "boolean"
+            ? data.state.value
+            : typeof data?.state?.value?.online === "boolean"
+              ? data.state.value.online
+              : null;
+
+      // If endpoint didn't return the new value, assume the requested one and refresh.
+      setAtlasOnline(online ?? next);
+      // Immediately re-fetch to keep UI and backend consistent.
+      void fetchAtlasState();
     } catch (e: any) {
       setAtlasStateErr(e?.message ?? String(e));
     } finally {
