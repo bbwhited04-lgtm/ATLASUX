@@ -32,8 +32,16 @@ export { n8nWorkflows };
 
 export const workflowCatalogAll = [
   ...workflowCatalog,
-  ...n8nWorkflows.map(w => ({ id: w.id, name: w.name, description: `n8n: ${w.category}`, ownerAgent: "atlas" as const })),
-] as const;
+  ...n8nWorkflows.map(w => ({
+    id: w.id,
+    name: w.name,
+    description: w.description,
+    ownerAgent: w.ownerAgent as any,
+    category: w.category,
+    trigger: w.trigger,
+    humanInLoop: w.humanInLoop,
+  })),
+];
 
 
 
