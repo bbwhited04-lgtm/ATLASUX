@@ -21,7 +21,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import * as React from "react";
 import { API_BASE } from "../lib/api";
-import { useActiveTenant } from "@/lib/activeTenant";
+import { useActiveTenant } from "../lib/activeTenant";
 const imgA = "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800";
 
 export function Dashboard() {
@@ -177,7 +177,7 @@ const navigate = useNavigate();
           </div>
           <button
             type="button"
-            onClick={() => navigate("/blog")}
+            onClick={() => navigate("/app/blog")}
             className="mt-4 w-full px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-bold border border-cyan-500/20 flex items-center justify-center gap-2"
           >
             Open Blog <ArrowRight className="w-4 h-4" />

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { API_BASE } from '@/lib/api';
 import { 
   Smartphone, Camera, Clipboard, Download, Fingerprint, 
   Mic, Users as ContactsIcon, Image, FolderOpen, Check,
@@ -13,6 +14,14 @@ export function MobileIntegration() {
   const [voiceMemos, setVoiceMemos] = useState<any[]>([]);
   const [scannedDocs, setScannedDocs] = useState<any[]>([]);
   const [showQR, setShowQR] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const installUrl = useMemo(() => {
+    // Placeholder until App Store/TestFlight is live.
+    // This should point to a landing page you control.
+    return `${window.location.origin}/#/app/settings?tab=mobile`;
+  }, []);
 
   const connectiCloud = () => {
     setICloudStatus('connected');
@@ -20,6 +29,30 @@ export function MobileIntegration() {
     setTimeout(() => {
       setSyncedPhotos(4835);
     }, 2000);
+  };
+
+  const sendSms = async () => {
+    if (!phone.trim()) return;
+    setSending(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/comms/sms`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          to: phone.trim(),
+          message: `Atlas UX Mobile Companion install link: ${installUrl}`,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data?.ok === false) throw new Error(data?.error || 'SMS_FAILED');
+      setPhone('');
+      // Keep it dependency-free in this file.
+      alert('Text queued (stub). Wire SMS provider when ready.');
+    } catch (e: any) {
+      alert(e?.message ?? 'Could not send SMS');
+    } finally {
+      setSending(false);
+    }
   };
 
   const mockPhotos = [
@@ -121,10 +154,32 @@ export function MobileIntegration() {
                 Open in App Store
               </button>
               
-              <button className="w-full px-4 py-2 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 rounded-lg text-slate-300 text-sm transition-all flex items-center justify-center gap-2">
+              <button
+                onClick={() => navigator.clipboard.writeText(installUrl)}
+                className="w-full px-4 py-2 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 rounded-lg text-slate-300 text-sm transition-all flex items-center justify-center gap-2"
+              >
                 <LinkIcon className="w-4 h-4" />
                 Copy Install Link
               </button>
+
+              <div className="mt-2 rounded-lg border border-slate-700 bg-slate-950/30 p-3">
+                <div className="text-xs text-slate-400 mb-2">Send link via text (SMS)</div>
+                <div className="flex gap-2">
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+1 555 555 5555"
+                    className="flex-1 px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-700 text-slate-200 text-sm outline-none"
+                  />
+                  <button
+                    disabled={sending || !phone.trim()}
+                    onClick={sendSms}
+                    className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-slate-200 text-sm"
+                  >
+                    {sending ? 'Sending…' : 'Send'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

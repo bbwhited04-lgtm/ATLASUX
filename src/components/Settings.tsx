@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { FileText } from "lucide-react";
 import {
   Settings as SettingsIcon,
@@ -38,7 +39,6 @@ import { Switch } from "./ui/switch";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { ScrollArea } from "./ui/scroll-area";
-import { useLocation } from "react-router-dom";
 import { Input } from "./ui/input";
 import * as adminAuth from "../utils/admin-auth";
 
@@ -144,8 +144,17 @@ const defaultDriveAccess = [
 ];
 
 export function Settings() {
-  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { org_id, user_id } = useMemo(() => getOrgUser(), []);
+
+  const initialTab = (searchParams.get("tab") || "general").toLowerCase();
+  const [tab, setTab] = useState<string>(initialTab);
+
+  useEffect(() => {
+    const t = (searchParams.get("tab") || "general").toLowerCase();
+    if (t && t !== tab) setTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const [permissions, setPermissions] = useState<any[]>(defaultPermissions);
   const [driveAccess, setDriveAccess] = useState<any[]>(defaultDriveAccess);
 
@@ -319,9 +328,14 @@ export function Settings() {
         </p>
       </div>
       
-      {/** allow deep-linking to tabs, e.g. /app/settings?tab=integrations */}
       <Tabs
-        defaultValue={new URLSearchParams(location.search).get("tab") || "general"}
+        value={tab}
+        onValueChange={(v) => {
+          setTab(v);
+          const next = new URLSearchParams(searchParams);
+          next.set("tab", v);
+          setSearchParams(next, { replace: true });
+        }}
         className="space-y-6"
       >
         <TabsList className="bg-slate-900/50 border border-cyan-500/20 flex-wrap h-auto">
@@ -400,10 +414,6 @@ export function Settings() {
                 {auditRows.length === 0 && !auditLoading ? (
                   <div className="text-slate-400 text-sm p-6 text-center">
                     No audit events yet.
-                    <div className="mt-2 text-xs text-slate-500">
-                      If you are actively clicking around and this stays empty, your database schema likely has a mismatch
-                      (common: audit log level enum vs text). The backend will fail-closed and skip writes.
-                    </div>
                   </div>
                 ) : (
                   auditRows.map((r, idx) => (

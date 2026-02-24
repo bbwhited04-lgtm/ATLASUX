@@ -67,4 +67,52 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
 
     return reply.send({ ok: true, jobs });
   });
+
+  // Lightweight stub so the UI can "send" an install link without wiring a provider yet.
+  // Replace with Twilio/Vonage/etc when ready.
+  app.post("/sms", async (req, reply) => {
+    const body = (req.body ?? {}) as { tenantId?: string; to?: string; message?: string };
+    const to = String(body.to ?? "").trim();
+    const message = String(body.message ?? "").trim();
+
+    if (!to || !message) {
+      return reply.code(400).send({ ok: false, error: "to and message are required" });
+    }
+
+    const tenantId = body.tenantId ?? "";
+
+    const job = await prisma.job.create({
+      data: {
+        tenantId: tenantId || "demo_org",
+        requested_by_user_id: (req as any).user?.id ?? tenantId || "demo_org",
+        status: "queued",
+        jobType: "SMS_SEND",
+        priority: 5,
+        input: { to, message },
+      },
+    });
+
+    // Best-effort audit.
+    try {
+      await prisma.auditLog.create({
+        data: {
+          tenantId: tenantId || "demo_org",
+          actorUserId: null,
+          actorExternalId: String((req as any).user?.id ?? tenantId ?? ""),
+          actorType: "system",
+          level: "info",
+          action: "SMS_QUEUED",
+          entityType: "job",
+          entityId: job.id,
+          message: `Queued SMS to ${to}`,
+          meta: { to, message },
+          timestamp: new Date(),
+        },
+      });
+    } catch {
+      // ignore
+    }
+
+    return reply.send({ ok: true, jobId: job.id });
+  });
 };

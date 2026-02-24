@@ -17,9 +17,8 @@ import { AgentsHub } from "./components/AgentsHub";
 import { ToolsHub } from "./components/ToolsHub";
 import { WorkflowsHub } from "./components/WorkflowsHub";
 import { AgentDeploymentHub } from "./components/AgentDeploymentHub";
-import { AppsHub } from "./components/AppsHub";
+import { BlogStudio } from "./components/blog/BlogStudio";
 import { KnowledgeBaseHub } from "./components/KnowledgeBaseHub";
-import { BlogManager } from "./components/BlogManager";
 import MobilePage from "./routes/mobile";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -58,21 +57,21 @@ export const router = createHashRouter([
       ),
     children: [
       { index: true, Component: Dashboard },
-      { path: "blog", Component: BlogManager },
       { path: "jobs", Component: JobRunner },
       { path: "chat", Component: ChatInterface },
       { path: "agents", Component: AgentsHub },
       { path: "tools", Component: () => React.createElement(Navigate, { to: "/app/agents?view=tools", replace: true }) },
       { path: "workflows", Component: () => React.createElement(Navigate, { to: "/app/agents?view=workflows", replace: true }) },
       { path: "deployment", Component: () => React.createElement(Navigate, { to: "/app/agents?view=deployment", replace: true }) },
-      // Integrations are consolidated under Settings > Integrations.
-      { path: "apps", Component: () => React.createElement(Navigate, { to: "/app/settings?tab=integrations", replace: true }) },
+      // Integrations were consolidated under Settings.
+      { path: "apps", Component: () => React.createElement(Navigate, { to: "/app/settings", replace: true }) },
       { path: "monitoring", Component: SocialMonitoring },
       { path: "crm", Component: CRM },
       { path: "analytics", Component: Analytics },
       { path: "automation", Component: () => React.createElement(Navigate, { to: "/app/agents?view=automation", replace: true }) },
       { path: "business-manager", Component: BusinessManager },
       { path: "kb", Component: KnowledgeBaseHub },
+      { path: "blog", Component: BlogStudio },
       { path: "settings", Component: Settings },
       { path: "help", Component: HelpPage },
       { path: "decisions", Component: DecisionsInbox },

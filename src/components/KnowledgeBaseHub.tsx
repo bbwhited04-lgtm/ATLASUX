@@ -1,6 +1,6 @@
 import * as React from "react";
 import { API_BASE } from "../lib/api";
-import { useActiveTenant } from "@/lib/activeTenant";
+import { useActiveTenant } from "../lib/activeTenant";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -169,6 +169,14 @@ export function KnowledgeBaseHub() {
     await loadDocs();
     await loadDoc(selectedId);
   }, [tenantId, selectedId, editTitle, editSlug, editStatus, editTags, editBody, loadDocs, loadDoc]);
+
+  React.useEffect(() => {
+    // If the active tenant changes elsewhere (Business Manager, etc.), reflect it here.
+    if (activeTenantId && activeTenantId !== tenantId) {
+      setTenantId(activeTenantId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTenantId]);
 
   React.useEffect(() => {
     // keep active tenant synced

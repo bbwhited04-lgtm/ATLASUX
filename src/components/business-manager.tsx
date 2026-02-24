@@ -98,12 +98,12 @@ export function BusinessManager() {
 
   // If a tenant was selected elsewhere (or persisted), adopt it.
   useEffect(() => {
-    if (!selectedBusiness && activeTenantId) {
+    if (activeTenantId && activeTenantId !== selectedBusiness) {
       setSelectedBusiness(activeTenantId);
       loadAssetsForTenant(activeTenantId).catch(() => null);
       loadLedgerForTenant(activeTenantId).catch(() => null);
     }
-  }, [activeTenantId]);
+  }, [activeTenantId, selectedBusiness]);
 
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [showAddAsset, setShowAddAsset] = useState(false);

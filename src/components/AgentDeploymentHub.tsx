@@ -1,7 +1,7 @@
 import * as React from "react";
 import { API_BASE } from "../lib/api";
 import { Send, RefreshCw, PlusCircle, Mail, ClipboardList } from "lucide-react";
-import { useActiveTenant } from "@/lib/activeTenant";
+import { useActiveTenant } from "../lib/activeTenant";
 
 type Agent = {
   id: string;

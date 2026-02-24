@@ -14,6 +14,7 @@ import {
   Radio,
   Users,
   UserCog,
+  Puzzle,
   BarChart3,
   Briefcase,
   Settings as SettingsIcon,
@@ -27,9 +28,7 @@ import {
 } from 'lucide-react';
 
 import { API_BASE } from "../lib/api";
-// IMPORTANT: use the same import path everywhere to avoid duplicate module instances
-// (which can cause React Context values not to propagate across routes).
-import { useActiveTenant } from "@/lib/activeTenant";
+import { useActiveTenant } from "../lib/activeTenant";
 
 function RootLayoutInner() {
   const location = useLocation();
@@ -58,20 +57,16 @@ function RootLayoutInner() {
       const res = await fetch(`${API_BASE}/v1/api/system/state/atlas_online`);
       const data = await res.json();
       if (!data?.ok) throw new Error(data?.error ?? "Failed to read atlas state");
-      // Accept multiple backend shapes (legacy + current):
-      // 1) { ok:true, online:boolean }
-      // 2) { ok:true, state:{ value:boolean } }
-      // 3) { ok:true, state:{ value:{ online:boolean } } }
-      const online =
-        typeof data?.online === "boolean"
-          ? data.online
-          : typeof data?.state?.value === "boolean"
-            ? data.state.value
-            : typeof data?.state?.value?.online === "boolean"
-              ? data.state.value.online
-              : null;
-
-      setAtlasOnline(online);
+      // Backend has evolved across revisions. Accept multiple shapes:
+      //   { state: { online: boolean } }
+      //   { state: { value: boolean } }
+      //   { state: { value: { online: boolean } } }
+      const s = data?.state ?? null;
+      const direct = typeof s?.online === "boolean" ? s.online : null;
+      const v1 = typeof s?.value === "boolean" ? s.value : null;
+      const v2 = typeof s?.value === "object" && s?.value && typeof s.value.online === "boolean" ? s.value.online : null;
+      const parsed = direct ?? v2 ?? v1;
+      setAtlasOnline(typeof parsed === "boolean" ? parsed : null);
     } catch (e: any) {
       setAtlasStateErr(e?.message ?? String(e));
       setAtlasOnline(null);
@@ -88,20 +83,13 @@ function RootLayoutInner() {
       const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
       const data = await res.json();
       if (!data?.ok) throw new Error(data?.error ?? "Failed to set atlas state");
-      // Some endpoints return a full state object; normalize like fetchAtlasState.
-      const online =
-        typeof data?.online === "boolean"
-          ? data.online
-          : typeof data?.state?.value === "boolean"
-            ? data.state.value
-            : typeof data?.state?.value?.online === "boolean"
-              ? data.state.value.online
-              : null;
-
-      // If endpoint didn't return the new value, assume the requested one and refresh.
-      setAtlasOnline(online ?? next);
-      // Immediately re-fetch to keep UI and backend consistent.
-      void fetchAtlasState();
+      const s = data?.state ?? null;
+      const direct = typeof s?.online === "boolean" ? s.online : null;
+      const v1 = typeof s?.value === "boolean" ? s.value : null;
+      const v2 = typeof s?.value === "object" && s?.value && typeof s.value.online === "boolean" ? s.value.online : null;
+      const parsed = direct ?? v2 ?? v1;
+      // If backend didn't return a parseable state, fall back to optimistic UI.
+      setAtlasOnline(typeof parsed === "boolean" ? parsed : next);
     } catch (e: any) {
       setAtlasStateErr(e?.message ?? String(e));
     } finally {
@@ -149,7 +137,8 @@ function RootLayoutInner() {
     { path: "/app/jobs", icon: Cpu, label: "Pluto Jobs" },
     { path: "/app/chat", icon: MessageSquare, label: "AI Chat" },
     { path: "/app/agents", icon: UserCog, label: "Agents" },
-    // Integrations live in Settings.
+    // Integrations are consolidated under Settings -> Integrations
+    { path: "/app/settings?tab=integrations", icon: Puzzle, label: "Integrations" },
     { path: "/app/monitoring", icon: Radio, label: "Monitoring" },
     { path: "/app/crm", icon: Users, label: "CRM" },
     { path: "/app/analytics", icon: BarChart3, label: "Analytics" },
@@ -172,8 +161,9 @@ function RootLayoutInner() {
   const [isMobileCompanionOpen, setIsMobileCompanionOpen] = useState(false);
   const hideMobileCompanion = () => setIsMobileCompanionOpen(false);
   const isActive = (path: string) => {
+    const base = path.split("?")[0];
     if (path === "/app") return location.pathname === "/app";
-    return location.pathname.startsWith(path);
+    return location.pathname.startsWith(base);
   };
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white overflow-hidden">
