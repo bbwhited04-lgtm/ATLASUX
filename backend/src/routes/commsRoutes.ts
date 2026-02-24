@@ -84,7 +84,7 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
     const job = await prisma.job.create({
       data: {
         tenantId: tenantId || "demo_org",
-        requested_by_user_id: ((req as any).user?.id ?? tenantId) || "demo_org",
+        requested_by_user_id: (req as any).user?.id ?? tenantId || "demo_org",
         status: "queued",
         jobType: "SMS_SEND",
         priority: 5,
