@@ -399,7 +399,12 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
   // POST /v1/kb/seed-atlas — seeds all workflow definitions into KB so Atlas can find them.
   // Does an upsert by slug so re-running is safe.
   app.post("/seed-atlas", async (req, reply) => {
-    const tenantId = (req as any).tenantId as string;
+    const body = req.body as any;
+    // Accept tenantId from plugin, query param, or request body (for direct curl calls)
+    const tenantId: string =
+      (req as any).tenantId ||
+      String((req.query as any)?.tenantId ?? "").trim() ||
+      String(body?.tenantId ?? "").trim();
 
     if (!tenantId) {
       return reply.code(400).send({ ok: false, error: "tenantId_required" });
