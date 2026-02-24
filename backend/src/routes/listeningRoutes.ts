@@ -1,18 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
-
-function normalizeProvider(p: string | null | undefined): string | null {
-  if (!p) return null;
-  const s = String(p).trim().toLowerCase();
-  if (!s) return null;
-  if (s.includes("facebook") || s.includes("instagram") || s.includes("threads") || s === "meta") return "meta";
-  if (s.includes("youtube") || s.includes("google")) return "google";
-  if (s === "x" || s.includes("twitter")) return "x";
-  if (s.includes("tumblr")) return "tumblr";
-  if (s.includes("pinterest")) return "pinterest";
-  if (s.includes("linkedin")) return "linkedin";
-  return null;
-}
+import { providerForPlatform } from "../lib/providerMapping.js";
 
 export const listeningRoutes: FastifyPluginAsync = async (app) => {
   /**
@@ -34,7 +22,7 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
     const providers = new Set<string>();
     const candidates = assets
       .map(a => {
-        const provider = normalizeProvider(a.platform);
+        const provider = providerForPlatform(a.platform);
         if (provider) providers.add(provider);
         return { ...a, provider };
       })

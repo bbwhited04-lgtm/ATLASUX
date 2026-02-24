@@ -47,6 +47,18 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     }
   }
 
+  /**
+   * Build the redirect URL back to the integrations tab.
+   * Params must be INSIDE the hash so React Router HashRouter's useSearchParams() can read them.
+   * Result: https://atlasux.cloud#/app/settings?tab=integrations&connected=meta&...
+   */
+  function buildReturnUrl(params: Record<string, string>): string {
+    const hashParams = new URLSearchParams({ tab: "integrations", ...params });
+    const base = new URL(FRONTEND_URL);
+    base.hash = `#/app/settings?${hashParams.toString()}`;
+    return base.toString();
+  }
+
   /** Bounce-back redirect used when a real OAuth flow isn't configured. */
   async function stubConnect(req: any, provider: "google" | "meta") {
     const q = (req.query ?? {}) as any;
@@ -55,12 +67,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
     if (org_id) await markConnected(org_id, provider);
 
-    const url = new URL(FRONTEND_URL);
-    url.hash = "#/app/integrations";
-    url.searchParams.set("connected", provider);
-    if (org_id) url.searchParams.set("org_id", org_id);
-    if (user_id) url.searchParams.set("user_id", user_id);
-    return url.toString();
+    return buildReturnUrl({ connected: provider, ...(org_id ? { org_id } : {}), ...(user_id ? { user_id } : {}) });
   }
 
   // ── Google ────────────────────────────────────────────────────────────────
@@ -88,13 +95,8 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/google/callback", async (req, reply) => {
     const q = (req.query ?? {}) as any;
-    const url = new URL(FRONTEND_URL);
-    url.hash = "#/app/integrations";
 
-    if (q.error) {
-      url.searchParams.set("oauth_error", String(q.error_description ?? q.error));
-      return reply.redirect(url.toString());
-    }
+    if (q.error) return reply.redirect(buildReturnUrl({ oauth_error: String(q.error_description ?? q.error) }));
 
     let state: any = {};
     try { state = parseState(String(q.state || "")); } catch {}
@@ -103,27 +105,12 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
     try {
       const tok = await exchangeGoogleCode(env, String(q.code || ""));
-      const expires_at = tok.expires_in
-        ? new Date(Date.now() + tok.expires_in * 1000).toISOString()
-        : null;
-
-      await storeTokenVault(env, {
-        org_id, user_id, provider: "google",
-        access_token: tok.access_token,
-        refresh_token: tok.refresh_token ?? null,
-        expires_at, scope: tok.scope ?? null,
-        meta: { token_type: tok.token_type },
-      });
-
+      const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
+      await storeTokenVault(env, { org_id, user_id, provider: "google", access_token: tok.access_token, refresh_token: tok.refresh_token ?? null, expires_at, scope: tok.scope ?? null, meta: { token_type: tok.token_type } });
       await markConnected(org_id, "google");
-
-      url.searchParams.set("connected", "google");
-      url.searchParams.set("org_id", org_id);
-      url.searchParams.set("user_id", user_id);
-      return reply.redirect(url.toString());
+      return reply.redirect(buildReturnUrl({ connected: "google", org_id, user_id }));
     } catch (e: any) {
-      url.searchParams.set("oauth_error", e?.message ? String(e.message) : "google_token_exchange_failed");
-      return reply.redirect(url.toString());
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "google_token_exchange_failed" }));
     }
   });
 
@@ -149,13 +136,8 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/meta/callback", async (req, reply) => {
     const q = (req.query ?? {}) as any;
-    const url = new URL(FRONTEND_URL);
-    url.hash = "#/app/integrations";
 
-    if (q.error) {
-      url.searchParams.set("oauth_error", String(q.error_description ?? q.error));
-      return reply.redirect(url.toString());
-    }
+    if (q.error) return reply.redirect(buildReturnUrl({ oauth_error: String(q.error_description ?? q.error) }));
 
     let state: any = {};
     try { state = parseState(String(q.state || "")); } catch {}
@@ -164,27 +146,12 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
     try {
       const tok = await exchangeMetaCode(env, String(q.code || ""));
-      const expires_at = tok.expires_in
-        ? new Date(Date.now() + tok.expires_in * 1000).toISOString()
-        : null;
-
-      await storeTokenVault(env, {
-        org_id, user_id, provider: "meta",
-        access_token: tok.access_token,
-        refresh_token: null,
-        expires_at, scope: null,
-        meta: { token_type: tok.token_type },
-      });
-
+      const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
+      await storeTokenVault(env, { org_id, user_id, provider: "meta", access_token: tok.access_token, refresh_token: null, expires_at, scope: null, meta: { token_type: tok.token_type } });
       await markConnected(org_id, "meta");
-
-      url.searchParams.set("connected", "meta");
-      url.searchParams.set("org_id", org_id);
-      url.searchParams.set("user_id", user_id);
-      return reply.redirect(url.toString());
+      return reply.redirect(buildReturnUrl({ connected: "meta", org_id, user_id }));
     } catch (e: any) {
-      url.searchParams.set("oauth_error", e?.message ? String(e.message) : "meta_token_exchange_failed");
-      return reply.redirect(url.toString());
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "meta_token_exchange_failed" }));
     }
   });
 
@@ -215,61 +182,28 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const stateRaw = q.state;
     const error = q.error;
 
-    const url = new URL(FRONTEND_URL);
-    url.hash = "#/app/integrations";
-
-    if (error) {
-      url.searchParams.set("oauth_error", String(error));
-      return reply.redirect(url.toString());
-    }
-    if (!code || !stateRaw) {
-      url.searchParams.set("oauth_error", "missing_code_or_state");
-      return reply.redirect(url.toString());
-    }
+    if (error) return reply.redirect(buildReturnUrl({ oauth_error: String(error) }));
+    if (!code || !stateRaw) return reply.redirect(buildReturnUrl({ oauth_error: "missing_code_or_state" }));
 
     let state: any;
-    try {
-      state = parseState(String(stateRaw));
-    } catch {
-      url.searchParams.set("oauth_error", "bad_state");
-      return reply.redirect(url.toString());
-    }
+    try { state = parseState(String(stateRaw)); } catch { return reply.redirect(buildReturnUrl({ oauth_error: "bad_state" })); }
 
     const nonce = String(state.nonce || "");
     const org_id = String(state.org_id || "");
     const user_id = String(state.user_id || "");
     const verifier = pkce.get(nonce)?.code_verifier;
 
-    if (!verifier) {
-      url.searchParams.set("oauth_error", "pkce_expired");
-      return reply.redirect(url.toString());
-    }
+    if (!verifier) return reply.redirect(buildReturnUrl({ oauth_error: "pkce_expired" }));
 
     try {
       const tok = await exchangeXCode(env, { code: String(code), code_verifier: verifier });
       pkce.delete(nonce);
-
-      const expires_at = tok.expires_in
-        ? new Date(Date.now() + tok.expires_in * 1000).toISOString()
-        : null;
-
-      await storeTokenVault(env, {
-        org_id, user_id, provider: "x",
-        access_token: tok.access_token,
-        refresh_token: tok.refresh_token ?? null,
-        expires_at, scope: tok.scope ?? null,
-        meta: { token_type: tok.token_type },
-      });
-
+      const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
+      await storeTokenVault(env, { org_id, user_id, provider: "x", access_token: tok.access_token, refresh_token: tok.refresh_token ?? null, expires_at, scope: tok.scope ?? null, meta: { token_type: tok.token_type } });
       await markConnected(org_id, "x");
-
-      url.searchParams.set("connected", "x");
-      url.searchParams.set("org_id", org_id);
-      url.searchParams.set("user_id", user_id);
-      return reply.redirect(url.toString());
+      return reply.redirect(buildReturnUrl({ connected: "x", org_id, user_id }));
     } catch (e: any) {
-      url.searchParams.set("oauth_error", e?.message ? String(e.message) : "token_exchange_failed");
-      return reply.redirect(url.toString());
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "token_exchange_failed" }));
     }
   });
 
@@ -294,40 +228,19 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const q = (req.query ?? {}) as any;
     const oauth_token = String(q.oauth_token ?? "");
     const oauth_verifier = String(q.oauth_verifier ?? "");
-
-    const url = new URL(FRONTEND_URL);
-    url.hash = "#/app/integrations";
-
     const tmp = tumblrTmp.get(oauth_token);
     if (!oauth_token || !oauth_verifier || !tmp) {
-      url.searchParams.set("oauth_error", "tumblr_missing_or_expired");
-      return reply.redirect(url.toString());
+      return reply.redirect(buildReturnUrl({ oauth_error: "tumblr_missing_or_expired" }));
     }
 
     try {
       const acc = await tumblrAccessToken(env, oauth_token, oauth_verifier, tmp.tokenSecret);
       tumblrTmp.delete(oauth_token);
-
-      await storeTokenVault(env, {
-        org_id: tmp.org_id,
-        user_id: tmp.user_id,
-        provider: "tumblr",
-        access_token: acc.oauth_token,
-        refresh_token: null,
-        expires_at: null,
-        scope: null,
-        meta: { oauth_token_secret: acc.oauth_token_secret, raw: acc },
-      });
-
+      await storeTokenVault(env, { org_id: tmp.org_id, user_id: tmp.user_id, provider: "tumblr", access_token: acc.oauth_token, refresh_token: null, expires_at: null, scope: null, meta: { oauth_token_secret: acc.oauth_token_secret, raw: acc } });
       await markConnected(tmp.org_id, "tumblr");
-
-      url.searchParams.set("connected", "tumblr");
-      url.searchParams.set("org_id", tmp.org_id);
-      url.searchParams.set("user_id", tmp.user_id);
-      return reply.redirect(url.toString());
+      return reply.redirect(buildReturnUrl({ connected: "tumblr", org_id: tmp.org_id, user_id: tmp.user_id }));
     } catch (e: any) {
-      url.searchParams.set("oauth_error", e?.message ? String(e.message) : "tumblr_token_exchange_failed");
-      return reply.redirect(url.toString());
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "tumblr_token_exchange_failed" }));
     }
   });
 };

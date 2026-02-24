@@ -46,7 +46,32 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(428).send({ ok: false, error: "human_approval_required", reasons: sgl.reasons });
     }
 
-    const result = await runChat(body, process.env as any);
+    // Inject integration context into the system prompt (Issue 4: tone shift)
+    let enrichedBody = body;
+    if (tenantId) {
+      try {
+        const connectedIntegrations = await prisma.integration.findMany({
+          where: { tenantId, connected: true },
+          select: { provider: true },
+        });
+        if (connectedIntegrations.length > 0) {
+          const providerNames = connectedIntegrations.map((i: any) => i.provider).join(", ");
+          const contextLine = `[ATLAS CONTEXT] The following integrations are connected for this tenant: ${providerNames}. You have access to these platforms and can listen, analyze, or post on behalf of the user. Acknowledge this capability when relevant instead of saying you cannot do anything.`;
+          const msgs: any[] = Array.isArray(body?.messages) ? [...body.messages] : [];
+          const sysIdx = msgs.findIndex((m: any) => m.role === "system");
+          if (sysIdx >= 0) {
+            msgs[sysIdx] = { ...msgs[sysIdx], content: `${contextLine}\n\n${msgs[sysIdx].content}` };
+          } else {
+            msgs.unshift({ role: "system", content: contextLine });
+          }
+          enrichedBody = { ...body, messages: msgs };
+        }
+      } catch {
+        // Non-fatal — proceed without context injection
+      }
+    }
+
+    const result = await runChat(enrichedBody, process.env as any);
     return reply.send(result);
   });
 };

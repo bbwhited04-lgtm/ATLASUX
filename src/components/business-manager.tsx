@@ -140,20 +140,22 @@ async function refreshAll() {
   setLoading(true);
   setWarning(null);
   try {
-    const qs = new URLSearchParams({ org_id, user_id }).toString();
+    const qs = new URLSearchParams({ org_id, user_id, tenantId: activeTenantId ?? org_id }).toString();
     const [iRes, aRes, jRes, auRes] = await Promise.all([
-      fetch(`${API_BASE}/v1/integrations/status?${qs}`),
+      fetch(`${API_BASE}/v1/integrations/summary?${qs}`),
       fetch(`${API_BASE}/v1/accounting/summary?${qs}`),
       fetch(`${API_BASE}/v1/jobs/list?${qs}&limit=50`),
       fetch(`${API_BASE}/v1/audit/list?${qs}&limit=50`)
     ]);
 
-    const iJson = await iRes.json().catch(() => []);
+    const iJson = await iRes.json().catch(() => ({}));
     const aJson = await aRes.json().catch(() => null);
     const jJson = await jRes.json().catch(() => ({ ok: false, rows: [] }));
     const auJson = await auRes.json().catch(() => ({ ok: false, rows: [] }));
 
-    setIntegrations(Array.isArray(iJson) ? iJson : []);
+    // /summary returns { ok, providers, integrations:[...] }
+    const integrationRows = Array.isArray(iJson) ? iJson : (iJson?.integrations ?? []);
+    setIntegrations(integrationRows);
     setAccounting(aJson);
     setJobs(((jJson?.items ?? jJson?.rows ?? jJson) ?? []) as any[]);
     setAuditRows(((auJson?.items ?? auJson?.rows) ?? []) as any[]);
