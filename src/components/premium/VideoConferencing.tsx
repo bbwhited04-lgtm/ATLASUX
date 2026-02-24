@@ -228,7 +228,7 @@ export function VideoConferencing() {
                   <button
                     onClick={() => {
                       setSelectedPlatform(platform.name);
-                      navigate(`/app/integrations?focus=${encodeURIComponent(platform.name)}`);
+                      navigate(`/app/settings?tab=integrations&focus=${encodeURIComponent(platform.name)}`);
                     }}
                     className="px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-xs text-cyan-400 transition-colors"
                   >

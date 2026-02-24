@@ -225,7 +225,7 @@ export default function CRM() {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => navigate("/app/integrations")}
+            onClick={() => navigate("/app/settings")}
             className="h-10 px-4 rounded-xl border border-white/10 hover:border-white/20 transition"
           >
             Integrations

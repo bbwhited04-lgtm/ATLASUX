@@ -304,7 +304,7 @@ const navigate = useNavigate();
       
       {/* Quick Actions for New Features */}
       <div className="grid md:grid-cols-2 gap-6">
-        <button type="button" onClick={() => navigate("/app/business-assets")} className="group text-left">
+        <button type="button" onClick={() => navigate("/app/business-manager")} className="group text-left">
           <Card className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-cyan-500/30 backdrop-blur-xl p-6 hover:from-cyan-500/20 hover:to-blue-500/20 transition-all">
             <div className="flex items-start justify-between mb-4">
               <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
@@ -333,7 +333,7 @@ const navigate = useNavigate();
           </Card>
         </button>
         
-        <a href="/processing-settings" className="group">
+        <a href="#/app/settings" className="group">
           <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30 backdrop-blur-xl p-6 hover:from-green-500/20 hover:to-emerald-500/20 transition-all">
             <div className="flex items-start justify-between mb-4">
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">

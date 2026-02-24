@@ -138,7 +138,7 @@ export default function Landing() {
 
           <div className="mt-5 flex gap-3">
             <a
-              href="#/app/integrations"
+              href="#/app/settings"
               className="rounded-2xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10"
             >
               Explore integrations
