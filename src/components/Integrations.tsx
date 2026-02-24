@@ -3,6 +3,7 @@ import { Plus, X, Search, Filter, RefreshCw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { API_BASE } from "@/lib/api";
 import { useActiveTenant } from "@/lib/activeTenant";
+import { getOrgUser } from "@/lib/org";
 
 
 type Category =
@@ -195,10 +196,16 @@ setStatus(map);
     if (focus) setQuery(focus);
   }, [searchParams]);
 
+  // Refresh status when returning from an OAuth callback (?connected=...)
+  React.useEffect(() => {
+    if (searchParams.get("connected")) refreshStatus();
+  }, [searchParams, refreshStatus]);
+
   const connect = (i: Integration) => {
     if (!i.oauth) return; // not wired yet
     setLoading(i.id);
 
+    const { org_id, user_id } = getOrgUser();
     const start =
       i.oauth === "google"
         ? `${BACKEND_URL}/v1/oauth/google/start`
@@ -208,7 +215,12 @@ setStatus(map);
             ? `${BACKEND_URL}/v1/oauth/tumblr/start`
           : `${BACKEND_URL}/v1/oauth/x/start`;
 
-    window.location.href = `${start}?tenantId=${encodeURIComponent(tenantId ?? "")}`;
+    const params = new URLSearchParams({
+      tenantId: tenantId ?? "",
+      org_id,
+      user_id,
+    });
+    window.location.href = `${start}?${params.toString()}`;
   };
 
   const disconnect = async (i: Integration) => {
