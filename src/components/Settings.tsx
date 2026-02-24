@@ -147,7 +147,7 @@ const defaultDriveAccess = [
 
 export function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { tenantId, tenantId } = useMemo(() => getOrgUser(), []);
+  const { org_id: tenantId } = useMemo(() => getOrgUser(), []);
 
   const initialTab = (searchParams.get("tab") || "general").toLowerCase();
   const [tab, setTab] = useState<string>(initialTab);
