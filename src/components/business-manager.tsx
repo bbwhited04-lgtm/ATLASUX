@@ -87,6 +87,7 @@ export function BusinessManager() {
   async function selectBusiness(tenantId: string) {
     setSelectedBusiness(tenantId);
     setActiveTenantId(tenantId);
+    setWarning(null); // clear stale warning from previous state
     await loadAssetsForTenant(tenantId).catch((err) => {
       console.error("Failed to load assets:", err);
       setWarning(err instanceof Error ? err.message : String(err));
@@ -242,6 +243,10 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
     name: '',
     url: '',
     platform: '',
+    costMonthlyUsd: '',
+    costVendor: '',
+    costCadence: 'monthly',
+    costCategory: 'hosting',
   });
 
   // Business Manager "Suite" (formerly Premium Hub)
@@ -1268,7 +1273,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                           step="0.01"
                           placeholder="e.g., 14.00"
                           value={newAssetForm.costMonthlyUsd}
-                          onChange={(e) => SETnewAssetForm({ ...newAssetForm, costMonthlyUsd: e.target.value })}
+                          onChange={(e) => setNewAssetForm({ ...newAssetForm, costMonthlyUsd: e.target.value })}
                           className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
                         />
                         <div className="text-xs text-slate-500 mt-1">For monthly costs, enter monthly amount. For yearly, enter yearly amount.</div>
@@ -1280,7 +1285,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                           type="text"
                           placeholder="e.g., Render, Vercel, AWS, Sprout, QuickBooks"
                           value={newAssetForm.costVendor}
-                          onChange={(e) => SETnewAssetForm({ ...newAssetForm, costVendor: e.target.value })}
+                          onChange={(e) => setNewAssetForm({ ...newAssetForm, costVendor: e.target.value })}
                           className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
                         />
                       </div>
@@ -1289,7 +1294,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                         <label className="block text-sm font-medium text-white mb-2">Cadence</label>
                         <select
                           value={newAssetForm.costCadence}
-                          onChange={(e) => SETnewAssetForm({ ...newAssetForm, costCadence: e.target.value })}
+                          onChange={(e) => setNewAssetForm({ ...newAssetForm, costCadence: e.target.value })}
                           className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
                         >
                           <option value="monthly">Monthly</option>
@@ -1302,7 +1307,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                         <label className="block text-sm font-medium text-white mb-2">Category</label>
                         <select
                           value={newAssetForm.costCategory}
-                          onChange={(e) => SETnewAssetForm({ ...newAssetForm, costCategory: e.target.value })}
+                          onChange={(e) => setNewAssetForm({ ...newAssetForm, costCategory: e.target.value })}
                           className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
                         >
                           <option value="hosting">Hosting</option>
@@ -1341,7 +1346,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                               costCategory: newAssetForm.costCategory || undefined,
                             });
                             await loadAssetsForTenant(selectedBusinessData.id);
-                            setNewAssetForm({ type: "domain", name: "", url: "", platform: "", costMonthlyUsd: "", costVendor: "", costCadence: "monthly", costCategory: "hosting" });
+                            setNewAssetForm({ type: "domain", name: "", url: "", platform: "", costMonthlyUsd: "", costVendor: "", costCadence: "monthly", costCategory: "hosting" }); // reset all fields
                             setShowAddAsset(false);
                           } catch (err) {
                             console.error(err);
