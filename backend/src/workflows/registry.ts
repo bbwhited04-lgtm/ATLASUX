@@ -798,7 +798,7 @@ handlers["WF-106"] = async (ctx) => {
   const intelPacket = await safeLLM(ctx, {
     agent: "DAILY-INTEL",
     purpose: "daily_aggregation",
-    route: "LONG_CONTEXT_SUMMARY",
+    route: "ORCHESTRATION_REASONING",
     system: synthPrompt,
     user: `Generate the unified intelligence packet for ${today}.`,
   });
@@ -810,7 +810,7 @@ handlers["WF-106"] = async (ctx) => {
     `You are ATLAS, CEO and orchestrator of the Atlas UX AI workforce.`,
     `Date: ${today}`,
     `\nThe DAILY-INTEL hub has just delivered today's unified intelligence packet:\n`,
-    intelPacket,
+    intelPacket.slice(0, 2000), // keep under token budget
     `\nYour role: read the intel, evaluate what each agent should do TODAY, and issue specific task orders.`,
     `\nFor each of these agents, issue a task order:`,
     `  Social publishers: Kelly, Fran, Dwight, Timmy, Terry, Cornwall, Link, Emma, Donna, Reynolds, Penny`,
@@ -830,7 +830,7 @@ handlers["WF-106"] = async (ctx) => {
   const taskOrders = await safeLLM(ctx, {
     agent: "ATLAS",
     purpose: "task_assignment",
-    route: "LONG_CONTEXT_SUMMARY",
+    route: "ORCHESTRATION_REASONING",
     system: taskOrderPrompt,
     user: `Issue today's task orders for the full Atlas UX workforce — ${today}.`,
   });

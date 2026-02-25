@@ -126,6 +126,8 @@ type RouteCaps = {
   maxOutputTokens: number;
   maxCallsPerRun: number;
   temperatureMax: number;
+  /** Override global timeoutMs for this route (ms). Optional. */
+  timeoutMs?: number;
 };
 
 type GuardrailsConfig = {
@@ -164,6 +166,7 @@ const ROUTE_CAPS: Record<LlmRoute, RouteCaps> = {
     maxOutputTokens: 1_800,
     maxCallsPerRun: 12,
     temperatureMax: 0.5,
+    timeoutMs: 90_000, // large context needs more time
   },
   DRAFT_GENERATION_FAST: {
     maxInputTokens: 8_000,
@@ -232,7 +235,9 @@ const ROUTES: Record<LlmRoute, RoutePlanItem[]> = {
   ],
   LONG_CONTEXT_SUMMARY: [
     { provider: "vercel_ai_gateway", model: "google/gemini-1.5-pro", params: { temperature: 0.3, maxOutputTokens: 1600 } },
+    { provider: "vercel_ai_gateway", model: "google/gemini-2.0-flash", params: { temperature: 0.3, maxOutputTokens: 1600 } },
     { provider: "openrouter", model: "openrouter/auto", params: { temperature: 0.3, maxOutputTokens: 1600 } },
+    { provider: "cerebras", model: "cerebras/llama", params: { temperature: 0.3, maxOutputTokens: 1600 } },
   ],
   DRAFT_GENERATION_FAST: [
     // If you add GROQ later, add it here.
@@ -499,7 +504,7 @@ export async function runLLM(req: LlmRequest, auditHook: AuditHook = auditDefaul
         messages,
         temperature: temp,
         maxOutputTokens: maxOut,
-        timeoutMs: guard.timeoutMs,
+        timeoutMs: ROUTE_CAPS[req.route]?.timeoutMs ?? guard.timeoutMs,
       });
       const latencyMs = Date.now() - started;
 
