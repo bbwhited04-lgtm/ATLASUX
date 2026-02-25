@@ -1,5 +1,6 @@
 import { API_BASE } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
+import { useActiveTenant } from "@/lib/activeTenant";
 import { useSearchParams } from "react-router-dom";
 import {
   Zap,
@@ -62,6 +63,7 @@ export function TaskAutomation() {
   // ----------------------------
   // Hooks FIRST (must be top-level)
   // ----------------------------
+  const { tenantId: activeTenantId } = useActiveTenant();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const [createOpen, setCreateOpen] = useState(false);
@@ -98,12 +100,8 @@ export function TaskAutomation() {
   // Backend mapping: Workflow -> Job
   // ----------------------------
   async function startWorkflowJob(workflow: Workflow) {
-    const tenantId =
-  localStorage.getItem("atlas_active_tenant_id") ||
-  localStorage.getItem("tenantId") ||
-  "";
-
-if (!tenantId) throw new Error("No active tenant selected. Select a Business first.");
+    const tenantId = activeTenantId ?? "";
+    if (!tenantId) throw new Error("No active tenant selected. Select a Business first.");
 
 const res = await fetch(`${API_BASE}/v1/engine/run`, {
   method: "POST",

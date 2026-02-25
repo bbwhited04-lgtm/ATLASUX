@@ -40,6 +40,7 @@ import { agentFlowRoutes } from "./routes/agentFlowRoutes.js";
 import { blogRoutes } from "./routes/blogRoutes.js";
 import { redditRoutes } from "./routes/redditRoutes.js";
 import { mobileRoutes } from "./routes/mobileRoutes.js";
+import { telegramRoutes } from "./routes/telegramRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -183,6 +184,9 @@ await app.register(redditRoutes, { prefix: "/v1/reddit" });
 
 // Mobile device pairing (QR-based, in-memory store)
 await app.register(mobileRoutes, { prefix: "/v1/mobile" });
+
+// Telegram Bot API bridge
+await app.register(telegramRoutes, { prefix: "/v1/telegram" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

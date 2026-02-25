@@ -23,6 +23,58 @@ type EmailInput = {
   traceId?: string | null;
 };
 
+async function getMsAccessToken(): Promise<string> {
+  const tenantId = String(process.env.MS_TENANT_ID ?? "").trim();
+  const clientId = String(process.env.MS_CLIENT_ID ?? "").trim();
+  const clientSecret = String(process.env.MS_CLIENT_SECRET ?? "").trim();
+  if (!tenantId || !clientId || !clientSecret) throw new Error("MS_TENANT_ID / MS_CLIENT_ID / MS_CLIENT_SECRET missing");
+
+  const res = await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: clientId,
+      client_secret: clientSecret,
+      scope: "https://graph.microsoft.com/.default",
+    }),
+  });
+  const data = await res.json() as any;
+  if (!res.ok || !data.access_token) throw new Error(`ms_token_failed: ${data.error_description ?? res.status}`);
+  return data.access_token as string;
+}
+
+async function sendViaMicrosoft(args: {
+  senderUpn: string;
+  to: string;
+  subject: string;
+  text: string;
+  html?: string | null;
+}) {
+  const token = await getMsAccessToken();
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(args.senderUpn)}/sendMail`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: {
+          subject: args.subject,
+          body: {
+            contentType: args.html ? "HTML" : "Text",
+            content: args.html ?? args.text,
+          },
+          toRecipients: [{ emailAddress: { address: args.to } }],
+        },
+        saveToSentItems: true,
+      }),
+    }
+  );
+  if (res.status === 202) return { ok: true };
+  const body = await res.text();
+  throw new Error(`ms_send_failed (${res.status}): ${body.slice(0, 500)}`);
+}
+
 async function sendViaResend(args: {
   from: string;
   to: string;
@@ -31,7 +83,7 @@ async function sendViaResend(args: {
   html?: string | null;
 }) {
   const apiKey = String(process.env.RESEND_API_KEY ?? "").trim();
-  if (!apiKey) throw new Error("RESEND_API_KEY missing");
+  if (!apiKey || apiKey === "re_YOUR_API_KEY_HERE") throw new Error("RESEND_API_KEY not configured");
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -63,7 +115,7 @@ async function sendViaResend(args: {
  * Drains queued EMAIL_SEND jobs (jobs table) and delivers them via provider.
  *
  * Env:
- *  OUTBOUND_EMAIL_PROVIDER: resend|none (default resend)
+ *  OUTBOUND_EMAIL_PROVIDER: resend|microsoft|none (default resend)
  *  OUTBOUND_EMAIL_FROM: required for resend (ex: "Atlas UX <noreply@atlasux.cloud>")
  *  RESEND_API_KEY: required if provider=resend
  *  EMAIL_WORKER_POLL_MS (default 2000)
@@ -133,6 +185,10 @@ async function main() {
         let output: any = null;
         if (provider === "none") {
           throw new Error("OUTBOUND_EMAIL_PROVIDER=none (email sending disabled)");
+        } else if (provider === "microsoft") {
+          const senderUpn = String(process.env.MS_SENDER_UPN ?? "").trim();
+          if (!senderUpn) throw new Error("MS_SENDER_UPN missing");
+          output = await sendViaMicrosoft({ senderUpn, to, subject, text, html });
         } else if (provider === "resend") {
           if (!from) throw new Error("OUTBOUND_EMAIL_FROM missing");
           output = await sendViaResend({ from, to, subject, text, html });

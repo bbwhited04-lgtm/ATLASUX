@@ -17,7 +17,7 @@ import { AgentsHub } from "./components/AgentsHub";
 import { ToolsHub } from "./components/ToolsHub";
 import { WorkflowsHub } from "./components/WorkflowsHub";
 import { AgentDeploymentHub } from "./components/AgentDeploymentHub";
-import { BlogStudio } from "./components/blog/BlogStudio";
+import { BlogManager } from "./components/BlogManager";
 import { KnowledgeBaseHub } from "./components/KnowledgeBaseHub";
 import MobilePage from "./routes/mobile";
 import Privacy from "./pages/Privacy";
@@ -30,6 +30,7 @@ import BlogHome from "./pages/blog/BlogHome";
 import BlogPost from "./pages/blog/BlogPost";
 import BlogCategory from "./pages/blog/BlogCategory";
 import { DecisionsInbox } from "./components/DecisionsInbox";
+import { MessagingHub } from "./components/MessagingHub";
 import About from "./pages/About";
 
 export const router = createHashRouter([
@@ -73,10 +74,11 @@ export const router = createHashRouter([
       { path: "automation", Component: () => React.createElement(Navigate, { to: "/app/agents?view=automation", replace: true }) },
       { path: "business-manager", Component: BusinessManager },
       { path: "kb", Component: KnowledgeBaseHub },
-      { path: "blog", Component: BlogStudio },
+      { path: "blog", Component: BlogManager },
       { path: "settings", Component: Settings },
       { path: "help", Component: HelpPage },
       { path: "decisions", Component: DecisionsInbox },
+      { path: "messaging", Component: MessagingHub },
       ],
   },
 

@@ -14,7 +14,6 @@ import {
   Radio,
   Users,
   UserCog,
-  Puzzle,
   BarChart3,
   Briefcase,
   Settings as SettingsIcon,
@@ -25,6 +24,7 @@ import {
   Newspaper,
   Power,
   Activity,
+  Send,
 } from 'lucide-react';
 
 import { API_BASE } from "../lib/api";
@@ -157,6 +157,7 @@ function RootLayoutInner() {
     { path: "/app/kb", icon: BookOpen, label: "Knowledge Base" },
     { path: "/app/blog", icon: Newspaper, label: "Blog" },
     { path: "/app/decisions", icon: ClipboardCheck, label: "Decisions", badge: pendingDecisionsCount },
+    { path: "/app/messaging", icon: Send, label: "Messaging" },
     ];
 
   // (Kept for future “setup wizard” flows; currently the modal is opened via context.)

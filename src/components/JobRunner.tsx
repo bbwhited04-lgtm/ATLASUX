@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   Play,
   Pause,
@@ -23,7 +23,7 @@ import { Progress } from "./ui/progress";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { API_BASE } from "@/lib/api";
-import { getOrgUser } from "@/lib/org";
+import { useActiveTenant } from "@/lib/activeTenant";
 
 interface Job {
   id: number;       // local index (React key)
@@ -59,7 +59,7 @@ function formatJobType(jobType: string): string {
 const ITEMS_PER_PAGE = 15;
 
 export function JobRunner() {
-  const { org_id } = useMemo(() => getOrgUser(), []);
+  const { tenantId: activeTenantId } = useActiveTenant();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [completedJobs, setCompletedJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,9 +75,8 @@ export function JobRunner() {
   const loadJobs = async () => {
     setLoading(true);
     try {
-      const tenantId = localStorage.getItem("atlasux_tenant_id") || org_id;
       const res = await fetch(`${API_BASE}/v1/jobs/list`, {
-        headers: { "x-tenant-id": tenantId },
+        headers: { "x-tenant-id": activeTenantId ?? "" },
       });
       const data = await res.json().catch(() => null);
       if (!data?.ok) return;
@@ -133,7 +132,7 @@ export function JobRunner() {
   useEffect(() => {
     void loadJobs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [org_id]);
+  }, [activeTenantId]);
   
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -185,11 +184,10 @@ export function JobRunner() {
     setJobs(prev => prev.filter(job => job.id !== jobId));
 
     // Persist to backend (fire-and-forget; reload will reconcile)
-    const tenantId = localStorage.getItem("atlasux_tenant_id") || org_id;
     try {
       await fetch(`${API_BASE}/v1/jobs/${target.dbId}`, {
         method: "DELETE",
-        headers: { "x-tenant-id": tenantId },
+        headers: { "x-tenant-id": activeTenantId ?? "" },
       });
     } catch {
       // If the delete fails, re-fetch to reconcile state
@@ -204,14 +202,13 @@ export function JobRunner() {
   const createJob = async () => {
     if (!newJobType) return;
     setNewJobLoading(true);
-    const tenantId = localStorage.getItem("atlasux_tenant_id") || org_id;
     const input = newJobType === "EMAIL_SEND"
       ? { to: newJobFields.to, subject: newJobFields.subject, text: newJobFields.text }
       : {};
     try {
       await fetch(`${API_BASE}/v1/jobs`, {
         method: "POST",
-        headers: { "content-type": "application/json", "x-tenant-id": tenantId },
+        headers: { "content-type": "application/json", "x-tenant-id": activeTenantId ?? "" },
         body: JSON.stringify({ jobType: newJobType, priority: 1, input }),
       });
       setShowNewJob(false);

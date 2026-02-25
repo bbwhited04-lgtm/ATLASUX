@@ -11,60 +11,63 @@ import { AGENTS, getChildren, type AgentNode } from "../core/agents/registry";
 
 function AgentCard({ agent }: { agent: AgentNode }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-cyan-500/20 bg-slate-900/50 backdrop-blur-xl p-5 hover:bg-slate-900/70 transition-all">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-base text-slate-800">{agent.tier}</div>
-          <div className="text-lg font-semibold text-slate-900">{agent.name}</div>
-          <div className="text-base text-blue-700">{agent.title}</div>
+          <div className="text-xs text-cyan-400 font-medium uppercase tracking-wide">{agent.tier}</div>
+          <div className="text-lg font-semibold text-white mt-0.5">{agent.name}</div>
+          <div className="text-sm text-slate-400">{agent.title}</div>
         </div>
-        <div className="text-sm text-slate-800">Reports to: <span className="text-slate-800">{agent.reportsTo ?? "—"}</span></div>
+        <div className="text-xs text-slate-500 text-right flex-shrink-0">
+          Reports to<br />
+          <span className="text-slate-300">{agent.reportsTo ?? "—"}</span>
+        </div>
       </div>
 
-      <p className="mt-4 text-base text-slate-800/90">{agent.summary}</p>
+      <p className="mt-3 text-sm text-slate-400 leading-relaxed">{agent.summary}</p>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-3">
-        <div className="rounded-xl bg-white border border-slate-200 p-3">
-          <div className="text-sm font-bold text-slate-800">Authority</div>
-          <ul className="mt-2 space-y-1 text-sm text-slate-800">
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="rounded-xl bg-slate-950/60 border border-cyan-500/10 p-3">
+          <div className="text-xs font-semibold text-cyan-400 mb-2">Authority</div>
+          <ul className="space-y-1">
             {agent.authority.map((x) => (
-              <li key={x} className="leading-snug">• {x}</li>
+              <li key={x} className="text-xs text-slate-400 leading-snug">• {x}</li>
             ))}
           </ul>
         </div>
-        <div className="rounded-xl bg-white border border-slate-200 p-3">
-          <div className="text-sm font-bold text-slate-800">Constraints</div>
-          <ul className="mt-2 space-y-1 text-sm text-slate-800">
+        <div className="rounded-xl bg-slate-950/60 border border-cyan-500/10 p-3">
+          <div className="text-xs font-semibold text-amber-400 mb-2">Constraints</div>
+          <ul className="space-y-1">
             {agent.constraints.map((x) => (
-              <li key={x} className="leading-snug">• {x}</li>
+              <li key={x} className="text-xs text-slate-400 leading-snug">• {x}</li>
             ))}
           </ul>
         </div>
-        <div className="rounded-xl bg-white border border-slate-200 p-3">
-          <div className="text-sm font-bold text-slate-800">Primary Outputs</div>
-          <ul className="mt-2 space-y-1 text-sm text-slate-800">
+        <div className="rounded-xl bg-slate-950/60 border border-cyan-500/10 p-3">
+          <div className="text-xs font-semibold text-emerald-400 mb-2">Primary Outputs</div>
+          <ul className="space-y-1">
             {agent.primaryOutputs.map((x) => (
-              <li key={x} className="leading-snug">• {x}</li>
+              <li key={x} className="text-xs text-slate-400 leading-snug">• {x}</li>
             ))}
           </ul>
         </div>
       </div>
 
       {(agent.toolsAllowed?.length || agent.toolsForbidden?.length) && (
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <div className="text-sm font-bold text-slate-800">Tools Allowed</div>
-            <ul className="mt-2 space-y-1 text-sm text-slate-800">
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div className="rounded-xl bg-slate-950/60 border border-cyan-500/10 p-3">
+            <div className="text-xs font-semibold text-blue-400 mb-2">Tools Allowed</div>
+            <ul className="space-y-1">
               {(agent.toolsAllowed ?? []).map((x) => (
-                <li key={x} className="leading-snug">• {x}</li>
+                <li key={x} className="text-xs text-slate-400 leading-snug">• {x}</li>
               ))}
             </ul>
           </div>
-          <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <div className="text-sm font-bold text-slate-800">Tools Forbidden</div>
-            <ul className="mt-2 space-y-1 text-sm text-slate-800">
+          <div className="rounded-xl bg-slate-950/60 border border-cyan-500/10 p-3">
+            <div className="text-xs font-semibold text-red-400 mb-2">Tools Forbidden</div>
+            <ul className="space-y-1">
               {(agent.toolsForbidden ?? []).map((x) => (
-                <li key={x} className="leading-snug">• {x}</li>
+                <li key={x} className="text-xs text-slate-400 leading-snug">• {x}</li>
               ))}
             </ul>
           </div>
@@ -81,8 +84,8 @@ function Section({ title, icon: Icon, rootId }: { title: string; icon: any; root
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Icon className="h-5 w-5 text-cyan-300" />
-        <h2 className="text-base font-semibold text-white">{title}</h2>
+        <Icon className="h-5 w-5 text-cyan-400" />
+        <h2 className="text-sm font-semibold text-white uppercase tracking-wide">{title}</h2>
       </div>
       <AgentCard agent={root} />
       {children.length > 0 && (
@@ -131,68 +134,64 @@ export function AgentsHub() {
   }, [q]);
 
   return (
-    <div className="p-6">
+    <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Agents</h1>
-          <p className="text-base text-slate-800">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+            Agents
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
             Constitutional hierarchy · roles · authority · constraints
           </p>
         </div>
-        <div className="relative w-full md:w-[420px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-800" />
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search agents, authority, constraints…"
-            className="w-full rounded-xl bg-white border border-slate-200 pl-10 pr-3 py-2 text-base text-slate-900 placeholder:text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            className="w-full rounded-xl bg-slate-800 border border-slate-700 pl-10 pr-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
           />
         </div>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="text-sm text-slate-800">Execution Rule</div>
-        <div className="mt-1 text-base text-slate-800">
-          Only <span className="text-cyan-300 font-semibold">Atlas</span> executes. All other agents advise, review, and produce packets.
-        </div>
+      {/* Execution Rule Banner */}
+      <div className="rounded-xl border border-cyan-500/20 bg-slate-900/50 backdrop-blur-xl px-4 py-3">
+        <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wide">Execution Rule · </span>
+        <span className="text-sm text-slate-300">
+          Only <span className="text-cyan-400 font-semibold">Atlas</span> executes. All other agents advise, review, and produce packets.
+        </span>
       </div>
 
-      <Tabs.Root value={tab} onValueChange={(v) => setTab(v)} className="mt-6">
-        <Tabs.List className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2">
-          <Tabs.Trigger value="atlas" className="px-4 py-2 text-base rounded-xl text-slate-800 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            <Briefcase className="inline h-4 w-4 mr-2" /> Atlas + Staff
-          </Tabs.Trigger>
-          <Tabs.Trigger value="binky" className="px-4 py-2 text-base rounded-xl text-slate-800 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            <Shield className="inline h-4 w-4 mr-2" /> Binky + Crew
-          </Tabs.Trigger>
-          <Tabs.Trigger value="board" className="px-4 py-2 text-base rounded-xl text-slate-800 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            <Crown className="inline h-4 w-4 mr-2" /> Board & Governors
-          </Tabs.Trigger>
-
-          <Tabs.Trigger value="workflows" className="px-4 py-2 text-base rounded-xl text-slate-800 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            <WorkflowIcon className="inline h-4 w-4 mr-2" /> Workflows
-          </Tabs.Trigger>
-          <Tabs.Trigger value="tools" className="px-4 py-2 text-base rounded-xl text-slate-800 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            <Wrench className="inline h-4 w-4 mr-2" /> Tools
-          </Tabs.Trigger>
-          <Tabs.Trigger value="deployment" className="px-4 py-2 text-base rounded-xl text-slate-800 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            <Bell className="inline h-4 w-4 mr-2" /> Deployment
-          </Tabs.Trigger>
-          <Tabs.Trigger value="automation" className="px-4 py-2 text-base rounded-xl text-slate-800 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            <Zap className="inline h-4 w-4 mr-2" /> Automation
-          </Tabs.Trigger>
-          <Tabs.Trigger value="engines" className="px-4 py-2 text-base rounded-xl text-slate-800 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            <Cpu className="inline h-4 w-4 mr-2" /> Exec Engines
-          </Tabs.Trigger>
-
-          <Tabs.Trigger value="all" className="px-4 py-2 text-base rounded-xl text-slate-800 hover:bg-slate-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            All
-          </Tabs.Trigger>
+      {/* Tabs */}
+      <Tabs.Root value={tab} onValueChange={(v) => setTab(v)}>
+        <Tabs.List className="flex flex-wrap gap-2 rounded-xl border border-cyan-500/20 bg-slate-900/50 backdrop-blur-xl p-2">
+          {[
+            { value: "atlas",      Icon: Briefcase,     label: "Atlas + Staff" },
+            { value: "binky",      Icon: Shield,        label: "Binky + Crew" },
+            { value: "board",      Icon: Crown,         label: "Board & Governors" },
+            { value: "workflows",  Icon: WorkflowIcon,  label: "Workflows" },
+            { value: "tools",      Icon: Wrench,        label: "Tools" },
+            { value: "deployment", Icon: Bell,          label: "Deployment" },
+            { value: "automation", Icon: Zap,           label: "Automation" },
+            { value: "engines",    Icon: Cpu,           label: "Exec Engines" },
+            { value: "all",        Icon: Search,        label: "All" },
+          ].map(({ value, Icon, label }) => (
+            <Tabs.Trigger
+              key={value}
+              value={value}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all data-[state=active]:bg-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20"
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </Tabs.Trigger>
+          ))}
         </Tabs.List>
 
-        <Tabs.Content value="atlas" className="mt-4">
+        <Tabs.Content value="atlas" className="mt-4 space-y-4">
           <Section title="Atlas Execution Layer" icon={Briefcase} rootId="atlas" />
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2">
             {AGENTS.filter((a) => a.reportsTo === "atlas" && a.id !== "binky").map((a) => (
               <AgentCard key={a.id} agent={a} />
             ))}
@@ -220,7 +219,6 @@ export function AgentsHub() {
           </div>
         </Tabs.Content>
 
-
         <Tabs.Content value="workflows" className="mt-4">
           <WorkflowsHub />
         </Tabs.Content>
@@ -240,7 +238,6 @@ export function AgentsHub() {
         <Tabs.Content value="engines" className="mt-4">
           <DecisionEnginesHub />
         </Tabs.Content>
-
       </Tabs.Root>
     </div>
   );

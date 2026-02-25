@@ -310,10 +310,10 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
     }
   }
 
-  async function createAsset(payload: { tenantId: string; type: string; name: string; url: string; platform?: string }) {
+  async function createAsset(payload: { tenantId: string; type: string; name: string; url: string; platform?: string; [key: string]: any }) {
     const res = await fetch(`${API_BASE}/v1/assets`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-tenant-id": payload.tenantId },
       body: JSON.stringify(payload),
     });
     const json = await res.json().catch(() => ({}));
@@ -323,10 +323,10 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
     return json.asset as Asset;
   }
 
-  async function updateAsset(assetId: string, payload: { type?: string; name?: string; url?: string; platform?: string | null }) {
+  async function updateAsset(assetId: string, payload: { type?: string; name?: string; url?: string; platform?: string | null; [key: string]: any }, tenantId?: string) {
     const res = await fetch(`${API_BASE}/v1/assets/${encodeURIComponent(assetId)}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(tenantId ? { "x-tenant-id": tenantId } : {}) },
       body: JSON.stringify(payload),
     });
     const json = await res.json().catch(() => ({}));
@@ -358,7 +358,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
   }
 
   async function deleteAsset(assetId: string, tenantId: string) {
-    await fetch(`${API_BASE}/v1/assets/${encodeURIComponent(assetId)}`, { method: "DELETE" }).catch(() => null);
+    await fetch(`${API_BASE}/v1/assets/${encodeURIComponent(assetId)}`, { method: "DELETE", headers: { "x-tenant-id": tenantId } }).catch(() => null);
     // refresh selected tenant assets
     await loadAssetsForTenant(tenantId).catch(() => null);
   }
