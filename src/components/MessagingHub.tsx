@@ -33,7 +33,6 @@ export function MessagingHub() {
   const [selectedChannel, setSelectedChannel] = useState("");
   const [teamsMessages, setTeamsMessages] = useState<any[]>([]);
   const [teamsMessagesLoading, setTeamsMessagesLoading] = useState(false);
-  const [teamsWebhookUrl, setTeamsWebhookUrl] = useState("");
   const [teamsText, setTeamsText] = useState("");
   const [teamsSending, setTeamsSending] = useState(false);
   const [teamsResult, setTeamsResult] = useState<string | null>(null);
@@ -77,10 +76,6 @@ export function MessagingHub() {
       const res = await fetch(`${API_BASE}/v1/teams/status`);
       const data = await res.json();
       setTeamsStatus({ connected: data.connected ?? false, reason: data.reason });
-      // Pre-fill workflow URL from backend env if not already set
-      if (data.workflowUrl && !teamsWebhookUrl) {
-        setTeamsWebhookUrl(data.workflowUrl);
-      }
     } catch {
       setTeamsStatus({ connected: false, reason: "Failed to reach backend" });
     }
@@ -126,7 +121,7 @@ export function MessagingHub() {
   }
 
   async function sendTeamsMessage() {
-    if (!teamsWebhookUrl || !teamsText.trim()) return;
+    if (!selectedTeam || !selectedChannel || !teamsText.trim()) return;
     setTeamsSending(true);
     setTeamsResult(null);
     try {
@@ -134,7 +129,8 @@ export function MessagingHub() {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
         body: JSON.stringify({
-          webhookUrl: teamsWebhookUrl,
+          teamId: selectedTeam,
+          channelId: selectedChannel,
           text: teamsText.trim(),
           fromAgent: "atlas",
         }),
@@ -152,7 +148,7 @@ export function MessagingHub() {
   }
 
   async function sendCrossAgent() {
-    if (!teamsWebhookUrl || !crossFromAgent || !crossToAgent || !crossMessage.trim()) return;
+    if (!selectedTeam || !selectedChannel || !crossFromAgent || !crossToAgent || !crossMessage.trim()) return;
     setCrossSending(true);
     setCrossResult(null);
     try {
@@ -160,7 +156,8 @@ export function MessagingHub() {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
         body: JSON.stringify({
-          webhookUrl: teamsWebhookUrl,
+          teamId: selectedTeam,
+          channelId: selectedChannel,
           fromAgent: crossFromAgent,
           toAgent: crossToAgent,
           message: crossMessage.trim(),
@@ -461,21 +458,8 @@ export function MessagingHub() {
             </div>
           </div>
 
-          {/* Webhook URL — required for sending */}
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">
-              Workflow URL <span className="text-slate-500">(Teams channel → ··· → Workflows → "Post to a channel when a webhook request is received")</span>
-            </label>
-            <input
-              className={inputCls}
-              placeholder="https://prod-xx.westus.logic.azure.com/workflows/..."
-              value={teamsWebhookUrl}
-              onChange={(e) => setTeamsWebhookUrl(e.target.value)}
-            />
-          </div>
-
-          {/* Compose + cross-agent always visible when webhook URL is set */}
-          {teamsWebhookUrl && (
+          {/* Compose + cross-agent visible when a team + channel are selected */}
+          {selectedTeam && selectedChannel && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Compose + cross-agent */}
               <div className="space-y-4">
@@ -491,17 +475,11 @@ export function MessagingHub() {
                   {teamsResult && (
                     <div className={`p-2 rounded-lg text-xs ${teamsResult.startsWith("Error") ? "bg-red-500/10 text-red-400" : "bg-emerald-500/10 text-emerald-400"}`}>
                       {teamsResult}
-                      {teamsResult.includes("DirectApiAuthorizationRequired") || teamsResult.includes("Direct API") ? (
-                        <div className="mt-2 font-medium text-amber-300 leading-relaxed">
-                          Your webhook URL is a <strong>Power Automate Direct API</strong> endpoint — it requires Azure AD OAuth and cannot be used as a plain webhook.<br /><br />
-                          <strong>Fix:</strong> In Power Automate, create a new Flow → trigger: <em>"When an HTTP request is received"</em> → add a "Post message in a chat or channel" step → save → copy the <strong>HTTP POST URL</strong> (starts with <code>https://prod-...logic.azure.com/...</code>) → paste it in the Workflow URL field above and save it in Settings.
-                        </div>
-                      ) : null}
                     </div>
                   )}
                   <Button
                     onClick={sendTeamsMessage}
-                    disabled={!teamsWebhookUrl || !teamsText.trim() || teamsSending}
+                    disabled={!selectedTeam || !selectedChannel || !teamsText.trim() || teamsSending}
                     className="w-full bg-cyan-500 hover:bg-cyan-400"
                   >
                     <Send className="w-4 h-4 mr-2" />
@@ -546,7 +524,7 @@ export function MessagingHub() {
                   )}
                   <Button
                     onClick={sendCrossAgent}
-                    disabled={!teamsWebhookUrl || !crossFromAgent || !crossToAgent || !crossMessage.trim() || crossSending}
+                    disabled={!selectedTeam || !selectedChannel || !crossFromAgent || !crossToAgent || !crossMessage.trim() || crossSending}
                     className="w-full bg-purple-600 hover:bg-purple-500"
                   >
                     <Users className="w-4 h-4 mr-2" />

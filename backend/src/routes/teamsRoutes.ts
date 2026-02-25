@@ -16,8 +16,8 @@
  *   GET  /v1/teams/teams                                    list all Teams in tenant
  *   GET  /v1/teams/:teamId/channels                        list channels for a team
  *   GET  /v1/teams/:teamId/channels/:channelId/messages    recent messages
- *   POST /v1/teams/send                                     send channel message
- *   POST /v1/teams/cross-agent                              cross-agent notification
+ *   POST /v1/teams/send        { teamId, channelId, text }  send channel message via Graph API
+ *   POST /v1/teams/cross-agent { teamId, channelId, ... }   cross-agent notification via Graph API
  */
 
 import type { FastifyPluginAsync } from "fastify";
@@ -158,52 +158,32 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // POST /v1/teams/send — send a message via Incoming Webhook
-  // Body: { webhookUrl, text, fromAgent?, title? }
-  // webhookUrl: the Incoming Webhook URL configured per-channel in Teams
+  // POST /v1/teams/send — send a channel message via Graph API
+  // Body: { teamId, channelId, text, fromAgent?, title? }
   app.post("/send", async (req, reply) => {
     const tenantId = String((req as any).tenantId ?? "");
     const body = (req.body ?? {}) as any;
-    const webhookUrl = String(body.webhookUrl ?? process.env.TEAMS_WORKFLOW_URL ?? "").trim();
+    const teamId = String(body.teamId ?? "").trim();
+    const channelId = String(body.channelId ?? "").trim();
     const text = String(body.text ?? "").trim();
     const fromAgent = String(body.fromAgent ?? "atlas").trim();
     const title = body.title ? String(body.title).trim() : null;
 
-    if (!webhookUrl || !text) {
-      return reply.code(400).send({ ok: false, error: "webhookUrl and text are required (or set TEAMS_WORKFLOW_URL in env)" });
-    }
-    if (!webhookUrl.startsWith("https://")) {
-      return reply.code(400).send({ ok: false, error: "webhookUrl must be an https URL" });
+    if (!teamId || !channelId || !text) {
+      return reply.code(400).send({ ok: false, error: "teamId, channelId, and text are required" });
     }
 
-    // Power Automate Workflow trigger payload (replacement for retired Incoming Webhooks)
-    const payload: any = {
-      text: title ? `**${title}**\n\n${text}\n\n_Sent by ${fromAgent} via Atlas UX_` : `${text}\n\n_Sent by ${fromAgent} via Atlas UX_`,
-    };
+    const content = title
+      ? `<strong>${title}</strong><br><br>${text}<br><br><em>Sent by ${fromAgent} via Atlas UX</em>`
+      : `${text}<br><br><em>Sent by ${fromAgent} via Atlas UX</em>`;
 
     try {
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const errText = await res.text().catch(() => "");
-        // Detect Power Automate Direct API auth error — requires OAuth, not a plain webhook
-        if (
-          res.status === 401 &&
-          (errText.includes("DirectApiAuthorizationRequired") || errText.includes("OAuth authorization scheme"))
-        ) {
-          throw new Error(
-            "Your webhook URL is a Power Automate Direct API endpoint which requires Azure AD OAuth. " +
-            "To fix: open Power Automate → create a new flow → choose 'When an HTTP request is received' as the trigger → " +
-            "save it → copy the HTTP POST URL (starts with https://prod-...logic.azure.com/...) → " +
-            "paste that URL here or set it as TEAMS_WORKFLOW_URL in your environment. " +
-            "Do NOT use the 'Direct API' flow URL."
-          );
-        }
-        throw new Error(`webhook_failed (${res.status}): ${errText.slice(0, 300)}`);
-      }
+      const token = await getMsToken();
+      await graphPost(
+        token,
+        `/teams/${encodeURIComponent(teamId)}/channels/${encodeURIComponent(channelId)}/messages`,
+        { body: { content, contentType: "html" } }
+      );
 
       if (tenantId) {
         await prisma.auditLog.create({
@@ -214,10 +194,10 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
             actorExternalId: fromAgent,
             level: "info",
             action: "TEAMS_MESSAGE_SENT",
-            entityType: "teams_webhook",
-            entityId: webhookUrl.slice(0, 80),
-            message: `Teams message sent by ${fromAgent} via webhook`,
-            meta: { fromAgent, title, preview: text.slice(0, 200) },
+            entityType: "teams_channel",
+            entityId: `${teamId}/${channelId}`.slice(0, 80),
+            message: `Teams message sent by ${fromAgent} to channel ${channelId}`,
+            meta: { fromAgent, title, teamId, channelId, preview: text.slice(0, 200) },
             timestamp: new Date(),
           },
         } as any).catch(() => null);
@@ -229,40 +209,37 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // POST /v1/teams/cross-agent — cross-agent notification via Incoming Webhook
-  // Body: { webhookUrl, fromAgent, toAgent, message, context? }
+  // POST /v1/teams/cross-agent — cross-agent notification via Graph API
+  // Body: { teamId, channelId, fromAgent, toAgent, message, context? }
   app.post("/cross-agent", async (req, reply) => {
     const tenantId = String((req as any).tenantId ?? "");
     const body = (req.body ?? {}) as any;
-    const webhookUrl = String(body.webhookUrl ?? process.env.TEAMS_WORKFLOW_URL ?? "").trim();
+    const teamId = String(body.teamId ?? "").trim();
+    const channelId = String(body.channelId ?? "").trim();
     const fromAgent = String(body.fromAgent ?? "").trim();
     const toAgent = String(body.toAgent ?? "").trim();
     const message = String(body.message ?? "").trim();
     const context = body.context ? String(body.context).trim() : null;
 
-    if (!webhookUrl || !fromAgent || !toAgent || !message) {
+    if (!teamId || !channelId || !fromAgent || !toAgent || !message) {
       return reply.code(400).send({
         ok: false,
-        error: "webhookUrl, fromAgent, toAgent, and message are required",
+        error: "teamId, channelId, fromAgent, toAgent, and message are required",
       });
     }
 
-    const payload = {
-      text: `📨 **${fromAgent.toUpperCase()} → ${toAgent.toUpperCase()}**\n\n${message}` +
-        (context ? `\n\n_Context: ${context}_` : "") +
-        `\n\n_Cross-agent via Atlas UX_`,
-    };
+    const content =
+      `📨 <strong>${fromAgent.toUpperCase()} → ${toAgent.toUpperCase()}</strong><br><br>${message}` +
+      (context ? `<br><br><em>Context: ${context}</em>` : "") +
+      `<br><br><em>Cross-agent via Atlas UX</em>`;
 
     try {
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const errText = await res.text().catch(() => "");
-        throw new Error(`webhook_failed (${res.status}): ${errText.slice(0, 300)}`);
-      }
+      const token = await getMsToken();
+      await graphPost(
+        token,
+        `/teams/${encodeURIComponent(teamId)}/channels/${encodeURIComponent(channelId)}/messages`,
+        { body: { content, contentType: "html" } }
+      );
 
       if (tenantId) {
         await prisma.auditLog.create({
@@ -273,10 +250,10 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
             actorExternalId: fromAgent,
             level: "info",
             action: "TEAMS_CROSS_AGENT_NOTIFY",
-            entityType: "teams_webhook",
-            entityId: webhookUrl.slice(0, 80),
+            entityType: "teams_channel",
+            entityId: `${teamId}/${channelId}`.slice(0, 80),
             message: `Cross-agent Teams: ${fromAgent} → ${toAgent}`,
-            meta: { fromAgent, toAgent, preview: message.slice(0, 200) },
+            meta: { fromAgent, toAgent, teamId, channelId, preview: message.slice(0, 200) },
             timestamp: new Date(),
           },
         } as any).catch(() => null);
@@ -295,17 +272,15 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
       !!process.env.MS_CLIENT_ID &&
       !!process.env.MS_CLIENT_SECRET;
 
-    const workflowUrl = process.env.TEAMS_WORKFLOW_URL ?? null;
-
     if (!configured) {
-      return reply.send({ ok: true, connected: false, reason: "MS credentials not configured", workflowUrl });
+      return reply.send({ ok: true, connected: false, reason: "MS credentials not configured" });
     }
 
     try {
       await getMsToken();
-      return reply.send({ ok: true, connected: true, workflowUrl });
+      return reply.send({ ok: true, connected: true });
     } catch (e: any) {
-      return reply.send({ ok: true, connected: false, reason: e.message, workflowUrl });
+      return reply.send({ ok: true, connected: false, reason: e.message });
     }
   });
 };
