@@ -305,14 +305,34 @@ export function WorkflowsHub() {
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <div className="text-base text-slate-800">Workflow Map</div>
-            <ul className="mt-2 space-y-2 text-xs text-slate-700">
-              {workflows.map((w) => (
-                <li key={w.id}>
-                  <div className="text-slate-800">
-                    {w.id} — {w.name}
+            <div className="text-base font-medium text-slate-800 mb-3">Workflow Map</div>
+            <ul className="space-y-1.5">
+              {workflows.map((w, i) => (
+                <li
+                  key={w.id}
+                  onClick={() => setWorkflowId(w.id)}
+                  className={`flex items-start gap-2.5 rounded-lg px-2.5 py-2 cursor-pointer transition-colors ${
+                    workflowId === w.id
+                      ? "bg-cyan-50 border border-cyan-200"
+                      : "hover:bg-slate-50 border border-transparent"
+                  }`}
+                >
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 text-[10px] font-bold text-slate-500 tabular-nums">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-slate-800 truncate">
+                      {w.name || w.id}
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate font-mono">
+                      {w.id}{w.agent_key ? ` · ${w.agent_key}` : ""}
+                    </div>
+                    {w.description && (
+                      <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">
+                        {w.description}
+                      </div>
+                    )}
                   </div>
-                  <div className="text-slate-800">{w.description}</div>
                 </li>
               ))}
             </ul>
