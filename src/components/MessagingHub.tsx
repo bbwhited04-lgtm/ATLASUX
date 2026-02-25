@@ -121,7 +121,14 @@ export function MessagingHub() {
         body: JSON.stringify({ chat_id: tgChatId, text: tgText }),
       });
       const data = await res.json();
-      if (!data.ok) throw new Error(data.error ?? "send_failed");
+      if (!data.ok) {
+        const raw = data.error ?? "send_failed";
+        const lower = raw.toLowerCase();
+        if (lower.includes("chat not found") || lower.includes("chat_not_found")) {
+          throw new Error("Chat not found — the recipient must message your bot first. Check Recent Incoming for their chat ID.");
+        }
+        throw new Error(raw);
+      }
       setTgResult("Message sent!");
       setTgText("");
       void fetchUpdates();
@@ -277,10 +284,13 @@ export function MessagingHub() {
           {/* Compose */}
           <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-5 space-y-4">
             <div className="font-semibold text-white">Send Message</div>
+            <div className="p-2 rounded-lg bg-slate-800/60 border border-slate-700/50 text-xs text-slate-400 leading-relaxed">
+              The recipient must first message your bot on Telegram. Their numeric chat ID will then appear in <span className="text-cyan-400 font-medium">Recent Incoming</span> — click <span className="text-cyan-400 font-medium">Use chat</span> to fill it in automatically.
+            </div>
             <div className="space-y-3">
               <input
                 className={inputCls}
-                placeholder="Chat ID or @username"
+                placeholder="Numeric Chat ID (e.g. 123456789)"
                 value={tgChatId}
                 onChange={(e) => setTgChatId(e.target.value)}
               />
