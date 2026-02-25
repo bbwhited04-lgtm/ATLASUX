@@ -2,7 +2,10 @@ import { claimNextIntent } from "./queue.js";
 import { buildPackets } from "./packets.js";
 import { prisma } from "../../prisma.js";
 import { atlasExecuteGate } from "../exec/atlasGate.js";
-import { getWorkflowHandler } from "../../workflows/registry.js";
+import { getWorkflowHandler, workflowCatalogAll } from "../../workflows/registry.js";
+
+// Build a fast lookup set of all canonical workflow keys (WF-001 … WF-106+)
+const CANONICAL_WORKFLOW_KEYS = new Set(workflowCatalogAll.map((w) => w.id));
 
 type IntentPayload = {
   requestedBy?: unknown;
@@ -123,11 +126,15 @@ export async function engineTick() {
       const isUuid = (v: string) =>
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
-      // We don’t have a Prisma model for `workflows`, so we validate existence via raw SQL.
-      const rows = isUuid(workflowId)
-        ? await prisma.$queryRaw`select 1 as one from workflows where id = ${workflowId}::uuid limit 1`
-        : await prisma.$queryRaw`select 1 as one from workflows where workflow_key = ${workflowId} limit 1`;
-      const workflowExists = Array.isArray(rows) && rows.length > 0;
+      // Check DB first, then fall back to canonical manifest (so new manifest entries
+      // work immediately without requiring a DB seed).
+      let workflowExists = false;
+      if (workflowId) {
+        const rows = isUuid(workflowId)
+          ? await prisma.$queryRaw`select 1 as one from workflows where id = ${workflowId}::uuid limit 1`
+          : await prisma.$queryRaw`select 1 as one from workflows where workflow_key = ${workflowId} limit 1`;
+        workflowExists = (Array.isArray(rows) && rows.length > 0) || CANONICAL_WORKFLOW_KEYS.has(workflowId);
+      }
 
       if (!workflowId || !workflowExists) {
         await prisma.intent.update({
