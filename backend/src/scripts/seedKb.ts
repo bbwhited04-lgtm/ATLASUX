@@ -60,7 +60,7 @@ Small to mid-size businesses that need full-time social media management, custom
 
 ## Platform Status (2026)
 - Engine: LIVE (intent queue, workflow execution, audit trail)
-- Agents: 27 deployed across C-suite, social media, operations, and support
+- Agents: 29 deployed across C-suite, social media, operations, and support
 - Integrations: Google, Meta, Microsoft, X, Tumblr, Reddit, Pinterest (OAuth wired)
 - KB: Active — agents read KB context on every workflow execution
 - Growth loop: Active — daily action proposals with guardrails
@@ -74,7 +74,7 @@ Small to mid-size businesses that need full-time social media management, custom
 ## Agent Hierarchy
 1. **Atlas (CEO)** — Supreme orchestrator. All major decisions route through Atlas.
 2. **C-Suite** — Binky (CRO), Benny (CTO), Tina (CFO), Jenny (CLO), Larry (Auditor)
-3. **Department Leads** — Cheryl (CSO/Support), Archy (Team Binky Lead)
+3. **Department Leads** — Cheryl (CSO/Support), Archy (Binky Research Subagent)
 4. **Specialist Agents** — Social media, content, operations agents
 5. **Shared Inboxes** — DAILY-INTEL, Postmaster, Abuse
 
@@ -310,7 +310,7 @@ All spend events must have ledger entries.
 | Larry | larry.auditor@deadapp.info | Auditor |
 | Jenny | jenny.clo@deadapp.info | CLO |
 | Cheryl | support@deadapp.info | Customer Support |
-| Archy | archy.binkypro@deadapp.info | Team Binky Lead |
+| Archy | archy.binkypro@deadapp.info | Binky Research Subagent |
 | Mercer | mercer.teambinky@deadapp.info | Acquisition |
 | Sunday | sunday.teambinky@deadapp.info | Tech Doc Writer |
 | Claire | claire@deadapp.info | General Agent |
@@ -425,7 +425,7 @@ Atlas is the supreme orchestrator of the Atlas UX AI workforce. All high-level d
 - Multi-platform content strategy and calendaring
 
 ## Team
-- Archy (Team Binky Lead / BinkyPro)
+- Archy (Binky Research Subagent / BinkyPro)
 - Mercer (Customer Acquisition)
 - Sunday (Tech Doc Writer)
 
@@ -568,17 +568,23 @@ Billing support tickets → Cheryl → Tina (if unresolved)`,
   {
     slug: "agent/archy/definition",
     title: "Archy — Team Binky Lead (BinkyPro)",
-    body: `# Archy — Team Binky Lead
+    body: `# Archy — Binky Research Subagent (BinkyPro)
 
 ## Email: archy.binkypro@deadapp.info
+## Role: Deep-dive researcher for Binky's intel team
 
 ## Responsibilities
-- Execute social media campaigns assigned by Binky
-- Coordinate content production across Team Binky
-- Monitor campaign performance metrics
-- Draft social content for approval
-- Manage content calendar execution
-- Quality review before platform posting`,
+- Conduct targeted research on competitors, industry trends, and platform activity
+- Run multi-source analysis across web, industry, and market data
+- Return cited research summaries and briefs to Binky
+- Support the daily intelligence aggregation pipeline (WF-034)
+- Surface actionable insights and opportunities for Binky's review
+
+## Reports To
+Binky (CRO) — core member of the Binky intel team (BinkyPro)
+
+## Workflow Owned
+- WF-034: Archy Research Deep-Dive`,
   },
   {
     slug: "agent/mercer/definition",
@@ -811,7 +817,7 @@ Consumer Key: eoMKkAFpATgHklXl7voJKCHr89KfUfHitN4XPy8mhCpvMZSE03`,
 - TikTok trend monitoring and participation
 - Duet and stitch strategy
 - TikTok Analytics review
-- Coordinate video production with Venny (Videographer)
+- Coordinate image and video assets with Venny (Image Production Specialist)
 
 ## Status
 TikTok for Business app approval pending.
@@ -823,47 +829,63 @@ with Send As delegation to Atlas mailbox.`,
   },
   {
     slug: "agent/venny/definition",
-    title: "Venny — Videographer",
-    body: `# Venny — Video Production Specialist
+    title: "Venny — Image Production Specialist",
+    body: `# Venny — Image Production Specialist
 
 ## Email: venny.videographer@deadapp.info
-## Platform: YouTube (via Google OAuth), Video production
+## Role: Visual media and image asset production
 
 ## Responsibilities
-- Video content strategy and production planning
-- YouTube channel management
-- Video SEO (titles, descriptions, tags, thumbnails)
-- YouTube Analytics monitoring
-- Video content coordination across platforms (YouTube, TikTok, Pinterest, Instagram)
-- Work with Timmy for TikTok repurposing`,
+- Produce branded image assets, graphics, and visual media for all social channels
+- Manage visual asset library in OneDrive with production specs and branding overlays
+- Package finished visual assets for platform-specific publishing via Sunday
+- Coordinate with Victor on video thumbnail and image-adjacent assets
+- Direct Victor on image production needs and review his video deliverables
+- Deliver finished image packages to Sunday for distribution
+
+## Reports To
+Sunday (Comms & Technical Document Writer) — for publishing coordination
+
+## Workflow Owned
+- WF-059: Venny Image Asset Production Pipeline`,
   },
   {
     slug: "agent/claire/definition",
-    title: "Claire — General Agent",
-    body: `# Claire — General Purpose Agent
+    title: "Claire — Calendar & Scheduling Coordinator",
+    body: `# Claire — Calendar & Scheduling Coordinator
 
 ## Email: claire@deadapp.info
+## Role: Calendar management and meeting coordination
 
 ## Responsibilities
-- General administrative and coordination tasks
-- Overflow support for other agents
-- Cross-functional project assistance
-- Research and report generation
-- Document drafting and review`,
+- Manage Atlas's calendar and coordinate scheduling across agents
+- Draft structured meeting agendas and prepare OneNote notes
+- Prepare Teams meeting invites for Atlas review and approval
+- Coordinate scheduling with Emma (Alignable) and Sandy (Bookings)
+- Read and propose calendar blocks to minimize scheduling conflicts
+- Track upcoming events and proactively flag scheduling issues
+
+## Workflow Owned
+- WF-088: Claire Calendar Prep & Agenda Builder`,
   },
   {
     slug: "agent/petra/definition",
-    title: "Petra — Coordinator",
-    body: `# Petra — Coordinator
+    title: "Petra — Project Manager · Cross-Agent Coordination",
+    body: `# Petra — Project Manager · Cross-Agent Coordination
 
 ## Email: petra.coordinator@deadapp.info
+## Role: Sprint planning and cross-agent project management
 
 ## Responsibilities
-- Cross-agent workflow coordination
-- Meeting scheduling and calendar management
-- Project status tracking and reporting
-- Stakeholder communication coordination
-- Intake and routing of complex multi-agent requests`,
+- Create and manage Microsoft Planner sprint tasks for all agents
+- Assign tasks to agents by specialty and track progress in real time
+- Monitor blockers and escalate missed deadlines to Atlas
+- Draft project status reports for Atlas and the C-Suite
+- Coordinate multi-agent workflows and manage dependencies
+- Track sprint velocity and deliverable completion rates
+
+## Workflow Owned
+- WF-084: Petra Sprint Planning & Task Assignment`,
   },
   {
     slug: "agent/porter/definition",
@@ -906,7 +928,7 @@ with Send As delegation to Atlas mailbox.`,
 - Production timeline management
 - Post-production coordination
 - Video asset management and delivery
-- Work alongside Venny for platform-specific optimization`,
+- Work under Venny's direction for image-adjacent video needs and deliver finished assets to Venny for review`,
   },
 ];
 
@@ -927,40 +949,56 @@ const WORKFLOW_DOCS: Doc[] = [
 | WF-020 | Engine Smoke Test | Atlas | Minimal end-to-end verification |
 | WF-021 | Bootstrap Atlas | Atlas | Boot sequence: KB discovery + readiness summary |
 
-## Social Media Workflows (n8n-defined)
-| ID | Name | Category | Platform |
-|----|------|----------|---------|
-| WF-N01 | Auto Multi-Platform Social Media | Social | Multiple |
-| WF-N02 | Ad Campaign Performance Alert | Analytics | Multiple |
-| WF-N03 | Appointment WhatsApp Notify | Notification | WhatsApp |
-| WF-N04 | ATLAS Orchestrator FULL (Email) | Orchestration | Email |
-| WF-N05 | AtlasUX Approval Poller | Automation | Internal |
-| WF-N06 | AtlasUX Suggestion Generator | AI | Internal |
-| WF-N07 | Auto-DM New Twitter Followers | Social | X/Twitter |
-| WF-N08 | Auto-post Blogs to LinkedIn and Twitter | Social | LinkedIn + X |
-| WF-N09 | Auto-Publish Web Articles | Social | Multiple |
-| WF-N10 | Automated Instagram comment response | Social | Instagram |
-| WF-N11 | Automated LinkedIn content creation | Social | LinkedIn |
-| WF-N12 | Bootstrap Atlas (n8n version) | Orchestration | Internal |
-| WF-N13 | Competitor Price Scraper | Analytics | Web |
-| WF-N14 | Content Repurposing Pipeline | Social | Multiple |
-| WF-N15 | Customer Feedback to Notion | CRM | Notion |
-| WF-N16 | Daily Analytics Report | Analytics | Internal |
-| WF-N17 | E-commerce Order to Social Proof | Social | Multiple |
-| WF-N18 | Email Newsletter to Social | Marketing | Email + Social |
-| WF-N19 | Event Announcement Multi-Platform | Social | Multiple |
-| WF-N20 | Hashtag Performance Tracker | Analytics | Social |
-| WF-N21 | Influencer Outreach Automation | Marketing | Email + Social |
-| WF-N22 | Lead Magnet Distribution | Marketing | Multiple |
-| WF-N23 | LinkedIn Company Page Manager | Social | LinkedIn |
-| WF-N24 | Pinterest Board Auto-Curator | Social | Pinterest |
-| WF-N25 | Reddit Community Engagement | Social | Reddit |
-| WF-N26 | SEO Content Optimization | Marketing | Web |
-| WF-N27 | Social Media Crisis Monitor | Analytics | Multiple |
-| WF-N28 | TikTok Content Strategy | Social | TikTok |
-| WF-N29 | Twitter Space Announcement | Social | X/Twitter |
-| WF-N30 | YouTube Description Optimizer | Social | YouTube |
-| WF-N31 | B2B LinkedIn Lead Gen | Marketing | LinkedIn |
+## All Workflows — Canonical WF-### IDs
+| ID | Name | Owner | Category |
+|----|------|-------|----------|
+| WF-022 | Atlas Full Orchestrator | atlas | orchestration |
+| WF-030 | YouTube Transcript → Blog Post | reynolds | content |
+| WF-031 | Binky Daily Research Digest | binky | research |
+| WF-032 | Sunday Doc Intake & Draft Reply | sunday | comms |
+| WF-033 | Daily-Intel Morning Brief Aggregator | daily-intel | research |
+| WF-034 | Archy Research Deep-Dive | archy | research |
+| WF-040 | Multi-Platform Social Content Creator | penny | social |
+| WF-041 | Blog → LinkedIn & X Auto-Post | reynolds | social |
+| WF-042 | Auto-DM New X Followers | kelly | social |
+| WF-043 | Article → X, LinkedIn, Reddit & Threads | atlas | social |
+| WF-044 | Instagram Comment Response & DM Tracker | archy | social |
+| WF-045 | LinkedIn Scheduled Post Creator | link | social |
+| WF-046 | Bulk Video → Social Publish | venny | social |
+| WF-047 | Image & Video Multi-Platform Publisher | penny | social |
+| WF-048 | Pinterest Asset Publisher | cornwall | social |
+| WF-049 | Tumblr Post Publisher | terry | social |
+| WF-050 | Universal Social Content Generator | atlas | social |
+| WF-051 | Donna Reddit Subreddit Monitor | donna | social |
+| WF-052 | Donna Reddit Engagement Scanner | donna | social |
+| WF-053 | Donna Reddit Reply Approval Gate | donna | social |
+| WF-054 | Timmy TikTok Content Publisher | timmy | social |
+| WF-055 | Dwight Threads Post Publisher | dwight | social |
+| WF-056 | Emma Alignable Business Updater | emma | social |
+| WF-057 | Fran Facebook Page Publisher | fran | social |
+| WF-058 | Sunday Technical Brief & Comms Writer | sunday | comms |
+| WF-059 | Venny Image Asset Production Pipeline | venny | media |
+| WF-060 | Competitor Price Intelligence | binky | analytics |
+| WF-061 | Ad Campaign Performance Alert | atlas | analytics |
+| WF-062 | TV Rating Trend Report | binky | analytics |
+| WF-063 | Mercer Acquisition Intelligence Report | mercer | analytics |
+| WF-070 | Benny IP Triage & Evidence Pack | benny | legal |
+| WF-071 | Jenny CLO Intake & Legal Advisory | jenny | legal |
+| WF-072 | Larry Audit Intake & Compliance Gate | larry | compliance |
+| WF-073 | Tina Finance Intake & Risk Gate | tina | finance |
+| WF-080 | GitHub Commit → Jenkins Build Trigger | atlas | devops |
+| WF-081 | Appointment Confirmation Notifier | atlas | operations |
+| WF-082 | Job Application Parser & Router | atlas | hr |
+| WF-083 | Quiz Auto-Grader | atlas | education |
+| WF-084 | Petra Sprint Planning & Task Assignment | petra | operations |
+| WF-085 | Sandy Appointment Confirmation & CRM Sync | sandy | operations |
+| WF-086 | Frank Form Response Aggregator & Router | frank | operations |
+| WF-087 | Porter SharePoint Intranet Updater | porter | operations |
+| WF-088 | Claire Calendar Prep & Agenda Builder | claire | operations |
+| WF-089 | Victor Video Production Pipeline | victor | media |
+| WF-090 | Atlas Approval Poller | atlas | automation |
+| WF-091 | Atlas Suggestion Generator | atlas | automation |
+| WF-092 | Cheryl Support Intake & Triage Gate | cheryl | support |
 
 ## Workflow Execution Flow
 1. Frontend POST /v1/engine/run (workflowId, agentId, input)

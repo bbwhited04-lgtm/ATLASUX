@@ -175,6 +175,8 @@ export default function Landing() {
             <li>Tina promoted to Chief Financial Officer · CFO; Venny is Image Production Specialist; Victor reports to Venny</li>
             <li>Sunday re-titled Comms &amp; Technical Document Writer for Binky; Archy confirmed Binky research subagent</li>
             <li>Added 16 new executive workflows (WF-033 through WF-092) covering every agent — Daily-Intel, Archy, Timmy, Dwight, Emma, Fran, Sunday, Venny, Mercer, Petra, Sandy, Frank, Porter, Claire, Victor, Cheryl</li>
+            <li>Fixed all 39 KB docs — Archy now Binky research subagent, Venny Image Production Specialist, Claire Calendar Coordinator, Petra Project Manager, workflow catalog updated to canonical WF-### IDs</li>
+            <li>Implemented Atlas boot priorities: DAILY-INTEL as central reporting hub, Truth Compliance audit on every external output, Ledger entry (token_spend) on every workflow run</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

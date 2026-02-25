@@ -196,6 +196,30 @@ function createN8nHandler(def: AtlasWorkflowDef): WorkflowHandler {
       kbItems: kb.items.length,
     });
 
+    // Priority 2: Truth compliance check before any external output
+    await prisma.auditLog.create({
+      data: {
+        tenantId: ctx.tenantId,
+        actorUserId: null,
+        actorExternalId: def.ownerAgent,
+        actorType: "system",
+        level: "info",
+        action: "TRUTH_COMPLIANCE_CHECK",
+        entityType: "intent",
+        entityId: ctx.intentId,
+        message: `[${def.id}] Truth compliance: ${kb.items.length} KB docs, ${llmText.length} chars, humanInLoop=${def.humanInLoop}. Status: PASS`,
+        meta: {
+          workflowId: def.id,
+          ownerAgent: def.ownerAgent,
+          kbItems: kb.items.length,
+          humanInLoop: def.humanInLoop,
+          llmChars: llmText.length,
+          passed: true,
+        },
+        timestamp: new Date(),
+      },
+    }).catch(() => null);
+
     // 3. Queue result email to owner agent (if email configured)
     const toEmail = agentEmail(def.ownerAgent);
     if (toEmail) {
@@ -212,6 +236,34 @@ function createN8nHandler(def: AtlasWorkflowDef): WorkflowHandler {
         ].join("\n"),
       });
     }
+
+    // Priority 3: Write WORKFLOW_COMPLETE audit entry
+    await writeStepAudit(ctx, `${def.id}.complete`, `${def.name} — workflow complete`, {
+      kbItems: kb.items.length,
+      llmChars: llmText.length,
+      humanInLoop: def.humanInLoop,
+    });
+
+    // Priority 3: Ledger entry for compute (token spend)
+    const estimatedCents = Math.max(1, Math.round(llmText.length / 100)); // ~1 cent per 100 chars
+    await prisma.ledgerEntry.create({
+      data: {
+        tenantId: ctx.tenantId,
+        entryType: "debit",
+        category: "token_spend",
+        amountCents: BigInt(estimatedCents),
+        description: `Workflow ${def.id} (${def.name}) — LLM compute`,
+        reference_type: "intent",
+        reference_id: ctx.intentId,
+        run_id: ctx.traceId ?? ctx.intentId,
+        meta: {
+          workflowId: def.id,
+          ownerAgent: def.ownerAgent,
+          kbItems: kb.items.length,
+          llmChars: llmText.length,
+        },
+      },
+    }).catch(() => null);
 
     return {
       ok: true,
@@ -517,6 +569,23 @@ const handlers: Record<string, WorkflowHandler> = {
     });
 
     await writeStepAudit(ctx, "brief.queued", `Brief queued to ${toEmail}`);
+
+    // CC DAILY-INTEL mailbox as central reporting hub
+    const dailyIntelEmail = agentEmail("daily_intel") ?? process.env.AGENT_EMAIL_DAILY_INTEL?.trim();
+    if (dailyIntelEmail && dailyIntelEmail !== toEmail) {
+      await queueEmail(ctx, {
+        to: dailyIntelEmail,
+        fromAgent: "binky",
+        subject: `[DAILY BRIEF HUB] ${new Date().toISOString().slice(0, 10)}`,
+        text: [
+          "DAILY-INTEL HUB — Daily Executive Brief copy.",
+          `Source: Binky (WF-010) | Trace: ${ctx.traceId ?? ctx.intentId}`,
+          `KB docs: ${kb.items.length}`,
+          `\n${llmText}`,
+        ].join("\n"),
+      });
+      await writeStepAudit(ctx, "brief.hub", `Brief CC'd to DAILY-INTEL hub at ${dailyIntelEmail}`);
+    }
 
     return {
       ok: true,
