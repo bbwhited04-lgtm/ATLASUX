@@ -185,6 +185,7 @@ export default function Landing() {
             <li>Rewrote all 13 social media agent SKILL.md files — correct roles, platform-specific tools, content strategies, daily sprint workflows, atomic task decomposition, deterministic output specs, and forbidden actions for Kelly/X, Timmy/TikTok, Fran/Facebook, Dwight/Threads, Link/LinkedIn, Cornwall/Pinterest, Donna/Reddit, Reynolds/Blog, Terry/Tumblr, Penny/Ads, Archy/Instagram-research, Venny/Image-production, Emma/Alignable</li>
             <li>Built tiered knowledge architecture to remove chat bottleneck — SKILL.md loader (filesystem, 0ms, no DB), KB memory cache (60min TTL, eliminates repeat governance queries), query classifier (routes routine agent tasks to SKILL.md, avoids full RAG for 80% of questions), cache management endpoints on /v1/kb/cache</li>
             <li>In-product CSS agent tools — server-side live data injected before every chat call: get_subscription_info (plan, seats, spend), get_team_members (roster, roles), search_atlasux_knowledge (KB RAG); Cheryl always knows your account without hallucinating</li>
+            <li>Deep agent pipeline — every agent can run a 3-stage n8n-style pipeline: Planning sub-agent (execution plan) → Main execution (SKILL.md + KB + tools + memory) → Verification sub-agent (accuracy + policy check) + Postgres memory per session; Atlas, Binky, Cheryl, Mercer activated</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
