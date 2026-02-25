@@ -158,6 +158,7 @@ function RootLayoutInner() {
     { path: "/app/business-manager", icon: Briefcase, label: "Business Manager" },
     { path: "/app/kb", icon: BookOpen, label: "Knowledge Base" },
     { path: "/app/blog", icon: Newspaper, label: "Blog" },
+    { path: "/app/watcher", icon: Activity, label: "Agent Watcher" },
     { path: "/app/decisions", icon: ClipboardCheck, label: "Decisions", badge: pendingDecisionsCount },
     { path: "/app/messaging", icon: Send, label: "Messaging" },
     { path: "/app/tickets", icon: AlertCircle, label: "Tickets" },

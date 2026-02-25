@@ -131,6 +131,8 @@ export function JobRunner() {
 
   useEffect(() => {
     void loadJobs();
+    const timer = setInterval(() => void loadJobs(), 10000);
+    return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTenantId]);
   

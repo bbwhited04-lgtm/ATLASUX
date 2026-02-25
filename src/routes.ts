@@ -33,6 +33,7 @@ import { DecisionsInbox } from "./components/DecisionsInbox";
 import { MessagingHub } from "./components/MessagingHub";
 import { TicketsView } from "./components/TicketsView";
 import { BudgetTracker } from "./components/BudgetTracker";
+import { AgentWatcher } from "./components/AgentWatcher";
 import About from "./pages/About";
 
 export const router = createHashRouter([
@@ -83,6 +84,7 @@ export const router = createHashRouter([
       { path: "messaging", Component: MessagingHub },
       { path: "tickets", Component: TicketsView },
       { path: "budgets", Component: BudgetTracker },
+      { path: "watcher", Component: AgentWatcher },
       ],
   },
 
