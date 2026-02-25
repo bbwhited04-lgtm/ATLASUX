@@ -5,6 +5,26 @@
  * Atlas is never "just waiting" — the workforce runs itself.
  *
  * Schedule overview (all times UTC):
+ *
+ *   PHASE 1 — Platform Intel Sweep (05:00–05:36 UTC, agents collect hot takes):
+ *   05:00  Kelly   X Hot Topics            WF-093  daily
+ *   05:03  Fran    Facebook Trends         WF-094  daily
+ *   05:06  Dwight  Threads Trends          WF-095  daily
+ *   05:09  Timmy   TikTok Trends           WF-096  daily
+ *   05:12  Terry   Tumblr Trends           WF-097  daily
+ *   05:15  Cornwall Pinterest Trends       WF-098  daily
+ *   05:18  Link    LinkedIn Trends         WF-099  daily
+ *   05:21  Emma    Alignable Trends        WF-100  daily
+ *   05:24  Donna   Reddit Trends           WF-101  daily
+ *   05:27  Reynolds Blog SEO Trends        WF-102  daily
+ *   05:30  Penny   FB Ads Intel            WF-103  daily
+ *   05:33  Archy   Instagram Intel         WF-104  daily
+ *   05:36  Venny   YouTube Intel           WF-105  daily
+ *
+ *   PHASE 2 — Aggregation (05:45 UTC, Atlas reads all reports → assigns tasks):
+ *   05:45  Atlas   Aggregation & Task Assign WF-106  daily
+ *
+ *   PHASE 3 — Research & Intelligence:
  *   06:00  Binky Research Digest          WF-031  daily
  *   07:00  Daily-Intel Morning Brief       WF-033  daily
  *   07:30  Archy Research Deep-Dive        WF-034  daily
@@ -37,6 +57,7 @@
  *
  * De-duplication: last-fired date stored in system_state "scheduler:{id}".
  * Weekly jobs use "scheduler:{id}:{YYYY-Www}" as the key to de-dup per ISO week.
+ * Intel sweep staggered 3 min apart; tick window is ±1 min so all fire cleanly.
  *
  * Env:
  *   SCHEDULER_ENABLED   set to "false" to pause all jobs
@@ -137,6 +158,108 @@ async function fireJob(job: ScheduledJob) {
 
 function buildJobs(): ScheduledJob[] {
   return [
+
+    // ── PHASE 1: Morning Platform Intel Sweep (05:00–05:36 UTC) ──────────────
+    {
+      id: "kelly-x-intel",
+      label: "Kelly X (Twitter) Hot Topics Intel (WF-093)",
+      agentId: "kelly", workflowId: "WF-093",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 0,
+    },
+    {
+      id: "fran-facebook-intel",
+      label: "Fran Facebook Trending Topics Intel (WF-094)",
+      agentId: "fran", workflowId: "WF-094",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 3,
+    },
+    {
+      id: "dwight-threads-intel",
+      label: "Dwight Threads Trending Topics Intel (WF-095)",
+      agentId: "dwight", workflowId: "WF-095",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 6,
+    },
+    {
+      id: "timmy-tiktok-intel",
+      label: "Timmy TikTok Trending Sounds & Topics Intel (WF-096)",
+      agentId: "timmy", workflowId: "WF-096",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 9,
+    },
+    {
+      id: "terry-tumblr-intel",
+      label: "Terry Tumblr Trending Tags Intel (WF-097)",
+      agentId: "terry", workflowId: "WF-097",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 12,
+    },
+    {
+      id: "cornwall-pinterest-intel",
+      label: "Cornwall Pinterest Trending Pins Intel (WF-098)",
+      agentId: "cornwall", workflowId: "WF-098",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 15,
+    },
+    {
+      id: "link-linkedin-intel",
+      label: "Link LinkedIn Professional Trends Intel (WF-099)",
+      agentId: "link", workflowId: "WF-099",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 18,
+    },
+    {
+      id: "emma-alignable-intel",
+      label: "Emma Alignable Local Business Topics Intel (WF-100)",
+      agentId: "emma", workflowId: "WF-100",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 21,
+    },
+    {
+      id: "donna-reddit-intel",
+      label: "Donna Reddit Hot Threads & Subreddit Intel (WF-101)",
+      agentId: "donna", workflowId: "WF-101",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 24,
+    },
+    {
+      id: "reynolds-blog-intel",
+      label: "Reynolds Blog SEO Trending Topics Intel (WF-102)",
+      agentId: "reynolds", workflowId: "WF-102",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 27,
+    },
+    {
+      id: "penny-ads-intel",
+      label: "Penny Facebook Ads Trending Formats Intel (WF-103)",
+      agentId: "penny", workflowId: "WF-103",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 30,
+    },
+    {
+      id: "archy-instagram-intel",
+      label: "Archy Instagram & Visual Trends Intel (WF-104)",
+      agentId: "archy", workflowId: "WF-104",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 33,
+    },
+    {
+      id: "venny-youtube-intel",
+      label: "Venny YouTube & Visual Media Trending Topics Intel (WF-105)",
+      agentId: "venny", workflowId: "WF-105",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 5, minuteUTC: 36,
+    },
+
+    // ── PHASE 2: Atlas Aggregation & Task Assignment (05:45 UTC) ─────────────
+    {
+      id: "atlas-aggregation",
+      label: "Atlas Daily Aggregation & Agent Task Assignment (WF-106)",
+      agentId: "atlas", workflowId: "WF-106",
+      payload: { triggeredBy: "scheduler", topic: "aggregate platform intel and assign daily tasks" },
+      hourUTC: 5, minuteUTC: 45,
+    },
 
     // ── Daily: Research & Intelligence ───────────────────────────────────────
     {

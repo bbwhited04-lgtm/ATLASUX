@@ -600,6 +600,362 @@ const handlers: Record<string, WorkflowHandler> = {
   },
 };
 
+// ── Platform Intel handler — real-time SERP + LLM hot-takes report ───────────
+
+function createPlatformIntelHandler(platformName: string, searchQuery: string): WorkflowHandler {
+  return async (ctx) => {
+    await writeStepAudit(ctx, `${ctx.workflowId}.start`, `Starting platform intel for ${platformName}`);
+
+    // 1. Real-time trends via SERP API (SerpAPI)
+    let serpData = "";
+    const serpKey = process.env.SERP_API_KEY?.trim();
+    if (serpKey) {
+      try {
+        const query = encodeURIComponent(
+          `${searchQuery} trending ${new Date().toISOString().slice(0, 10)}`,
+        );
+        const url = `https://serpapi.com/search.json?q=${query}&api_key=${serpKey}&num=10&hl=en&gl=us`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const json = (await res.json()) as any;
+          const results = (json.organic_results ?? []).slice(0, 8);
+          serpData = results
+            .map(
+              (r: any, i: number) =>
+                `${i + 1}. ${r.title}\n   ${r.snippet ?? ""}\n   Source: ${r.link ?? ""}`,
+            )
+            .join("\n\n");
+        }
+      } catch (err: any) {
+        serpData = `[SERP error: ${err?.message ?? "unavailable"}]`;
+      }
+    }
+
+    // 2. KB context for this agent
+    const kb = await getKbContext({
+      tenantId: ctx.tenantId,
+      agentId: ctx.agentId,
+      query: `${platformName} content strategy trends`,
+      intentId: ctx.intentId,
+      requestedBy: ctx.requestedBy,
+    });
+
+    // 3. LLM synthesizes hot-takes report
+    const llmText = await safeLLM(ctx, {
+      agent: ctx.agentId.toUpperCase(),
+      purpose: `platform_intel_${ctx.agentId}`,
+      route: "LONG_CONTEXT_SUMMARY",
+      system: [
+        `You are ${ctx.agentId.toUpperCase()}, the Atlas UX ${platformName} specialist.`,
+        `Your mission: report what is HOT on ${platformName} TODAY so the team can create on-trend content.`,
+        kb.text
+          ? `\nYour KB context (${kb.items.length} docs):\n${kb.text}`
+          : "\n(No KB docs loaded yet — use your platform expertise.)",
+      ].join("\n"),
+      user: [
+        `Date: ${new Date().toISOString().slice(0, 10)}`,
+        serpData
+          ? `\nReal-time search results for "${searchQuery} trending today":\n${serpData}`
+          : "\n[No live search data available — use your training knowledge of the platform.]",
+        "\nProduce a structured PLATFORM INTEL REPORT:",
+        "1. Top 5 trending topics / hashtags RIGHT NOW",
+        "2. Viral formats and content styles performing well this week",
+        "3. Content gaps Atlas UX (AI employee platform) could fill",
+        "4. 3 specific, ready-to-use post ideas for Atlas UX based on today's trends",
+        "5. Any competitor or brand activity worth noting",
+        "\nBe specific and actionable. This goes to Atlas and the DAILY-INTEL hub.",
+      ].join("\n"),
+    });
+
+    await writeStepAudit(
+      ctx,
+      `${ctx.workflowId}.intel`,
+      `Intel report generated (${llmText.length} chars, SERP: ${serpData ? "LIVE" : "KB-only"})`,
+      { kbItems: kb.items.length, serpActive: !!serpData },
+    );
+
+    // 4. Email report to agent mailbox
+    const agentMailbox = agentEmail(ctx.agentId);
+    if (agentMailbox) {
+      await queueEmail(ctx, {
+        to: agentMailbox,
+        fromAgent: ctx.agentId,
+        subject: `[${platformName.toUpperCase()} INTEL] ${new Date().toISOString().slice(0, 10)} — Hot Topics & Trends`,
+        text: [
+          `${platformName} Platform Intelligence Report`,
+          "=".repeat(50),
+          `Agent: ${ctx.agentId.toUpperCase()} | Date: ${new Date().toISOString().slice(0, 10)}`,
+          `SERP: ${serpData ? "LIVE" : "KB-only"} | KB docs: ${kb.items.length}`,
+          `Trace: ${ctx.traceId ?? ctx.intentId}`,
+          `\n${llmText}`,
+        ].join("\n"),
+      });
+    }
+
+    // 5. CC DAILY-INTEL hub
+    const hubEmail = process.env.AGENT_EMAIL_DAILY_INTEL?.trim();
+    if (hubEmail && hubEmail !== agentMailbox) {
+      await queueEmail(ctx, {
+        to: hubEmail,
+        fromAgent: ctx.agentId,
+        subject: `[PLATFORM INTEL HUB] ${platformName} — ${new Date().toISOString().slice(0, 10)}`,
+        text: [
+          `Platform: ${platformName} | Agent: ${ctx.agentId.toUpperCase()}`,
+          `SERP: ${serpData ? "LIVE" : "KB-only"} | KB docs: ${kb.items.length}`,
+          `\n${llmText}`,
+          `\nTrace: ${ctx.traceId ?? ctx.intentId}`,
+        ].join("\n"),
+      });
+    }
+
+    // 6. Audit + Ledger
+    await writeStepAudit(ctx, `${ctx.workflowId}.complete`, `${platformName} intel complete`, {
+      kbItems: kb.items.length,
+      llmChars: llmText.length,
+    });
+    await prisma.ledgerEntry.create({
+      data: {
+        tenantId: ctx.tenantId,
+        entryType: "debit",
+        category: "token_spend",
+        amountCents: BigInt(Math.max(1, Math.round(llmText.length / 100))),
+        description: `${ctx.workflowId} — ${platformName} platform intel`,
+        reference_type: "intent",
+        reference_id: ctx.intentId,
+        run_id: ctx.traceId ?? ctx.intentId,
+        meta: { workflowId: ctx.workflowId, agentId: ctx.agentId, platform: platformName },
+      },
+    }).catch(() => null);
+
+    return {
+      ok: true,
+      message: `${platformName} intel report complete`,
+      output: {
+        platform: platformName,
+        agentId: ctx.agentId,
+        kbItems: kb.items.length,
+        serpActive: !!serpData,
+        llmChars: llmText.length,
+        preview: llmText.slice(0, 400),
+      },
+    };
+  };
+}
+
+// ── WF-106 Atlas Daily Aggregation & Agent Task Assignment ────────────────────
+// After the 13 platform intel jobs run (05:00–05:36 UTC), Atlas fires at 05:45.
+// It synthesizes all intel via Daily-Intel, then assigns tasks to every agent.
+handlers["WF-106"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-106.start", "Atlas Aggregation & Task Assignment beginning");
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  // 1. Get global KB context (Atlas-level — all docs)
+  const kb = await getKbContext({
+    tenantId: ctx.tenantId,
+    agentId: "atlas",
+    query: "agent roles workflows platform strategy task assignment",
+    intentId: ctx.intentId,
+    requestedBy: ctx.requestedBy,
+  });
+
+  // 2. Get real-time macro context via SERP
+  let macroIntel = "";
+  const serpKey = process.env.SERP_API_KEY?.trim();
+  if (serpKey) {
+    try {
+      const q = encodeURIComponent(`AI automation small business trending news ${today}`);
+      const res = await fetch(`https://serpapi.com/search.json?q=${q}&api_key=${serpKey}&num=6&hl=en&gl=us`);
+      if (res.ok) {
+        const json = (await res.json()) as any;
+        macroIntel = ((json.organic_results ?? []) as any[])
+          .slice(0, 5)
+          .map((r: any, i: number) => `${i + 1}. ${r.title} — ${r.snippet ?? ""}`)
+          .join("\n");
+      }
+    } catch { /* non-fatal */ }
+  }
+
+  // 3. Daily-Intel synthesizes all platform reports into a unified packet
+  const synthPrompt = [
+    `You are DAILY-INTEL, the central intelligence aggregator for Atlas UX.`,
+    `Date: ${today}`,
+    `\nEach of the 13 social/platform agents (Kelly/X, Fran/FB, Dwight/Threads, Timmy/TikTok,`,
+    `Terry/Tumblr, Cornwall/Pinterest, Link/LinkedIn, Emma/Alignable, Donna/Reddit,`,
+    `Reynolds/Blog, Penny/Ads, Archy/Instagram, Venny/YouTube) just filed their`,
+    `platform intel reports to this hub.`,
+    macroIntel ? `\nMacro market context (live):\n${macroIntel}` : "",
+    kb.text ? `\nKB context (${kb.items.length} docs):\n${kb.text.slice(0, 2000)}` : "",
+    `\nProduce a UNIFIED INTELLIGENCE PACKET with:`,
+    `A. MACRO THEME OF THE DAY — the overarching narrative across all platforms`,
+    `B. CROSS-PLATFORM OPPORTUNITIES — 3 opportunities Atlas UX can exploit today across multiple channels`,
+    `C. PER-AGENT FOCUS AREA — for each of the 13 platform agents, one specific directive:`,
+    `   (Kelly, Fran, Dwight, Timmy, Terry, Cornwall, Link, Emma, Donna, Reynolds, Penny, Archy, Venny)`,
+    `D. ATLAS PRIORITY FLAGS — any risks, anomalies, or urgent items Atlas should act on today`,
+    `\nBe specific, decisive, and actionable. Atlas reads this and issues task orders.`,
+  ].filter(Boolean).join("\n");
+
+  const intelPacket = await safeLLM(ctx, {
+    agent: "DAILY-INTEL",
+    purpose: "daily_aggregation",
+    route: "LONG_CONTEXT_SUMMARY",
+    system: synthPrompt,
+    user: `Generate the unified intelligence packet for ${today}.`,
+  });
+
+  await writeStepAudit(ctx, "WF-106.intel", `Intelligence packet generated (${intelPacket.length} chars)`);
+
+  // 4. Atlas reads the packet and generates per-agent task orders
+  const taskOrderPrompt = [
+    `You are ATLAS, CEO and orchestrator of the Atlas UX AI workforce.`,
+    `Date: ${today}`,
+    `\nThe DAILY-INTEL hub has just delivered today's unified intelligence packet:\n`,
+    intelPacket,
+    `\nYour role: read the intel, evaluate what each agent should do TODAY, and issue specific task orders.`,
+    `\nFor each of these agents, issue a task order:`,
+    `  Social publishers: Kelly, Fran, Dwight, Timmy, Terry, Cornwall, Link, Emma, Donna, Reynolds, Penny`,
+    `  Visual: Venny (images), Archy (Instagram/research for Binky)`,
+    `  Operations: Petra (projects), Sandy (bookings/CRM), Porter (SharePoint), Claire (calendar)`,
+    `  Intelligence: Binky (research), Daily-Intel (briefings)`,
+    `  Finance/Compliance: Tina (CFO), Larry (audit), Frank (forms)`,
+    `  Customer/Sales: Mercer (acquisition), Cheryl (support), Sunday (docs/comms)`,
+    `\nFor each agent, specify:`,
+    `  AGENT: [name]`,
+    `  TASK: [one specific, actionable task for today]`,
+    `  WORKFLOW: [most relevant WF-### if applicable]`,
+    `  PRIORITY: HIGH / MEDIUM / STANDARD`,
+    `\nEnd with: ATLAS STATUS: [your read on Atlas UX's position and what you're watching]`,
+  ].join("\n");
+
+  const taskOrders = await safeLLM(ctx, {
+    agent: "ATLAS",
+    purpose: "task_assignment",
+    route: "LONG_CONTEXT_SUMMARY",
+    system: taskOrderPrompt,
+    user: `Issue today's task orders for the full Atlas UX workforce — ${today}.`,
+  });
+
+  await writeStepAudit(ctx, "WF-106.orders", `Task orders generated (${taskOrders.length} chars)`);
+
+  // 5. Send Atlas's master task order to Billy + Atlas mailbox
+  const atlasEmail = agentEmail("atlas") ?? "atlas@deadapp.info";
+  const billyEmail = process.env.OWNER_EMAIL?.trim() ?? "billy@deadapp.info";
+  const masterSubject = `[ATLAS TASK ORDERS] ${today} — Workforce Task Assignment`;
+  const masterBody = [
+    `ATLAS UX — DAILY WORKFORCE TASK ASSIGNMENT`,
+    `Date: ${today}`,
+    `Triggered by: WF-106 Atlas Daily Aggregation`,
+    `\n${"═".repeat(60)}`,
+    `\nUNIFIED INTELLIGENCE PACKET (Daily-Intel)`,
+    `${"─".repeat(60)}`,
+    intelPacket,
+    `\n${"═".repeat(60)}`,
+    `\nATLAS TASK ORDERS — FULL WORKFORCE`,
+    `${"─".repeat(60)}`,
+    taskOrders,
+    `\n${"═".repeat(60)}`,
+    `\nTrace: ${ctx.traceId ?? ctx.intentId}`,
+  ].join("\n");
+
+  await queueEmail(ctx, { to: atlasEmail, fromAgent: "atlas", subject: masterSubject, text: masterBody });
+  if (billyEmail !== atlasEmail) {
+    await queueEmail(ctx, { to: billyEmail, fromAgent: "atlas", subject: masterSubject, text: masterBody });
+  }
+
+  // 6. Parse task orders and queue individual agent notification emails
+  // We send each agent their task order as a directive email
+  const agentTaskMap: Record<string, { task: string; workflow: string; priority: string }> = {};
+  const agentLines = taskOrders.split(/\n(?=AGENT:)/);
+  for (const block of agentLines) {
+    const agentMatch = block.match(/AGENT:\s*(\w+)/i);
+    const taskMatch  = block.match(/TASK:\s*(.+)/i);
+    const wfMatch    = block.match(/WORKFLOW:\s*(WF-\d+|N\/A|none)?/i);
+    const priMatch   = block.match(/PRIORITY:\s*(HIGH|MEDIUM|STANDARD)/i);
+    if (agentMatch) {
+      agentTaskMap[agentMatch[1].toLowerCase()] = {
+        task:     taskMatch?.[1]?.trim() ?? "See today's Atlas task order report.",
+        workflow: wfMatch?.[1]?.trim() ?? "",
+        priority: priMatch?.[1]?.trim() ?? "STANDARD",
+      };
+    }
+  }
+
+  let emailsSent = 0;
+  for (const [agId, order] of Object.entries(agentTaskMap)) {
+    const agMailbox = agentEmail(agId);
+    if (!agMailbox) continue;
+    const subject = `[ATLAS TASK ORDER] ${today} — Your directive from Atlas`;
+    const body = [
+      `ATLAS UX — DIRECT TASK ORDER`,
+      `Agent: ${agId.toUpperCase()} | Date: ${today} | Priority: ${order.priority}`,
+      `\nTASK: ${order.task}`,
+      order.workflow ? `\nSUGGESTED WORKFLOW: ${order.workflow}` : "",
+      `\nThis task order was generated by Atlas based on today's platform intel sweep.`,
+      `Reply to this mailbox if you need clarification or escalation.`,
+      `\nTrace: ${ctx.traceId ?? ctx.intentId}`,
+    ].filter(Boolean).join("\n");
+    await queueEmail(ctx, { to: agMailbox, fromAgent: "atlas", subject, text: body });
+    emailsSent++;
+  }
+
+  // 7. Also CC the DAILY-INTEL hub with the full task log
+  const hubEmail = process.env.AGENT_EMAIL_DAILY_INTEL?.trim();
+  if (hubEmail) {
+    await queueEmail(ctx, {
+      to: hubEmail, fromAgent: "atlas",
+      subject: `[WF-106 HUB] ${today} — Task orders dispatched to ${emailsSent} agents`,
+      text: masterBody,
+    });
+  }
+
+  // 8. Audit + Ledger
+  await writeStepAudit(ctx, "WF-106.complete", `Task assignment complete — ${emailsSent} agents notified`, {
+    agentsNotified: emailsSent,
+    intelChars: intelPacket.length,
+    orderChars: taskOrders.length,
+  });
+  await prisma.ledgerEntry.create({
+    data: {
+      tenantId: ctx.tenantId,
+      entryType: "debit",
+      category: "token_spend",
+      amountCents: BigInt(Math.max(1, Math.round((intelPacket.length + taskOrders.length) / 100))),
+      description: `WF-106 — Atlas daily aggregation & task assignment (${emailsSent} agents)`,
+      reference_type: "intent",
+      reference_id: ctx.intentId,
+      run_id: ctx.traceId ?? ctx.intentId,
+      meta: { workflowId: "WF-106", agentsNotified: emailsSent },
+    },
+  }).catch(() => null);
+
+  return {
+    ok: true,
+    message: `Atlas task orders dispatched — ${emailsSent} agents notified`,
+    output: {
+      agentsNotified: emailsSent,
+      agentTaskMap,
+      intelChars: intelPacket.length,
+      orderChars: taskOrders.length,
+      preview: taskOrders.slice(0, 500),
+    },
+  };
+};
+
+// Register all platform intel handlers
+handlers["WF-093"] = createPlatformIntelHandler("X (Twitter)", "X Twitter trending hashtags viral content tech startups");
+handlers["WF-094"] = createPlatformIntelHandler("Facebook", "Facebook trending topics small business Pages Groups");
+handlers["WF-095"] = createPlatformIntelHandler("Threads", "Threads app Meta trending topics creators conversations");
+handlers["WF-096"] = createPlatformIntelHandler("TikTok", "TikTok trending hashtags sounds viral video formats");
+handlers["WF-097"] = createPlatformIntelHandler("Tumblr", "Tumblr trending tags creative posts aesthetic content");
+handlers["WF-098"] = createPlatformIntelHandler("Pinterest", "Pinterest trending pins boards ideas visual inspiration");
+handlers["WF-099"] = createPlatformIntelHandler("LinkedIn", "LinkedIn trending professional topics business B2B posts");
+handlers["WF-100"] = createPlatformIntelHandler("Alignable", "Alignable local business trending topics community discussions");
+handlers["WF-101"] = createPlatformIntelHandler("Reddit", "Reddit hot threads subreddits AI automation small business tech");
+handlers["WF-102"] = createPlatformIntelHandler("Blog SEO", "SEO trending blog topics AI automation software small business 2026");
+handlers["WF-103"] = createPlatformIntelHandler("Facebook Ads", "Facebook Ads trending ad formats small business winning creatives");
+handlers["WF-104"] = createPlatformIntelHandler("Instagram", "Instagram trending Reels hashtags visual content creators");
+handlers["WF-105"] = createPlatformIntelHandler("YouTube", "YouTube trending videos AI automation creators topics 2026");
+
 // ── Auto-register all n8n workflows ──────────────────────────────────────────
 for (const def of n8nWorkflows) {
   if (!handlers[def.id]) {
