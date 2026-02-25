@@ -363,24 +363,24 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
       `server-side function in agentTools.ts following the existing pattern.`,
     ].filter(s => s !== null).join("\n");
 
-    // Upsert KB doc
-    const existing = await prisma.kbDocument.findFirst({ where: { tenantId, slug } });
-    if (existing) {
-      await prisma.kbDocument.update({ where: { id: existing.id }, data: { body, updatedAt: new Date() } });
-    } else {
-      await prisma.kbDocument.create({
-        data: {
-          tenantId,
-          slug,
-          title,
-          body,
-          category: "tool",
-          tags: ["tool", "approved", agentId],
-          sourceType: "atlas_generated",
-          agentId,
-        } as any,
-      });
-    }
+    // Upsert KB doc — use tenantId as createdBy UUID (same as seedKb.ts pattern)
+    await prisma.kbDocument.upsert({
+      where:  { tenantId_slug: { tenantId, slug } },
+      create: {
+        tenantId,
+        slug,
+        title,
+        body,
+        status:    "published",
+        createdBy: tenantId, // system-generated doc, use tenant UUID as author
+      },
+      update: {
+        title,
+        body,
+        status:    "published",
+        updatedBy: tenantId,
+      },
+    });
   }
 
   // ── Helper: HTML response page ──────────────────────────────────────────────
