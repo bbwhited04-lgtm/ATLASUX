@@ -30,12 +30,14 @@ import BlogHome from "./pages/blog/BlogHome";
 import BlogPost from "./pages/blog/BlogPost";
 import BlogCategory from "./pages/blog/BlogCategory";
 import { DecisionsInbox } from "./components/DecisionsInbox";
+import About from "./pages/About";
 
 export const router = createHashRouter([
   // Landing at "#/"
   { path: "/", Component: Landing },
 
   // Public pages
+  { path: "/about", Component: About },
   { path: "/privacy", Component: Privacy },
   { path: "/terms", Component: Terms },
   { path: "/acceptable-use", Component: AcceptableUse },

@@ -51,6 +51,21 @@ export const jobsRoutes: FastifyPluginAsync = async (app) => {
     };
   });
 
+  // DELETE /v1/jobs/:id — cancel/remove a job (queued or paused only)
+  app.delete("/:id", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId_required" });
+
+    const { id } = req.params as { id: string };
+
+    // Hard-delete non-running jobs; never forcibly remove a running job
+    await prisma.job.deleteMany({
+      where: { id, tenantId, status: { in: ["queued", "canceled", "failed", "succeeded"] } },
+    });
+
+    return reply.send({ ok: true });
+  });
+
   // POST /v1/jobs — enqueue a job
   app.post("/", async (req, reply) => {
     const tenantId = (req as any).tenantId as string | undefined;

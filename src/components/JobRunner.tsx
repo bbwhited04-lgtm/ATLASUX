@@ -23,7 +23,8 @@ import { API_BASE } from "@/lib/api";
 import { getOrgUser } from "@/lib/org";
 
 interface Job {
-  id: number;
+  id: number;       // local index (React key)
+  dbId: string;     // real UUID from DB — used for cancel API calls
   name: string;
   type: "video" | "animation" | "social" | "document" | "task";
   status: "running" | "completed" | "queued" | "paused";
@@ -83,6 +84,7 @@ export function JobRunner() {
         if (dbStatus === "succeeded") {
           done.push({
             id: idx,
+            dbId: String(j.id),
             name,
             type,
             completedTime: j.finishedAt
@@ -95,6 +97,7 @@ export function JobRunner() {
             dbStatus === "queued"  ? "queued"  : "paused";
           active.push({
             id: idx,
+            dbId: String(j.id),
             name,
             type,
             status,
@@ -161,14 +164,27 @@ export function JobRunner() {
     }));
   };
   
-  const deleteJob = (jobId: number) => {
-    setJobs(jobs.filter(job => job.id !== jobId));
-    // Stop Pluto if a running job is deleted
-    const deletedJob = jobs.find(j => j.id === jobId);
-    if (deletedJob?.status === "running") {
-      if ((window as any).plutoStopTask) {
-        (window as any).plutoStopTask();
-      }
+  const deleteJob = async (jobId: number) => {
+    const target = jobs.find(j => j.id === jobId);
+    if (!target) return;
+
+    // Optimistic remove from UI
+    setJobs(prev => prev.filter(job => job.id !== jobId));
+
+    // Persist to backend (fire-and-forget; reload will reconcile)
+    const tenantId = localStorage.getItem("atlasux_tenant_id") || org_id;
+    try {
+      await fetch(`${API_BASE}/v1/jobs/${target.dbId}`, {
+        method: "DELETE",
+        headers: { "x-tenant-id": tenantId },
+      });
+    } catch {
+      // If the delete fails, re-fetch to reconcile state
+      void loadJobs();
+    }
+
+    if (target.status === "running" && (window as any).plutoStopTask) {
+      (window as any).plutoStopTask();
     }
   };
   
@@ -189,7 +205,10 @@ export function JobRunner() {
           <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </Button>
-        <Button className="bg-cyan-500 hover:bg-cyan-400">
+        <Button
+          className="bg-cyan-500 hover:bg-cyan-400"
+          onClick={() => window.location.hash = "/app/agents?view=workflows"}
+        >
           <Plus className="w-4 h-4 mr-2" />
           New Job
         </Button>
@@ -369,9 +388,19 @@ export function JobRunner() {
                           )}
                           
                           {job.status === "queued" && (
-                            <div className="flex items-center gap-2 text-xs text-slate-400 mt-2">
-                              <Clock className="w-4 h-4 animate-pulse" />
-                              <span>Waiting for available resources...</span>
+                            <div className="flex items-center justify-between text-xs text-slate-400 mt-2">
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 animate-pulse" />
+                                <span>Queued — waiting for a worker</span>
+                              </div>
+                              <button
+                                onClick={() => deleteJob(job.id)}
+                                className="flex items-center gap-1 px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 transition-colors"
+                                title="Cancel this job"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                Cancel
+                              </button>
                             </div>
                           )}
                         </div>
