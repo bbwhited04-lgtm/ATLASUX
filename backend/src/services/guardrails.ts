@@ -9,10 +9,10 @@ export type GuardrailConfig = {
 
 export function getGuardrailConfig(): GuardrailConfig {
   return {
-    autoSpendLimitUsd: Number(process.env.AUTO_SPEND_LIMIT_USD ?? 4),
-    maxActionsPerDay: Number(process.env.MAX_ACTIONS_PER_DAY ?? 1),
-    maxExternalPostsPerDay: Number(process.env.MAX_EXTERNAL_POSTS_PER_DAY ?? 2),
-    blockRecurring: String(process.env.BLOCK_RECURRING ?? "true") === "true",
+    autoSpendLimitUsd: Number(process.env.AUTO_SPEND_LIMIT_USD ?? process.env.AUTO_SPEND_LIMIT ?? 20),
+    maxActionsPerDay: Number(process.env.MAX_ACTIONS_PER_DAY ?? 200),
+    maxExternalPostsPerDay: Number(process.env.MAX_EXTERNAL_POSTS_PER_DAY ?? 20),
+    blockRecurring: String(process.env.BLOCK_RECURRING ?? "false") === "true",
   };
 }
 

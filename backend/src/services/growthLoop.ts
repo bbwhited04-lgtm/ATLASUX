@@ -6,27 +6,31 @@ function utcDateOnly(d: Date) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
+type ProposedAction = {
+  title: string;
+  rationale: string;
+  estimatedCostUsd?: number;
+  billingType?: "none" | "one_time" | "recurring";
+  riskTier?: number;
+  confidence?: number;
+  expectedBenefit?: string;
+  payload?: any;
+};
+
 /**
- * Growth Loop v1 (alpha):
+ * Growth Loop v2:
  * - ensures daily metrics snapshot exists
- * - records a GrowthLoopRun row
- * - optionally creates a DecisionMemo (one action/day)
- *
- * This intentionally does NOT auto-execute actions. Execution happens after approval.
+ * - records a GrowthLoopRun row (multiple runs per day allowed)
+ * - creates DecisionMemos for each proposed action (array supported)
+ * - does NOT auto-execute; execution happens after human approval
  */
 export async function runGrowthLoop(params: {
   tenantId: string;
   agent: string;
-  proposedAction?: {
-    title: string;
-    rationale: string;
-    estimatedCostUsd?: number;
-    billingType?: "none" | "one_time" | "recurring";
-    riskTier?: number;
-    confidence?: number;
-    expectedBenefit?: string;
-    payload?: any;
-  };
+  /** Single action (backwards compat) */
+  proposedAction?: ProposedAction;
+  /** Multiple actions in one run */
+  proposedActions?: ProposedAction[];
 }) {
   const runDate = utcDateOnly(new Date());
 
@@ -34,46 +38,56 @@ export async function runGrowthLoop(params: {
   const snapshot = await computeMetricsSnapshot({ tenantId: params.tenantId });
   await upsertDailySnapshot({ tenantId: params.tenantId, snapshot });
 
-  // Create/Upsert run row
-  const existing = await prisma.growthLoopRun.findFirst({ where: { tenantId: params.tenantId, runDate } });
-  if (existing && existing.status === "COMPLETED") {
-    return { ok: true, alreadyRan: true, run: existing, snapshot };
-  }
-
+  // Upsert run row — allows re-runs on the same day (status resets to STARTED each time)
   const run = await prisma.growthLoopRun.upsert({
     where: { tenantId_runDate: { tenantId: params.tenantId, runDate } } as any,
     update: { status: "STARTED" },
     create: { tenantId: params.tenantId, runDate, status: "STARTED" },
   });
 
-  let memoId: string | undefined;
-  if (params.proposedAction) {
+  // Merge single + array into one list
+  const actions: ProposedAction[] = [
+    ...(params.proposedActions ?? []),
+    ...(params.proposedAction ? [params.proposedAction] : []),
+  ];
+
+  const memoIds: string[] = [];
+  for (const action of actions) {
     const memo = await createDecisionMemo({
       tenantId: params.tenantId,
       agent: params.agent,
-      title: params.proposedAction.title,
-      rationale: params.proposedAction.rationale,
-      estimatedCostUsd: params.proposedAction.estimatedCostUsd,
-      billingType: params.proposedAction.billingType,
-      riskTier: params.proposedAction.riskTier,
-      confidence: params.proposedAction.confidence,
-      expectedBenefit: params.proposedAction.expectedBenefit,
-      payload: params.proposedAction.payload,
+      title: action.title,
+      rationale: action.rationale,
+      estimatedCostUsd: action.estimatedCostUsd,
+      billingType: action.billingType,
+      riskTier: action.riskTier,
+      confidence: action.confidence,
+      expectedBenefit: action.expectedBenefit,
+      payload: action.payload,
     });
-    memoId = memo.id;
+    memoIds.push(memo.id);
   }
 
   const completed = await prisma.growthLoopRun.update({
     where: { id: run.id },
     data: {
       status: "COMPLETED",
-      decisionMemoId: memoId,
+      // store first memo id for backwards compat
+      decisionMemoId: memoIds[0] ?? null,
       summary: {
         snapshotDate: snapshot.date,
-        createdDecisionMemo: Boolean(memoId),
+        actionsProposed: actions.length,
+        memoIds,
       },
     },
   });
 
-  return { ok: true, alreadyRan: false, run: completed, snapshot, memoId };
+  return {
+    ok: true,
+    alreadyRan: false,
+    run: completed,
+    snapshot,
+    memoIds,
+    actionsProposed: actions.length,
+  };
 }
