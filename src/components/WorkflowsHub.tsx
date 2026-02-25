@@ -167,7 +167,12 @@ export function WorkflowsHub() {
     if (!intentId) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/v1/engine/runs/${intentId}`);
+      const res = await fetch(`${API_BASE}/v1/engine/runs/${intentId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+        },
+      });
       const data = (await res.json()) as RunStatus;
       setStatus(data);
     } catch (e: any) {
@@ -176,6 +181,14 @@ export function WorkflowsHub() {
       setLoading(false);
     }
   }
+
+  // Auto-refresh once after run to catch intents claimed by the background tick
+  React.useEffect(() => {
+    if (!intentId || !tenantId) return;
+    const t = setTimeout(() => refresh(), 3500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intentId]);
 
   return (
     <div className="p-6 space-y-6">
@@ -339,22 +352,60 @@ export function WorkflowsHub() {
           </div>
 
           <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <div className="text-base text-slate-800">Latest Run</div>
-            <div className="mt-2 text-base text-slate-800 space-y-2">
-              <div>
-                intentId: <span className="text-slate-800">{intentId || "—"}</span>
-              </div>
+            <div className="text-base font-medium text-slate-800 mb-2">Latest Run</div>
+            <div className="space-y-2">
+              {intentId && (
+                <div className="rounded-lg bg-slate-50 border border-slate-200 px-2.5 py-1.5">
+                  <div className="text-[10px] text-slate-400 font-mono">Intent ID</div>
+                  <div className="text-xs text-slate-700 font-mono break-all">{intentId}</div>
+                </div>
+              )}
 
               {runResp && (
-                <pre className="whitespace-pre-wrap rounded-lg bg-slate-50 border border-slate-200 p-2 text-[11px] text-slate-800">
-                  {JSON.stringify(runResp, null, 2)}
-                </pre>
+                <div className={`rounded-lg border px-2.5 py-1.5 ${runResp.ok ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
+                  <div className="text-[10px] font-semibold mb-1 text-slate-500">Engine response</div>
+                  {runResp.ok ? (
+                    <div className="text-xs text-emerald-700">
+                      Intent queued{runResp.tickResult?.ran === false ? " — picked up by background tick" : " & executed"}.
+                    </div>
+                  ) : (
+                    <div className="text-xs text-red-600">{runResp.error}</div>
+                  )}
+                </div>
               )}
 
               {status && (
-                <pre className="whitespace-pre-wrap rounded-lg bg-slate-50 border border-slate-200 p-2 text-[11px] text-slate-800">
-                  {JSON.stringify(status, null, 2)}
-                </pre>
+                <div>
+                  <div className="text-[10px] text-slate-400 mb-1">Run status</div>
+                  {status.ok && status.intent ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          status.intent.status === "EXECUTED" ? "bg-emerald-100 text-emerald-700" :
+                          status.intent.status === "FAILED"   ? "bg-red-100 text-red-700" :
+                          status.intent.status === "AWAITING_HUMAN" ? "bg-amber-100 text-amber-700" :
+                          "bg-slate-100 text-slate-600"
+                        }`}>{status.intent.status}</span>
+                        <span className="text-[10px] text-slate-400">{status.intent.intentType}</span>
+                      </div>
+                      {status.audits && status.audits.length > 0 && (
+                        <ul className="mt-1 space-y-0.5">
+                          {status.audits.map((a: any, i: number) => (
+                            <li key={i} className="text-[10px] text-slate-600 font-mono truncate">
+                              {a.action}: {a.message?.slice(0, 80)}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-red-500">{status.error}</div>
+                  )}
+                </div>
+              )}
+
+              {!intentId && (
+                <div className="text-xs text-slate-400 italic">No run yet — select a workflow and hit Run.</div>
               )}
             </div>
           </div>
