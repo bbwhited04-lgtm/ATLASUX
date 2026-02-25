@@ -50,6 +50,8 @@ export function MessagingHub() {
   const [tgChatId, setTgChatId] = useState("");
   const [tgText, setTgText] = useState("");
   const [tgSending, setTgSending] = useState(false);
+  const [tgDefaultChatId, setTgDefaultChatId] = useState<string | null>(null);
+  const [savingDefault, setSavingDefault] = useState(false);
   const [tgResult, setTgResult] = useState<string | null>(null);
   const [tgUpdates, setTgUpdates] = useState<TelegramUpdate[]>([]);
   const [updatesLoading, setUpdatesLoading] = useState(false);
@@ -70,6 +72,33 @@ export function MessagingHub() {
   const [smsResult, setSmsResult] = useState<string | null>(null);
 
   // ── Data fetchers ────────────────────────────────────
+
+  async function fetchDefaultChat() {
+    if (!tenantId) return;
+    try {
+      const res = await fetch(`${API_BASE}/v1/telegram/default-chat`, {
+        headers: { "x-tenant-id": tenantId },
+      });
+      const data = await res.json();
+      if (data.ok && data.chatId) setTgDefaultChatId(data.chatId);
+    } catch { /* silent */ }
+  }
+
+  async function saveDefaultChat(chatId: string) {
+    if (!tenantId || !chatId) return;
+    setSavingDefault(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/telegram/save-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId },
+        body: JSON.stringify({ chatId }),
+      });
+      const data = await res.json();
+      if (data.ok) setTgDefaultChatId(chatId);
+    } catch { /* silent */ } finally {
+      setSavingDefault(false);
+    }
+  }
 
   async function fetchTeamsStatus() {
     try {
@@ -226,7 +255,7 @@ export function MessagingHub() {
   }, []);
 
   useEffect(() => {
-    if (tab === "telegram") fetchUpdates();
+    if (tab === "telegram") { fetchUpdates(); fetchDefaultChat(); }
     if (tab === "email") fetchOutbox();
     if (tab === "teams") {
       fetchTeamsList();
@@ -592,9 +621,18 @@ export function MessagingHub() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Compose */}
           <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-5 space-y-4">
-            <div className="font-semibold text-white">Send Message</div>
+            <div className="flex items-center justify-between">
+              <div className="font-semibold text-white">Send Message</div>
+              {tgDefaultChatId && (
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[11px] text-emerald-400">Agents use chat {tgDefaultChatId}</span>
+                </div>
+              )}
+            </div>
             <div className="p-2 rounded-lg bg-slate-800/60 border border-slate-700/50 text-xs text-slate-400 leading-relaxed">
               The recipient must first message your bot on Telegram. Their numeric chat ID will then appear in <span className="text-cyan-400 font-medium">Recent Incoming</span> — click <span className="text-cyan-400 font-medium">Use chat</span> to fill it in automatically.
+              {!tgDefaultChatId && <span className="text-amber-400 ml-1">Click <strong>Set default</strong> on any incoming chat to let agents send you notifications there.</span>}
             </div>
             <div className="space-y-3">
               <input
@@ -668,16 +706,32 @@ export function MessagingHub() {
                         {u.message?.from?.first_name ?? u.message?.from?.username ?? "Unknown"}
                       </span>
                       {u.message?.chat?.id && (
-                        <button
-                          className="px-2 py-0.5 rounded text-[11px] font-medium bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/40 transition-colors border border-cyan-500/30"
-                          onClick={() => {
-                            const id = String(u.message!.chat!.id);
-                            setTgChatId(id);
-                            if (tgText.trim()) void sendTelegram(id);
-                          }}
-                        >
-                          {tgText.trim() ? `Use chat & send` : `Use chat`}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          {String(u.message.chat.id) === tgDefaultChatId && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              default
+                            </span>
+                          )}
+                          {String(u.message.chat.id) !== tgDefaultChatId && (
+                            <button
+                              className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-700/60 text-slate-400 hover:bg-emerald-500/20 hover:text-emerald-400 transition-colors border border-slate-600/40"
+                              disabled={savingDefault}
+                              onClick={() => saveDefaultChat(String(u.message!.chat!.id))}
+                            >
+                              Set default
+                            </button>
+                          )}
+                          <button
+                            className="px-2 py-0.5 rounded text-[11px] font-medium bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/40 transition-colors border border-cyan-500/30"
+                            onClick={() => {
+                              const id = String(u.message!.chat!.id);
+                              setTgChatId(id);
+                              if (tgText.trim()) void sendTelegram(id);
+                            }}
+                          >
+                            {tgText.trim() ? "Use & send" : "Use chat"}
+                          </button>
+                        </div>
                       )}
                     </div>
                     <div className="text-xs text-slate-300">{u.message?.text ?? "—"}</div>

@@ -17,13 +17,15 @@
  *   read_legal_docs           — legal KB search
  *   read_ip_register          — IP request records from DB
  *   read_planner              — Microsoft Planner tasks via Graph API
+ *   send_telegram_message     — send a Telegram notification to the tenant's default chat
  *
  * Usage: resolveAgentTools(tenantId, query, agentId) — returns formatted context string.
  */
 
-import { prisma }       from "../../prisma.js";
-import { getKbContext } from "../kb/getKbContext.js";
-import { callGraph }    from "../../lib/m365Tools.js";
+import { prisma }                    from "../../prisma.js";
+import { getKbContext }              from "../kb/getKbContext.js";
+import { callGraph }                 from "../../lib/m365Tools.js";
+import { sendTelegramNotification }  from "../../lib/telegramNotify.js";
 
 export type ToolResult = {
   tool:   string;
@@ -297,6 +299,24 @@ async function readPlanner(tenantId: string): Promise<ToolResult> {
   }
 }
 
+// ── Tool: send_telegram_message ───────────────────────────────────────────────
+
+async function sendTelegramMessage(tenantId: string, query: string): Promise<ToolResult> {
+  // Extract the message the agent wants to send, or build one from the query
+  const text = query.length > 10
+    ? `📬 *Atlas notification*\n\n${query}`
+    : "📬 *Atlas notification*\nYour agent pinged you from Atlas UX.";
+  try {
+    const result = await sendTelegramNotification(tenantId, text);
+    if (!result.ok) {
+      return { tool: "send_telegram_message", data: `Failed to send Telegram message: ${result.error}`, usedAt: new Date().toISOString() };
+    }
+    return { tool: "send_telegram_message", data: `Telegram message sent to chat ${result.chat_id}.`, usedAt: new Date().toISOString() };
+  } catch (err: any) {
+    return { tool: "send_telegram_message", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
 // ── Pattern detection ─────────────────────────────────────────────────────────
 
 const SUBSCRIPTION_PATTERNS = [
@@ -371,22 +391,28 @@ const PLANNER_PATTERNS = [
   /\b(what.*assigned|pending task|open task|task.*due|due.*task)\b/i,
 ];
 
+const TELEGRAM_PATTERNS = [
+  /\b(telegram|send.*notification|notify.*me|ping me|alert me|message me)\b/i,
+  /\b(send.*telegram|telegram.*message|telegram.*notify|notify.*telegram)\b/i,
+  /\b(let me know.*telegram|telegram.*let me know)\b/i,
+];
+
 // ── Agent → allowed tools map (from WF-107 approved proposals) ───────────────
 // Controls which tools can fire for which agent — prevents unnecessary DB hits.
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
-  atlas:       ["subscription", "calendar", "ledger", "team"],
-  binky:       ["calendar", "knowledge"],
-  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile"],
-  tina:        ["calendar", "ledger", "crm", "subscription", "policy"],
-  larry:       ["calendar", "ledger", "legal", "ipRegister"],
-  jenny:       ["calendar", "legal"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "telegram"],
+  binky:       ["calendar", "knowledge", "telegram"],
+  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram"],
+  tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram"],
+  larry:       ["calendar", "ledger", "legal", "ipRegister", "telegram"],
+  jenny:       ["calendar", "legal", "telegram"],
   benny:       ["calendar", "legal"],
-  petra:       ["calendar", "planner"],
-  mercer:      ["crm", "email"],
+  petra:       ["calendar", "planner", "telegram"],
+  mercer:      ["crm", "email", "telegram"],
   frank:       ["userProfile"],
-  sandy:       ["calendar", "email", "userProfile"],
-  "daily-intel": ["calendar", "email"],
+  sandy:       ["calendar", "email", "userProfile", "telegram"],
+  "daily-intel": ["calendar", "email", "telegram"],
   emma:        ["crm"],
   claire:      ["calendar"],
   link:        ["calendar"],
@@ -416,6 +442,7 @@ export type ToolNeeds = {
   legal:        boolean;
   ipRegister:   boolean;
   planner:      boolean;
+  telegram:     boolean;
   query:        string;
 };
 
@@ -438,6 +465,7 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     legal:        can("legal")        && LEGAL_PATTERNS.some(p => p.test(q)),
     ipRegister:   can("ipRegister")   && IP_REGISTER_PATTERNS.some(p => p.test(q)),
     planner:      can("planner")      && PLANNER_PATTERNS.some(p => p.test(q)),
+    telegram:     can("telegram")     && TELEGRAM_PATTERNS.some(p => p.test(q)),
     query:        q,
   };
 }
@@ -472,6 +500,7 @@ export async function resolveAgentTools(
     needs.legal        ? readLegalDocs(tenantId, needs.query)                  : Promise.resolve(null),
     needs.ipRegister   ? readIpRegister(tenantId)                              : Promise.resolve(null),
     needs.planner      ? readPlanner(tenantId)                                 : Promise.resolve(null),
+    needs.telegram     ? sendTelegramMessage(tenantId, needs.query)            : Promise.resolve(null),
   ];
 
   const results = (await Promise.all(jobs)).filter(Boolean) as ToolResult[];

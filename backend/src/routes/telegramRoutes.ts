@@ -1,4 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
+import { saveTelegramChatId } from "../lib/telegramNotify.js";
+import { prisma } from "../prisma.js";
 
 const BOT_API = "https://api.telegram.org/bot";
 
@@ -75,6 +77,38 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
       );
     }
     return reply.send({ ok: true });
+  });
+
+  // POST /v1/telegram/save-chat — save the default chat_id for this tenant
+  app.post("/save-chat", async (req, reply) => {
+    const tenantId = String((req as any).tenantId ?? "");
+    const body = (req.body ?? {}) as any;
+    const chatId = String(body.chatId ?? "").trim();
+    if (!tenantId) return reply.code(401).send({ ok: false, error: "tenantId required" });
+    if (!chatId) return reply.code(400).send({ ok: false, error: "chatId required" });
+    try {
+      await saveTelegramChatId(tenantId, chatId);
+      return reply.send({ ok: true, chatId });
+    } catch (e: any) {
+      return reply.code(502).send({ ok: false, error: e.message });
+    }
+  });
+
+  // GET /v1/telegram/default-chat — get the saved default chat_id for this tenant
+  app.get("/default-chat", async (req, reply) => {
+    const tenantId = String((req as any).tenantId ?? "");
+    if (!tenantId) return reply.code(401).send({ ok: false, error: "tenantId required" });
+    try {
+      const integration = await prisma.integration.findUnique({
+        where: { tenantId_provider: { tenantId, provider: "telegram" } },
+        select: { config: true, connected: true },
+      });
+      const config = (integration?.config ?? {}) as Record<string, any>;
+      const chatId = String(config.chat_id ?? "").trim() || null;
+      return reply.send({ ok: true, chatId });
+    } catch (e: any) {
+      return reply.code(502).send({ ok: false, error: e.message });
+    }
   });
 
   // POST /v1/telegram/set_webhook — register the Atlas webhook URL with Telegram
