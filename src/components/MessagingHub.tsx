@@ -33,6 +33,7 @@ export function MessagingHub() {
   const [selectedChannel, setSelectedChannel] = useState("");
   const [teamsMessages, setTeamsMessages] = useState<any[]>([]);
   const [teamsMessagesLoading, setTeamsMessagesLoading] = useState(false);
+  const [teamsWebhookUrl, setTeamsWebhookUrl] = useState("");
   const [teamsText, setTeamsText] = useState("");
   const [teamsSending, setTeamsSending] = useState(false);
   const [teamsResult, setTeamsResult] = useState<string | null>(null);
@@ -121,7 +122,7 @@ export function MessagingHub() {
   }
 
   async function sendTeamsMessage() {
-    if (!selectedTeam || !selectedChannel || !teamsText.trim()) return;
+    if (!teamsWebhookUrl || !teamsText.trim()) return;
     setTeamsSending(true);
     setTeamsResult(null);
     try {
@@ -129,8 +130,7 @@ export function MessagingHub() {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
         body: JSON.stringify({
-          teamId: selectedTeam,
-          channelId: selectedChannel,
+          webhookUrl: teamsWebhookUrl,
           text: teamsText.trim(),
           fromAgent: "atlas",
         }),
@@ -148,7 +148,7 @@ export function MessagingHub() {
   }
 
   async function sendCrossAgent() {
-    if (!selectedTeam || !selectedChannel || !crossFromAgent || !crossToAgent || !crossMessage.trim()) return;
+    if (!teamsWebhookUrl || !crossFromAgent || !crossToAgent || !crossMessage.trim()) return;
     setCrossSending(true);
     setCrossResult(null);
     try {
@@ -156,10 +156,9 @@ export function MessagingHub() {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
         body: JSON.stringify({
+          webhookUrl: teamsWebhookUrl,
           fromAgent: crossFromAgent,
           toAgent: crossToAgent,
-          teamId: selectedTeam,
-          channelId: selectedChannel,
           message: crossMessage.trim(),
         }),
       });
@@ -456,6 +455,19 @@ export function MessagingHub() {
             </div>
           </div>
 
+          {/* Webhook URL — required for sending */}
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">
+              Incoming Webhook URL <span className="text-slate-500">(from Teams channel → Connectors → Incoming Webhook)</span>
+            </label>
+            <input
+              className={inputCls}
+              placeholder="https://outlook.office.com/webhook/..."
+              value={teamsWebhookUrl}
+              onChange={(e) => setTeamsWebhookUrl(e.target.value)}
+            />
+          </div>
+
           {selectedTeam && selectedChannel && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Compose + cross-agent */}
@@ -476,7 +488,7 @@ export function MessagingHub() {
                   )}
                   <Button
                     onClick={sendTeamsMessage}
-                    disabled={!teamsText.trim() || teamsSending}
+                    disabled={!teamsWebhookUrl || !teamsText.trim() || teamsSending}
                     className="w-full bg-cyan-500 hover:bg-cyan-400"
                   >
                     <Send className="w-4 h-4 mr-2" />
@@ -521,7 +533,7 @@ export function MessagingHub() {
                   )}
                   <Button
                     onClick={sendCrossAgent}
-                    disabled={!crossFromAgent || !crossToAgent || !crossMessage.trim() || crossSending}
+                    disabled={!teamsWebhookUrl || !crossFromAgent || !crossToAgent || !crossMessage.trim() || crossSending}
                     className="w-full bg-purple-600 hover:bg-purple-500"
                   >
                     <Users className="w-4 h-4 mr-2" />
