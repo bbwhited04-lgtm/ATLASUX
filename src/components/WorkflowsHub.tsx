@@ -248,6 +248,12 @@ export function WorkflowsHub() {
               <option value="terry">Terry ~ Tumblr Agent</option>
               <option value="timmy">Timmy ~ Tiktok Agent</option>
               <option value="venny">Venny ~ Videographer</option>
+              <option value="claire">Claire ~ Agent</option>
+              <option value="daily_intel">Daily Intel ~ Shared Inbox</option>
+              <option value="petra">Petra ~ Coordinator</option>
+              <option value="porter">Porter ~ Portal Manager</option>
+              <option value="sandy">Sandy ~ Bookings</option>
+              <option value="victor">Victor ~ Video Production Specialist</option>
             </select>
           </div>
 
