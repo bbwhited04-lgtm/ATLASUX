@@ -247,7 +247,7 @@ export function MessagingHub() {
   // ── Senders ─────────────────────────────────────────
 
   async function sendTelegram(chatIdOverride?: string) {
-    const chatId = chatIdOverride ?? tgChatId;
+    const chatId = (typeof chatIdOverride === "string" ? chatIdOverride : null) ?? tgChatId;
     if (!chatId || !tgText) return;
     setTgSending(true);
     setTgResult(null);
