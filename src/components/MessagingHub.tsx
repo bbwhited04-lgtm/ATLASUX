@@ -472,7 +472,8 @@ export function MessagingHub() {
             />
           </div>
 
-          {selectedTeam && selectedChannel && (
+          {/* Compose + cross-agent always visible when webhook URL is set */}
+          {teamsWebhookUrl && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Compose + cross-agent */}
               <div className="space-y-4">
@@ -554,14 +555,19 @@ export function MessagingHub() {
                     variant="outline"
                     size="sm"
                     onClick={fetchMessages}
-                    disabled={teamsMessagesLoading}
+                    disabled={teamsMessagesLoading || !selectedTeam || !selectedChannel}
                     className="border-cyan-500/20"
                   >
                     <RefreshCw className={`w-3 h-3 ${teamsMessagesLoading ? "animate-spin" : ""}`} />
                   </Button>
                 </div>
                 <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                  {teamsMessagesLoading ? (
+                  {!selectedTeam || !selectedChannel ? (
+                    <div className="text-xs text-slate-500 text-center py-8">
+                      Select a team + channel above to read messages.<br/>
+                      <span className="text-slate-600">(Sending works without this)</span>
+                    </div>
+                  ) : teamsMessagesLoading ? (
                     <div className="text-xs text-slate-500 text-center py-8">Loading…</div>
                   ) : teamsMessages.length === 0 ? (
                     <div className="text-xs text-slate-500 text-center py-8">No messages yet.</div>
