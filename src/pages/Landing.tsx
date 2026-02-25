@@ -122,7 +122,7 @@ export default function Landing() {
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Feb 25, 2026</span>
+            <span className="text-sm text-white/60">Last updated: Feb 26, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
             <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
@@ -187,6 +187,15 @@ export default function Landing() {
             <li>In-product CSS agent tools — server-side live data injected before every chat call: get_subscription_info (plan, seats, spend), get_team_members (roster, roles), search_atlasux_knowledge (KB RAG); Cheryl always knows your account without hallucinating</li>
             <li>Deep agent pipeline — every agent can run a 3-stage n8n-style pipeline: Planning sub-agent (execution plan) → Main execution (SKILL.md + KB + tools + memory) → Verification sub-agent (accuracy + policy check) + Postgres memory per session; Atlas, Binky, Cheryl, Mercer activated</li>
             <li>WF-107 Atlas Tool Discovery — Atlas audits every agent's toolset weekly, generates 8-15 high-value tool proposals, and emails Billy a numbered list with one-click approve/deny links; approved tools auto-added to KB and wired into agent instructions</li>
+            <li>Removed all junk KB content (56 academic/PhD docs, business school theory, HR frameworks) — agents no longer waste tokens on irrelevant documents; seedPhD.ts, seedPhD2.ts, and seedKnowledge.ts deleted</li>
+            <li>Fixed Decisions tab — tenantId now sent via x-tenant-id header so growth loop, approve, and reject all work correctly; double-fetch on selection change eliminated</li>
+            <li>Teams send now bypasses Power Automate entirely — uses Graph API directly with teamId+channelId; no $15/month premium subscription needed</li>
+            <li>Teams 403 error now shows actionable fix: go to Azure Portal → API permissions → add ChannelMessage.Send → grant admin consent</li>
+            <li>Telegram agent notifications — agents can now send Telegram messages via send_telegram_message tool; "Set default" button saves your chat ID; green badge shows which chat agents are targeting</li>
+            <li>Agent Watcher — new live activity monitor at /app/watcher polls audit log every 4s and jobs every 8s; shows color-coded event feed, active/failed jobs, per-agent pulse, pause/resume, filter by level or agent</li>
+            <li>Business Manager — added "Decisions" and "Watch Live" quick-nav buttons in selected business header; one click to jump to the right view with tenant already set</li>
+            <li>JobRunner auto-refreshes every 10s (was manual-only)</li>
+            <li>Telegram "Use chat" button — now visible as a cyan badge; shows "Use &amp; send" when you have a message typed and sends immediately on click</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
