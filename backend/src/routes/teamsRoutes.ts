@@ -179,32 +179,9 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ ok: false, error: "webhookUrl must be an https URL" });
     }
 
-    // Adaptive Card payload — renders nicely in Teams
+    // Power Automate Workflow trigger payload (replacement for retired Incoming Webhooks)
     const payload: any = {
-      type: "message",
-      attachments: [
-        {
-          contentType: "application/vnd.microsoft.card.adaptive",
-          content: {
-            $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
-            type: "AdaptiveCard",
-            version: "1.4",
-            body: [
-              ...(title
-                ? [{ type: "TextBlock", text: title, weight: "Bolder", size: "Medium" }]
-                : []),
-              { type: "TextBlock", text, wrap: true },
-              {
-                type: "TextBlock",
-                text: `Sent by **${fromAgent}** via Atlas UX`,
-                size: "Small",
-                isSubtle: true,
-                wrap: true,
-              },
-            ],
-          },
-        },
-      ],
+      text: title ? `**${title}**\n\n${text}\n\n_Sent by ${fromAgent} via Atlas UX_` : `${text}\n\n_Sent by ${fromAgent} via Atlas UX_`,
     };
 
     try {
@@ -261,36 +238,9 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const payload = {
-      type: "message",
-      attachments: [
-        {
-          contentType: "application/vnd.microsoft.card.adaptive",
-          content: {
-            $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
-            type: "AdaptiveCard",
-            version: "1.4",
-            body: [
-              {
-                type: "TextBlock",
-                text: `📨 ${fromAgent.toUpperCase()} → ${toAgent.toUpperCase()}`,
-                weight: "Bolder",
-                size: "Medium",
-                color: "Accent",
-              },
-              { type: "TextBlock", text: message, wrap: true },
-              ...(context
-                ? [{ type: "TextBlock", text: `Context: ${context}`, size: "Small", isSubtle: true, wrap: true }]
-                : []),
-              {
-                type: "TextBlock",
-                text: `Cross-agent via **Atlas UX**`,
-                size: "Small",
-                isSubtle: true,
-              },
-            ],
-          },
-        },
-      ],
+      text: `📨 **${fromAgent.toUpperCase()} → ${toAgent.toUpperCase()}**\n\n${message}` +
+        (context ? `\n\n_Context: ${context}_` : "") +
+        `\n\n_Cross-agent via Atlas UX_`,
     };
 
     try {

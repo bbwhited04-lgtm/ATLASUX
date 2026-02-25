@@ -458,11 +458,11 @@ export function MessagingHub() {
           {/* Webhook URL — required for sending */}
           <div>
             <label className="text-xs text-slate-400 mb-1 block">
-              Incoming Webhook URL <span className="text-slate-500">(from Teams channel → Connectors → Incoming Webhook)</span>
+              Workflow URL <span className="text-slate-500">(Teams channel → ··· → Workflows → "Post to a channel when a webhook request is received")</span>
             </label>
             <input
               className={inputCls}
-              placeholder="https://outlook.office.com/webhook/..."
+              placeholder="https://prod-xx.westus.logic.azure.com/workflows/..."
               value={teamsWebhookUrl}
               onChange={(e) => setTeamsWebhookUrl(e.target.value)}
             />
