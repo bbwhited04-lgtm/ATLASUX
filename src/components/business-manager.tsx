@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Briefcase, Plus, Globe, Facebook, Instagram, Twitter,
   Youtube, TrendingUp, Users, DollarSign, Settings,
@@ -704,6 +705,22 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                       <div>
                         <h3 className="text-xl font-bold text-white mb-1">{selectedBusinessData.name}</h3>
                         <p className="text-sm text-slate-400">{selectedBusinessData.description}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RouterLink
+                          to="/app/decisions"
+                          className="flex items-center gap-1.5 px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm font-medium transition-colors"
+                        >
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          Decisions
+                        </RouterLink>
+                        <RouterLink
+                          to="/app/watcher"
+                          className="flex items-center gap-1.5 px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded-lg text-cyan-300 text-sm font-medium transition-colors"
+                        >
+                          <Activity className="w-3.5 h-3.5" />
+                          Watch Live
+                        </RouterLink>
                       </div>
                       <button
                         onClick={() => setShowAddAsset(true)}

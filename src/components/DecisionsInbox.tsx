@@ -69,7 +69,7 @@ export function DecisionsInbox() {
         statusFilter === "AWAITING_HUMAN"
           ? `${API_BASE}/v1/decisions?tenantId=${encodeURIComponent(tenantId)}&status=AWAITING_HUMAN&take=200`
           : `${API_BASE}/v1/decisions?tenantId=${encodeURIComponent(tenantId)}&take=200`;
-      const res = await fetch(url);
+      const res = await fetch(url, { headers: { "x-tenant-id": tenantId } });
       const json = await res.json();
       const rows: DecisionMemo[] = Array.isArray(json?.memos) ? json.memos : [];
       setMemos(rows);
@@ -82,7 +82,8 @@ export function DecisionsInbox() {
     } finally {
       setLoading(false);
     }
-  }, [tenantId, statusFilter, selectedId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId, statusFilter]);
 
   React.useEffect(() => {
     load();
