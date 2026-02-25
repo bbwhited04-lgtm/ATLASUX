@@ -9,10 +9,13 @@ import {
   Plus,
   Sparkles,
   Video,
-  Image as ImageIcon,
   FileText,
   Share2,
-  RefreshCw
+  RefreshCw,
+  X,
+  Mail,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -37,6 +40,7 @@ interface Job {
 function inferType(jobType: string): Job["type"] {
   const t = (jobType ?? "").toLowerCase();
   if (t.includes("video")) return "video";
+  if (t.includes("email") || t.includes("mail") || t.includes("sms") || t.includes("comms")) return "social";
   if (t.includes("social") || t.includes("post") || t.includes("publish") || t.includes("tweet") || t.includes("instagram")) return "social";
   if (t.includes("doc") || t.includes("blog") || t.includes("kb") || t.includes("report") || t.includes("pdf")) return "document";
   if (t.includes("anim") || t.includes("image") || t.includes("art")) return "animation";
@@ -52,12 +56,21 @@ function formatJobType(jobType: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+const ITEMS_PER_PAGE = 15;
+
 export function JobRunner() {
   const { org_id } = useMemo(() => getOrgUser(), []);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [completedJobs, setCompletedJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<"all" | "video" | "animation" | "social" | "document" | "task">("all");
+  const [page, setPage] = useState(0);
+
+  // New Job modal state
+  const [showNewJob, setShowNewJob] = useState(false);
+  const [newJobType, setNewJobType] = useState<"EMAIL_SEND" | "SOCIAL_POST" | "">("");
+  const [newJobFields, setNewJobFields] = useState({ to: "", subject: "", text: "" });
+  const [newJobLoading, setNewJobLoading] = useState(false);
 
   const loadJobs = async () => {
     setLoading(true);
@@ -187,8 +200,33 @@ export function JobRunner() {
       (window as any).plutoStopTask();
     }
   };
-  
+
+  const createJob = async () => {
+    if (!newJobType) return;
+    setNewJobLoading(true);
+    const tenantId = localStorage.getItem("atlasux_tenant_id") || org_id;
+    const input = newJobType === "EMAIL_SEND"
+      ? { to: newJobFields.to, subject: newJobFields.subject, text: newJobFields.text }
+      : {};
+    try {
+      await fetch(`${API_BASE}/v1/jobs`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-tenant-id": tenantId },
+        body: JSON.stringify({ jobType: newJobType, priority: 1, input }),
+      });
+      setShowNewJob(false);
+      setNewJobType("");
+      setNewJobFields({ to: "", subject: "", text: "" });
+      void loadJobs();
+    } catch { /* ignore */ } finally {
+      setNewJobLoading(false);
+    }
+  };
+
+  const setFilterAndReset = (f: typeof filter) => { setFilter(f); setPage(0); };
   const filteredJobs = filter === "all" ? jobs : jobs.filter(job => job.type === filter);
+  const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
+  const pagedJobs = filteredJobs.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
   
   return (
     <div className="p-6 space-y-6">
@@ -207,7 +245,7 @@ export function JobRunner() {
         </Button>
         <Button
           className="bg-cyan-500 hover:bg-cyan-400"
-          onClick={() => window.location.hash = "/app/agents?view=workflows"}
+          onClick={() => setShowNewJob(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
           New Job
@@ -239,45 +277,53 @@ export function JobRunner() {
       </div>
       
       {/* Filters */}
-      <div className="flex gap-2">
-        <Button 
+      <div className="flex flex-wrap gap-2">
+        <Button
           variant={filter === "all" ? "default" : "outline"}
-          onClick={() => setFilter("all")}
+          onClick={() => setFilterAndReset("all")}
           className={filter === "all" ? "bg-cyan-500" : "border-cyan-500/20"}
         >
           All
         </Button>
-        <Button 
+        <Button
           variant={filter === "video" ? "default" : "outline"}
-          onClick={() => setFilter("video")}
+          onClick={() => setFilterAndReset("video")}
           className={filter === "video" ? "bg-purple-500" : "border-cyan-500/20"}
         >
           <Video className="w-4 h-4 mr-2" />
           Video
         </Button>
-        <Button 
+        <Button
           variant={filter === "animation" ? "default" : "outline"}
-          onClick={() => setFilter("animation")}
+          onClick={() => setFilterAndReset("animation")}
           className={filter === "animation" ? "bg-pink-500" : "border-cyan-500/20"}
         >
           <Sparkles className="w-4 h-4 mr-2" />
           Animation
         </Button>
-        <Button 
+        <Button
           variant={filter === "social" ? "default" : "outline"}
-          onClick={() => setFilter("social")}
+          onClick={() => setFilterAndReset("social")}
           className={filter === "social" ? "bg-blue-500" : "border-cyan-500/20"}
         >
           <Share2 className="w-4 h-4 mr-2" />
-          Social
+          Email / Social
         </Button>
-        <Button 
+        <Button
           variant={filter === "document" ? "default" : "outline"}
-          onClick={() => setFilter("document")}
+          onClick={() => setFilterAndReset("document")}
           className={filter === "document" ? "bg-green-500" : "border-cyan-500/20"}
         >
           <FileText className="w-4 h-4 mr-2" />
           Documents
+        </Button>
+        <Button
+          variant={filter === "task" ? "default" : "outline"}
+          onClick={() => setFilterAndReset("task")}
+          className={filter === "task" ? "bg-slate-600" : "border-cyan-500/20"}
+        >
+          <Activity className="w-4 h-4 mr-2" />
+          Tasks
         </Button>
       </div>
       
@@ -290,13 +336,13 @@ export function JobRunner() {
             <div className="text-center text-slate-400">
               <Activity className="w-16 h-16 mx-auto mb-4 opacity-30" />
               <p className="text-lg font-medium mb-2">No active jobs</p>
-              <p className="text-sm">Create a task to get started</p>
+              <p className="text-sm">Click "New Job" to queue one</p>
             </div>
           </Card>
         ) : (
           <div className="space-y-3">
             <AnimatePresence mode="popLayout">
-              {filteredJobs.map((job) => {
+              {pagedJobs.map((job) => {
                 const TypeIcon = getTypeIcon(job.type);
                 const color = getTypeColor(job.type);
                 
@@ -410,10 +456,39 @@ export function JobRunner() {
                 );
               })}
             </AnimatePresence>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-xs text-slate-400">
+                  {page * ITEMS_PER_PAGE + 1}–{Math.min((page + 1) * ITEMS_PER_PAGE, filteredJobs.length)} of {filteredJobs.length} jobs
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === 0}
+                    onClick={() => setPage(p => p - 1)}
+                    className="border-cyan-500/20"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= totalPages - 1}
+                    onClick={() => setPage(p => p + 1)}
+                    className="border-cyan-500/20"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
-      
+
       {/* Completed Jobs */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -451,6 +526,91 @@ export function JobRunner() {
         )}
       </div>
       
+      {/* New Job Modal */}
+      {showNewJob && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-cyan-500/20 shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+              <h3 className="font-semibold text-white">Queue a New Job</h3>
+              <button
+                onClick={() => { setShowNewJob(false); setNewJobType(""); setNewJobFields({ to: "", subject: "", text: "" }); }}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              {/* Job type picker */}
+              <div>
+                <p className="text-xs text-slate-400 mb-2">Select job type</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {([
+                    { type: "EMAIL_SEND", label: "Send Email", Icon: Mail },
+                    { type: "SOCIAL_POST", label: "Social Post", Icon: Share2 },
+                  ] as const).map(({ type, label, Icon }) => (
+                    <button
+                      key={type}
+                      onClick={() => setNewJobType(type)}
+                      className={`p-4 rounded-xl border text-left transition-all ${
+                        newJobType === type
+                          ? "border-cyan-500 bg-cyan-500/10"
+                          : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+                      }`}
+                    >
+                      <Icon className="w-5 h-5 mb-2 text-cyan-400" />
+                      <div className="text-sm font-medium text-white">{label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Email fields */}
+              {newJobType === "EMAIL_SEND" && (
+                <div className="space-y-3">
+                  <input
+                    type="email"
+                    placeholder="To (email address)"
+                    value={newJobFields.to}
+                    onChange={e => setNewJobFields(p => ({ ...p, to: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm outline-none focus:border-cyan-500 transition-colors"
+                  />
+                  <input
+                    placeholder="Subject"
+                    value={newJobFields.subject}
+                    onChange={e => setNewJobFields(p => ({ ...p, subject: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm outline-none focus:border-cyan-500 transition-colors"
+                  />
+                  <textarea
+                    placeholder="Message body"
+                    rows={4}
+                    value={newJobFields.text}
+                    onChange={e => setNewJobFields(p => ({ ...p, text: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm outline-none focus:border-cyan-500 transition-colors resize-none"
+                  />
+                </div>
+              )}
+
+              {newJobType === "SOCIAL_POST" && (
+                <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700 text-xs text-slate-400">
+                  Social post jobs are queued via the <strong className="text-slate-300">Blog Studio</strong> or
+                  the <strong className="text-slate-300">Social Monitoring</strong> panel where you can set
+                  platform, content, and schedule.
+                </div>
+              )}
+
+              <Button
+                onClick={createJob}
+                disabled={!newJobType || newJobLoading || (newJobType === "EMAIL_SEND" && (!newJobFields.to || !newJobFields.subject || !newJobFields.text))}
+                className="w-full bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50"
+              >
+                {newJobLoading ? "Queuing…" : "Queue Job"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Completion Animation Overlay */}
       <AnimatePresence>
         {jobs.some(j => j.progress === 100 && j.status === "running") && (

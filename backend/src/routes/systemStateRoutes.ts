@@ -4,7 +4,15 @@ import { getSystemState, setSystemState } from "../services/systemState.js";
 export const systemStateRoutes: FastifyPluginAsync = async (app) => {
   app.get("/api/system/state/:key", async (req) => {
     const key = (req.params as any).key as string;
-    return { ok: true, state: await getSystemState(key) };
+    let state = await getSystemState(key);
+
+    // Auto-seed atlas_online to "online" on first read so the email worker
+    // and the UI both start in a known state rather than showing "UNKNOWN".
+    if (!state && key === "atlas_online") {
+      state = await setSystemState(key, "true");
+    }
+
+    return { ok: true, state };
   });
 
   app.post("/api/system/state/:key", async (req) => {

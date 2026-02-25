@@ -101,8 +101,9 @@ async function main() {
       continue;
     }
 
+    // Accept both naming conventions that have been used in the codebase.
     const jobs = await prisma.job.findMany({
-      where: { status: "queued", jobType: "EMAIL_SEND" },
+      where: { status: "queued", jobType: { in: ["EMAIL_SEND", "EMAILSEND", "email_send"] } },
       orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
       take: batch,
     });

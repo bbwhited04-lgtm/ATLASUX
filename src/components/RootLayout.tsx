@@ -99,8 +99,15 @@ function RootLayoutInner() {
 
   React.useEffect(() => {
     fetchAtlasState();
-    const t = window.setInterval(fetchAtlasState, 30000);
-    return () => window.clearInterval(t);
+    // 60 s is frequent enough for a status badge and avoids hammering the DB.
+    const t = window.setInterval(fetchAtlasState, 60000);
+    // Re-fetch immediately when the tab becomes visible again.
+    const onVis = () => { if (document.visibilityState === "visible") void fetchAtlasState(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.clearInterval(t);
+      document.removeEventListener("visibilitychange", onVis);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -123,10 +130,15 @@ function RootLayoutInner() {
     };
 
     fetchCount();
-    const t = window.setInterval(fetchCount, 30000);
+    // 60 s polling — decisions don't need sub-minute freshness.
+    const t = window.setInterval(fetchCount, 60000);
+    // Refresh badge as soon as the user returns to the tab.
+    const onVis = () => { if (document.visibilityState === "visible") void fetchCount(); };
+    document.addEventListener("visibilitychange", onVis);
     return () => {
       cancelled = true;
       window.clearInterval(t);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, [tenantId]);
   
@@ -262,7 +274,8 @@ function RootLayoutInner() {
             <button
               onClick={() => {
                 if (atlasStateLoading) return;
-                if (atlasOnline === null) fetchAtlasState();
+                // null = never initialised — bring online on first click
+                if (atlasOnline === null) setAtlasOnlineState(true);
                 else setAtlasOnlineState(!atlasOnline);
               }}
               className={`px-5 py-2 rounded-lg font-bold tracking-wide uppercase shadow-lg transition-all duration-200 ${atlasStateErr ? atlasStyles.error : atlasOnline === true ? atlasStyles.online : atlasOnline === false ? atlasStyles.offline : atlasStyles.unknown}`}
