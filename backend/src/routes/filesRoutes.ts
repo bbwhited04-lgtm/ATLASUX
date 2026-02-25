@@ -1,0 +1,140 @@
+/**
+ * filesRoutes.ts — File management via Supabase Storage.
+ *
+ * Bucket: KB_UPLOAD_BUCKET (default "kb_uploads")
+ *
+ * Routes:
+ *   GET  /v1/files          → list files for tenant
+ *   POST /v1/files/upload   → upload a file (multipart/form-data, field "file")
+ *   GET  /v1/files/:path    → get a signed download URL
+ *   DELETE /v1/files/:path  → delete a file
+ */
+
+import type { FastifyPluginAsync } from "fastify";
+import { createClient } from "@supabase/supabase-js";
+import multipart from "@fastify/multipart";
+import { Readable } from "stream";
+
+const BUCKET = process.env.KB_UPLOAD_BUCKET ?? "kb_uploads";
+const SIGNED_URL_TTL = 3600; // 1 hour
+
+function makeStorage() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required");
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }).storage;
+}
+
+function tenantPrefix(tenantId: string) {
+  return `tenants/${tenantId}/`;
+}
+
+async function streamToBuffer(readable: Readable): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of readable) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  return Buffer.concat(chunks);
+}
+
+export const filesRoutes: FastifyPluginAsync = async (app) => {
+  await app.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } }); // 50 MB max
+
+  // ── GET /v1/files ──────────────────────────────────────────────────────────
+  app.get("/", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    try {
+      const storage = makeStorage();
+      const prefix = tenantPrefix(tenantId);
+      const { data, error } = await storage.from(BUCKET).list(prefix, {
+        limit: 200,
+        sortBy: { column: "updated_at", order: "desc" },
+      });
+
+      if (error) return reply.code(500).send({ ok: false, error: error.message });
+
+      const files = (data ?? []).map((f) => ({
+        name: f.name,
+        path: `${prefix}${f.name}`,
+        size: f.metadata?.size ?? null,
+        contentType: f.metadata?.mimetype ?? null,
+        updatedAt: f.updated_at ?? null,
+      }));
+
+      return reply.send({ ok: true, files });
+    } catch (e: any) {
+      return reply.code(500).send({ ok: false, error: e?.message ?? "Storage error" });
+    }
+  });
+
+  // ── POST /v1/files/upload ─────────────────────────────────────────────────
+  app.post("/upload", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    try {
+      const data = await req.file();
+      if (!data) return reply.code(400).send({ ok: false, error: "No file in request" });
+
+      const buf = await streamToBuffer(data.file as unknown as Readable);
+      const safeName = data.filename.replace(/[^a-zA-Z0-9._\- ]/g, "_");
+      const path = `${tenantPrefix(tenantId)}${Date.now()}_${safeName}`;
+
+      const storage = makeStorage();
+      const { error } = await storage.from(BUCKET).upload(path, buf, {
+        contentType: data.mimetype,
+        upsert: false,
+      });
+
+      if (error) return reply.code(500).send({ ok: false, error: error.message });
+
+      return reply.code(201).send({
+        ok: true,
+        file: { name: safeName, path, contentType: data.mimetype, size: buf.length },
+      });
+    } catch (e: any) {
+      return reply.code(500).send({ ok: false, error: e?.message ?? "Upload failed" });
+    }
+  });
+
+  // ── GET /v1/files/url?path=... ─────────────────────────────────────────────
+  app.get("/url", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string;
+    const path = String((req.query as any)?.path ?? "");
+
+    if (!tenantId || !path) return reply.code(400).send({ ok: false, error: "tenantId and path required" });
+    // Ensure the path belongs to this tenant (basic auth check)
+    if (!path.startsWith(tenantPrefix(tenantId))) {
+      return reply.code(403).send({ ok: false, error: "Forbidden" });
+    }
+
+    try {
+      const storage = makeStorage();
+      const { data, error } = await storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL);
+      if (error) return reply.code(500).send({ ok: false, error: error.message });
+      return reply.send({ ok: true, url: data?.signedUrl });
+    } catch (e: any) {
+      return reply.code(500).send({ ok: false, error: e?.message ?? "Signed URL error" });
+    }
+  });
+
+  // ── DELETE /v1/files?path=... ─────────────────────────────────────────────
+  app.delete("/", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string;
+    const path = String((req.query as any)?.path ?? "");
+
+    if (!tenantId || !path) return reply.code(400).send({ ok: false, error: "tenantId and path required" });
+    if (!path.startsWith(tenantPrefix(tenantId))) {
+      return reply.code(403).send({ ok: false, error: "Forbidden" });
+    }
+
+    try {
+      const storage = makeStorage();
+      const { error } = await storage.from(BUCKET).remove([path]);
+      if (error) return reply.code(500).send({ ok: false, error: error.message });
+      return reply.send({ ok: true });
+    } catch (e: any) {
+      return reply.code(500).send({ ok: false, error: e?.message ?? "Delete failed" });
+    }
+  });
+};

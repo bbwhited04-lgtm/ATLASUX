@@ -46,6 +46,7 @@ import { crmRoutes } from "./routes/crmRoutes.js";
 import { analyticsRoutes } from "./routes/analyticsRoutes.js";
 import { cannedResponseRoutes } from "./routes/cannedResponseRoutes.js";
 import { budgetRoutes } from "./routes/budgetRoutes.js";
+import { filesRoutes } from "./routes/filesRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -207,6 +208,7 @@ await app.register(cannedResponseRoutes, { prefix: "/v1/canned-responses" });
 
 // Budget tracking
 await app.register(budgetRoutes, { prefix: "/v1/budgets" });
+await app.register(filesRoutes, { prefix: "/v1/files" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
