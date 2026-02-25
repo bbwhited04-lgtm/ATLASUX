@@ -182,6 +182,7 @@ export default function Landing() {
             <li>Closed-loop intelligence pipeline — WF-106 Atlas Daily Aggregation fires at 05:45 UTC: Daily-Intel synthesizes all 13 platform reports, Atlas reads the unified packet and issues specific task orders to every agent, emails dispatched to all 20+ agents before the workday starts</li>
             <li>Added 12 social media KB docs — per-platform posting guidelines (X, Facebook, LinkedIn, TikTok, Instagram, Reddit, Pinterest, Tumblr), source verification protocol with freshness thresholds, trust & transparency framework, content quality standards, posting rhythm calendar, and per-agent voice profiles; all 242 KB docs now live and wired into every LLM call</li>
             <li>Added industry intel KB doc for OpenClaw (Peter Steinberger/OpenAI) with verified facts, common misconception correction, and Atlas UX differentiation guidance</li>
+            <li>Rewrote all 13 social media agent SKILL.md files — correct roles, platform-specific tools, content strategies, daily sprint workflows, atomic task decomposition, deterministic output specs, and forbidden actions for Kelly/X, Timmy/TikTok, Fran/Facebook, Dwight/Threads, Link/LinkedIn, Cornwall/Pinterest, Donna/Reddit, Reynolds/Blog, Terry/Tumblr, Penny/Ads, Archy/Instagram-research, Venny/Image-production, Emma/Alignable</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
