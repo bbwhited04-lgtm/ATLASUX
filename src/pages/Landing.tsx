@@ -196,6 +196,7 @@ export default function Landing() {
             <li>Business Manager — added "Decisions" and "Watch Live" quick-nav buttons in selected business header; one click to jump to the right view with tenant already set</li>
             <li>JobRunner auto-refreshes every 10s (was manual-only)</li>
             <li>Telegram "Use chat" button — now visible as a cyan badge; shows "Use &amp; send" when you have a message typed and sends immediately on click</li>
+            <li>seedAiKb.ts — 62 comprehensive AI/tech KB documents across 11 categories: prompt engineering, AI agents, RAG retrieval, LLMOps, AI marketing, AI CRM, productivity, security, strategy, data engineering, and social media AI</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
