@@ -99,15 +99,12 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
     try {
       const token = await getMsToken();
       // Use groups filter to find Teams-provisioned groups
-      const data = await graphGet(
-        token,
-        `/groups?$filter=resourceProvisioningOptions/Any(x:x eq 'Team')&$select=id,displayName,description,mailNickname&$top=50`
-      );
+      // GET /teams requires Team.ReadBasic.All (app permission — no Group.Read.All needed)
+      const data = await graphGet(token, `/teams?$select=id,displayName,description&$top=50`);
       const teams = (data.value ?? []).map((g: any) => ({
         id: g.id,
         displayName: g.displayName,
         description: g.description ?? null,
-        mailNickname: g.mailNickname ?? null,
       }));
       return reply.send({ ok: true, teams });
     } catch (e: any) {
