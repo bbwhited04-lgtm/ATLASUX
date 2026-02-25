@@ -180,6 +180,7 @@ export default function Landing() {
             <li>Full workforce autonomy — scheduler expanded from 2 to 28 jobs: 19 daily + 5 Monday + 3 Friday, every agent fires on schedule without manual triggers</li>
             <li>Platform Intel Sweep — 13 sub-agents visit their platforms at 05:00–05:36 UTC daily (WF-093–105), pull live trending data via SERP API, and report hot takes to Atlas and the DAILY-INTEL hub</li>
             <li>Closed-loop intelligence pipeline — WF-106 Atlas Daily Aggregation fires at 05:45 UTC: Daily-Intel synthesizes all 13 platform reports, Atlas reads the unified packet and issues specific task orders to every agent, emails dispatched to all 20+ agents before the workday starts</li>
+            <li>Added 12 social media KB docs — per-platform posting guidelines (X, Facebook, LinkedIn, TikTok, Instagram, Reddit, Pinterest, Tumblr), source verification protocol with freshness thresholds, trust & transparency framework, content quality standards, posting rhythm calendar, and per-agent voice profiles; all 241 KB docs now live and wired into every LLM call</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

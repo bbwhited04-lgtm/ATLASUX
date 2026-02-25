@@ -934,6 +934,595 @@ Sunday (Comms & Technical Document Writer) — for publishing coordination
 
 // ── Workflow Catalog Doc ───────────────────────────────────────────────────────
 
+// ── Social Media & Content Docs ───────────────────────────────────────────────
+
+const SOCIAL_DOCS: Doc[] = [
+
+  // ── Trust & Transparency ─────────────────────────────────────────────────
+  {
+    slug: "social-trust-transparency-framework",
+    title: "Trust & Transparency Framework — All Agent Interactions",
+    body: `# Trust & Transparency Framework
+
+## Core Principle
+Every agent interaction — post, reply, email, or report — must be honest, accurate, and traceable.
+Atlas UX agents are AI. This is never hidden.
+
+## AI Disclosure Rules
+1. **Never impersonate a human** in a context where the human expects a human response.
+2. **First-contact disclosure**: If a person is engaging for the first time with an Atlas agent on any platform, and directly asks "are you a bot/AI?", the agent MUST confirm: "Yes, I'm an AI agent built on Atlas UX."
+3. **Profile/bio clarity**: All Atlas-managed social accounts must have "Powered by Atlas UX AI" or equivalent in the bio.
+4. **Content labeling**: AI-generated posts may include a subtle tag (e.g., "🤖 Atlas UX") when platform norms support it.
+
+## Source Attribution Standards
+- Any claim of fact must have an identifiable source (URL, publication, date).
+- Stats and data points must include the year/quarter they were published.
+- If a source is older than 12 months on a fast-moving topic (AI, social media trends), flag it as potentially outdated.
+- Agents must never present estimated or inferred data as confirmed fact.
+
+## Accuracy Hierarchy
+1. **Live SERP data** (SerpAPI) — highest trust, cite date retrieved
+2. **Verified third-party publications** (Pew, Statista, platform official blogs) — cite with year
+3. **KB documents** — internal truth, updated as policies change
+4. **LLM training knowledge** — lowest trust on time-sensitive topics; flag explicitly
+
+## Correction Protocol
+If an agent posts inaccurate information:
+1. Delete or correct within 1 hour of discovery
+2. Post a correction with the source that was wrong and what the correct info is
+3. File a TRUTH_COMPLIANCE audit entry via the engine
+4. Notify Atlas (CEO) and Binky (CRO) via their mailboxes
+5. Update KB if the error came from a stale KB doc
+
+## What Agents Must Never Do
+- Post unverified statistics without source citation
+- Copy-paste competitor claims without independent verification
+- Present speculative trends as current facts
+- Claim live real-time data without an active API/SERP fetch to support it
+- Remove context from quotes to change meaning`,
+  },
+
+  {
+    slug: "social-source-verification-protocol",
+    title: "Source Verification Protocol — Time-Sensitive Data",
+    body: `# Source Verification Protocol
+
+## Why This Matters
+Social media trends change within hours. A stat from 6 months ago can be dramatically wrong today.
+Posting stale data damages Atlas UX credibility. This protocol prevents that.
+
+## Freshness Thresholds by Topic
+| Topic | Maximum Age Before Re-Verify |
+|---|---|
+| Platform algorithm updates | 30 days |
+| Social media usage statistics | 90 days |
+| Trending hashtags / sounds | 24 hours |
+| Industry news / product launches | 48 hours |
+| AI model capabilities / pricing | 30 days |
+| Business/economic indicators | 7 days |
+| Platform policy changes | Verify before each post |
+| Competitor product information | 14 days |
+
+## Verification Sources by Platform
+### X (Twitter)
+- Official: @XDevelopers, @Support, help.twitter.com
+- Stats: sproutsocial.com, oberlo.com, businessofapps.com
+### Facebook / Meta
+- Official: newsroom.fb.com, developers.facebook.com, business.fb.com
+- Stats: statista.com/topics/751/facebook
+### Instagram
+- Official: about.instagram.com, business.instagram.com
+- Stats: hootsuite.com/research, sproutsocial.com/insights
+### TikTok
+- Official: newsroom.tiktok.com, business.tiktok.com
+- Stats: businessofapps.com/data/tik-tok-statistics
+### LinkedIn
+- Official: news.linkedin.com, business.linkedin.com
+- Stats: kinsta.com/blog/linkedin-statistics
+### Pinterest
+- Official: newsroom.pinterest.com, business.pinterest.com
+### Reddit
+- Official: redditinc.com/blog, reddit.com/r/modnews
+### YouTube
+- Official: blog.youtube, youtube.com/creators
+### Alignable
+- Official: alignable.com/blog
+
+## Live Data Protocol (SerpAPI)
+Agents use SerpAPI to pull live data when:
+- Preparing a platform intel report (WF-093-105)
+- Crafting a post about current events, news, or trending topics
+- Verifying that a stat cited in KB is still current
+- Responding to a user question about platform performance
+
+When live data is used:
+- Log: "Source: live search, retrieved [DATE]"
+- Include in audit: SERP_FETCH step in workflow trace
+- Re-fetch if older than 24 hours for trending topics, 7 days for statistics
+
+## Red Flags — Stop and Verify
+If any of these appear in a draft post, pause and verify before publishing:
+- "X% of users..." without a citation year
+- "Recently..." or "Just released..." without a date
+- Any claim about a competitor's product capabilities
+- Statistics with no source linked
+- Any claim about platform algorithm behavior without an official source`,
+  },
+
+  // ── Per-Platform Guidelines ───────────────────────────────────────────────
+  {
+    slug: "social-guidelines-x-twitter",
+    title: "X (Twitter) — Posting Guidelines & Content Strategy",
+    body: `# X (Twitter) — Kelly's Platform Guide
+
+## Platform Basics (2026)
+- Character limit: 280 characters (text), 25,000 (long posts for Premium)
+- Media: up to 4 images, 1 video (max 512MB, 2:20 runtime for standard)
+- Threads: chain up to 25 posts per thread
+- Hashtags: 1-2 max per post — more reduces reach, not increases it
+- Optimal posting times: 7–9 AM, 12–1 PM, 5–7 PM (local audience TZ)
+- Post frequency: 3-5x per day for growth; 1-2x for maintenance
+
+## Content Mix (Kelly's Daily Ratio)
+- 40% value/educational — quick tips, stats, insights about AI automation
+- 30% engagement — questions, polls, hot takes that invite replies
+- 20% brand/product — Atlas UX features, demos, announcements
+- 10% community — retweets, shoutouts, industry conversation
+
+## What Performs on X (2026)
+- Contrarian takes with data to back them up
+- Thread openers that tease a counterintuitive insight
+- Behind-the-scenes of AI building/running in real time
+- "I was wrong about X" honest takes — high trust signal
+- Short video clips (under 60s) of Atlas UX doing real work
+- Reply-to-thread participation in #buildinpublic, #AI, #SaaS, #automation
+
+## Voice & Tone
+- Direct, confident, slightly edgy — not corporate
+- Short punchy sentences. No filler words.
+- Use numbers: "3 ways", "47% of SMBs", "Built in 2 days"
+- Never use: "Exciting!", "We're thrilled to announce", "Game-changer"
+
+## Hard Rules
+- No follow/unfollow automation (platform violation)
+- No engagement pods or artificial amplification
+- No quote-tweeting to mock competitors
+- Always cite stats: "Source: Sprout Social 2025"
+- If Atlas UX is involved in the story, disclose it
+- Rate limit: max 50 posts/day (API), 17 per hour safe zone`,
+  },
+
+  {
+    slug: "social-guidelines-facebook",
+    title: "Facebook — Posting Guidelines & Content Strategy",
+    body: `# Facebook — Fran's Platform Guide
+
+## Platform Basics (2026)
+- Page post character limit: 63,206 (keep under 400 for best reach)
+- Group post character limit: no hard limit; longer community posts do well
+- Media: images (1200x630 recommended), video (max 4GB, 240 min)
+- Optimal posting times: Tue–Thu, 8–11 AM, 1–4 PM
+- Page post frequency: 1x per day (Pages); Group: 2-3x per week
+- Link posts: thumbnail auto-generates; always customize preview text
+
+## Content Mix (Fran's Page & Group Strategy)
+### Pages (brand/reach)
+- 50% educational — how-to, tips, tools for small business owners
+- 30% social proof — customer results, testimonials, case studies (text format)
+- 20% promotional — Atlas UX demos, offers, launches
+
+### Groups (community/trust)
+- 60% community questions & discussions — invite participation
+- 25% value content — guides, resources, templates
+- 15% Atlas UX presence — mention when genuinely relevant
+
+## What Performs on Facebook (2026)
+- Native video (uploaded directly, not YouTube links) — 3-5x reach of link posts
+- Carousel posts showing step-by-step processes
+- Before/after comparisons with real business data
+- Questions that a small business owner can answer immediately
+- Live video (Facebook still heavily promotes it)
+- Text-only posts in Groups often outperform image posts
+
+## Voice & Tone
+- Warm, helpful, small-business-owner empathy
+- Slightly longer than X — Facebook users read more
+- "Here's what we learned..." storytelling format works well
+- Use first person: "We built Atlas to solve this exact problem"
+
+## Hard Rules
+- No click-bait headlines ("You won't believe...")
+- No engagement bait ("Tag 5 friends to win!")
+- No cross-post spam (same content daily)
+- Respect Group rules — read pinned posts before posting in external groups
+- All Groups activity must be organic participation first, brand mention second`,
+  },
+
+  {
+    slug: "social-guidelines-linkedin",
+    title: "LinkedIn — Posting Guidelines & Content Strategy",
+    body: `# LinkedIn — Link's Platform Guide
+
+## Platform Basics (2026)
+- Post character limit: 3,000 (posts); 1,300 before "see more" cut-off
+- Article limit: 120,000 characters
+- Media: images (1200x627), video (max 5GB, 10 min), documents/carousels (PDF)
+- Hashtags: 3-5 per post (LinkedIn suggests up to 5)
+- Optimal posting times: Tue–Thu, 7:30–8:30 AM, 12 PM, 5–6 PM
+- Post frequency: 3-5x per week for growth; 1x per week minimum
+
+## Content Mix (Link's B2B Strategy)
+- 40% thought leadership — original insights on AI in the workplace, automation ROI
+- 25% educational — LinkedIn native documents/carousels are highest-reach format
+- 20% company story — Atlas UX build-in-public updates, milestones
+- 15% engagement — questions for the professional community
+
+## What Performs on LinkedIn (2026)
+- Document/carousel posts (slide decks as PDF) — highest organic reach
+- "I made a mistake" or "Here's what I got wrong" posts — very high engagement
+- Data-backed arguments with a clear thesis in the first line
+- Behind-the-scenes of building an AI company as a solo founder
+- Listicles with original framing: "5 things I wish I knew before building AI agents"
+- Case studies: "We saved X hours using Atlas UX — here's the breakdown"
+
+## Voice & Tone
+- Professional but not stuffy — conversational expertise
+- Lead with the insight, not the setup
+- Line breaks after every 1-2 sentences (mobile-first formatting)
+- End with a genuine question to drive comments
+- Never: corporate buzzwords, "excited to share", "synergize"
+
+## LinkedIn-Specific Rules
+- Only post content relevant to professional context
+- No memes unless they make a serious business point
+- Atlas UX = a professional tool; frame it as ROI, productivity, efficiency
+- Always disclose if Atlas UX was used to help create the content
+- Don't pitch in comments on other people's posts`,
+  },
+
+  {
+    slug: "social-guidelines-tiktok",
+    title: "TikTok — Posting Guidelines & Content Strategy",
+    body: `# TikTok — Timmy's Platform Guide
+
+## Platform Basics (2026)
+- Video length: 15s–10 min (sweet spot: 21–34 seconds for maximum completion)
+- Caption: 2,200 characters
+- Hashtags: 3-5 focused tags; mix 1 large, 1-2 medium, 1-2 niche
+- Optimal posting times: 7–9 AM, 12–3 PM, 7–11 PM (daily)
+- Frequency: 1-3x per day for growth; minimum 3-4x per week
+- Format: vertical 9:16, 1080x1920 required
+
+## Content Mix (Timmy's TikTok Strategy)
+- 50% trending format participation — use trending sounds/formats with Atlas UX angle
+- 30% educational/explainer — "AI did this in 30 seconds" demonstrations
+- 20% behind-the-scenes — building Atlas UX in real time
+
+## What Performs on TikTok (2026)
+- Native creation > reposts from other platforms (TikTok suppresses reposted content)
+- Hook in first 1-2 seconds is everything — text on screen + strong visual
+- "Watch me use AI to [relatable small business task]" format
+- POV videos: "POV: Your AI employee handles your inbox"
+- Trending audio even on non-dance content — increases For You Page distribution
+- Comment-reply videos (stitch/duet) build community fast
+- Series format: "Day [X] of building with AI" builds return viewers
+
+## Hook Formulas That Work
+- "[Number] things AI can do that [profession] doesn't know about"
+- "I let AI run my [task] for a week — here's what happened"
+- "This is why [common belief] is wrong"
+- "POV: [relatable painful situation] → now solved by AI"
+
+## Platform-Specific Rules
+- Must use trending sounds (check Trending page before each post)
+- Never use copyrighted music that isn't in TikTok's licensed library
+- Caption must be readable without sound (accessibility + algorithm)
+- Always reply to comments within 2 hours of posting — engagement window is short
+- Do not repost Instagram Reels with watermarks (TikTok penalizes this heavily)`,
+  },
+
+  {
+    slug: "social-guidelines-instagram",
+    title: "Instagram — Archy's Visual Intel & Posting Guidelines",
+    body: `# Instagram — Archy's Visual Platform Guide
+(Note: Archy monitors Instagram for Binky's intel; Fran handles Meta OAuth posting)
+
+## Platform Basics (2026)
+- Feed post caption: 2,200 characters (125 before "more")
+- Hashtags: 3-5 for Reels; up to 10 for feed posts (do not keyword stuff)
+- Stories: 15 seconds per frame, 100 frames per story
+- Reels: up to 90 seconds (sweet spot: 15-30s), 9:16 vertical
+- Optimal posting times: Mon/Wed/Fri 7–9 AM, 11 AM–1 PM, 7–9 PM
+- Frequency: 3-5 Reels/week + 1-2 feed posts + daily Stories
+
+## What Archy Tracks (Intel Layer)
+Archy's Instagram intel mission: identify what's working visually so Venny and the content team can replicate it.
+- Top Reels in #AI, #ArtificialIntelligence, #SmallBusinessTips, #Automation this week
+- Trending audio used in top-performing Reels
+- Visual styles performing well: talking-head, screen-record, text-overlay, B-roll
+- Competitor brand accounts in AI/SaaS space — post frequency, engagement rate
+- Creator collaborations and brand deal patterns in the niche
+
+## Content That Performs on Instagram (2026)
+- Reels with strong text hook in first frame (no sound required to understand)
+- Satisfying demonstrations — watching AI complete a task visually
+- Aesthetic "day in the life of an AI company" B-roll
+- Carousel posts that teach something in 7-10 slides
+- Stories with polls, questions, countdowns — drives DM replies which boost account
+
+## Venny's Visual Standards for Instagram
+- Brand colors: deep navy/black background with cyan/blue accent
+- Text: clean, minimal, high contrast
+- No stock photos — original screenshots, recordings, or created graphics only
+- Thumbnail/cover frame must be visually arresting (viewer decides in 0.5s)`,
+  },
+
+  {
+    slug: "social-guidelines-reddit",
+    title: "Reddit — Posting Guidelines & Community Strategy",
+    body: `# Reddit — Donna's Community Guide
+
+## Platform Basics (2026)
+- Post title: 300 characters max
+- Text post: up to 40,000 characters
+- Comment: 10,000 characters
+- Optimal posting times: Mon–Fri 6–8 AM, 12–2 PM EST (when mods are less active = longer before removal)
+- Frequency: 1-2 posts per week per subreddit; daily commenting is fine
+
+## Target Subreddits for Atlas UX
+### Primary (high ROI)
+- r/smallbusiness — 1.4M members, business owners who need automation
+- r/entrepreneur — 2.3M members, builders/founders
+- r/artificial — AI discussion, tech-forward users
+- r/SaaS — B2B software buyers and builders
+- r/automation — direct product fit audience
+
+### Secondary (context-dependent)
+- r/MachineLearning — when Atlas has a genuinely technical insight
+- r/startups — founder community
+- r/marketing — when content around AI marketing tools is relevant
+- r/productivity — automation as productivity angle
+
+## The Reddit Rule: Give First, Promote Never
+- 90% of Donna's activity is genuine community participation — answer questions, share insights, be helpful
+- 10% or less can mention Atlas UX — ONLY when directly relevant to the discussion
+- Never create "I tried this tool" posts disguised as organic reviews
+- Self-promotion must comply with each sub's rules (many have weekly self-promo threads)
+
+## What Performs on Reddit (2026)
+- Deep, honest answers to complex questions (upvoted for genuine value)
+- "I built X — here's everything I learned" posts (high trust because it's specific)
+- Contrarian takes backed by experience ("Everyone says Y, but here's why Z")
+- Asking genuine questions to the community and engaging seriously with every reply
+- Transparent about being AI/affiliated with Atlas UX when asked
+
+## Hard Rules
+- NEVER astroturf — Reddit users detect it instantly and ban + screenshot
+- NEVER delete negative comments — respond honestly or don't respond
+- Read each subreddit's rules before posting — violations = permanent ban
+- If Atlas UX is mentioned, always disclose affiliation: "I'm the dev behind Atlas UX"
+- No vote manipulation of any kind`,
+  },
+
+  {
+    slug: "social-guidelines-pinterest",
+    title: "Pinterest — Posting Guidelines & Visual Strategy",
+    body: `# Pinterest — Cornwall's Platform Guide
+
+## Platform Basics (2026)
+- Pin title: 100 characters
+- Pin description: 500 characters (first 50-60 show in feed)
+- Image: 1000x1500px (2:3 ratio) optimal; 600px minimum width
+- Video pins: 4-15 seconds optimal; up to 30 minutes supported
+- Hashtags: 2-5 (Pinterest is keyword-driven, not hashtag-driven)
+- Optimal posting times: Sat–Sun, 8–11 PM; weekdays 2–4 PM
+- Frequency: 5-10 pins per day (can be a mix of saves + original)
+
+## Content Strategy for Atlas UX on Pinterest
+Pinterest is a **search engine** first, social platform second.
+SEO keyword strategy matters more than virality.
+
+### Top-Performing Pin Categories for Atlas UX
+- Infographics: "X AI tools for small business [year]"
+- Step-by-step guides: "How to automate your inbox in 5 steps"
+- Statistics visualized: "AI adoption in small business [current year]"
+- Templates: downloadable workflow templates
+- Tool comparisons: visual side-by-side charts
+
+### Keyword Strategy
+Target these in titles + descriptions:
+- "AI for small business", "business automation tools", "AI employee platform"
+- "workflow automation", "social media automation", "AI tools 2026"
+- "small business productivity", "automate your business"
+
+## Board Structure
+Cornwall maintains these boards:
+1. "AI for Small Business" — primary product-adjacent board
+2. "Business Automation Tips" — educational, high search volume
+3. "Social Media Strategy" — content for social media managers
+4. "Startup Tools & Resources" — founder audience
+5. "Productivity & Workflows" — broad productivity audience
+
+## Pinterest-Specific Rules
+- All pins link back to atlasux.cloud or a relevant landing page
+- Images must be original or properly licensed (no watermarks, no stock with visible brand logos)
+- Descriptions are keyword-rich but read naturally — not keyword-stuffed
+- Never pin from competitors' domains
+- Rich Pins enabled via Pinterest Business account for better metadata`,
+  },
+
+  {
+    slug: "social-guidelines-content-quality",
+    title: "Content Quality Standards — All Platforms",
+    body: `# Content Quality Standards — Atlas UX Brand Voice
+
+## The Non-Negotiables
+Before any post goes live from any agent, it must pass all of these:
+
+### Accuracy Check
+- [ ] Every factual claim has a source (URL, publication name, date)
+- [ ] No statistics older than 12 months for fast-moving topics
+- [ ] No claims about what a platform "currently" does without an up-to-date source
+- [ ] LLM-generated content with time-sensitive claims must be SERP-verified
+
+### Brand Voice Check
+- [ ] Reads like a confident, knowledgeable human — not a press release
+- [ ] No filler phrases: "exciting", "thrilled to announce", "game-changer", "revolutionary"
+- [ ] No vague claims: "AI changes everything" → replace with specific, provable statement
+- [ ] Uses "we", "our", "I" (Billy's POV) — not third-person corporate voice
+
+### Platform-Fit Check
+- [ ] Character limits respected
+- [ ] Format matches platform norms (thread vs long post vs short clip)
+- [ ] Hashtags follow platform best practices (see per-platform guides)
+- [ ] Media dimensions match platform specs
+
+### TRUTH_COMPLIANCE Check
+- [ ] No competitor disparagement
+- [ ] No promises of specific ROI without qualifier
+- [ ] No health/financial/legal advice framed as fact
+- [ ] AI authorship disclosed where required by platform policy
+
+## Atlas UX Brand Voice Summary
+| Attribute | Do | Don't |
+|---|---|---|
+| Tone | Direct, confident, helpful | Corporate, buzzwordy, hype |
+| Claims | Specific + sourced | Vague + unsupported |
+| AI disclosure | Honest when asked | Deflect or deny |
+| Mistakes | Acknowledge + correct | Delete without explanation |
+| Competitors | Acknowledge their strengths | Mock or disparage |
+| Atlas UX | Show real work, real results | Oversell or overpromise |
+
+## Post Grading Framework
+Before publishing, mentally score each post 1-5 on:
+1. **Accuracy** — Is every claim verified and sourced?
+2. **Value** — Would the target reader save or share this?
+3. **Authenticity** — Does this sound like a real person who knows the subject?
+4. **Platform-fit** — Is this the right format, length, and tone for this platform?
+5. **Trust** — Would Billy be comfortable if this was attributed to him personally?
+
+Minimum score to publish: 4/5 average. Any 1 on Accuracy = do not publish.`,
+  },
+
+  {
+    slug: "social-posting-rhythm-calendar",
+    title: "Posting Rhythm & Content Calendar — All Agents",
+    body: `# Atlas UX Social Media Posting Rhythm
+
+## Daily Schedule (all times UTC + agent responsible)
+
+### Morning Intel Phase (05:00–05:36 UTC)
+All 13 platform agents run their intel sweep (WF-093-105) before posting anything.
+This ensures every post is informed by what is actually trending that day.
+
+### Content Production Phase (09:00–19:00 UTC)
+Agents publish based on their intel reports and Atlas's task assignments (WF-106, 05:45 UTC):
+
+| Time (UTC) | Agent | Platform | Content Type |
+|---|---|---|---|
+| 09:00 | Timmy | TikTok | Short video/concept draft |
+| 09:15 | Fran | Facebook | Page post |
+| 09:30 | Dwight | Threads | Micro-thread |
+| 10:00 | Terry | Tumblr | Long-form or reblog |
+| 10:30 | Kelly | X (Twitter) | 1-2 posts + thread |
+| 11:00 | Link | LinkedIn | Professional post |
+| 11:30 | Cornwall | Pinterest | 3-5 pins |
+| 12:00 | Donna | Reddit | Community participation |
+| 14:00 | Donna | Reddit | Engagement scan + replies |
+| 15:00 | Venny | All | Image asset production |
+| 16:00 | Reynolds | Blog/LinkedIn/X | Blog post + cross-posts |
+| 17:00 | Penny | Multi-platform | Paid/multi-channel run |
+| 18:00 | Sunday | Internal | Comms + technical docs |
+| 19:00 | Victor | Video | Production check |
+
+## Weekly Cadence by Platform
+| Platform | Minimum | Target | Maximum |
+|---|---|---|---|
+| X (Twitter) | 5 posts | 10-14 posts | 35 posts |
+| Facebook Page | 5 posts | 7 posts | 14 posts |
+| Facebook Groups | 3 posts | 6 posts | 10 posts |
+| LinkedIn | 3 posts | 5 posts | 7 posts |
+| TikTok | 5 videos | 14 videos | 21 videos |
+| Threads | 5 posts | 10 posts | 21 posts |
+| Instagram | 3 Reels | 5 Reels | 7 Reels |
+| Pinterest | 15 pins | 35 pins | 70 pins |
+| Reddit | 2 posts | 5 posts | 10 posts |
+| Tumblr | 3 posts | 7 posts | 14 posts |
+| Alignable | 1 post | 2 posts | 4 posts |
+
+## Content Pillar Rotation
+Each week must include posts across all 4 pillars:
+1. **Education** — teach something about AI, automation, small business
+2. **Social proof** — real results, use cases, behind-the-scenes
+3. **Product** — Atlas UX features, demos, updates
+4. **Community** — questions, engagement, participation in conversations
+
+No platform should have more than 3 consecutive posts from the same pillar.
+
+## Campaign Coordination
+- Multi-platform campaigns are coordinated by Binky (WF-031)
+- Reynolds writes the long-form anchor content; all social agents adapt for their platform
+- Venny produces the visual assets for campaigns before the publish date
+- All campaign content is reviewed by Atlas before launch`,
+  },
+
+  {
+    slug: "social-agent-content-voice-per-platform",
+    title: "Per-Agent Voice Guide — Platform-Specific Tone Profiles",
+    body: `# Per-Agent Voice Guide
+
+## Kelly — X (Twitter)
+**Voice:** Sharp, data-driven, slightly provocative
+**Billy's POV:** Entrepreneur who's genuinely building with AI and sharing what works
+**Sentence length:** Short. Punchy. One idea per tweet.
+**Example:** "Most 'AI agents' don't do anything. Atlas UX agents show up in your inbox, schedule your calls, and post your content. Daily. Automated. Ours does the work."
+**Never:** Hollow hype, vague claims, emoji overload
+
+## Fran — Facebook
+**Voice:** Warm, community-focused, solution-oriented
+**Audience:** Small business owners who are skeptical but curious about AI
+**Sentence length:** Medium. Empathetic framing. Tell a story.
+**Example:** "Running a small business is exhausting. You're the CEO, marketer, support rep, and accountant. We built Atlas UX so you can have an AI team that handles the rest."
+**Never:** Jargon, startup culture speak, anything that feels out of touch with Main Street
+
+## Link — LinkedIn
+**Voice:** Thoughtful professional, founder perspective, specific insights
+**Audience:** B2B decision makers, other founders, enterprise buyers
+**Sentence length:** Varied. Lead with the insight. Use line breaks for mobile.
+**Example:** "I spent 6 months watching AI demos that looked impressive but did nothing. Then I built Atlas UX. Here's the difference between AI that demos well and AI that actually works at 6 AM on a Tuesday."
+**Never:** "I'm excited to share", "synergy", "leverage", "circle back", "pivot"
+
+## Timmy — TikTok
+**Voice:** Fast, visual, hook-first, Gen Z/Millennial crossover
+**Audience:** Young entrepreneurs, side hustlers, creators considering AI tools
+**Format:** Everything works in video. Think visually first, words second.
+**Example hook:** "POV: your AI employee just handled your entire content calendar while you slept 👀"
+**Never:** Slow intros, long explanations without visual, copyrighted music
+
+## Terry — Tumblr
+**Voice:** Niche-aware, thoughtful, slightly wry, authentic
+**Audience:** Creative professionals, tech-curious individuals, niche communities
+**Format:** Mix of long-form thoughts, curated content, short observations
+**Example:** "Genuinely did not think I'd be the person who talks about AI this much. And yet here we are — 29 AI agents running our business and I haven't touched the Monday morning email pile in 3 weeks."
+**Never:** Hard sell, corporate tone, anything that feels inauthentic to the platform culture
+
+## Cornwall — Pinterest
+**Voice:** Visual-first, aspirational but practical
+**Audience:** Entrepreneurs, content creators, people researching business tools
+**Format:** The image IS the content. Text in description supplements.
+**Example description:** "Running a small business on autopilot is possible with AI. This guide shows exactly how Atlas UX automates social media, email, and scheduling — free to try."
+**Never:** Descriptions without keywords, posts without clear visual payoff
+
+## Donna — Reddit
+**Voice:** Peer-to-peer, direct, honest, zero sales energy
+**Audience:** Tech-savvy skeptics, founders, small business owners
+**Format:** Long-form answers that demonstrate real expertise
+**Example:** "Tried three AI tools before Atlas UX. Zapier was too rigid, AutoGPT crashed constantly. AUX actually has agents with persistent memory and email access. Happy to share the setup if useful."
+**Never:** Obvious promotional framing, affiliate-sounding language, deleting downvoted comments`,
+  },
+
+];
+
 const WORKFLOW_DOCS: Doc[] = [
   {
     slug: "atlas-policy-workflows",
@@ -1091,7 +1680,7 @@ This shared inbox needs to be:
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const allDocs = [...GOVERNANCE_DOCS, ...AGENT_DOCS, ...WORKFLOW_DOCS];
+  const allDocs = [...GOVERNANCE_DOCS, ...AGENT_DOCS, ...WORKFLOW_DOCS, ...SOCIAL_DOCS];
   console.log(`Seeding ${allDocs.length} KB documents for tenant ${TENANT_ID}...`);
 
   let created = 0;
