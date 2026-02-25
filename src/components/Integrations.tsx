@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Plus, X, Search, Filter, RefreshCw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { API_BASE } from "@/lib/api";
 import { useActiveTenant } from "@/lib/activeTenant";
 import { getOrgUser } from "@/lib/org";
@@ -195,7 +196,24 @@ export default function Integrations() {
   }, [searchParams]);
 
   React.useEffect(() => {
-    if (searchParams.get("connected")) refreshStatus();
+    const connected = searchParams.get("connected");
+    const oauthError = searchParams.get("oauth_error");
+    const provider = searchParams.get("provider") ?? connected ?? "";
+    if (connected) {
+      refreshStatus();
+      toast.success(`${provider ? provider.charAt(0).toUpperCase() + provider.slice(1) + " " : ""}Connected successfully`);
+    }
+    if (oauthError) {
+      const msg =
+        oauthError === "linkedin_credentials_not_configured"
+          ? "LinkedIn credentials not yet configured. Submit your LinkedIn App credentials to enable this integration."
+          : oauthError === "state_mismatch"
+          ? "OAuth state mismatch — please try again."
+          : oauthError === "token_exchange_failed"
+          ? "OAuth token exchange failed — check credentials and try again."
+          : `OAuth error: ${oauthError}`;
+      toast.error(msg, { duration: 8000 });
+    }
   }, [searchParams, refreshStatus]);
 
   const connect = (i: Integration) => {
