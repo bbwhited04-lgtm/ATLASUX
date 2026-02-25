@@ -62,7 +62,12 @@ async function writeAudit(opts: {
 
 // This is the ONLY place that should ever call execution functions later.
 export async function engineTick() {
-  const intent = await claimNextIntent();
+  let intent: Awaited<ReturnType<typeof claimNextIntent>> = null;
+  try {
+    intent = await claimNextIntent();
+  } catch (e: any) {
+    return { ran: false, error: `claimNextIntent failed: ${e?.message ?? String(e)}` };
+  }
   if (!intent) return { ran: false };
 
   const payload = safeObjectPayload(intent.payload);

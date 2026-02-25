@@ -23,8 +23,7 @@ export async function claimNextIntent() {
       status,
       payload,
       sgl_result       AS "sglResult",
-      created_at       AS "createdAt",
-      updated_at       AS "updatedAt"
+      created_at       AS "createdAt"
   `;
   return rows[0] ?? null;
 }
