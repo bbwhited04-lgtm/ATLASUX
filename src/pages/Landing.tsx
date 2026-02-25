@@ -121,27 +121,56 @@ export default function Landing() {
         {/* Dev updates */}
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
-          <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Feb 10, 2026</span>
+            <h2 className="text-xl font-semibold">Dev updates</h2>
+            <span className="text-sm text-white/60">Last updated: Feb 25, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
-              <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
-              <li>Stated initial seating pricing and stored UI on supabase for demo mode only</li>
-              <li>Published Initial UI(user interface) wireframe to web from Figma.</li>
-              <li>Removed Demo Mode only and went live with frontend at Vercel</li>
-              <li>Set up backend wiring to run through onrender</li>
-              <li>Started work with ChatGPT 5.2 to integrate my wireframe into a real program</li>
-              <li>Created first backend files, frontend files index.html</li>
-              <li>Published 60s pitch video + cross-platform posts.</li>
-              <li>Integration UX wiring in progress (connect → verify → import).</li>
-              <li>Stabilizing desktop builds and routing across pages.</li>
-              <li>Fighting Demons and Gremlins buried in the code, all about them routes.</li>
-              <li>Added AppGate functionality for security.</li>
-              <li>Added Task/Workflows Functionality.</li>
-              <li>Rebuilding Mobile Companion App/link. Rebuilding Atlas Avatar with Blender, New look coming soon. </li>
-              <li>Co-Founder application denied after path, scope, alignment and payment needs were not met.</li>
-              <li>Restructured Entire environment and changed layout to be more professional</li>
-            </ul>
+            <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
+            <li>Stated initial seating pricing and stored UI on supabase for demo mode only</li>
+            <li>Published Initial UI(user interface) wireframe to web from Figma.</li>
+            <li>Removed Demo Mode only and went live with frontend at Vercel</li>
+            <li>Set up backend wiring to run through onrender</li>
+            <li>Started work with ChatGPT 5.2 to integrate my wireframe into a real program</li>
+            <li>Created first backend files, frontend files index.html</li>
+            <li>Published 60s pitch video + cross-platform posts.</li>
+            <li>Integration UX wiring in progress (connect → verify → import).</li>
+            <li>Stabilizing desktop builds and routing across pages.</li>
+            <li>Fighting Demons and Gremlins buried in the code, all about them routes.</li>
+            <li>Added AppGate functionality for security.</li>
+            <li>Added Task/Workflows Functionality.</li>
+            <li>Rebuilding Mobile Companion App/link. Rebuilding Atlas Avatar with Blender, New look coming soon.</li>
+            <li>Co-Founder application denied after path, scope, alignment and payment needs were not met.</li>
+            <li>Restructured Entire environment and changed layout to be more professional</li>
+            <li>Security phase 3 fixes — hardened auth, JWT, and session handling</li>
+            <li>Resolved all TypeScript errors from phase 3 changes</li>
+            <li>Implemented mobile device pairing with real QR code</li>
+            <li>About page, working job cancel, fixed dead buttons</li>
+            <li>Resolved all usability issues in jobs and header</li>
+            <li>Fixed several issues flagged by Claude Code audit</li>
+            <li>Implemented CRM backend, analytics, SMS/job workers, voice recognition, and agent SKILL.md files</li>
+            <li>Wired KB context and agent registry into every chat call</li>
+            <li>Built all 30 feature suggestions from product audit</li>
+            <li>Fixed Telegram "chat not found" — added guidance and better error messaging</li>
+            <li>Integrated Teams into agent tools and cross-agent messaging</li>
+            <li>Switched Teams send to Power Automate Workflows (Incoming Webhooks retired 12/31/25)</li>
+            <li>Added TEAMS_WORKFLOW_URL as default send target for Teams agents</li>
+            <li>Fixed Teams tab: show compose when webhook URL is present</li>
+            <li>Fixed Teams listing: use /teams endpoint with Team.ReadBasic.All scope</li>
+            <li>WorkflowsHub: numbered asset cards with descriptor and click-to-select</li>
+            <li>Wired getKbContext + runLLM into all workflow handlers</li>
+            <li>Fixed engine run status — auto-refresh after 3.5s, clean status UI</li>
+            <li>Growth loop: allow multiple actions per run and multiple runs per day</li>
+            <li>Added 6 new agents: Claire, Daily Intel, Petra, Porter, Sandy, Victor</li>
+            <li>Fixed engine raw SQL RETURNING aliases (snake_case to camelCase)</li>
+            <li>Fixed queue.ts — removed non-existent updated_at column from RETURNING clause</li>
+            <li>Fixed kb_chunks query — guarded against missing table (Postgres 42P01)</li>
+            <li>Integrations overhaul — provider enum→text migration, Pinterest OAuth, LinkedIn stub, status fix</li>
+            <li>Comprehensive KB seed script — 37 governance, agent definition, and workflow docs</li>
+            <li>Scheduler worker — auto-fires daily brief (WF-010) and Binky research (WF-031)</li>
+            <li>Integrations — toast feedback for OAuth connect success and error states</li>
+            <li>Wired up Settings &gt; Files with real Supabase storage backend (upload, download, delete)</li>
+            <li>Workflows dropdown — mapped all DB rows to canonical Atlas WF-### IDs and names</li>
+          </ul>
 
           <div className="mt-5 flex gap-3">
             <a
