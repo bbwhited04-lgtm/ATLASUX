@@ -2,6 +2,8 @@ import type { FastifyPluginAsync } from "fastify";
 import { runChat } from "../ai.js";
 import { sglEvaluate } from "../core/sgl.js";
 import { prisma } from "../db/prisma.js";
+import { getKbContext } from "../core/kb/getKbContext.js";
+import { agentRegistry } from "../agents/registry.js";
 
 export const chatRoutes: FastifyPluginAsync = async (app) => {
   app.post("/", async (req, reply) => {
@@ -46,26 +48,66 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(428).send({ ok: false, error: "human_approval_required", reasons: sgl.reasons });
     }
 
-    // Inject integration context into the system prompt (Issue 4: tone shift)
+    // Build enriched system prompt from: KB context + agent registry + integrations
     let enrichedBody = body;
     if (tenantId) {
       try {
+        const msgs: any[] = Array.isArray(body?.messages) ? [...body.messages] : [];
+
+        // Extract last user message as KB query
+        const lastUser = [...msgs].reverse().find((m: any) => m.role === "user");
+        const query = typeof lastUser?.content === "string" ? lastUser.content.slice(0, 200) : undefined;
+
+        // Determine active agent (default: atlas)
+        const agentId = String(body?.agentId || "atlas").toLowerCase();
+
+        // 1) KB context (governance docs + agent docs + relevant docs for query)
+        const kb = await getKbContext({ tenantId, agentId, query }).catch(() => null);
+
+        // 2) Agent registry — compact org chart Atlas uses to route tasks
+        const registrySummary = agentRegistry
+          .map(a => `  ${a.name} (${a.id}) — ${a.title}: ${a.summary}`)
+          .join("\n");
+
+        // 3) Connected integrations
         const connectedIntegrations = await prisma.integration.findMany({
           where: { tenantId, connected: true },
           select: { provider: true },
         });
-        if (connectedIntegrations.length > 0) {
-          const providerNames = connectedIntegrations.map((i: any) => i.provider).join(", ");
-          const contextLine = `[ATLAS CONTEXT] The following integrations are connected for this tenant: ${providerNames}. You have access to these platforms and can listen, analyze, or post on behalf of the user. Acknowledge this capability when relevant instead of saying you cannot do anything.`;
-          const msgs: any[] = Array.isArray(body?.messages) ? [...body.messages] : [];
-          const sysIdx = msgs.findIndex((m: any) => m.role === "system");
-          if (sysIdx >= 0) {
-            msgs[sysIdx] = { ...msgs[sysIdx], content: `${contextLine}\n\n${msgs[sysIdx].content}` };
-          } else {
-            msgs.unshift({ role: "system", content: contextLine });
-          }
-          enrichedBody = { ...body, messages: msgs };
+        const providerNames = connectedIntegrations.map((i: any) => i.provider).join(", ");
+
+        const contextParts: string[] = [];
+
+        contextParts.push(
+          `[ATLAS CONTEXT] You are Atlas, the AI President of this company. ` +
+          `You operate within a structured agent hierarchy and execute only after governance gates approve.`
+        );
+
+        if (providerNames) {
+          contextParts.push(
+            `[INTEGRATIONS] Connected platforms: ${providerNames}. ` +
+            `You have access to these and can listen, analyze, or post on behalf of the user.`
+          );
         }
+
+        contextParts.push(
+          `[AGENT REGISTRY]\n${registrySummary}`
+        );
+
+        if (kb && kb.text) {
+          contextParts.push(`[KNOWLEDGE BASE — ${kb.items.length} docs, ${kb.totalChars} chars]\n${kb.text}`);
+        }
+
+        const systemBlock = contextParts.join("\n\n");
+
+        const sysIdx = msgs.findIndex((m: any) => m.role === "system");
+        if (sysIdx >= 0) {
+          msgs[sysIdx] = { ...msgs[sysIdx], content: `${systemBlock}\n\n${msgs[sysIdx].content}` };
+        } else {
+          msgs.unshift({ role: "system", content: systemBlock });
+        }
+
+        enrichedBody = { ...body, messages: msgs };
       } catch {
         // Non-fatal — proceed without context injection
       }
