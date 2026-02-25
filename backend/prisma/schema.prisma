@@ -37,6 +37,7 @@ model Tenant {
   budgets                                  Budget[]
   decisionTemplates                        DecisionTemplate[]
   agentMemory                              AgentMemory[]
+  toolProposals                            ToolProposal[]
 
   @@map("tenants")
 }
@@ -879,6 +880,27 @@ enum TicketCategory {
   OTHER
 
   @@map("ticket_category")
+}
+
+/// Atlas-generated tool proposals awaiting human approve/deny.
+model ToolProposal {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  agentId       String    @map("agent_id")        // which agent the tool is for
+  toolName      String    @map("tool_name")
+  toolPurpose   String    @map("tool_purpose")
+  toolImpl      String?   @map("tool_impl")        // implementation notes
+  approvalToken String    @unique @map("approval_token")
+  status        String    @default("pending")       // pending | approved | denied
+  runId         String?   @map("run_id")
+  decidedAt     DateTime? @map("decided_at") @db.Timestamptz(6)
+  decidedBy     String?   @map("decided_by")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([approvalToken])
+  @@map("tool_proposals")
 }
 
 /// Per-agent Postgres conversation memory — used by the deep agent pipeline.

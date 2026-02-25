@@ -439,6 +439,13 @@ function buildJobs(): ScheduledJob[] {
       payload: { triggeredBy: "scheduler" },
       hourUTC: 9, minuteUTC: 0, dayOfWeek: 1,
     },
+    {
+      id: "atlas-tool-discovery",
+      label: "Atlas Tool Discovery & Proposal (WF-107)",
+      agentId: "atlas", workflowId: "WF-107",
+      payload: { triggeredBy: "scheduler", topic: "discover and propose new tools for all agents" },
+      hourUTC: 6, minuteUTC: 0, dayOfWeek: 1, // Monday 06:00 UTC — before the workday starts
+    },
 
     // ── Weekly (Friday): Compliance & Finance ────────────────────────────────
     {

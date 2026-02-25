@@ -2,6 +2,8 @@ import { prisma } from "../prisma.js";
 import { n8nWorkflows, type AtlasWorkflowDef } from "./n8n/manifest.js";
 import { getKbContext } from "../core/kb/getKbContext.js";
 import { runLLM, type AuditHook } from "../core/engine/brainllm.js";
+import { agentRegistry } from "../agents/registry.js";
+import { getSkill } from "../core/kb/skillLoader.js";
 
 export type WorkflowContext = {
   tenantId: string;
@@ -962,6 +964,175 @@ for (const def of n8nWorkflows) {
     handlers[def.id] = createN8nHandler(def);
   }
 }
+
+// ── WF-107 Atlas Tool Discovery & Proposal ────────────────────────────────────
+// Atlas reviews every agent's SKILL.md, identifies tool gaps, generates a
+// numbered proposal list, and emails Billy for approve/deny.
+// Approved tools get a KB doc + SKILL.md update automatically.
+
+handlers["WF-107"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-107.start", "Atlas Tool Discovery beginning");
+
+  const billyEmail  = process.env.OWNER_EMAIL?.trim()  ?? "billy@deadapp.info";
+  const atlasEmail  = agentEmail("atlas") ?? "atlas@deadapp.info";
+  const backendUrl  = (process.env.BACKEND_URL ?? process.env.RENDER_EXTERNAL_URL ?? "https://atlasux-backend.onrender.com").replace(/\/$/, "");
+  const today       = new Date().toISOString().slice(0, 10);
+
+  // ── Build agent context snapshot ────────────────────────────────────────────
+  // For each agent: name, title, current tools, SKILL.md snippet
+  const agentSnapshots = agentRegistry
+    .filter(a => a.id !== "chairman") // skip board
+    .map(a => {
+      const skill = getSkill(a.id);
+      const skillSnippet = skill ? skill.slice(0, 600) : "(no SKILL.md)";
+      const currentTools = (a.toolsAllowed ?? []).join(", ") || "none listed";
+      return `Agent: ${a.name} (${a.id}) — ${a.title}\nCurrent tools: ${currentTools}\nSKILL.md excerpt:\n${skillSnippet}`;
+    })
+    .join("\n\n---\n\n");
+
+  await writeStepAudit(ctx, "WF-107.snapshot", `Built snapshots for ${agentRegistry.length} agents`);
+
+  // ── LLM: Analyze gaps and generate proposals ────────────────────────────────
+  const analysisText = await safeLLM(ctx, {
+    agent:   "atlas",
+    purpose: "tool-discovery",
+    route:   "ORCHESTRATION_REASONING",
+    system: `You are Atlas, AI President of Atlas UX. Your job today is to analyze every agent's current toolset and identify the highest-value tools they are missing.
+
+For each proposal, output EXACTLY this format (one blank line between proposals):
+TOOL: <short tool name, e.g. "read_crm_contacts">
+AGENT: <agent id, lowercase>
+PURPOSE: <one sentence — what this tool does and why this agent needs it>
+IMPL: <one sentence — how to implement it, e.g. "query prisma.crmContact.findMany filtered by tenantId">
+---
+
+Rules:
+- Propose 8–15 tools total across all agents. Prioritize the highest-impact gaps.
+- Each proposal must be specific and immediately actionable.
+- Do not propose tools the agent already has.
+- Focus on: data access tools (KB search, CRM lookups), communication tools (email send, Teams message), and productivity tools (calendar read, file read).
+- End the list with END_PROPOSALS on its own line.`,
+    user: `Today: ${today}\n\nAgent snapshots:\n\n${agentSnapshots.slice(0, 8000)}`,
+  });
+
+  await writeStepAudit(ctx, "WF-107.analysis", `LLM analysis complete (${analysisText.length} chars)`);
+
+  // ── Parse proposals ──────────────────────────────────────────────────────────
+  type ProposalRaw = { toolName: string; agentId: string; purpose: string; impl: string };
+  const proposals: ProposalRaw[] = [];
+
+  const blocks = analysisText.split(/---+/).map(b => b.trim()).filter(Boolean);
+  for (const block of blocks) {
+    if (block.includes("END_PROPOSALS")) break;
+    const toolMatch   = block.match(/^TOOL:\s*(.+)/m);
+    const agentMatch  = block.match(/^AGENT:\s*(.+)/m);
+    const purposeMatch = block.match(/^PURPOSE:\s*(.+)/m);
+    const implMatch   = block.match(/^IMPL:\s*(.+)/m);
+    if (toolMatch && agentMatch && purposeMatch) {
+      proposals.push({
+        toolName: toolMatch[1].trim(),
+        agentId:  agentMatch[1].trim().toLowerCase(),
+        purpose:  purposeMatch[1].trim(),
+        impl:     implMatch?.[1].trim() ?? "",
+      });
+    }
+  }
+
+  if (!proposals.length) {
+    await writeStepAudit(ctx, "WF-107.no-proposals", "LLM returned no parseable proposals");
+    return { ok: true, message: "WF-107 complete — no proposals generated", output: { proposals: 0 } };
+  }
+
+  // ── Save proposals to DB + generate approve/deny tokens ─────────────────────
+  const crypto = await import("crypto");
+  const savedProposals: Array<ProposalRaw & { token: string; num: number }> = [];
+
+  for (const p of proposals) {
+    const token = crypto.randomBytes(24).toString("hex");
+    await prisma.toolProposal.create({
+      data: {
+        tenantId:      ctx.tenantId,
+        agentId:       p.agentId,
+        toolName:      p.toolName,
+        toolPurpose:   p.purpose,
+        toolImpl:      p.impl || null,
+        approvalToken: token,
+        status:        "pending",
+        runId:         ctx.intentId,
+      },
+    }).catch(() => null); // non-fatal
+    savedProposals.push({ ...p, token, num: savedProposals.length + 1 });
+  }
+
+  await writeStepAudit(ctx, "WF-107.saved", `Saved ${savedProposals.length} proposals to DB`);
+
+  // ── Build email body ─────────────────────────────────────────────────────────
+  const rows = savedProposals.map(p => {
+    const approveUrl = `${backendUrl}/v1/tools/proposals/${p.token}/approve`;
+    const denyUrl    = `${backendUrl}/v1/tools/proposals/${p.token}/deny`;
+    return [
+      `${p.num}. [${p.agentId.toUpperCase()}] ${p.toolName}`,
+      `   Purpose: ${p.purpose}`,
+      `   Impl: ${p.impl || "N/A"}`,
+      `   ✅ APPROVE → ${approveUrl}`,
+      `   ❌ DENY    → ${denyUrl}`,
+    ].join("\n");
+  }).join("\n\n");
+
+  const emailBody = [
+    `Atlas Tool Discovery Report — ${today}`,
+    `Atlas has identified ${savedProposals.length} high-value tools to add to your agent workforce.`,
+    `Review each proposal below and click APPROVE or DENY.`,
+    `Approved tools will be added to the KB and wired into the agent's instructions automatically.`,
+    ``,
+    `═══════════════════════════════════════`,
+    rows,
+    `═══════════════════════════════════════`,
+    ``,
+    `Atlas — AI President, Atlas UX`,
+    `Generated by WF-107 Tool Discovery Pipeline`,
+  ].join("\n");
+
+  await queueEmail(ctx, {
+    to:        billyEmail,
+    subject:   `[WF-107] ${savedProposals.length} Tool Proposals Ready for Review — ${today}`,
+    text:      emailBody,
+    fromAgent: "atlas",
+  });
+
+  // CC Atlas mailbox
+  if (atlasEmail !== billyEmail) {
+    await queueEmail(ctx, {
+      to:        atlasEmail,
+      subject:   `[WF-107 COPY] Tool Proposals Sent to Billy — ${today}`,
+      text:      emailBody,
+      fromAgent: "atlas",
+    });
+  }
+
+  // ── Ledger ───────────────────────────────────────────────────────────────────
+  await prisma.ledgerEntry.create({
+    data: {
+      tenantId:    ctx.tenantId,
+      entryType:   "debit",
+      category:    "token_spend",
+      amountCents: 0,
+      description: `WF-107 Tool Discovery — ${savedProposals.length} proposals generated`,
+      occurredAt:  new Date(),
+      meta:        { workflowId: "WF-107", proposalCount: savedProposals.length },
+    },
+  }).catch(() => null);
+
+  await writeStepAudit(ctx, "WF-107.complete", `Tool discovery complete — ${savedProposals.length} proposals emailed to ${billyEmail}`, {
+    proposalCount: savedProposals.length,
+  });
+
+  return {
+    ok:      true,
+    message: `WF-107 complete — ${savedProposals.length} proposals sent to ${billyEmail}`,
+    output:  { proposalCount: savedProposals.length, proposals: savedProposals.map(p => ({ num: p.num, agent: p.agentId, tool: p.toolName })) },
+  };
+};
 
 // ── Public API ────────────────────────────────────────────────────────────────
 

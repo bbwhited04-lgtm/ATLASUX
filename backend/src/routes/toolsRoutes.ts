@@ -20,6 +20,7 @@
 
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
+import { getSkill } from "../core/kb/skillLoader.js";
 import {
   M365_TOOLS,
   getTool,
@@ -237,6 +238,171 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ ok: false, error: "GRAPH_ERROR", message: err?.message });
     }
   });
+
+  // ── GET /v1/tools/proposals ─────────────────────────────────────────────────
+  // List tool proposals for this tenant (requires auth).
+  app.get("/proposals", async (req, reply) => {
+    const tid = tenantId(req);
+    if (!tid) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const status = (req.query as any)?.status ?? "pending";
+    const rows = await prisma.toolProposal.findMany({
+      where:   { tenantId: tid, ...(status !== "all" ? { status } : {}) },
+      orderBy: { createdAt: "desc" },
+      take:    100,
+    });
+    return { ok: true, count: rows.length, proposals: rows };
+  });
+
+  // ── GET /v1/tools/proposals/:token/approve ──────────────────────────────────
+  // Token-based approval — safe to click directly from email.
+  // No auth required (token is the secret). Returns HTML.
+  app.get("/proposals/:token/approve", async (req, reply) => {
+    const { token } = req.params as any;
+    const proposal  = await prisma.toolProposal.findUnique({ where: { approvalToken: token } });
+
+    if (!proposal) {
+      return reply.code(404).type("text/html").send(htmlPage("Not Found", "This proposal link is invalid or has expired."));
+    }
+    if (proposal.status !== "pending") {
+      return reply.type("text/html").send(htmlPage(
+        "Already Decided",
+        `This proposal was already <strong>${proposal.status}</strong> on ${proposal.decidedAt?.toLocaleDateString() ?? "unknown date"}.`,
+      ));
+    }
+
+    // Mark approved
+    await prisma.toolProposal.update({
+      where: { approvalToken: token },
+      data:  { status: "approved", decidedAt: new Date(), decidedBy: "billy" },
+    });
+
+    // Add to KB
+    await addToolToKb(proposal.tenantId, proposal.agentId, proposal.toolName, proposal.toolPurpose, proposal.toolImpl);
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        tenantId: proposal.tenantId, actorType: "human", actorUserId: null,
+        actorExternalId: "billy", level: "info", action: "TOOL_PROPOSAL_APPROVED",
+        entityType: "tool_proposal", entityId: proposal.id,
+        message: `Approved tool "${proposal.toolName}" for agent ${proposal.agentId}`,
+        meta: { toolName: proposal.toolName, agentId: proposal.agentId },
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
+    return reply.type("text/html").send(htmlPage(
+      "✅ Tool Approved",
+      `<strong>${proposal.toolName}</strong> for <strong>${proposal.agentId}</strong> has been approved.<br><br>
+       The tool has been added to the Knowledge Base and is now available to ${proposal.agentId}.<br><br>
+       <em>${proposal.toolPurpose}</em>`,
+    ));
+  });
+
+  // ── GET /v1/tools/proposals/:token/deny ─────────────────────────────────────
+  app.get("/proposals/:token/deny", async (req, reply) => {
+    const { token } = req.params as any;
+    const proposal  = await prisma.toolProposal.findUnique({ where: { approvalToken: token } });
+
+    if (!proposal) {
+      return reply.code(404).type("text/html").send(htmlPage("Not Found", "This proposal link is invalid or has expired."));
+    }
+    if (proposal.status !== "pending") {
+      return reply.type("text/html").send(htmlPage(
+        "Already Decided",
+        `This proposal was already <strong>${proposal.status}</strong>.`,
+      ));
+    }
+
+    await prisma.toolProposal.update({
+      where: { approvalToken: token },
+      data:  { status: "denied", decidedAt: new Date(), decidedBy: "billy" },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId: proposal.tenantId, actorType: "human", actorUserId: null,
+        actorExternalId: "billy", level: "info", action: "TOOL_PROPOSAL_DENIED",
+        entityType: "tool_proposal", entityId: proposal.id,
+        message: `Denied tool "${proposal.toolName}" for agent ${proposal.agentId}`,
+        meta: { toolName: proposal.toolName, agentId: proposal.agentId },
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
+    return reply.type("text/html").send(htmlPage(
+      "❌ Tool Denied",
+      `<strong>${proposal.toolName}</strong> for <strong>${proposal.agentId}</strong> has been denied. No changes were made.`,
+    ));
+  });
+
+  // ── Helper: add approved tool as a KB document ──────────────────────────────
+  async function addToolToKb(
+    tenantId: string,
+    agentId:  string,
+    toolName: string,
+    purpose:  string,
+    impl:     string | null,
+  ) {
+    const slug  = `tool-${agentId}-${toolName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`;
+    const title = `Tool: ${toolName} (${agentId})`;
+    const body  = [
+      `# ${toolName}`,
+      `**Agent:** ${agentId}`,
+      `**Status:** Approved`,
+      `**Purpose:** ${purpose}`,
+      impl ? `**Implementation:** ${impl}` : "",
+      "",
+      `## Usage`,
+      `This tool was approved via WF-107 Atlas Tool Discovery and is available to ${agentId}.`,
+      `When ${agentId} receives a query that requires ${toolName}, this tool should be invoked.`,
+      "",
+      `## Integration`,
+      `Add this tool to the agent's toolsAllowed list in registry.ts and implement the`,
+      `server-side function in agentTools.ts following the existing pattern.`,
+    ].filter(s => s !== null).join("\n");
+
+    // Upsert KB doc
+    const existing = await prisma.kbDocument.findFirst({ where: { tenantId, slug } });
+    if (existing) {
+      await prisma.kbDocument.update({ where: { id: existing.id }, data: { body, updatedAt: new Date() } });
+    } else {
+      await prisma.kbDocument.create({
+        data: {
+          tenantId,
+          slug,
+          title,
+          body,
+          category: "tool",
+          tags: ["tool", "approved", agentId],
+          sourceType: "atlas_generated",
+          agentId,
+        } as any,
+      });
+    }
+  }
+
+  // ── Helper: HTML response page ──────────────────────────────────────────────
+  function htmlPage(title: string, body: string): string {
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${title} — Atlas UX</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#04111f;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+  .card{background:#0d1f38;border:1px solid rgba(255,255,255,.12);border-radius:1.5rem;padding:2.5rem;max-width:480px;text-align:center}
+  h1{font-size:1.5rem;margin:0 0 1rem}
+  p{color:#94a3b8;line-height:1.6}
+  .logo{font-size:.75rem;color:#475569;margin-top:2rem}
+</style>
+</head><body>
+<div class="card">
+  <h1>${title}</h1>
+  <p>${body}</p>
+  <div class="logo">Atlas UX · Tool Proposal System · WF-107</div>
+</div>
+</body></html>`;
+  }
 
   // ── Helper: write audit entry ───────────────────────────────────────────────
   async function writeAudit(

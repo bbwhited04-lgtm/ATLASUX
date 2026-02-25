@@ -657,6 +657,18 @@ export const n8nWorkflows: AtlasWorkflowDef[] = [
     humanInLoop: false,
     file: "workflows/n8n/orchestration/atlas_daily_aggregation.json",
   },
+
+  // ── Tool Discovery & Proposal ─────────────────────────────────────────────
+  {
+    id: "WF-107",
+    name: "Atlas Tool Discovery & Proposal",
+    description: "Atlas audits every agent's current toolset, identifies gaps and high-value additions, generates a numbered proposal list, and emails Billy for approve/deny. Approved tools are added to KB and wired into the agent's SKILL.md.",
+    category: "orchestration",
+    ownerAgent: "atlas",
+    trigger: "cron",
+    humanInLoop: true,
+    file: "workflows/n8n/orchestration/atlas_tool_discovery.json",
+  },
 ];
 
 export default n8nWorkflows;
