@@ -1,5 +1,57 @@
 import type { BlogFrontmatter, BlogPost } from "./types";
 
+const API_BASE =
+  typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_BASE_URL
+    ? (import.meta as any).env.VITE_API_BASE_URL
+    : "https://atlas-ux.onrender.com";
+
+function estimateReadingMinutesFromText(text: string): number {
+  const words = text.replace(/`[\s\S]*?`/g, " ").replace(/[^\w\s]/g, " ").split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 220));
+}
+
+function apiDocToBlogPost(doc: any): BlogPost {
+  return {
+    slug: doc.slug,
+    frontmatter: {
+      title: doc.title || doc.slug,
+      date: (doc.date || doc.createdAt || new Date().toISOString()).slice(0, 10),
+      category: doc.category || "Updates",
+      tags: Array.isArray(doc.tags) ? doc.tags : [],
+      excerpt: doc.excerpt || "",
+      coverImage: "/blog/covers/default.png",
+      featured: false,
+      author: "ATLAS",
+    },
+    body: doc.body || "",
+    readingMinutes: estimateReadingMinutesFromText(doc.body || ""),
+  };
+}
+
+export async function loadApiPosts(): Promise<BlogPost[]> {
+  try {
+    const res = await fetch(`${API_BASE}/v1/blog/posts`);
+    if (!res.ok) return [];
+    const json = await res.json().catch(() => null);
+    const items: any[] = json?.items ?? json?.posts ?? [];
+    return items.filter((d) => d.status === "published" || !d.status).map(apiDocToBlogPost);
+  } catch {
+    return [];
+  }
+}
+
+export async function getApiPostBySlug(slug: string): Promise<BlogPost | undefined> {
+  try {
+    const res = await fetch(`${API_BASE}/v1/blog/posts/${encodeURIComponent(slug)}`);
+    if (!res.ok) return undefined;
+    const json = await res.json().catch(() => null);
+    if (!json?.post) return undefined;
+    return apiDocToBlogPost(json.post);
+  } catch {
+    return undefined;
+  }
+}
+
 function safeParseYamlLike(frontmatterRaw: string): Partial<BlogFrontmatter> {
   // Minimal YAML-ish parser for key: value and tags: [a, b]
   const out: any = {};

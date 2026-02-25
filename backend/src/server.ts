@@ -41,6 +41,8 @@ import { blogRoutes } from "./routes/blogRoutes.js";
 import { redditRoutes } from "./routes/redditRoutes.js";
 import { mobileRoutes } from "./routes/mobileRoutes.js";
 import { telegramRoutes } from "./routes/telegramRoutes.js";
+import { crmRoutes } from "./routes/crmRoutes.js";
+import { analyticsRoutes } from "./routes/analyticsRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -187,6 +189,12 @@ await app.register(mobileRoutes, { prefix: "/v1/mobile" });
 
 // Telegram Bot API bridge
 await app.register(telegramRoutes, { prefix: "/v1/telegram" });
+
+// CRM — contacts and companies
+await app.register(crmRoutes, { prefix: "/v1/crm" });
+
+// Analytics — aggregated metrics and distribution data
+await app.register(analyticsRoutes, { prefix: "/v1/analytics" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

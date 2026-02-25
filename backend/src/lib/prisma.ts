@@ -1,3 +1,2 @@
-import { PrismaClient } from "@prisma/client";
-
-export const prisma = new PrismaClient();
+// Re-export shared singleton to avoid creating extra connections.
+export { prisma } from "../db/prisma.js";

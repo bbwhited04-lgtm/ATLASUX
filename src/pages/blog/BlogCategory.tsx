@@ -1,13 +1,29 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import PublicHeader from "../../components/public/PublicHeader";
 import BlogCard from "../../components/blog/BlogCard";
 import BlogSidebar from "../../components/blog/BlogSidebar";
-import { getCategories, loadAllBlogPosts } from "../../lib/blog/loadPosts";
+import { getCategories, loadAllBlogPosts, loadApiPosts } from "../../lib/blog/loadPosts";
+import type { BlogPost } from "../../lib/blog/types";
 
 export default function BlogCategory() {
   const { category } = useParams();
-  const posts = useMemo(() => loadAllBlogPosts(), []);
+  const staticPosts = useMemo(() => loadAllBlogPosts(), []);
+  const [apiPosts, setApiPosts] = useState<BlogPost[]>([]);
+
+  useEffect(() => {
+    loadApiPosts().then((fetched) => {
+      const staticSlugs = new Set(staticPosts.map((p) => p.slug));
+      setApiPosts(fetched.filter((p) => !staticSlugs.has(p.slug)));
+    });
+  }, [staticPosts]);
+
+  const posts = useMemo(() => {
+    const merged = [...apiPosts, ...staticPosts];
+    merged.sort((a, b) => (a.frontmatter.date < b.frontmatter.date ? 1 : -1));
+    return merged;
+  }, [apiPosts, staticPosts]);
+
   const categories = useMemo(() => getCategories(posts), [posts]);
 
   if (!category) return <Navigate to="/blog" replace />;

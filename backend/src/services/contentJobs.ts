@@ -1,4 +1,5 @@
-import { Prisma, PrismaClient, LedgerCategory, LedgerEntryType } from "@prisma/client";
+import { Prisma, LedgerCategory, LedgerEntryType } from "@prisma/client";
+import { prisma } from "../db/prisma.js";
 
 function normalizeLedgerCategory(input: unknown): LedgerCategory {
   const v = String(input ?? "").trim().toLowerCase();
@@ -38,7 +39,6 @@ function normalizeLedgerEntryType(input: unknown): LedgerEntryType {
   return v === "credit" ? LedgerEntryType.credit : LedgerEntryType.debit;
 }
 
-const prisma = new PrismaClient();
 type CompleteJobInput = {
   jobId: string;
   status: "completed" | "failed";

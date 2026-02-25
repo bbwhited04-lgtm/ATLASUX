@@ -1,16 +1,31 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import PublicHeader from "../../components/public/PublicHeader";
 import BlogCard from "../../components/blog/BlogCard";
 import BlogSidebar from "../../components/blog/BlogSidebar";
-import { getCategories, loadAllBlogPosts } from "../../lib/blog/loadPosts";
+import { getCategories, loadAllBlogPosts, loadApiPosts } from "../../lib/blog/loadPosts";
+import type { BlogPost } from "../../lib/blog/types";
 
 export default function BlogHome() {
-  const posts = useMemo(() => loadAllBlogPosts(), []);
-  const categories = useMemo(() => getCategories(posts), [posts]);
+  const staticPosts = useMemo(() => loadAllBlogPosts(), []);
+  const [apiPosts, setApiPosts] = useState<BlogPost[]>([]);
 
+  useEffect(() => {
+    loadApiPosts().then((fetched) => {
+      // Deduplicate: API posts take precedence; skip slugs already in static
+      const staticSlugs = new Set(staticPosts.map((p) => p.slug));
+      setApiPosts(fetched.filter((p) => !staticSlugs.has(p.slug)));
+    });
+  }, [staticPosts]);
+
+  const posts = useMemo(() => {
+    const merged = [...apiPosts, ...staticPosts];
+    merged.sort((a, b) => (a.frontmatter.date < b.frontmatter.date ? 1 : -1));
+    return merged;
+  }, [apiPosts, staticPosts]);
+
+  const categories = useMemo(() => getCategories(posts), [posts]);
   const featured = posts.filter((p) => p.frontmatter.featured).slice(0, 4);
   const hero = featured.length > 0 ? featured : posts.slice(0, 4);
-  const latest = posts;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -45,7 +60,7 @@ export default function BlogHome() {
             </div>
 
             <div className="space-y-4">
-              {latest.map((p) => (
+              {posts.map((p) => (
                 <BlogCard key={p.slug} post={p} variant="list" />
               ))}
             </div>

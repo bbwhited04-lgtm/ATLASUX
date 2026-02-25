@@ -228,16 +228,48 @@ const handleSend = async () => {
     }
   };
   
+  const recognitionRef = useRef<any>(null);
+
   const toggleVoice = () => {
-    setIsListening(!isListening);
-    
-    if (!isListening) {
-      // Simulate voice recognition
-      setTimeout(() => {
-        setInputValue("Create a social media post about our new product launch");
-        setIsListening(false);
-      }, 3000);
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setRecognitionSupported(false);
+      return;
     }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => setIsListening(true);
+
+    recognition.onresult = (event: any) => {
+      let interim = "";
+      let final = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) final += t;
+        else interim += t;
+      }
+      setVoiceTranscript(interim);
+      if (final) {
+        setInputValue((prev) => (prev ? prev + " " : "") + final.trim());
+        setVoiceTranscript("");
+      }
+    };
+
+    recognition.onerror = () => { setIsListening(false); setVoiceTranscript(""); };
+    recognition.onend = () => { setIsListening(false); setVoiceTranscript(""); };
+
+    recognitionRef.current = recognition;
+    recognition.start();
   };
   
   const getPlatformsByCategory = (category: string) => {

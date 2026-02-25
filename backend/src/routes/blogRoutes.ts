@@ -31,21 +31,59 @@ function slugify(input: string): string {
 }
 
 export const blogRoutes: FastifyPluginAsync = async (app) => {
-  // GET /v1/blog/posts — list published blog posts for this tenant
+  // GET /v1/blog/posts/:slug — fetch a single published post by slug
+  app.get("/posts/:slug", async (req, reply) => {
+    const { slug } = req.params as { slug: string };
+    if (!slug) return reply.code(400).send({ ok: false, error: "slug_required" });
+
+    const doc = await prisma.kbDocument.findFirst({
+      where: {
+        slug,
+        status: KbDocumentStatus.published,
+        tags: { some: { tag: { name: "blog-post" } } },
+      },
+      include: { tags: { include: { tag: true } } },
+    });
+
+    if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
+
+    const category = doc.tags
+      .map((t) => t.tag.name)
+      .filter((n) => n !== "blog-post")
+      .find(Boolean) ?? "Updates";
+
+    return reply.send({
+      ok: true,
+      post: {
+        id: doc.id,
+        slug: doc.slug,
+        title: doc.title,
+        body: doc.body,
+        category,
+        excerpt: doc.body.slice(0, 220).replace(/#+\s/g, "").trim(),
+        date: doc.createdAt.toISOString().slice(0, 10),
+        status: doc.status,
+        tags: doc.tags.map((t) => t.tag.name).filter((n) => n !== "blog-post"),
+      },
+    });
+  });
+
+  // GET /v1/blog/posts — list published blog posts (tenant-scoped or all-public)
   app.get("/posts", async (req, reply) => {
     const tenantId = (req as any).tenantId as string | undefined;
     const q = (req.query as any) ?? {};
     const tid = tenantId || q.org_id || q.orgId || null;
 
-    if (!tid || !isUUID(tid)) {
-      return reply.send({ ok: true, items: [], posts: [] });
-    }
+    // If no tenantId, return ALL published blog posts (public blog)
+    const whereClause = (tid && isUUID(tid))
+      ? { tenantId: tid, tags: { some: { tag: { name: "blog-post" } } } }
+      : {
+          status: KbDocumentStatus.published,
+          tags: { some: { tag: { name: "blog-post" } } },
+        };
 
     const docs = await prisma.kbDocument.findMany({
-      where: {
-        tenantId: tid,
-        tags: { some: { tag: { name: "blog-post" } } },
-      },
+      where: whereClause,
       orderBy: { createdAt: "desc" },
       take: 100,
       include: { tags: { include: { tag: true } } },

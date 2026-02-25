@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import { API_BASE } from "@/lib/api";
+import { useActiveTenant } from "@/lib/activeTenant";
 
 // If you have shared UI components, swap these for your own.
 // This file intentionally uses plain HTML + Tailwind-ish classes to avoid breaking imports.
@@ -32,8 +34,9 @@ function safeLower(s?: string) {
 
 export default function CRM() {
   const navigate = useNavigate();
+  const { tenantId } = useActiveTenant();
 
-  // ✅ Declare ALL state first (prevents “before initialization” bugs)
+  // ✅ Declare ALL state first (prevents "before initialization" bugs)
   const [activeTab, setActiveTab] = useState<"contacts" | "companies">("contacts");
 
   const [loading, setLoading] = useState(false);
@@ -55,25 +58,21 @@ export default function CRM() {
     company: "",
   });
 
-  // ---- Data loading (safe defaults) ----
+  // ---- Data loading ----
   useEffect(() => {
-    // If you already have a CRM backend endpoint, wire it here.
-    // This will not crash if endpoint doesn’t exist—just shows empty state.
+    if (!tenantId) return;
     let cancelled = false;
 
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
-        // ✅ Optional: use your real API if available
-        // Example:
-        // const res = await fetch("/api/crm/contacts");
-        // if (!res.ok) throw new Error(`Failed: ${res.status}`);
-        // const data = await res.json();
-        // if (!cancelled) setContacts(data.contacts ?? []);
-
-        // For now: no-op (empty list)
-        if (!cancelled) setContacts((prev) => prev ?? []);
+        const res = await fetch(`${API_BASE}/v1/crm/contacts`, {
+          headers: { "x-tenant-id": tenantId },
+        });
+        if (!res.ok) throw new Error(`Failed: ${res.status}`);
+        const data = await res.json();
+        if (!cancelled) setContacts(data.contacts ?? []);
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Failed to load contacts");
       } finally {
@@ -82,10 +81,8 @@ export default function CRM() {
     };
 
     load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => { cancelled = true; };
+  }, [tenantId]);
 
   // ---- Derived data ----
   const filteredContacts = useMemo(() => {
@@ -144,29 +141,18 @@ export default function CRM() {
   };
 
   const handleRunImport = async () => {
-    // Stub: replace with real integration import
-    // This will simulate an import without breaking.
     setShowImportModal(false);
     setLoading(true);
     setError(null);
-
     try {
-      // Example real call:
-      // const res = await fetch(`/api/crm/import?source=${importSource}`, { method: "POST" });
-      // const data = await res.json();
-      // setContacts(data.contacts);
-
-      // Demo-safe: add a single placeholder contact
-      const id = crypto.randomUUID();
-      const placeholder: Contact = {
-        id,
-        firstName: "Imported",
-        lastName: importSource.toUpperCase(),
-        email: `imported-${importSource}@example.com`,
-        source: importSource,
-        tags: ["imported"],
-      };
-      setContacts((prev) => [placeholder, ...(prev ?? [])]);
+      // Reload from DB after import source is wired — for now reload contacts
+      if (tenantId) {
+        const res = await fetch(`${API_BASE}/v1/crm/contacts`, {
+          headers: { "x-tenant-id": tenantId },
+        });
+        const data = await res.json();
+        if (res.ok) setContacts(data.contacts ?? []);
+      }
     } catch (e: any) {
       setError(e?.message ?? "Import failed");
     } finally {
@@ -179,35 +165,59 @@ export default function CRM() {
     setShowAddModal(true);
   };
 
-  const handleCreateContact = () => {
-    const id = crypto.randomUUID();
-    const c: Contact = {
-      id,
-      firstName: (newContact.firstName ?? "").trim(),
-      lastName: (newContact.lastName ?? "").trim(),
-      email: (newContact.email ?? "").trim(),
-      phone: (newContact.phone ?? "").trim(),
-      company: (newContact.company ?? "").trim(),
-      source: "manual",
-      tags: [],
+  const handleCreateContact = async () => {
+    if (!tenantId) { setError("No active tenant."); return; }
+
+    const c = {
+      firstName: (newContact.firstName ?? "").trim() || undefined,
+      lastName:  (newContact.lastName  ?? "").trim() || undefined,
+      email:     (newContact.email     ?? "").trim() || undefined,
+      phone:     (newContact.phone     ?? "").trim() || undefined,
+      company:   (newContact.company   ?? "").trim() || undefined,
+      source:    "manual",
     };
 
-    // Basic validation
     if (!c.email && !c.phone && !c.firstName && !c.lastName) {
       setError("Add at least a name, email, or phone.");
       return;
     }
 
-    setContacts((prev) => [c, ...(prev ?? [])]);
-    setShowAddModal(false);
+    setLoading(true);
     setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/v1/crm/contacts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId },
+        body: JSON.stringify(c),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Failed to create contact");
+      setContacts((prev) => [data.contact, ...(prev ?? [])]);
+      setShowAddModal(false);
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to create contact");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteSelected = () => {
-    if (selectedIds.size === 0) return;
-    const keep = contacts.filter((c) => !selectedIds.has(c.id));
-    setContacts(keep);
-    clearSelection();
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0 || !tenantId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/crm/contacts`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      setContacts((prev) => prev.filter((c) => !selectedIds.has(c.id)));
+      clearSelection();
+    } catch (e: any) {
+      setError(e?.message ?? "Delete failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ---- UI ----

@@ -1,17 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { PrismaClient } from "@prisma/client";
-
-/**
- * Prisma singleton (prevents too many clients in dev/hot reload)
- */
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
-const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: ["error"],
-  });
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+import { prisma } from "../db/prisma.js";
 
 /**
  * Providers we want Business Manager to show.

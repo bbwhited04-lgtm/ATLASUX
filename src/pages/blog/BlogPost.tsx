@@ -1,21 +1,52 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import Markdown from "../../components/blog/Markdown";
 
 import PublicHeader from "../../components/public/PublicHeader";
 import BlogSidebar from "../../components/blog/BlogSidebar";
 import RelatedPosts from "../../components/blog/RelatedPosts";
-import { getCategories, getPostBySlug, loadAllBlogPosts } from "../../lib/blog/loadPosts";
+import { getCategories, getPostBySlug, getApiPostBySlug, loadAllBlogPosts, loadApiPosts } from "../../lib/blog/loadPosts";
+import type { BlogPost as BlogPostType } from "../../lib/blog/types";
 
 export default function BlogPost() {
   const { slug } = useParams();
-  const allPosts = useMemo(() => loadAllBlogPosts(), []);
-  const post = useMemo(() => (slug ? getPostBySlug(slug) : undefined), [slug]);
+  const staticPosts = useMemo(() => loadAllBlogPosts(), []);
+  const staticPost = useMemo(() => (slug ? getPostBySlug(slug) : undefined), [slug]);
+  const [post, setPost] = useState<BlogPostType | undefined>(staticPost);
+  const [apiPosts, setApiPosts] = useState<BlogPostType[]>([]);
+  const [loading, setLoading] = useState(!staticPost);
+
+  useEffect(() => {
+    setPost(staticPost);
+    if (!staticPost && slug) {
+      setLoading(true);
+      getApiPostBySlug(slug).then((p) => {
+        setPost(p);
+        setLoading(false);
+      });
+    }
+    loadApiPosts().then((fetched) => {
+      const staticSlugs = new Set(staticPosts.map((p) => p.slug));
+      setApiPosts(fetched.filter((p) => !staticSlugs.has(p.slug)));
+    });
+  }, [slug, staticPost, staticPosts]);
+
+  const allPosts = useMemo(() => {
+    const merged = [...apiPosts, ...staticPosts];
+    merged.sort((a, b) => (a.frontmatter.date < b.frontmatter.date ? 1 : -1));
+    return merged;
+  }, [apiPosts, staticPosts]);
 
   const categories = useMemo(() => getCategories(allPosts), [allPosts]);
   const editorsChoice = allPosts.filter((p) => p.frontmatter.featured).slice(0, 4);
 
   if (!slug) return <Navigate to="/blog" replace />;
+  if (loading) return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <PublicHeader />
+      <div className="text-slate-500 text-sm">Loading post…</div>
+    </div>
+  );
   if (!post) return <Navigate to="/blog" replace />;
 
   const fm = post.frontmatter;

@@ -77,16 +77,47 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
       data: {
         tenantId,
         actorType: "system",
+        actorUserId: null,
+        actorExternalId: null,
         level: "info" as any,
         action: "LISTENING_START_REQUESTED",
+        entityType: "job",
+        entityId: job.id,
         message: disconnected.length
           ? `Listening requested; ${disconnected.length} providers not connected yet.`
           : "Listening requested.",
-        status: (disconnected.length ? "PENDING" : "SUCCESS") as any,
-        metadata: { disconnectedProviders: Array.from(new Set(disconnected.map((d: any) => d.provider))) },
+        meta: { disconnectedProviders: Array.from(new Set(disconnected.map((d: any) => d.provider))) },
+        timestamp: new Date(),
       } as any,
-    });
+    }).catch(() => null);
 
     return { ok: true, tenantId, job, disconnectedProviders: Array.from(new Set(disconnected.map((d: any) => d.provider))) };
+  });
+
+  /**
+   * GET /v1/listening/mentions?tenantId=...&limit=50&platform=twitter
+   * Returns mentions stored by the social monitoring worker.
+   */
+  app.get("/mentions", async (req) => {
+    const tenantId = ((req as any).tenantId ?? null) as string | null;
+    if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
+
+    const q = (req.query ?? {}) as any;
+    const limit = Math.min(Number(q.limit ?? 50), 200);
+    const platform = typeof q.platform === "string" && q.platform ? q.platform : undefined;
+
+    const where: any = { tenantId, eventType: "MENTION" };
+    if (platform) where.channel = platform;
+
+    const mentions = await prisma.distributionEvent.findMany({
+      where,
+      orderBy: { occurredAt: "desc" },
+      take: limit,
+      select: { id: true, channel: true, url: true, meta: true, occurredAt: true },
+    });
+
+    const total = await prisma.distributionEvent.count({ where });
+
+    return { ok: true, tenantId, mentions, total };
   });
 };

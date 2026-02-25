@@ -141,11 +141,36 @@ export function Analytics() {
   const [statusLoading, setStatusLoading] = useState(false);
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
 
-  const websiteData: any[] = [];
-  const socialData: any[] = [];
+  // Analytics data from API
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  const websiteData: any[] = analyticsData?.timeline ?? [];
+  const socialData: any[]   = analyticsData?.timeline ?? [];
   const engagementData: any[] = [];
-  const trafficSources: any[] = [];
+  const trafficSources: any[] = Object.entries(analyticsData?.byChannel ?? {}).map(([name, v]: any) => ({
+    name, value: v.impressions ?? 0,
+  }));
   const topPages: any[] = [];
+
+  async function loadAnalytics() {
+    const tid = activeTenantId ?? org_id;
+    if (!tid) return;
+    setAnalyticsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/analytics/summary?range=${timeRange}`, {
+        headers: { "x-tenant-id": tid },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.ok) setAnalyticsData(json);
+    } catch {
+      // non-fatal
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }
+
+  useEffect(() => { void loadAnalytics(); }, [activeTenantId, timeRange]);
 
   // Load integration status
   async function loadStatus() {
@@ -257,8 +282,8 @@ export function Analytics() {
             ))}
           </div>
 
-          <Button variant="outline" className="border-cyan-500/20">
-            <RefreshCw className="w-4 h-4 mr-2" />
+          <Button variant="outline" className="border-cyan-500/20" onClick={() => { void loadStatus(); void loadAnalytics(); }}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${analyticsLoading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
 
@@ -272,11 +297,11 @@ export function Analytics() {
       {/* Key Metrics */}
       <div className="grid grid-cols-5 gap-4">
         {[
-          { icon: Users,            color: "blue",   label: "Total Visitors",   value: "0"   },
-          { icon: Eye,              color: "purple",  label: "Page Views",       value: "0"   },
-          { icon: MousePointerClick,color: "cyan",   label: "Click Rate",       value: "0%"  },
-          { icon: Clock,            color: "green",  label: "Avg. Session",     value: "0:00"},
-          { icon: Heart,            color: "pink",   label: "Social Followers", value: "0"   },
+          { icon: Users,            color: "blue",   label: "Impressions",  value: analyticsData ? String(analyticsData.summary?.totalImpressions ?? 0) : "—" },
+          { icon: Eye,              color: "purple", label: "Total Posts",   value: analyticsData ? String(analyticsData.summary?.totalPosts ?? 0) : "—" },
+          { icon: MousePointerClick,color: "cyan",   label: "Click Rate",   value: analyticsData ? String(analyticsData.summary?.clickRate ?? "0%") : "—" },
+          { icon: Clock,            color: "green",  label: "Conversions",  value: analyticsData ? String(analyticsData.summary?.totalConversions ?? 0) : "—" },
+          { icon: Heart,            color: "pink",   label: "Total Spend",  value: analyticsData ? `$${analyticsData.summary?.totalSpendUsd ?? "0.00"}` : "—" },
         ].map(({ icon: Icon, color, label, value }) => (
           <Card key={label} className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4">
             <div className="flex items-start justify-between mb-3">
