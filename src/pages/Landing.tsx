@@ -183,6 +183,7 @@ export default function Landing() {
             <li>Added 12 social media KB docs — per-platform posting guidelines (X, Facebook, LinkedIn, TikTok, Instagram, Reddit, Pinterest, Tumblr), source verification protocol with freshness thresholds, trust & transparency framework, content quality standards, posting rhythm calendar, and per-agent voice profiles; all 242 KB docs now live and wired into every LLM call</li>
             <li>Added industry intel KB doc for OpenClaw (Peter Steinberger/OpenAI) with verified facts, common misconception correction, and Atlas UX differentiation guidance</li>
             <li>Rewrote all 13 social media agent SKILL.md files — correct roles, platform-specific tools, content strategies, daily sprint workflows, atomic task decomposition, deterministic output specs, and forbidden actions for Kelly/X, Timmy/TikTok, Fran/Facebook, Dwight/Threads, Link/LinkedIn, Cornwall/Pinterest, Donna/Reddit, Reynolds/Blog, Terry/Tumblr, Penny/Ads, Archy/Instagram-research, Venny/Image-production, Emma/Alignable</li>
+            <li>Built tiered knowledge architecture to remove chat bottleneck — SKILL.md loader (filesystem, 0ms, no DB), KB memory cache (60min TTL, eliminates repeat governance queries), query classifier (routes routine agent tasks to SKILL.md, avoids full RAG for 80% of questions), cache management endpoints on /v1/kb/cache</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "../db/prisma.js";
 import { KbDocumentStatus } from "@prisma/client";
 import { n8nWorkflows } from "../workflows/n8n/manifest.js";
+import { flushKbCache, invalidateKbCache, kbCacheStats } from "../core/kb/kbCache.js";
 
 const SYSTEM_ACTOR = "00000000-0000-0000-0000-000000000001";
 
@@ -496,6 +497,23 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
     await prisma.kbDocument.deleteMany({ where: { id, tenantId } });
 
     return reply.send({ ok: true });
+  });
+
+  // ── KB Cache Management ───────────────────────────────────────────────────
+  app.post("/cache/flush", async (req, reply) => {
+    flushKbCache();
+    return reply.send({ ok: true, message: "KB cache flushed" });
+  });
+
+  app.delete("/cache/:agentId", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string;
+    const agentId  = String((req.params as any)?.agentId ?? "").trim();
+    invalidateKbCache(tenantId, agentId || undefined);
+    return reply.send({ ok: true, message: `Cache invalidated for ${agentId || "all agents"}` });
+  });
+
+  app.get("/cache/stats", async (_req, reply) => {
+    return reply.send({ ok: true, cache: kbCacheStats() });
   });
 
   // ── Atlas KB Seeder ────────────────────────────────────────────────────────
