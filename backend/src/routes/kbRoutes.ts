@@ -315,6 +315,86 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
     return reply.send({ ok: true, id: created.id });
   });
 
+  // ── Version history ────────────────────────────────────────────────────────
+
+  // List versions (no body to keep response small)
+  app.get("/documents/:id/versions", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string;
+    const id = String((req.params as any)?.id ?? "").trim();
+
+    const doc = await prisma.kbDocument.findFirst({ where: { id, tenantId }, select: { id: true } });
+    if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
+
+    const versions = await prisma.kbDocumentVersion.findMany({
+      where: { documentId: id, tenantId },
+      select: { id: true, versionNum: true, editedBy: true, editedAt: true, changeSummary: true, title: true },
+      orderBy: { versionNum: "desc" },
+    });
+
+    return reply.send({ ok: true, documentId: id, versions });
+  });
+
+  // Get a specific version by versionNum (includes body)
+  app.get("/documents/:id/versions/:vnum", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string;
+    const id   = String((req.params as any)?.id   ?? "").trim();
+    const vnum = parseInt(String((req.params as any)?.vnum ?? ""), 10);
+
+    if (isNaN(vnum)) return reply.code(400).send({ ok: false, error: "invalid_version_number" });
+
+    const doc = await prisma.kbDocument.findFirst({ where: { id, tenantId }, select: { id: true } });
+    if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
+
+    const version = await prisma.kbDocumentVersion.findFirst({
+      where: { documentId: id, tenantId, versionNum: vnum },
+    });
+
+    if (!version) return reply.code(404).send({ ok: false, error: "version_not_found" });
+
+    return reply.send({ ok: true, version });
+  });
+
+  // Manually snapshot current doc body as a new version
+  app.post("/documents/:id/versions/snapshot", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string;
+    const role     = (req as any).tenantRole;
+    const userId   = (req as any).auth?.userId as string | undefined;
+    const id       = String((req.params as any)?.id ?? "").trim();
+
+    if (!canWrite(role)) return reply.code(403).send({ ok: false, error: "role_cannot_write_kb" });
+    if (!userId)         return reply.code(401).send({ ok: false, error: "missing_user" });
+
+    const body = (req.body as any) ?? {};
+    const changeSummary = body.changeSummary != null ? String(body.changeSummary) : null;
+
+    const version = await prisma.$transaction(async (tx) => {
+      const doc = await tx.kbDocument.findFirst({ where: { id, tenantId } });
+      if (!doc) return null;
+
+      const agg = await tx.kbDocumentVersion.aggregate({
+        where: { documentId: id, tenantId },
+        _max: { versionNum: true },
+      });
+      const nextNum = (agg._max.versionNum ?? 0) + 1;
+
+      return tx.kbDocumentVersion.create({
+        data: {
+          tenantId,
+          documentId: id,
+          title:         doc.title,
+          body:          doc.body ?? "",
+          editedBy:      userId,
+          versionNum:    nextNum,
+          ...(changeSummary != null ? { changeSummary } : {}),
+        },
+      });
+    });
+
+    if (!version) return reply.code(404).send({ ok: false, error: "not_found" });
+
+    return reply.send({ ok: true, version });
+  });
+
   // Update
   app.patch("/documents/:id", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
@@ -338,9 +418,32 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
       ? (Array.isArray(body.tags) ? body.tags.map((t: any) => String(t).trim()).filter(Boolean) : [])
       : null;
 
+    // Snapshot before edit if body or title is changing
+    const needsSnapshot = content != null || title != null;
+
     const updated = await prisma.$transaction(async (tx) => {
       const existing = await tx.kbDocument.findFirst({ where: { id, tenantId } });
       if (!existing) return null;
+
+      // Auto-snapshot BEFORE applying changes
+      if (needsSnapshot) {
+        const agg = await tx.kbDocumentVersion.aggregate({
+          where: { documentId: id, tenantId },
+          _max: { versionNum: true },
+        });
+        const nextNum = (agg._max.versionNum ?? 0) + 1;
+        await tx.kbDocumentVersion.create({
+          data: {
+            tenantId,
+            documentId:   id,
+            title:        existing.title,
+            body:         existing.body ?? "",
+            editedBy:     userId,
+            versionNum:   nextNum,
+            changeSummary: "auto-snapshot before edit",
+          },
+        });
+      }
 
       const doc = await tx.kbDocument.update({
         where: { id },

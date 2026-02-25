@@ -37,7 +37,7 @@ export default function CRM() {
   const { tenantId } = useActiveTenant();
 
   // ✅ Declare ALL state first (prevents "before initialization" bugs)
-  const [activeTab, setActiveTab] = useState<"contacts" | "companies">("contacts");
+  const [activeTab, setActiveTab] = useState<"contacts" | "companies" | "segments">("contacts");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +57,19 @@ export default function CRM() {
     phone: "",
     company: "",
   });
+
+  // Activity timeline state
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [showActivityForm, setShowActivityForm] = useState(false);
+  const [newActivity, setNewActivity] = useState({ type: "note", subject: "", body: "" });
+
+  // Segments state
+  const [segments, setSegments] = useState<any[]>([]);
+  const [newSegmentName, setNewSegmentName] = useState("");
+  const [showSegmentForm, setShowSegmentForm] = useState(false);
+  const [segmentsLoading, setSegmentsLoading] = useState(false);
 
   // ---- Data loading ----
   useEffect(() => {
@@ -83,6 +96,13 @@ export default function CRM() {
     load();
     return () => { cancelled = true; };
   }, [tenantId]);
+
+  // Load segments when segments tab is active
+  useEffect(() => {
+    if (activeTab === "segments" && tenantId) {
+      loadSegments();
+    }
+  }, [activeTab, tenantId]);
 
   // ---- Derived data ----
   const filteredContacts = useMemo(() => {
@@ -220,6 +240,83 @@ export default function CRM() {
     }
   };
 
+  // ---- Activity Timeline handlers ----
+  async function loadActivities(contactId: string) {
+    setActivitiesLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/crm/contacts/${contactId}/activities`, {
+        headers: { "x-tenant-id": tenantId ?? "" }
+      });
+      const json = await res.json();
+      if (json.ok) setActivities(json.activities ?? []);
+    } catch {} finally { setActivitiesLoading(false); }
+  }
+
+  async function addActivity() {
+    if (!selectedContact) return;
+    await fetch(`${API_BASE}/v1/crm/contacts/${selectedContact.id}/activities`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
+      body: JSON.stringify(newActivity)
+    });
+    setNewActivity({ type: "note", subject: "", body: "" });
+    setShowActivityForm(false);
+    loadActivities(selectedContact.id);
+  }
+
+  // ---- Segment handlers ----
+  async function loadSegments() {
+    if (!tenantId) return;
+    setSegmentsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/crm/segments`, {
+        headers: { "x-tenant-id": tenantId }
+      });
+      const json = await res.json();
+      if (json.ok || Array.isArray(json.segments)) {
+        setSegments(json.segments ?? []);
+      }
+    } catch {} finally { setSegmentsLoading(false); }
+  }
+
+  async function createSegment() {
+    if (!tenantId || !newSegmentName.trim()) return;
+    try {
+      const res = await fetch(`${API_BASE}/v1/crm/segments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId },
+        body: JSON.stringify({ name: newSegmentName.trim() })
+      });
+      const json = await res.json();
+      if (json.ok || json.segment) {
+        setSegments((prev) => [json.segment, ...prev]);
+        setNewSegmentName("");
+        setShowSegmentForm(false);
+      }
+    } catch {}
+  }
+
+  async function deleteSegment(id: string) {
+    if (!tenantId) return;
+    try {
+      await fetch(`${API_BASE}/v1/crm/segments/${id}`, {
+        method: "DELETE",
+        headers: { "x-tenant-id": tenantId }
+      });
+      setSegments((prev) => prev.filter((s) => s.id !== id));
+    } catch {}
+  }
+
+  function applySegmentFilter(segment: any) {
+    // Switch to contacts tab and apply segment filter criteria
+    setActiveTab("contacts");
+    if (segment.filterCriteria?.query) {
+      setQuery(segment.filterCriteria.query);
+    } else {
+      setQuery(segment.name ?? "");
+    }
+  }
+
   // ---- UI ----
   return (
     <div className="p-6 space-y-6">
@@ -282,6 +379,17 @@ export default function CRM() {
           }`}
         >
           Companies
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("segments")}
+          className={`h-10 px-4 rounded-xl transition ${
+            activeTab === "segments"
+              ? "bg-white text-black font-semibold"
+              : "border border-white/10 hover:border-white/20"
+          }`}
+        >
+          Segments
         </button>
       </div>
 
@@ -348,23 +456,25 @@ export default function CRM() {
                 <span className="font-semibold">Add Contact</span>.
               </div>
             ) : (
-              filteredContacts.map((c) => (
+              filteredContacts.map((contact) => (
                 <div
-                  key={c.id}
-                  className="grid grid-cols-12 gap-2 px-4 py-3 text-sm border-t border-white/10 hover:bg-white/5 transition"
+                  key={contact.id}
+                  onClick={() => { setSelectedContact(contact); loadActivities(contact.id); }}
+                  className="grid grid-cols-12 gap-2 px-4 py-3 text-sm border-t border-white/10 hover:bg-white/5 transition cursor-pointer"
                 >
                   <div className="col-span-1 flex items-center">
                     <input
                       type="checkbox"
-                      checked={selectedIds.has(c.id)}
-                      onChange={() => toggleSelectOne(c.id)}
+                      checked={selectedIds.has(contact.id)}
+                      onChange={(e) => { e.stopPropagation(); toggleSelectOne(contact.id); }}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </div>
-                  <div className="col-span-3 font-medium">{normalizeContactName(c)}</div>
-                  <div className="col-span-3 opacity-80">{c.email ?? "—"}</div>
-                  <div className="col-span-2 opacity-80">{c.phone ?? "—"}</div>
-                  <div className="col-span-2 opacity-80">{c.company ?? "—"}</div>
-                  <div className="col-span-1 opacity-70">{(c.source ?? "—").toString()}</div>
+                  <div className="col-span-3 font-medium">{normalizeContactName(contact)}</div>
+                  <div className="col-span-3 opacity-80">{contact.email ?? "—"}</div>
+                  <div className="col-span-2 opacity-80">{contact.phone ?? "—"}</div>
+                  <div className="col-span-2 opacity-80">{contact.company ?? "—"}</div>
+                  <div className="col-span-1 opacity-70">{(contact.source ?? "—").toString()}</div>
                 </div>
               ))
             )}
@@ -379,6 +489,98 @@ export default function CRM() {
             Companies view is ready to wire next. (We can derive companies from contacts or
             load from your backend.)
           </div>
+        </div>
+      )}
+
+      {/* Segments tab */}
+      {activeTab === "segments" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm opacity-70">
+              Saved audience segments for targeted outreach.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowSegmentForm((v) => !v)}
+              className="h-10 px-4 rounded-xl border border-white/10 hover:border-white/20 transition text-sm"
+            >
+              + New Segment
+            </button>
+          </div>
+
+          {showSegmentForm && (
+            <div className="rounded-xl border border-cyan-500/20 bg-slate-800/50 p-4 space-y-3">
+              <h3 className="text-sm font-medium text-slate-200">Create Segment</h3>
+              <input
+                value={newSegmentName}
+                onChange={(e) => setNewSegmentName(e.target.value)}
+                placeholder="Segment name (e.g. High-value leads)"
+                className="w-full h-10 px-3 rounded-lg bg-slate-800 border border-cyan-500/20 outline-none focus:border-cyan-500/40 text-sm text-slate-200"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={createSegment}
+                  disabled={!newSegmentName.trim()}
+                  className="flex-1 h-9 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-400 text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition"
+                >
+                  Create
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowSegmentForm(false); setNewSegmentName(""); }}
+                  className="px-4 h-9 rounded-lg text-xs text-slate-400 hover:text-white transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {segmentsLoading ? (
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-sm opacity-70 text-center">
+              Loading segments…
+            </div>
+          ) : segments.length === 0 ? (
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-sm opacity-70">
+              No segments yet. Create one to group your contacts.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {segments.map((seg: any) => (
+                <div
+                  key={seg.id}
+                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 flex items-center justify-between gap-4"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm">{seg.name}</div>
+                    {seg.description && (
+                      <div className="text-xs opacity-60 mt-0.5 truncate">{seg.description}</div>
+                    )}
+                    {seg.contactCount != null && (
+                      <div className="text-xs text-cyan-400/80 mt-0.5">{seg.contactCount} contacts</div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => applySegmentFilter(seg)}
+                      className="h-8 px-3 rounded-lg border border-white/10 hover:border-white/20 text-xs transition"
+                    >
+                      View Contacts
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteSegment(seg.id)}
+                      className="h-8 px-3 rounded-lg border border-red-500/20 hover:border-red-500/40 text-xs text-red-400 hover:text-red-300 transition"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -504,6 +706,62 @@ export default function CRM() {
                 Create
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Activity timeline side panel */}
+      {selectedContact && (
+        <div className="fixed inset-y-0 right-0 w-96 bg-slate-900 border-l border-cyan-500/20 z-50 flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-cyan-500/10">
+            <div>
+              <div className="font-semibold">{selectedContact.firstName} {selectedContact.lastName}</div>
+              <div className="text-xs text-slate-400">{selectedContact.email}</div>
+            </div>
+            <button onClick={() => setSelectedContact(null)} className="text-slate-400 hover:text-white">✕</button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {activitiesLoading ? (
+              <div className="text-center text-slate-400 text-sm py-8">Loading...</div>
+            ) : activities.length === 0 ? (
+              <div className="text-center text-slate-400 text-sm py-8">No activity yet</div>
+            ) : (
+              activities.map((a: any) => (
+                <div key={a.id} className="bg-slate-800 rounded-lg p-3 text-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 capitalize">{a.type}</span>
+                    <span className="text-xs text-slate-500">{new Date(a.occurredAt).toLocaleDateString()}</span>
+                  </div>
+                  {a.subject && <div className="font-medium text-slate-200 text-xs">{a.subject}</div>}
+                  {a.body && <div className="text-slate-400 text-xs mt-1">{a.body}</div>}
+                </div>
+              ))
+            )}
+          </div>
+          <div className="p-4 border-t border-cyan-500/10">
+            {showActivityForm ? (
+              <div className="space-y-2">
+                <select value={newActivity.type} onChange={e => setNewActivity(p => ({...p, type: e.target.value}))}
+                  className="w-full bg-slate-800 border border-cyan-500/20 rounded px-2 py-1 text-xs text-slate-200">
+                  {["note","email","call","meeting","sms","mention"].map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <input placeholder="Subject (optional)" value={newActivity.subject}
+                  onChange={e => setNewActivity(p => ({...p, subject: e.target.value}))}
+                  className="w-full bg-slate-800 border border-cyan-500/20 rounded px-2 py-1 text-xs text-slate-200" />
+                <textarea placeholder="Details" value={newActivity.body} rows={3}
+                  onChange={e => setNewActivity(p => ({...p, body: e.target.value}))}
+                  className="w-full bg-slate-800 border border-cyan-500/20 rounded px-2 py-1 text-xs text-slate-200 resize-none" />
+                <div className="flex gap-2">
+                  <button onClick={addActivity} className="flex-1 py-1.5 text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded border border-cyan-500/30">Save</button>
+                  <button onClick={() => setShowActivityForm(false)} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setShowActivityForm(true)}
+                className="w-full py-2 text-xs bg-slate-800 hover:bg-slate-700 border border-cyan-500/20 rounded text-slate-300">
+                + Log Activity
+              </button>
+            )}
           </div>
         </div>
       )}

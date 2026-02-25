@@ -144,6 +144,8 @@ export function Analytics() {
   // Analytics data from API
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [compareData, setCompareData] = useState<any>(null);
+  const [roiData, setRoiData] = useState<any>(null);
 
   const websiteData: any[] = analyticsData?.timeline ?? [];
   const socialData: any[]   = analyticsData?.timeline ?? [];
@@ -170,7 +172,39 @@ export function Analytics() {
     }
   }
 
-  useEffect(() => { void loadAnalytics(); }, [activeTenantId, timeRange]);
+  async function loadCompare() {
+    const tid = activeTenantId ?? org_id;
+    if (!tid) return;
+    try {
+      const res = await fetch(`${API_BASE}/v1/analytics/compare?range=${timeRange}`, {
+        headers: { "x-tenant-id": tid },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.ok) setCompareData(json);
+    } catch {
+      // non-fatal
+    }
+  }
+
+  async function loadRoi() {
+    const tid = activeTenantId ?? org_id;
+    if (!tid) return;
+    try {
+      const res = await fetch(`${API_BASE}/v1/analytics/roi?range=${timeRange}`, {
+        headers: { "x-tenant-id": tid },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.ok) setRoiData(json);
+    } catch {
+      // non-fatal
+    }
+  }
+
+  useEffect(() => {
+    void loadAnalytics();
+    void loadCompare();
+    void loadRoi();
+  }, [activeTenantId, timeRange]);
 
   // Load integration status
   async function loadStatus() {
@@ -325,6 +359,7 @@ export function Analytics() {
           <TabsTrigger value="website">Website Analytics</TabsTrigger>
           <TabsTrigger value="social">Social Media</TabsTrigger>
           <TabsTrigger value="traffic">Traffic Sources</TabsTrigger>
+          <TabsTrigger value="compare">Period Comparison</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -497,6 +532,28 @@ export function Analytics() {
               </BarChart>
             </ResponsiveContainer>
           </Card>
+
+          <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-6">
+            <h3 className="font-semibold mb-4">ROI by Channel</h3>
+            {roiData?.channels && roiData.channels.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={roiData.channels}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="channel" stroke="#94a3b8" style={{ fontSize: 12 }} />
+                  <YAxis stroke="#94a3b8" style={{ fontSize: 12 }} />
+                  <Tooltip contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "8px" }} />
+                  <Legend />
+                  <Bar dataKey="impressions" fill="#06b6d4" />
+                  <Bar dataKey="clicks" fill="#8b5cf6" />
+                  <Bar dataKey="conversions" fill="#10b981" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-48 text-slate-500 text-sm">
+                No ROI data available for this period
+              </div>
+            )}
+          </Card>
         </TabsContent>
 
         {/* Traffic Sources Tab */}
@@ -535,6 +592,108 @@ export function Analytics() {
               </div>
             </Card>
           </div>
+        </TabsContent>
+        {/* Period Comparison Tab */}
+        <TabsContent value="compare" className="space-y-4">
+          {compareData ? (() => {
+            const delta = compareData?.delta ?? {};
+            const current = compareData?.current ?? {};
+            const prior = compareData?.prior ?? {};
+            const metrics: Array<{ key: string; label: string }> = [
+              { key: "impressions", label: "Impressions" },
+              { key: "clicks", label: "Clicks" },
+              { key: "conversions", label: "Conversions" },
+              { key: "posts", label: "Posts" },
+              { key: "spend", label: "Spend" },
+            ];
+            return (
+              <>
+                <div className="grid grid-cols-2 gap-6">
+                  <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-6">
+                    <h3 className="font-semibold text-cyan-400 mb-4">This Period</h3>
+                    <div className="space-y-3">
+                      {metrics.map(({ key, label }) => {
+                        const d = delta[key] ?? "";
+                        const isPositive = String(d).startsWith("+");
+                        const isNegative = String(d).startsWith("-");
+                        return (
+                          <div key={key} className="flex items-center justify-between py-2 border-b border-slate-800 last:border-0">
+                            <span className="text-sm text-slate-400">{label}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-slate-200">
+                                {key === "spend" && current[key] != null
+                                  ? `$${current[key]}`
+                                  : (current[key] ?? "—")}
+                              </span>
+                              {d !== "" && (
+                                <span className={`flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded ${
+                                  isPositive ? "text-green-400 bg-green-500/10" :
+                                  isNegative ? "text-red-400 bg-red-500/10" :
+                                  "text-slate-400 bg-slate-700/50"
+                                }`}>
+                                  {isPositive ? <TrendingUp className="w-3 h-3" /> : isNegative ? <TrendingDown className="w-3 h-3" /> : null}
+                                  {d}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+
+                  <Card className="bg-slate-900/50 border-slate-600/30 backdrop-blur-xl p-6">
+                    <h3 className="font-semibold text-slate-400 mb-4">Prior Period</h3>
+                    <div className="space-y-3">
+                      {metrics.map(({ key, label }) => (
+                        <div key={key} className="flex items-center justify-between py-2 border-b border-slate-800 last:border-0">
+                          <span className="text-sm text-slate-400">{label}</span>
+                          <span className="font-semibold text-slate-400">
+                            {key === "spend" && prior[key] != null
+                              ? `$${prior[key]}`
+                              : (prior[key] ?? "—")}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </div>
+
+                <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-6">
+                  <h3 className="font-semibold mb-4">Period-over-Period Delta</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {metrics.map(({ key, label }) => {
+                      const d = delta[key] ?? "";
+                      const isPositive = String(d).startsWith("+");
+                      const isNegative = String(d).startsWith("-");
+                      return (
+                        <div key={key} className={`flex flex-col items-center gap-1 px-4 py-3 rounded-lg border ${
+                          isPositive ? "border-green-500/30 bg-green-500/10" :
+                          isNegative ? "border-red-500/30 bg-red-500/10" :
+                          "border-slate-600/30 bg-slate-800/40"
+                        }`}>
+                          <span className="text-xs text-slate-400">{label}</span>
+                          <span className={`text-lg font-bold flex items-center gap-1 ${
+                            isPositive ? "text-green-400" : isNegative ? "text-red-400" : "text-slate-400"
+                          }`}>
+                            {isPositive ? <TrendingUp className="w-4 h-4" /> : isNegative ? <TrendingDown className="w-4 h-4" /> : null}
+                            {d !== "" ? d : "—"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              </>
+            );
+          })() : (
+            <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-12">
+              <div className="text-center text-slate-500">
+                <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No comparison data available for this period.</p>
+              </div>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 

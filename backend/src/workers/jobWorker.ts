@@ -7,6 +7,53 @@ import { prisma } from "../db/prisma.js";
 
 const POLL_MS = Number(process.env.JOB_WORKER_INTERVAL_MS ?? 15_000);
 
+async function handleJobFailure(
+  jobId: string,
+  tenantId: string,
+  retryCount: number,
+  maxRetries: number,
+  errMsg: string,
+  jobType: string,
+) {
+  const now = new Date();
+  if (retryCount < maxRetries) {
+    const delayMs = 10_000 * Math.pow(2, retryCount);
+    const nextRetryAt = new Date(now.getTime() + delayMs);
+    await prisma.job.update({
+      where: { id: jobId },
+      data: {
+        status: "queued",
+        retryCount: retryCount + 1,
+        nextRetryAt,
+        error: { message: errMsg, attemptedAt: now.toISOString(), retryCount },
+        finishedAt: null,
+      },
+    });
+    console.log(`[${jobType}] Job ${jobId} will retry #${retryCount + 1} at ${nextRetryAt.toISOString()}`);
+  } else {
+    await prisma.job.update({
+      where: { id: jobId },
+      data: { status: "failed", finishedAt: now, error: { message: errMsg, exhausted: true, retryCount } },
+    });
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: null,
+        actorExternalId: null,
+        level: "error",
+        action: "JOB_EXHAUSTED_RETRIES",
+        entityType: "job",
+        entityId: jobId,
+        message: `${jobType} job ${jobId} exhausted ${maxRetries} retries: ${errMsg}`,
+        meta: { jobType, errMsg, retryCount },
+        timestamp: now,
+      },
+    }).catch(() => null);
+    console.error(`[${jobType}] Job ${jobId} permanently failed after ${maxRetries} retries: ${errMsg}`);
+  }
+}
+
 // ── SOCIAL_POST handler ───────────────────────────────────────────────────────
 
 async function handleSocialPost(jobId: string, tenantId: string, input: any) {
@@ -134,7 +181,14 @@ async function handleWorkflow(jobId: string, tenantId: string, input: any) {
 
 async function processJobs() {
   const jobs = await prisma.job.findMany({
-    where: { jobType: { in: ["SOCIAL_POST", "WORKFLOW"] }, status: "queued" },
+    where: {
+      jobType: { in: ["SOCIAL_POST", "WORKFLOW"] },
+      status: "queued",
+      OR: [
+        { nextRetryAt: null },
+        { nextRetryAt: { lte: new Date() } },
+      ],
+    },
     orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
     take: 10,
   });
@@ -176,11 +230,7 @@ async function processJobs() {
       console.log(`[jobWorker] Completed ${job.jobType} job ${job.id}`);
     } catch (err: any) {
       const errorMsg = err?.message ?? "Unknown error";
-      await prisma.job.update({
-        where: { id: job.id },
-        data: { status: "failed", finishedAt: new Date(), error: { message: errorMsg } },
-      });
-      console.error(`[jobWorker] Failed ${job.jobType} job ${job.id}: ${errorMsg}`);
+      await handleJobFailure(job.id, job.tenantId, job.retryCount, job.maxRetries, errorMsg, "jobWorker");
     }
   }
 }

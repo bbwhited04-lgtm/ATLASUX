@@ -6,6 +6,53 @@ import { prisma } from "../db/prisma.js";
 
 const POLL_MS = Number(process.env.SMS_WORKER_INTERVAL_MS ?? 10_000);
 
+async function handleJobFailure(
+  jobId: string,
+  tenantId: string,
+  retryCount: number,
+  maxRetries: number,
+  errMsg: string,
+  jobType: string,
+) {
+  const now = new Date();
+  if (retryCount < maxRetries) {
+    const delayMs = 10_000 * Math.pow(2, retryCount);
+    const nextRetryAt = new Date(now.getTime() + delayMs);
+    await prisma.job.update({
+      where: { id: jobId },
+      data: {
+        status: "queued",
+        retryCount: retryCount + 1,
+        nextRetryAt,
+        error: { message: errMsg, attemptedAt: now.toISOString(), retryCount },
+        finishedAt: null,
+      },
+    });
+    console.log(`[${jobType}] Job ${jobId} will retry #${retryCount + 1} at ${nextRetryAt.toISOString()}`);
+  } else {
+    await prisma.job.update({
+      where: { id: jobId },
+      data: { status: "failed", finishedAt: now, error: { message: errMsg, exhausted: true, retryCount } },
+    });
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: null,
+        actorExternalId: null,
+        level: "error",
+        action: "JOB_EXHAUSTED_RETRIES",
+        entityType: "job",
+        entityId: jobId,
+        message: `${jobType} job ${jobId} exhausted ${maxRetries} retries: ${errMsg}`,
+        meta: { jobType, errMsg, retryCount },
+        timestamp: now,
+      },
+    }).catch(() => null);
+    console.error(`[${jobType}] Job ${jobId} permanently failed after ${maxRetries} retries: ${errMsg}`);
+  }
+}
+
 async function sendViaTwilio(to: string, message: string): Promise<{ sid: string }> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken  = process.env.TWILIO_AUTH_TOKEN;
@@ -35,7 +82,14 @@ async function sendViaTwilio(to: string, message: string): Promise<{ sid: string
 
 async function processSmsJobs() {
   const jobs = await prisma.job.findMany({
-    where: { jobType: "SMS_SEND", status: "queued" },
+    where: {
+      jobType: "SMS_SEND",
+      status: "queued",
+      OR: [
+        { nextRetryAt: null },
+        { nextRetryAt: { lte: new Date() } },
+      ],
+    },
     orderBy: { createdAt: "asc" },
     take: 10,
   });
@@ -77,11 +131,7 @@ async function processSmsJobs() {
       console.log(`[smsWorker] Sent SMS to ${to} — SID ${result.sid}`);
     } catch (err: any) {
       const errorMsg = err?.message ?? "Unknown SMS error";
-      await prisma.job.update({
-        where: { id: job.id },
-        data: { status: "failed", finishedAt: new Date(), error: { message: errorMsg } },
-      });
-      console.error(`[smsWorker] Failed SMS job ${job.id}: ${errorMsg}`);
+      await handleJobFailure(job.id, job.tenantId, job.retryCount, job.maxRetries, errorMsg, "smsWorker");
     }
   }
 }

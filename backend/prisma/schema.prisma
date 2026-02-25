@@ -31,28 +31,66 @@ model Tenant {
   Ticket                                   Ticket[]
   crmContacts                              CrmContact[]
   crmCompanies                             CrmCompany[]
+  crmSegments                              CrmSegment[]
+  contactActivities                        ContactActivity[]
+  cannedResponses                          CannedResponse[]
+  budgets                                  Budget[]
+  decisionTemplates                        DecisionTemplate[]
 
   @@map("tenants")
 }
 
 model CrmContact {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  firstName String?  @map("first_name")
-  lastName  String?  @map("last_name")
-  email     String?
-  phone     String?
-  company   String?
-  source    String?  @default("manual")
-  tags      String[] @default([])
-  notes     String?
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String              @map("tenant_id") @db.Uuid
+  firstName  String?             @map("first_name")
+  lastName   String?             @map("last_name")
+  email      String?
+  phone      String?
+  company    String?
+  source     String?             @default("manual")
+  tags       String[]            @default([])
+  notes      String?
+  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  activities ContactActivity[]
 
   @@index([tenantId])
   @@index([tenantId, email])
   @@map("crm_contacts")
+}
+
+model ContactActivity {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String     @map("tenant_id") @db.Uuid
+  contactId  String     @map("contact_id") @db.Uuid
+  type       String     // email, call, note, meeting, mention, sms
+  subject    String?
+  body       String?
+  meta       Json       @default("{}")
+  occurredAt DateTime   @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  contact    CrmContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([contactId, occurredAt(sort: Desc)])
+  @@index([tenantId, occurredAt(sort: Desc)])
+  @@map("contact_activities")
+}
+
+model CrmSegment {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  name        String
+  description String?
+  filters     Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("crm_segments")
 }
 
 model CrmCompany {
@@ -126,6 +164,10 @@ model Job {
   input                Json       @default("{}")
   output               Json       @default("{}")
   error                Json       @default("{}")
+  costCents            Int        @default(0) @map("cost_cents")
+  retryCount           Int        @default(0) @map("retry_count")
+  maxRetries           Int        @default(3) @map("max_retries")
+  nextRetryAt          DateTime?  @map("next_retry_at") @db.Timestamptz(6)
   startedAt            DateTime?  @map("started_at") @db.Timestamptz(6)
   finishedAt           DateTime?  @map("finished_at") @db.Timestamptz(6)
   createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -134,6 +176,7 @@ model Job {
 
   @@index([createdAt(sort: Desc)], map: "jobs_created_idx")
   @@index([tenantId, status], map: "jobs_tenant_status_idx")
+  @@index([status, nextRetryAt], map: "jobs_retry_idx")
   @@map("jobs")
 }
 
@@ -678,6 +721,69 @@ model audit_events__old {
   event_type String?
   event_data Json?
   created_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model KbDocumentVersion {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  documentId    String   @map("document_id") @db.Uuid
+  title         String
+  body          String
+  editedBy      String   @map("edited_by") @db.Uuid
+  editedAt      DateTime @default(now()) @map("edited_at") @db.Timestamptz(6)
+  versionNum    Int      @map("version_num")
+  changeSummary String?  @map("change_summary")
+
+  @@index([documentId, versionNum(sort: Desc)])
+  @@index([tenantId, editedAt(sort: Desc)])
+  @@map("kb_document_versions")
+}
+
+model DecisionTemplate {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  name             String
+  description      String?
+  defaultTitle     String?  @map("default_title")
+  defaultRationale String?  @map("default_rationale")
+  billingType      String   @default("none") @map("billing_type")
+  riskTier         Int      @default(0) @map("risk_tier")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("decision_templates")
+}
+
+model CannedResponse {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  title     String
+  body      String
+  channel   String?
+  tags      String[] @default([])
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, channel])
+  @@map("canned_responses")
+}
+
+model Budget {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String          @map("tenant_id") @db.Uuid
+  name       String
+  category   LedgerCategory?
+  limitCents BigInt          @map("limit_cents")
+  periodDays Int             @default(30) @map("period_days")
+  alertAt    Float           @default(0.8) @map("alert_at")
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("budgets")
 }
 
 model runtime_state {

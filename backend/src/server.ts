@@ -43,6 +43,8 @@ import { mobileRoutes } from "./routes/mobileRoutes.js";
 import { telegramRoutes } from "./routes/telegramRoutes.js";
 import { crmRoutes } from "./routes/crmRoutes.js";
 import { analyticsRoutes } from "./routes/analyticsRoutes.js";
+import { cannedResponseRoutes } from "./routes/cannedResponseRoutes.js";
+import { budgetRoutes } from "./routes/budgetRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -190,11 +192,17 @@ await app.register(mobileRoutes, { prefix: "/v1/mobile" });
 // Telegram Bot API bridge
 await app.register(telegramRoutes, { prefix: "/v1/telegram" });
 
-// CRM — contacts and companies
+// CRM — contacts, companies, segments, activities
 await app.register(crmRoutes, { prefix: "/v1/crm" });
 
-// Analytics — aggregated metrics and distribution data
+// Analytics — aggregated metrics, period comparison, ROI by channel
 await app.register(analyticsRoutes, { prefix: "/v1/analytics" });
+
+// Canned responses (messaging templates)
+await app.register(cannedResponseRoutes, { prefix: "/v1/canned-responses" });
+
+// Budget tracking
+await app.register(budgetRoutes, { prefix: "/v1/budgets" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

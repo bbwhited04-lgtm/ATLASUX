@@ -28,6 +28,9 @@ export function Dashboard() {
 const navigate = useNavigate();
   const { tenantId } = useActiveTenant();
   const [pendingDecisionsCount, setPendingDecisionsCount] = React.useState<number>(0);
+  const [liveStats, setLiveStats] = React.useState<{active: number, completed: number}>({ active: 0, completed: 0 });
+  const [growthRuns, setGrowthRuns] = React.useState<any[]>([]);
+  const [recentJobs, setRecentJobs] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -52,16 +55,44 @@ const navigate = useNavigate();
       window.clearInterval(t);
     };
   }, [tenantId]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const fetchLiveData = async () => {
+      if (!tenantId) return;
+      try {
+        const [jobsRes, growthRes] = await Promise.all([
+          fetch(`${API_BASE}/v1/jobs?status=running&limit=5`, { headers: { "x-tenant-id": tenantId } }),
+          fetch(`${API_BASE}/v1/analytics/summary?range=7d`, { headers: { "x-tenant-id": tenantId } }),
+        ]);
+        const jobsJson = await jobsRes.json().catch(() => ({}));
+        const growthJson = await growthRes.json().catch(() => ({}));
+
+        if (!cancelled) {
+          const jobs: any[] = Array.isArray(jobsJson?.jobs) ? jobsJson.jobs :
+                              Array.isArray(jobsJson?.data) ? jobsJson.data : [];
+          const activeCount = jobs.filter((j: any) => j.status === "running" || j.status === "RUNNING").length;
+          const completedCount = typeof jobsJson?.completedToday === "number" ? jobsJson.completedToday : 0;
+          setLiveStats({ active: activeCount, completed: completedCount });
+          setRecentJobs(jobs);
+
+          const runs: any[] = Array.isArray(growthJson?.runs) ? growthJson.runs :
+                               Array.isArray(growthJson?.timeline) ? growthJson.timeline : [];
+          setGrowthRuns(runs);
+        }
+      } catch {
+        // non-fatal
+      }
+    };
+    fetchLiveData();
+  }, [tenantId]);
+
   const stats = [
-    { label: "Active Jobs", value: "12", icon: Activity, color: "cyan", trend: "+3" },
-    { label: "Completed Today", value: "47", icon: CheckCircle2, color: "green", trend: "+12" },
+    { label: "Active Jobs", value: String(liveStats.active), icon: Activity, color: "cyan", trend: "+3" },
+    { label: "Completed Today", value: String(liveStats.completed), icon: CheckCircle2, color: "green", trend: "+12" },
     { label: "Learning Progress", value: "89%", icon: Brain, color: "purple", trend: "+5%" },
     { label: "Avg Response Time", value: "2.3s", icon: Zap, color: "yellow", trend: "-0.4s" },
   ];
-  
-  const recentJobs: any[] = [];
-  
-  const neptuneAccessLog: any[] = [];
   
   return (
     <div className="p-6 space-y-6">
@@ -264,28 +295,28 @@ const navigate = useNavigate();
             </h3>
           </div>
           
-          <div className="space-y-3">
-            {neptuneAccessLog.map((log, index) => (
-              <Card key={index} className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-3">
-                <div className="flex items-start gap-3">
-                  <div className={`w-2 h-2 rounded-full mt-1.5 ${
-                    log.status === "approved" ? "bg-green-400" :
-                    log.status === "pending" ? "bg-yellow-400 animate-pulse" :
-                    "bg-red-400"
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-slate-200 truncate">
-                      {log.action}
+          <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4">
+            <div className="space-y-2">
+              <div className="text-xs text-slate-400 font-medium mb-3">Today's Atlas Run</div>
+              {growthRuns.length === 0 ? (
+                <div className="text-xs text-slate-500 text-center py-4">No runs today</div>
+              ) : (
+                growthRuns.slice(0, 5).map((run: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      run.status === "COMPLETED" ? "bg-green-400" :
+                      run.status === "STARTED" ? "bg-yellow-400 animate-pulse" :
+                      "bg-slate-500"
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-slate-300 truncate">{run.runDate?.slice(0, 10) ?? "—"}</div>
+                      <div className="text-slate-500">{run.status}</div>
                     </div>
-                    <div className="text-xs text-slate-400 truncate mt-0.5">
-                      {log.resource}
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1">{log.time}</div>
                   </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                ))
+              )}
+            </div>
+          </Card>
           
           <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-cyan-500/30 backdrop-blur-xl p-4">
             <div className="text-sm font-medium mb-2">System Learning</div>
@@ -314,20 +345,20 @@ const navigate = useNavigate();
             </div>
             <h3 className="text-xl font-bold text-white mb-2">Business Assets</h3>
             <p className="text-sm text-slate-400 mb-4">
-              Manage your $4.49M portfolio across 3 businesses with 16 total assets
+              Manage your portfolio of businesses and assets (see Business Manager)
             </p>
             <div className="flex items-center gap-4 text-xs">
               <div>
                 <div className="text-slate-500">Businesses</div>
-                <div className="text-white font-semibold">3</div>
+                <div className="text-slate-400 italic font-semibold">Live data</div>
               </div>
               <div>
                 <div className="text-slate-500">Assets</div>
-                <div className="text-white font-semibold">16</div>
+                <div className="text-slate-400 italic font-semibold">Live data</div>
               </div>
               <div>
                 <div className="text-slate-500">Value</div>
-                <div className="text-green-400 font-semibold">$4.49M</div>
+                <div className="text-slate-400 italic font-semibold">Live data</div>
               </div>
             </div>
           </Card>

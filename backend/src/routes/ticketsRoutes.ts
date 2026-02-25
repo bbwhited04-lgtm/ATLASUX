@@ -105,6 +105,22 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ ok: true, ticket });
   });
 
+  // List comments for a ticket
+  app.get("/:id/comments", async (req, reply) => {
+    const tenantId = String((req as any).tenantId ?? "");
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+    const ticketId = String((req.params as any).id);
+
+    const ticket = await prisma.ticket.findFirst({ where: { id: ticketId, tenantId }, select: { id: true } });
+    if (!ticket) return reply.code(404).send({ ok: false, error: "ticket_not_found" });
+
+    const comments = await prisma.ticketComment.findMany({
+      where: { ticketId },
+      orderBy: { createdAt: "asc" },
+    });
+    return reply.send({ ok: true, comments });
+  });
+
   // Add comment
   app.post("/:id/comments", async (req, reply) => {
     const body = (req.body as any) ?? {};

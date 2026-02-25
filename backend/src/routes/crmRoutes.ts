@@ -1,9 +1,13 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
+import { Prisma } from "@prisma/client";
 
 function s(v: unknown): string | null {
   return typeof v === "string" && v.trim().length ? v.trim() : null;
 }
+
+const ACTIVITY_TYPES = ["email", "call", "note", "meeting", "mention", "sms"] as const;
+type ActivityType = typeof ACTIVITY_TYPES[number];
 
 export const crmRoutes: FastifyPluginAsync = async (app) => {
   // ── Contacts ──────────────────────────────────────────────────────────────
@@ -180,5 +184,271 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
 
     await prisma.crmCompany.delete({ where: { id } });
     return reply.send({ ok: true });
+  });
+
+  // ── Contact Activities ─────────────────────────────────────────────────────
+
+  app.get("/contacts/:id/activities", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const { id } = req.params as any;
+
+    const contact = await prisma.crmContact.findFirst({ where: { id, tenantId } });
+    if (!contact) return reply.code(404).send({ ok: false, error: "Not found" });
+
+    const activities = await prisma.contactActivity.findMany({
+      where: { contactId: id, tenantId },
+      orderBy: { occurredAt: "desc" },
+      take: 100,
+    });
+
+    return reply.send({ ok: true, activities });
+  });
+
+  app.post("/contacts/:id/activities", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const { id } = req.params as any;
+    const body = (req.body ?? {}) as any;
+
+    const contact = await prisma.crmContact.findFirst({ where: { id, tenantId } });
+    if (!contact) return reply.code(404).send({ ok: false, error: "Not found" });
+
+    const type = s(body.type);
+    if (!type || !(ACTIVITY_TYPES as readonly string[]).includes(type)) {
+      return reply.code(400).send({
+        ok: false,
+        error: `type must be one of: ${ACTIVITY_TYPES.join(", ")}`,
+      });
+    }
+
+    const activity = await prisma.contactActivity.create({
+      data: {
+        tenantId,
+        contactId: id,
+        type: type as ActivityType,
+        subject: s(body.subject) ?? undefined,
+        body: s(body.body) ?? undefined,
+        meta: body.meta ?? Prisma.DbNull,
+        occurredAt: body.occurredAt ? new Date(body.occurredAt) : new Date(),
+      },
+    });
+
+    return reply.code(201).send({ ok: true, activity });
+  });
+
+  app.delete("/activities/:activityId", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const { activityId } = req.params as any;
+    const existing = await prisma.contactActivity.findFirst({ where: { id: activityId, tenantId } });
+    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
+
+    await prisma.contactActivity.delete({ where: { id: activityId } });
+    return reply.send({ ok: true });
+  });
+
+  // ── Segments ───────────────────────────────────────────────────────────────
+
+  app.get("/segments", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const segments = await prisma.crmSegment.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return reply.send({ ok: true, segments });
+  });
+
+  app.post("/segments", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const body = (req.body ?? {}) as any;
+    if (!s(body.name)) return reply.code(400).send({ ok: false, error: "name required" });
+
+    const segment = await prisma.crmSegment.create({
+      data: {
+        tenantId,
+        name: s(body.name)!,
+        description: s(body.description) ?? undefined,
+        filters: body.filters ?? {},
+      },
+    });
+
+    return reply.code(201).send({ ok: true, segment });
+  });
+
+  app.patch("/segments/:id", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const { id } = req.params as any;
+    const body = (req.body ?? {}) as any;
+
+    const existing = await prisma.crmSegment.findFirst({ where: { id, tenantId } });
+    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
+
+    const segment = await prisma.crmSegment.update({
+      where: { id },
+      data: {
+        ...(body.name !== undefined ? { name: s(body.name) ?? existing.name } : {}),
+        ...(body.description !== undefined ? { description: s(body.description) ?? undefined } : {}),
+        ...(body.filters !== undefined ? { filters: body.filters } : {}),
+      },
+    });
+
+    return reply.send({ ok: true, segment });
+  });
+
+  app.delete("/segments/:id", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const { id } = req.params as any;
+    const existing = await prisma.crmSegment.findFirst({ where: { id, tenantId } });
+    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
+
+    await prisma.crmSegment.delete({ where: { id } });
+    return reply.send({ ok: true });
+  });
+
+  app.get("/segments/:id/contacts", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const { id } = req.params as any;
+    const segment = await prisma.crmSegment.findFirst({ where: { id, tenantId } });
+    if (!segment) return reply.code(404).send({ ok: false, error: "Not found" });
+
+    const filters = (segment.filters ?? {}) as any;
+
+    const where: any = { tenantId };
+
+    if (filters.q && typeof filters.q === "string" && filters.q.trim()) {
+      const q = filters.q.trim();
+      where.OR = [
+        { firstName: { contains: q, mode: "insensitive" } },
+        { lastName:  { contains: q, mode: "insensitive" } },
+        { email:     { contains: q, mode: "insensitive" } },
+        { company:   { contains: q, mode: "insensitive" } },
+        { phone:     { contains: q, mode: "insensitive" } },
+      ];
+    }
+
+    if (Array.isArray(filters.tags) && filters.tags.length) {
+      where.tags = { hasEvery: filters.tags };
+    }
+
+    if (filters.source && typeof filters.source === "string") {
+      where.source = { equals: filters.source, mode: "insensitive" };
+    }
+
+    if (filters.company && typeof filters.company === "string") {
+      where.company = { contains: filters.company, mode: "insensitive" };
+    }
+
+    const contacts = await prisma.crmContact.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+    });
+
+    return reply.send({ ok: true, contacts, total: contacts.length });
+  });
+
+  // ── Deduplication ──────────────────────────────────────────────────────────
+
+  app.get("/contacts/duplicates", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    // Find emails that appear more than once
+    const emailDups = await prisma.$queryRaw<{ email: string }[]>`
+      SELECT email
+      FROM crm_contacts
+      WHERE tenant_id = ${tenantId}::uuid
+        AND email IS NOT NULL
+        AND email <> ''
+      GROUP BY email
+      HAVING COUNT(*) > 1
+    `;
+
+    // Find phones that appear more than once
+    const phoneDups = await prisma.$queryRaw<{ phone: string }[]>`
+      SELECT phone
+      FROM crm_contacts
+      WHERE tenant_id = ${tenantId}::uuid
+        AND phone IS NOT NULL
+        AND phone <> ''
+      GROUP BY phone
+      HAVING COUNT(*) > 1
+    `;
+
+    const groups: { field: string; value: string; contacts: any[] }[] = [];
+
+    for (const row of emailDups) {
+      const contacts = await prisma.crmContact.findMany({
+        where: { tenantId, email: row.email },
+        orderBy: { createdAt: "asc" },
+      });
+      groups.push({ field: "email", value: row.email, contacts });
+    }
+
+    for (const row of phoneDups) {
+      const contacts = await prisma.crmContact.findMany({
+        where: { tenantId, phone: row.phone },
+        orderBy: { createdAt: "asc" },
+      });
+      groups.push({ field: "phone", value: row.phone, contacts });
+    }
+
+    return reply.send({ ok: true, groups });
+  });
+
+  app.post("/contacts/merge", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const body = (req.body ?? {}) as any;
+    const keepId: string = body.keepId;
+    const mergeIds: string[] = Array.isArray(body.mergeIds) ? body.mergeIds : [];
+
+    if (!keepId) return reply.code(400).send({ ok: false, error: "keepId required" });
+    if (!mergeIds.length) return reply.code(400).send({ ok: false, error: "mergeIds[] required" });
+
+    const keepContact = await prisma.crmContact.findFirst({ where: { id: keepId, tenantId } });
+    if (!keepContact) return reply.code(404).send({ ok: false, error: "keepId contact not found" });
+
+    const mergedContacts = await prisma.crmContact.findMany({
+      where: { tenantId, id: { in: mergeIds } },
+    });
+
+    if (mergedContacts.length !== mergeIds.length) {
+      return reply.code(404).send({ ok: false, error: "One or more mergeIds not found" });
+    }
+
+    // Union all tags
+    const allTags = new Set<string>([...keepContact.tags]);
+    for (const c of mergedContacts) {
+      for (const t of c.tags) allTags.add(t);
+    }
+
+    await prisma.$transaction([
+      prisma.crmContact.update({
+        where: { id: keepId },
+        data: { tags: Array.from(allTags) },
+      }),
+      prisma.crmContact.deleteMany({
+        where: { tenantId, id: { in: mergeIds } },
+      }),
+    ]);
+
+    const contact = await prisma.crmContact.findUnique({ where: { id: keepId } });
+    return reply.send({ ok: true, contact, mergedCount: mergeIds.length });
   });
 };

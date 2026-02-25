@@ -1,6 +1,53 @@
 import { prisma } from "../prisma.js";
 import { getSystemState } from "../services/systemState.js";
 
+async function handleJobFailure(
+  jobId: string,
+  tenantId: string,
+  retryCount: number,
+  maxRetries: number,
+  errMsg: string,
+  jobType: string,
+) {
+  const now = new Date();
+  if (retryCount < maxRetries) {
+    const delayMs = 10_000 * Math.pow(2, retryCount);
+    const nextRetryAt = new Date(now.getTime() + delayMs);
+    await prisma.job.update({
+      where: { id: jobId },
+      data: {
+        status: "queued",
+        retryCount: retryCount + 1,
+        nextRetryAt,
+        error: { message: errMsg, attemptedAt: now.toISOString(), retryCount },
+        finishedAt: null,
+      },
+    });
+    console.log(`[${jobType}] Job ${jobId} will retry #${retryCount + 1} at ${nextRetryAt.toISOString()}`);
+  } else {
+    await prisma.job.update({
+      where: { id: jobId },
+      data: { status: "failed", finishedAt: now, error: { message: errMsg, exhausted: true, retryCount } },
+    });
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: null,
+        actorExternalId: null,
+        level: "error",
+        action: "JOB_EXHAUSTED_RETRIES",
+        entityType: "job",
+        entityId: jobId,
+        message: `${jobType} job ${jobId} exhausted ${maxRetries} retries: ${errMsg}`,
+        meta: { jobType, errMsg, retryCount },
+        timestamp: now,
+      },
+    }).catch(() => null);
+    console.error(`[${jobType}] Job ${jobId} permanently failed after ${maxRetries} retries: ${errMsg}`);
+  }
+}
+
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -155,7 +202,14 @@ async function main() {
 
     // Accept both naming conventions that have been used in the codebase.
     const jobs = await prisma.job.findMany({
-      where: { status: "queued", jobType: { in: ["EMAIL_SEND", "EMAILSEND", "email_send"] } },
+      where: {
+        status: "queued",
+        jobType: { in: ["EMAIL_SEND", "EMAILSEND", "email_send"] },
+        OR: [
+          { nextRetryAt: null },
+          { nextRetryAt: { lte: new Date() } },
+        ],
+      },
       orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
       take: batch,
     });
@@ -224,31 +278,7 @@ async function main() {
         ]);
       } catch (e: any) {
         const errMsg = e?.message ?? String(e);
-        await prisma.$transaction([
-          prisma.job.update({
-            where: { id: job.id },
-            data: {
-              status: "failed",
-              error: { message: errMsg },
-              finishedAt: new Date(),
-            },
-          }),
-          prisma.auditLog.create({
-            data: {
-              tenantId: job.tenantId,
-              actorUserId: null,
-              actorExternalId: "email_worker",
-              actorType: "system",
-              level: "error",
-              action: "EMAIL_SEND_FAILED",
-              entityType: "job",
-              entityId: job.id,
-              message: `Email failed: ${errMsg}`,
-              meta: { to, subject, provider },
-              timestamp: new Date(),
-            },
-          }),
-        ]);
+        await handleJobFailure(job.id, job.tenantId, job.retryCount, job.maxRetries, errMsg, "emailSender");
       }
     }
   }

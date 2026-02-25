@@ -25,6 +25,8 @@ import {
   Power,
   Activity,
   Send,
+  AlertCircle,
+  DollarSign,
 } from 'lucide-react';
 
 import { API_BASE } from "../lib/api";
@@ -158,6 +160,8 @@ function RootLayoutInner() {
     { path: "/app/blog", icon: Newspaper, label: "Blog" },
     { path: "/app/decisions", icon: ClipboardCheck, label: "Decisions", badge: pendingDecisionsCount },
     { path: "/app/messaging", icon: Send, label: "Messaging" },
+    { path: "/app/tickets", icon: AlertCircle, label: "Tickets" },
+    { path: "/app/budgets", icon: DollarSign, label: "Budgets" },
     ];
 
   // (Kept for future “setup wizard” flows; currently the modal is opened via context.)

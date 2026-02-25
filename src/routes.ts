@@ -31,6 +31,8 @@ import BlogPost from "./pages/blog/BlogPost";
 import BlogCategory from "./pages/blog/BlogCategory";
 import { DecisionsInbox } from "./components/DecisionsInbox";
 import { MessagingHub } from "./components/MessagingHub";
+import { TicketsView } from "./components/TicketsView";
+import { BudgetTracker } from "./components/BudgetTracker";
 import About from "./pages/About";
 
 export const router = createHashRouter([
@@ -79,6 +81,8 @@ export const router = createHashRouter([
       { path: "help", Component: HelpPage },
       { path: "decisions", Component: DecisionsInbox },
       { path: "messaging", Component: MessagingHub },
+      { path: "tickets", Component: TicketsView },
+      { path: "budgets", Component: BudgetTracker },
       ],
   },
 

@@ -114,6 +114,108 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /**
+   * GET /v1/analytics/compare?range=7d
+   * Period-over-period comparison: current window vs prior window of same length.
+   */
+  app.get("/compare", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const q = (req.query as any);
+    const range = String(q.range ?? "7d");
+    const days = range === "24h" ? 1 : range === "30d" ? 30 : range === "90d" ? 90 : 7;
+    const now = new Date();
+    const since     = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);       // current window start
+    const priorEnd  = since;                                                        // prior window end
+    const priorStart = new Date(since.getTime() - days * 24 * 60 * 60 * 1000);    // prior window start
+
+    const [currentEvents, currentLedger, priorEvents, priorLedger] = await Promise.all([
+      prisma.distributionEvent.findMany({
+        where: { tenantId, occurredAt: { gte: since, lte: now } },
+        select: { impressions: true, clicks: true, conversions: true },
+      }),
+      prisma.ledgerEntry.findMany({
+        where: { tenantId, entryType: "debit", occurredAt: { gte: since, lte: now } },
+        select: { amountCents: true },
+      }),
+      prisma.distributionEvent.findMany({
+        where: { tenantId, occurredAt: { gte: priorStart, lt: priorEnd } },
+        select: { impressions: true, clicks: true, conversions: true },
+      }),
+      prisma.ledgerEntry.findMany({
+        where: { tenantId, entryType: "debit", occurredAt: { gte: priorStart, lt: priorEnd } },
+        select: { amountCents: true },
+      }),
+    ]);
+
+    function aggregate(events: typeof currentEvents, ledger: typeof currentLedger) {
+      return {
+        impressions:  events.reduce((s, e) => s + (e.impressions  ?? 0), 0),
+        clicks:       events.reduce((s, e) => s + (e.clicks       ?? 0), 0),
+        conversions:  events.reduce((s, e) => s + (e.conversions  ?? 0), 0),
+        spendCents:   ledger.reduce((s, l) => s + Number(l.amountCents), 0),
+        posts:        events.length,
+      };
+    }
+
+    function pctDelta(cur: number, prior: number): string {
+      if (prior === 0) return cur === 0 ? "0%" : "+100%";
+      const pct = ((cur - prior) / prior) * 100;
+      const sign = pct >= 0 ? "+" : "";
+      return `${sign}${pct.toFixed(1)}%`;
+    }
+
+    const current = aggregate(currentEvents, currentLedger);
+    const prior   = aggregate(priorEvents,   priorLedger);
+
+    const delta = {
+      impressions:  pctDelta(current.impressions,  prior.impressions),
+      clicks:       pctDelta(current.clicks,        prior.clicks),
+      conversions:  pctDelta(current.conversions,   prior.conversions),
+      spendCents:   pctDelta(current.spendCents,    prior.spendCents),
+      posts:        pctDelta(current.posts,          prior.posts),
+    };
+
+    return reply.send({ ok: true, range, current, prior, delta });
+  });
+
+  /**
+   * GET /v1/analytics/roi?range=7d
+   * ROI breakdown per channel from DistributionEvent.
+   */
+  app.get("/roi", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const q = (req.query as any);
+    const range = String(q.range ?? "7d");
+    const days = range === "24h" ? 1 : range === "30d" ? 30 : range === "90d" ? 90 : 7;
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const events = await prisma.distributionEvent.findMany({
+      where: { tenantId, occurredAt: { gte: since } },
+      select: { channel: true, impressions: true, clicks: true, conversions: true },
+    });
+
+    const channelMap: Record<string, { impressions: number; clicks: number; conversions: number; posts: number }> = {};
+    for (const e of events) {
+      if (!channelMap[e.channel]) channelMap[e.channel] = { impressions: 0, clicks: 0, conversions: 0, posts: 0 };
+      channelMap[e.channel].impressions  += e.impressions  ?? 0;
+      channelMap[e.channel].clicks       += e.clicks       ?? 0;
+      channelMap[e.channel].conversions  += e.conversions  ?? 0;
+      channelMap[e.channel].posts        += 1;
+    }
+
+    const channels = Object.entries(channelMap).map(([channel, agg]) => {
+      const ctr      = agg.impressions > 0 ? ((agg.clicks      / agg.impressions) * 100).toFixed(1) + "%" : "0%";
+      const convRate = agg.clicks      > 0 ? ((agg.conversions / agg.clicks)      * 100).toFixed(1) + "%" : "0%";
+      return { channel, ...agg, ctr, convRate };
+    });
+
+    return reply.send({ ok: true, range, channels });
+  });
+
+  /**
    * POST /v1/analytics/metrics
    * Upsert a daily metrics snapshot (call this from integrations/webhooks).
    * Body: { date: "YYYY-MM-DD", data: { visitors, pageViews, ... } }
