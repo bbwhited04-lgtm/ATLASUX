@@ -264,21 +264,33 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
     if (!proposal) {
       return reply.code(404).type("text/html").send(htmlPage("Not Found", "This proposal link is invalid or has expired."));
     }
-    if (proposal.status !== "pending") {
+
+    // Already approved — silently retry KB doc in case the first attempt failed,
+    // then show the "already decided" page.
+    if (proposal.status === "approved") {
+      await addToolToKb(proposal.tenantId, proposal.agentId, proposal.toolName, proposal.toolPurpose, proposal.toolImpl).catch(() => null);
       return reply.type("text/html").send(htmlPage(
         "Already Decided",
-        `This proposal was already <strong>${proposal.status}</strong> on ${proposal.decidedAt?.toLocaleDateString() ?? "unknown date"}.`,
+        `This proposal was already <strong>approved</strong> on ${proposal.decidedAt?.toLocaleDateString() ?? "unknown date"}.<br><br>
+         <em>${proposal.toolName}</em> is available to <em>${proposal.agentId}</em> in the Knowledge Base.`,
       ));
     }
 
-    // Mark approved
+    if (proposal.status === "denied") {
+      return reply.type("text/html").send(htmlPage(
+        "Already Decided",
+        `This proposal was already <strong>denied</strong> on ${proposal.decidedAt?.toLocaleDateString() ?? "unknown date"}.`,
+      ));
+    }
+
+    // KB first — if it fails, status stays "pending" so the link remains clickable
+    await addToolToKb(proposal.tenantId, proposal.agentId, proposal.toolName, proposal.toolPurpose, proposal.toolImpl);
+
+    // KB succeeded — now mark approved
     await prisma.toolProposal.update({
       where: { approvalToken: token },
       data:  { status: "approved", decidedAt: new Date(), decidedBy: "billy" },
     });
-
-    // Add to KB
-    await addToolToKb(proposal.tenantId, proposal.agentId, proposal.toolName, proposal.toolPurpose, proposal.toolImpl);
 
     // Audit log
     await prisma.auditLog.create({
