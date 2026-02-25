@@ -11,6 +11,12 @@ export type AgentSummary = {
   toolsForbidden?: string[];
   m365Tools?: string[];
   escalationTargets?: string[];
+  /**
+   * Enable the 3-stage deep agent pipeline for this agent:
+   * Planning sub-agent → Main execution → Verification sub-agent + Postgres memory.
+   * Use for agents that handle complex, multi-step, or high-stakes tasks.
+   */
+  deepMode?: boolean;
 };
 
 function withM365(id: string, base: Omit<AgentSummary, "m365Tools">): AgentSummary {
@@ -38,6 +44,7 @@ export const agentRegistry: AgentSummary[] = [
     toolsAllowed: ["Internal job runner", "Email dispatch", "Audit writer", "Ledger writer", "M365 admin"],
     toolsForbidden: ["Unlogged external actions", "Policy tampering"],
     escalationTargets: ["chairman"],
+    deepMode: true,
   }),
   withM365("binky", {
     id: "binky",
@@ -49,6 +56,7 @@ export const agentRegistry: AgentSummary[] = [
     toolsAllowed: ["Docs drafting", "Email", "Read-only dashboards", "Web research"],
     toolsForbidden: ["DB writes", "Ledger writes", "Deployments"],
     escalationTargets: ["atlas", "chairman"],
+    deepMode: true,
   }),
   withM365("tina", {
     id: "tina",
@@ -101,9 +109,10 @@ export const agentRegistry: AgentSummary[] = [
     tier: "Executive",
     reportsTo: "binky",
     summary: "Support intake, triage, escalation routing, and customer feedback intelligence with strict traceability.",
-    toolsAllowed: ["Email inbox (support@)", "Ticket system", "Documentation/KB", "Escalation router"],
-    toolsForbidden: ["Database/ledger access", "Deployments", "Policy edits"],
+    toolsAllowed: ["Email inbox (support@)", "Ticket system", "Documentation/KB", "Escalation router", "get_subscription_info", "get_team_members", "search_atlasux_knowledge"],
+    toolsForbidden: ["Direct DB/ledger access", "Deployments", "Policy edits"],
     escalationTargets: ["binky", "tina", "larry", "jenny", "atlas"],
+    deepMode: true,
   }),
   withM365("daily-intel", {
     id: "daily-intel",
@@ -280,6 +289,7 @@ export const agentRegistry: AgentSummary[] = [
     toolsAllowed: ["Email drafting", "Docs reading", "Web research"],
     toolsForbidden: ["Execution tools"],
     escalationTargets: ["atlas"],
+    deepMode: true,
   }),
   // ── New agents ──────────────────────────────────────────────────────────────
   withM365("petra", {

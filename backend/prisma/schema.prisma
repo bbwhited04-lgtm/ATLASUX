@@ -36,6 +36,7 @@ model Tenant {
   cannedResponses                          CannedResponse[]
   budgets                                  Budget[]
   decisionTemplates                        DecisionTemplate[]
+  agentMemory                              AgentMemory[]
 
   @@map("tenants")
 }
@@ -878,4 +879,20 @@ enum TicketCategory {
   OTHER
 
   @@map("ticket_category")
+}
+
+/// Per-agent Postgres conversation memory — used by the deep agent pipeline.
+model AgentMemory {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  agentId   String   @map("agent_id")
+  sessionId String   @map("session_id")
+  role      String   // "user" | "assistant"
+  content   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, agentId, sessionId])
+  @@index([tenantId, agentId, sessionId, createdAt(sort: Desc)])
+  @@map("agent_memory")
 }

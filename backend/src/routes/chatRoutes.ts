@@ -8,6 +8,7 @@ import { getSkillBlock, loadAllSkills } from "../core/kb/skillLoader.js";
 import { classifyQuery } from "../core/kb/queryClassifier.js";
 import { resolveAgentTools } from "../core/agent/agentTools.js";
 import { agentRegistry } from "../agents/registry.js";
+import { runDeepAgent } from "../core/agent/deepAgentPipeline.js";
 
 // Load all SKILL.md files into memory at module init (runs once at server boot).
 loadAllSkills();
@@ -182,6 +183,36 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
         }
 
         enrichedBody = { ...body, messages: msgs };
+
+        // ── Deep agent pipeline (plan → execute → verify + Postgres memory) ──
+        // Activated when the agent has deepMode: true in the registry.
+        // Falls back to standard runChat if the pipeline fails.
+        const agentDef = agentRegistry.find(a => a.id === agentId);
+        if (agentDef?.deepMode) {
+          const sessionId = String(
+            body?.sessionId ||
+            `${tenantId}:${agentId}:${new Date().toISOString().slice(0, 10)}`
+          );
+          try {
+            const deepResponse = await runDeepAgent({
+              tenantId,
+              agentId,
+              agentName:  agentDef.name,
+              agentTitle: agentDef.title,
+              sessionId,
+              rawQuery,
+              provider: body?.provider,
+              model:    body?.model,
+              messages: msgs,
+            });
+            if (deepResponse) {
+              console.log(`[chat] deep-agent ${agentId} pipeline complete (${deepResponse.length} chars)`);
+              return reply.send({ provider: "deep-agent", content: deepResponse });
+            }
+          } catch (err) {
+            console.error(`[chat] deep-agent ${agentId} pipeline failed, falling back:`, err);
+          }
+        }
       } catch {
         // Non-fatal — proceed without context injection
       }
