@@ -167,13 +167,13 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
   app.post("/send", async (req, reply) => {
     const tenantId = String((req as any).tenantId ?? "");
     const body = (req.body ?? {}) as any;
-    const webhookUrl = String(body.webhookUrl ?? "").trim();
+    const webhookUrl = String(body.webhookUrl ?? process.env.TEAMS_WORKFLOW_URL ?? "").trim();
     const text = String(body.text ?? "").trim();
     const fromAgent = String(body.fromAgent ?? "atlas").trim();
     const title = body.title ? String(body.title).trim() : null;
 
     if (!webhookUrl || !text) {
-      return reply.code(400).send({ ok: false, error: "webhookUrl and text are required" });
+      return reply.code(400).send({ ok: false, error: "webhookUrl and text are required (or set TEAMS_WORKFLOW_URL in env)" });
     }
     if (!webhookUrl.startsWith("https://")) {
       return reply.code(400).send({ ok: false, error: "webhookUrl must be an https URL" });
@@ -224,7 +224,7 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
   app.post("/cross-agent", async (req, reply) => {
     const tenantId = String((req as any).tenantId ?? "");
     const body = (req.body ?? {}) as any;
-    const webhookUrl = String(body.webhookUrl ?? "").trim();
+    const webhookUrl = String(body.webhookUrl ?? process.env.TEAMS_WORKFLOW_URL ?? "").trim();
     const fromAgent = String(body.fromAgent ?? "").trim();
     const toAgent = String(body.toAgent ?? "").trim();
     const message = String(body.message ?? "").trim();
@@ -285,15 +285,17 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
       !!process.env.MS_CLIENT_ID &&
       !!process.env.MS_CLIENT_SECRET;
 
+    const workflowUrl = process.env.TEAMS_WORKFLOW_URL ?? null;
+
     if (!configured) {
-      return reply.send({ ok: true, connected: false, reason: "MS credentials not configured" });
+      return reply.send({ ok: true, connected: false, reason: "MS credentials not configured", workflowUrl });
     }
 
     try {
       await getMsToken();
-      return reply.send({ ok: true, connected: true });
+      return reply.send({ ok: true, connected: true, workflowUrl });
     } catch (e: any) {
-      return reply.send({ ok: true, connected: false, reason: e.message });
+      return reply.send({ ok: true, connected: false, reason: e.message, workflowUrl });
     }
   });
 };

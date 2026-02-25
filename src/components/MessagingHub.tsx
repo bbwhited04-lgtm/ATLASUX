@@ -77,6 +77,10 @@ export function MessagingHub() {
       const res = await fetch(`${API_BASE}/v1/teams/status`);
       const data = await res.json();
       setTeamsStatus({ connected: data.connected ?? false, reason: data.reason });
+      // Pre-fill workflow URL from backend env if not already set
+      if (data.workflowUrl && !teamsWebhookUrl) {
+        setTeamsWebhookUrl(data.workflowUrl);
+      }
     } catch {
       setTeamsStatus({ connected: false, reason: "Failed to reach backend" });
     }
