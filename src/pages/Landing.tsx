@@ -177,6 +177,7 @@ export default function Landing() {
             <li>Added 16 new executive workflows (WF-033 through WF-092) covering every agent — Daily-Intel, Archy, Timmy, Dwight, Emma, Fran, Sunday, Venny, Mercer, Petra, Sandy, Frank, Porter, Claire, Victor, Cheryl</li>
             <li>Fixed all 39 KB docs — Archy now Binky research subagent, Venny Image Production Specialist, Claire Calendar Coordinator, Petra Project Manager, workflow catalog updated to canonical WF-### IDs</li>
             <li>Implemented Atlas boot priorities: DAILY-INTEL as central reporting hub, Truth Compliance audit on every external output, Ledger entry (token_spend) on every workflow run</li>
+            <li>Full workforce autonomy — scheduler expanded from 2 to 28 jobs: 19 daily + 5 Monday + 3 Friday, every agent fires on schedule without manual triggers</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
