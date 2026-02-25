@@ -28,7 +28,8 @@ export const workflowCatalog = [
   { id: "WF-002", name: "Support Escalation (Cheryl)",    description: "Package escalation and route to executive owner.",                               ownerAgent: "cheryl" },
   { id: "WF-010", name: "Daily Executive Brief (Binky)",  description: "Daily intel digest with traceability.",                                          ownerAgent: "binky"  },
   { id: "WF-020", name: "Engine Run Smoke Test (Atlas)",  description: "Minimal end-to-end cloud surface verification.",                                  ownerAgent: "atlas"  },
-  { id: "WF-021", name: "Bootstrap Atlas (Atlas)",        description: "Boot → discover agents → load KB → seed tasks → queue boot email → await command.", ownerAgent: "atlas"  },
+  { id: "WF-021", name: "Bootstrap Atlas (Atlas)",          description: "Boot → discover agents → load KB → seed tasks → queue boot email → await command.", ownerAgent: "atlas"    },
+  { id: "WF-108", name: "Reynolds Blog Writer & Publisher", description: "SERP research → LLM drafts full blog post → publishes to KB → emails confirmation.",  ownerAgent: "reynolds" },
 ] as const;
 
 export { n8nWorkflows };
@@ -1172,6 +1173,268 @@ Rules:
     ok:      true,
     message: `WF-107 complete — ${savedProposals.length} proposals sent to ${billyEmail}`,
     output:  { proposalCount: savedProposals.length, proposals: savedProposals.map(p => ({ num: p.num, agent: p.agentId, tool: p.toolName })) },
+  };
+};
+
+// ── WF-108 Reynolds Blog Writer & Publisher ───────────────────────────────────
+// Reynolds researches a trending topic, writes a full blog post, and publishes
+// it directly to the Atlas UX blog (stored as a KbDocument with blog-post tag).
+// Runs Wednesday 13:00 UTC — peak blog engagement window.
+//
+// Inputs (optional, from scheduler payload or manual trigger):
+//   ctx.input.topic   — override topic; if omitted Reynolds picks from trends
+//   ctx.input.category — post category (default: "AI Automation")
+
+const BLOG_SYSTEM_ACTOR = "00000000-0000-0000-0000-000000000001";
+
+function slugify108(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+handlers["WF-108"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-108.start", "Reynolds Blog Writer & Publisher beginning");
+
+  const today    = new Date().toISOString().slice(0, 10);
+  const topicHint = String(ctx.input?.topic ?? "").trim();
+  const category  = String(ctx.input?.category ?? "AI Automation").trim();
+
+  // 1. SERP — trending blog/AI topics for inspiration
+  let serpData = "";
+  const serpKey = process.env.SERP_API_KEY?.trim();
+  if (serpKey) {
+    try {
+      const searchTerm = topicHint
+        ? `${topicHint} AI automation blog 2026`
+        : `AI automation small business trending blog topics ${today}`;
+      const q   = encodeURIComponent(searchTerm);
+      const url = `https://serpapi.com/search.json?q=${q}&api_key=${serpKey}&num=8&hl=en&gl=us`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const json = (await res.json()) as any;
+        const results = ((json.organic_results ?? []) as any[]).slice(0, 6);
+        serpData = results
+          .map((r: any, i: number) =>
+            `${i + 1}. ${r.title}\n   ${r.snippet ?? ""}\n   ${r.link ?? ""}`
+          )
+          .join("\n\n");
+      }
+    } catch (err: any) {
+      serpData = `[SERP error: ${err?.message ?? "unavailable"}]`;
+    }
+    await writeStepAudit(ctx, "WF-108.serp", `SERP research ${serpData ? "complete" : "unavailable"}`);
+  }
+
+  // 2. KB context — Reynolds content strategy + brand guidelines
+  const kb = await getKbContext({
+    tenantId:    ctx.tenantId,
+    agentId:     "reynolds",
+    query:       topicHint || "blog content strategy AI automation Atlas UX writing guidelines",
+    intentId:    ctx.intentId,
+    requestedBy: ctx.requestedBy,
+  });
+
+  await writeStepAudit(ctx, "WF-108.kb", `KB loaded (${kb.items.length} docs)`);
+
+  // 3. LLM — Reynolds writes a full, publish-ready blog post
+  const skillBlock = getSkill("reynolds");
+  const systemMsg = [
+    "You are REYNOLDS, Atlas UX Blog Content Writer.",
+    "Your job is to write polished, SEO-friendly, human-feeling blog posts that educate",
+    "small business owners and teams on AI automation, productivity, and Atlas UX.",
+    skillBlock
+      ? `\n${skillBlock}`
+      : "",
+    kb.text
+      ? `\n\nContent strategy & brand guidelines (${kb.items.length} docs):\n${kb.text.slice(0, 6000)}`
+      : "\n\n(No KB docs yet — write from your expertise.)",
+    "\nFORMAT RULES:",
+    "- First line: the blog post TITLE (no markdown prefix, plain text)",
+    "- Leave one blank line after the title",
+    "- Then write the full blog post in markdown (use ##, ###, **, bullet lists)",
+    "- Length: 600–900 words",
+    "- End with a call-to-action for Atlas UX",
+    "- Do NOT include a date, byline, or meta fields — just title + body",
+  ].join("\n");
+
+  const userMsg = [
+    `Date: ${today}`,
+    topicHint
+      ? `Topic assigned by Atlas: ${topicHint}`
+      : "Pick the single most compelling topic from the trends below and write about it.",
+    serpData
+      ? `\nTrending topics researched today:\n${serpData}`
+      : "\n[No live search data — use your knowledge of what's trending in AI and business automation.]",
+    "\nWrite the complete, publish-ready blog post now.",
+  ].join("\n");
+
+  const blogText = await safeLLM(ctx, {
+    agent:   "REYNOLDS",
+    purpose: "blog_post_write",
+    route:   "LONG_CONTEXT_SUMMARY",
+    system:  systemMsg,
+    user:    userMsg,
+  });
+
+  await writeStepAudit(ctx, "WF-108.draft", `Blog post drafted (${blogText.length} chars)`);
+
+  // 4. Parse title from first non-empty line
+  const lines = blogText.split("\n").map(l => l.trim()).filter(Boolean);
+  const title = lines[0]
+    ?.replace(/^#+\s*/, "")  // strip leading markdown hashes if LLM added them
+    ?.replace(/\*\*/g, "")   // strip bold markers
+    ?.slice(0, 200) || `Atlas UX Blog — ${today}`;
+
+  const body = lines.slice(1).join("\n").trim() || blogText;
+
+  // 5. Publish blog post — upsert KbDocument + tag (same logic as blogRoutes.ts)
+  const baseSlug = slugify108(title);
+  const slug     = `${baseSlug}-${Date.now()}`;
+
+  let publishedId   = "";
+  let publishedSlug = "";
+
+  try {
+    const doc = await prisma.$transaction(async (tx) => {
+      // Upsert "blog-post" tag
+      const blogTag = await tx.kbTag.upsert({
+        where:  { tenantId_name: { tenantId: ctx.tenantId, name: "blog-post" } },
+        create: { tenantId: ctx.tenantId, name: "blog-post" },
+        update: {},
+      });
+
+      // Create the KB document
+      const created = await tx.kbDocument.create({
+        data: {
+          tenantId:  ctx.tenantId,
+          title,
+          slug,
+          body,
+          status:    "published",
+          createdBy: BLOG_SYSTEM_ACTOR,
+        },
+      });
+
+      // Link blog-post tag
+      await tx.kbTagOnDocument.create({
+        data: { documentId: created.id, tagId: blogTag.id },
+      });
+
+      // Link category tag
+      const catName = category.toLowerCase().replace(/\s+/g, "-");
+      const catTag  = await tx.kbTag.upsert({
+        where:  { tenantId_name: { tenantId: ctx.tenantId, name: catName } },
+        create: { tenantId: ctx.tenantId, name: catName },
+        update: {},
+      });
+      await tx.kbTagOnDocument.upsert({
+        where:  { documentId_tagId: { documentId: created.id, tagId: catTag.id } },
+        create: { documentId: created.id, tagId: catTag.id },
+        update: {},
+      });
+
+      return created;
+    });
+
+    publishedId   = doc.id;
+    publishedSlug = doc.slug;
+
+    await writeStepAudit(ctx, "WF-108.published", `Blog post published: "${title.slice(0, 80)}"`, {
+      documentId: doc.id,
+      slug:       doc.slug,
+      category,
+    });
+  } catch (err: any) {
+    await writeStepAudit(ctx, "WF-108.publish-error", `Failed to publish: ${err?.message ?? err}`);
+    return {
+      ok:      false,
+      message: `WF-108 — blog post drafted but publish failed: ${err?.message ?? err}`,
+      output:  { title, bodyChars: body.length },
+    };
+  }
+
+  // 6. Email Reynolds + Billy with confirmation
+  const frontendUrl  = process.env.FRONTEND_URL?.trim() ?? "https://atlasux.cloud";
+  const blogPostUrl  = `${frontendUrl}/#/app/blog/${publishedSlug}`;
+  const billyEmail   = process.env.BILLING_EMAIL?.trim() ?? "billy@deadapp.info";
+  const reynoldsEmail = agentEmail("reynolds") ?? "reynolds@deadapp.info";
+
+  const emailBody = [
+    `Blog Post Published Successfully`,
+    "=".repeat(50),
+    `Title:    ${title}`,
+    `Category: ${category}`,
+    `Slug:     ${publishedSlug}`,
+    `Date:     ${today}`,
+    `Agent:    REYNOLDS (WF-108)`,
+    `SERP:     ${serpData ? "Live data" : "KB-only"}`,
+    `KB docs:  ${kb.items.length}`,
+    `Trace:    ${ctx.traceId ?? ctx.intentId}`,
+    "",
+    `View post: ${blogPostUrl}`,
+    "",
+    "--- POST PREVIEW (first 800 chars) ---",
+    body.slice(0, 800),
+    "...",
+  ].join("\n");
+
+  await queueEmail(ctx, {
+    to:        reynoldsEmail,
+    fromAgent: "reynolds",
+    subject:   `[BLOG PUBLISHED] ${title.slice(0, 80)} — ${today}`,
+    text:      emailBody,
+  });
+
+  // CC Billy
+  if (billyEmail !== reynoldsEmail) {
+    await queueEmail(ctx, {
+      to:        billyEmail,
+      fromAgent: "reynolds",
+      subject:   `[BLOG PUBLISHED] Reynolds posted: ${title.slice(0, 70)} — ${today}`,
+      text:      emailBody,
+    });
+  }
+
+  // 7. Ledger entry
+  await prisma.ledgerEntry.create({
+    data: {
+      tenantId:   ctx.tenantId,
+      entryType:  "debit",
+      category:   "token_spend",
+      amountCents: BigInt(Math.max(1, Math.round(blogText.length / 80))),
+      description: `WF-108 — Reynolds blog post published: "${title.slice(0, 60)}"`,
+      reference_type: "intent",
+      reference_id:   ctx.intentId,
+      run_id:         ctx.traceId ?? ctx.intentId,
+      meta: { workflowId: "WF-108", agentId: "reynolds", slug: publishedSlug, documentId: publishedId },
+    },
+  }).catch(() => null);
+
+  await writeStepAudit(ctx, "WF-108.complete", `Blog publish pipeline complete — ${publishedSlug}`, {
+    title,
+    slug: publishedSlug,
+    documentId: publishedId,
+    blogPostUrl,
+  });
+
+  return {
+    ok:      true,
+    message: `WF-108 complete — "${title}" published at ${blogPostUrl}`,
+    output:  {
+      title,
+      slug:       publishedSlug,
+      documentId: publishedId,
+      category,
+      serpActive: !!serpData,
+      kbItems:    kb.items.length,
+      bodyChars:  body.length,
+      blogPostUrl,
+    },
   };
 };
 

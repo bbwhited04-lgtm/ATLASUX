@@ -40,6 +40,7 @@
  *   12:00  Donna Reddit Monitor            WF-051  daily
  *   14:00  Donna Reddit Engagement Scan    WF-052  daily
  *   15:00  Venny Image Asset Pipeline      WF-059  daily
+ *   13:00  Reynolds Blog Write & Publish   WF-108  Wednesday only
  *   16:00  Reynolds Blog → LinkedIn & X    WF-041  daily
  *   17:00  Penny Multi-Platform Content    WF-040  daily
  *   18:00  Sunday Technical Brief Writer   WF-058  daily
@@ -445,6 +446,13 @@ function buildJobs(): ScheduledJob[] {
       agentId: "atlas", workflowId: "WF-107",
       payload: { triggeredBy: "scheduler", topic: "discover and propose new tools for all agents" },
       hourUTC: 6, minuteUTC: 0, dayOfWeek: 1, // Monday 06:00 UTC — before the workday starts
+    },
+    {
+      id: "reynolds-blog-publish",
+      label: "Reynolds Blog Writer & Publisher (WF-108)",
+      agentId: "reynolds", workflowId: "WF-108",
+      payload: { triggeredBy: "scheduler", category: "AI Automation" },
+      hourUTC: 13, minuteUTC: 0, dayOfWeek: 3, // Wednesday 13:00 UTC — peak blog engagement
     },
 
     // ── Weekly (Friday): Compliance & Finance ────────────────────────────────

@@ -130,7 +130,7 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
         // ── Live agent tool results (subscription, team, KB search) ──────────
         // Runs before tier KB loading so account data is always available.
         // Only fires when the query pattern matches — no-op for most requests.
-        const toolContext = await resolveAgentTools(tenantId, rawQuery).catch(() => "");
+        const toolContext = await resolveAgentTools(tenantId, rawQuery, agentId).catch(() => "");
         if (toolContext) {
           contextParts.push(toolContext);
         }
