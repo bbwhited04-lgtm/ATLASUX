@@ -246,15 +246,16 @@ export function MessagingHub() {
 
   // ── Senders ─────────────────────────────────────────
 
-  async function sendTelegram() {
-    if (!tgChatId || !tgText) return;
+  async function sendTelegram(chatIdOverride?: string) {
+    const chatId = chatIdOverride ?? tgChatId;
+    if (!chatId || !tgText) return;
     setTgSending(true);
     setTgResult(null);
     try {
       const res = await fetch(`${API_BASE}/v1/telegram/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: tgChatId, text: tgText }),
+        body: JSON.stringify({ chat_id: chatId, text: tgText }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -668,10 +669,14 @@ export function MessagingHub() {
                       </span>
                       {u.message?.chat?.id && (
                         <button
-                          className="text-[10px] text-slate-500 hover:text-cyan-400 transition-colors"
-                          onClick={() => setTgChatId(String(u.message!.chat!.id))}
+                          className="px-2 py-0.5 rounded text-[11px] font-medium bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/40 transition-colors border border-cyan-500/30"
+                          onClick={() => {
+                            const id = String(u.message!.chat!.id);
+                            setTgChatId(id);
+                            if (tgText.trim()) void sendTelegram(id);
+                          }}
                         >
-                          Use chat {u.message.chat.id}
+                          {tgText.trim() ? `Use chat & send` : `Use chat`}
                         </button>
                       )}
                     </div>
