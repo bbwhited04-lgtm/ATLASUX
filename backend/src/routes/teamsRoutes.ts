@@ -64,9 +64,16 @@ async function graphGet(token: string, path: string): Promise<any> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as any;
-    throw new Error(
-      `Graph GET ${path} → ${res.status}: ${err?.error?.message ?? JSON.stringify(err)}`
-    );
+    const msg = err?.error?.message ?? JSON.stringify(err);
+    if (res.status === 403 && msg.includes("Missing role permissions")) {
+      throw new Error(
+        "Azure AD app is missing a required Graph permission. " +
+        "Go to Azure Portal → App registrations → your app → API permissions → " +
+        "verify Team.ReadBasic.All, Channel.ReadBasic.All, ChannelMessage.Read.All, " +
+        "and ChannelMessage.Send are all granted with admin consent."
+      );
+    }
+    throw new Error(`Graph GET ${path} → ${res.status}: ${msg}`);
   }
   return res.json();
 }
@@ -83,9 +90,18 @@ async function graphPost(token: string, path: string, body: unknown): Promise<an
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as any;
-    throw new Error(
-      `Graph POST ${path} → ${res.status}: ${err?.error?.message ?? JSON.stringify(err)}`
-    );
+    const msg = err?.error?.message ?? JSON.stringify(err);
+    // Detect missing ChannelMessage.Send permission and give actionable fix
+    if (res.status === 403 && msg.includes("Missing role permissions")) {
+      throw new Error(
+        "Your Azure AD app is missing the ChannelMessage.Send permission. " +
+        "Fix: Azure Portal → App registrations → your app → API permissions → " +
+        "Add a permission → Microsoft Graph → Application permissions → " +
+        "search 'ChannelMessage.Send' → Add → Grant admin consent. " +
+        "Reload this page and try again."
+      );
+    }
+    throw new Error(`Graph POST ${path} → ${res.status}: ${msg}`);
   }
   return res.status === 204 ? null : res.json();
 }
