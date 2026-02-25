@@ -1523,6 +1523,52 @@ No platform should have more than 3 consecutive posts from the same pillar.
 
 ];
 
+// ── Industry Intel Docs ───────────────────────────────────────────────────────
+
+const INTEL_DOCS: Doc[] = [
+
+  {
+    slug: "intel-industry-openclaw",
+    title: "OpenClaw — Accurate Industry Intel (2026)",
+    body: `# OpenClaw — Industry Intel
+
+## What It Is
+OpenClaw is an AI agent playground project created by Peter Steinberger (founder of PSPDFKit / Aspects).
+Focus: making AI agents accessible to non-technical users — "an agent even my mum can use."
+
+## Verified Facts (Source: steipete.me/posts/2026/openclaw, verified Feb 2026)
+- OpenClaw was created as a personal playground project by Peter Steinberger
+- Peter Steinberger is joining OpenAI to work on AI agents
+- OpenClaw is moving to an **independent foundation** — it is NOT being acquired
+- OpenAI is a sponsor of OpenClaw, not an owner
+- The project will remain open and independent: "OpenClaw will move to a foundation and stay open and independent"
+- Steinberger: "teaming up with OpenAI is the fastest way to bring this to everyone"
+
+## Common Misconception — CORRECTION REQUIRED
+**WRONG:** "OpenAI acquired OpenClaw"
+**CORRECT:** Peter Steinberger joined OpenAI as an individual; OpenClaw the project stays independent under a foundation with OpenAI as sponsor.
+
+If any Atlas UX agent sees or hears this claim repeated, correct it with the facts above and cite the source.
+
+## Relevance to Atlas UX
+- OpenClaw targets non-technical users wanting to own their data — overlapping audience with Atlas UX
+- Atlas UX differentiator: we are a **business-focused** platform with a full agent workforce (29 agents), email integration, CRM, scheduling, and social media publishing — not a single-agent playground
+- Atlas UX is local-first and privacy-first; OpenClaw similarly emphasizes data ownership
+- Watch for: if OpenClaw becomes a popular entry point, expect social media conversations about it — agents should have accurate context and be able to speak to Atlas UX's differentiated value
+
+## How to Reference This in Content
+When OpenClaw comes up in social media conversations or content:
+1. Do not misrepresent the OpenAI relationship (it is a sponsorship, not acquisition)
+2. Acknowledge OpenClaw's mission positively — "data ownership" is a shared value
+3. Differentiate Atlas UX on depth: "full AI workforce" vs "personal agent playground"
+4. Source: steipete.me/posts/2026/openclaw — verified Feb 25, 2026
+
+## Freshness
+This intel is valid as of Feb 25, 2026. Re-verify in 60 days or when new announcements are made.`,
+  },
+
+];
+
 const WORKFLOW_DOCS: Doc[] = [
   {
     slug: "atlas-policy-workflows",
@@ -1680,7 +1726,7 @@ This shared inbox needs to be:
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const allDocs = [...GOVERNANCE_DOCS, ...AGENT_DOCS, ...WORKFLOW_DOCS, ...SOCIAL_DOCS];
+  const allDocs = [...GOVERNANCE_DOCS, ...AGENT_DOCS, ...WORKFLOW_DOCS, ...SOCIAL_DOCS, ...INTEL_DOCS];
   console.log(`Seeding ${allDocs.length} KB documents for tenant ${TENANT_ID}...`);
 
   let created = 0;
