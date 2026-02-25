@@ -264,7 +264,9 @@ export function MessagingHub() {
         const raw = data.error ?? "send_failed";
         const lower = raw.toLowerCase();
         if (lower.includes("chat not found") || lower.includes("chat_not_found")) {
-          throw new Error("Chat not found — the recipient must message your bot first. Check Recent Incoming for their chat ID.");
+          // Auto-refresh incoming list so user can click "Use chat" immediately
+          void fetchUpdates();
+          throw new Error("Chat not found — the recipient must send your bot a message on Telegram first, then click 'Use chat' below.");
         }
         throw new Error(raw);
       }
@@ -489,6 +491,12 @@ export function MessagingHub() {
                   {teamsResult && (
                     <div className={`p-2 rounded-lg text-xs ${teamsResult.startsWith("Error") ? "bg-red-500/10 text-red-400" : "bg-emerald-500/10 text-emerald-400"}`}>
                       {teamsResult}
+                      {teamsResult.includes("DirectApiAuthorizationRequired") || teamsResult.includes("Direct API") ? (
+                        <div className="mt-2 font-medium text-amber-300 leading-relaxed">
+                          Your webhook URL is a <strong>Power Automate Direct API</strong> endpoint — it requires Azure AD OAuth and cannot be used as a plain webhook.<br /><br />
+                          <strong>Fix:</strong> In Power Automate, create a new Flow → trigger: <em>"When an HTTP request is received"</em> → add a "Post message in a chat or channel" step → save → copy the <strong>HTTP POST URL</strong> (starts with <code>https://prod-...logic.azure.com/...</code>) → paste it in the Workflow URL field above and save it in Settings.
+                        </div>
+                      ) : null}
                     </div>
                   )}
                   <Button
@@ -632,6 +640,13 @@ export function MessagingHub() {
                 }`}
               >
                 {tgResult}
+                {tgResult.includes("Chat not found") && (
+                  <div className="mt-2 font-medium text-amber-300">
+                    1. Open Telegram → search your bot → send it any message (e.g. "hi").<br />
+                    2. Click Refresh on the right panel — your chat ID will appear.<br />
+                    3. Click "Use chat" to fill it in, then retry.
+                  </div>
+                )}
               </div>
             )}
             <Button

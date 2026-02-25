@@ -189,6 +189,19 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
       });
       if (!res.ok) {
         const errText = await res.text().catch(() => "");
+        // Detect Power Automate Direct API auth error — requires OAuth, not a plain webhook
+        if (
+          res.status === 401 &&
+          (errText.includes("DirectApiAuthorizationRequired") || errText.includes("OAuth authorization scheme"))
+        ) {
+          throw new Error(
+            "Your webhook URL is a Power Automate Direct API endpoint which requires Azure AD OAuth. " +
+            "To fix: open Power Automate → create a new flow → choose 'When an HTTP request is received' as the trigger → " +
+            "save it → copy the HTTP POST URL (starts with https://prod-...logic.azure.com/...) → " +
+            "paste that URL here or set it as TEAMS_WORKFLOW_URL in your environment. " +
+            "Do NOT use the 'Direct API' flow URL."
+          );
+        }
         throw new Error(`webhook_failed (${res.status}): ${errText.slice(0, 300)}`);
       }
 

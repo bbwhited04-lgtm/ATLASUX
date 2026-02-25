@@ -96,7 +96,7 @@ export function DecisionsInbox() {
     try {
       const res = await fetch(`${API_BASE}/v1/decisions/${selected.id}/approve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId },
         body: JSON.stringify({ tenantId }),
       });
       const json = await res.json();
@@ -117,7 +117,7 @@ export function DecisionsInbox() {
     try {
       const res = await fetch(`${API_BASE}/v1/decisions/${selected.id}/reject`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId },
         body: JSON.stringify({ tenantId, reason: rejectReason }),
       });
       const json = await res.json();
@@ -140,7 +140,7 @@ export function DecisionsInbox() {
     try {
       const res = await fetch(`${API_BASE}/v1/growth/run`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId },
         body: JSON.stringify({ tenantId, agent: "atlas" }),
       });
       const json = await res.json();
