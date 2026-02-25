@@ -254,6 +254,69 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
     return { ok: true, count: rows.length, proposals: rows };
   });
 
+  // ── GET /v1/tools/proposals/approve-all/:token ──────────────────────────────
+  // Bulk-approve all pending proposals from the same WF-107 run.
+  // Uses any token from the run to look up the runId, then approves everything.
+  // Safe: token is 48 random hex chars; no auth needed beyond possessing the token.
+  app.get("/proposals/approve-all/:token", async (req, reply) => {
+    const { token } = req.params as any;
+    const anchor    = await prisma.toolProposal.findUnique({ where: { approvalToken: token } });
+
+    if (!anchor) {
+      return reply.code(404).type("text/html").send(htmlPage("Not Found", "This link is invalid or has expired."));
+    }
+
+    // Find all pending proposals from this run
+    const pending = await prisma.toolProposal.findMany({
+      where: {
+        tenantId: anchor.tenantId,
+        runId:    anchor.runId,
+        status:   "pending",
+      },
+    });
+
+    if (!pending.length) {
+      return reply.type("text/html").send(htmlPage(
+        "All Done",
+        `All proposals from this run have already been decided.`,
+      ));
+    }
+
+    // KB first, then approve — same safe ordering as single approve
+    let approved = 0;
+    for (const p of pending) {
+      try {
+        await addToolToKb(p.tenantId, p.agentId, p.toolName, p.toolPurpose, p.toolImpl);
+        await prisma.toolProposal.update({
+          where: { id: p.id },
+          data:  { status: "approved", decidedAt: new Date(), decidedBy: "billy" },
+        });
+        approved++;
+      } catch {
+        // non-fatal — skip this one, it stays pending
+      }
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId: anchor.tenantId, actorType: "human", actorUserId: null,
+        actorExternalId: "billy", level: "info", action: "TOOL_PROPOSALS_BULK_APPROVED",
+        entityType: "tool_proposal", entityId: anchor.runId ?? anchor.id,
+        message: `Bulk-approved ${approved} of ${pending.length} tool proposals (run ${anchor.runId ?? "unknown"})`,
+        meta: { approved, total: pending.length, runId: anchor.runId },
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
+    const skipped = pending.length - approved;
+    return reply.type("text/html").send(htmlPage(
+      `✅ ${approved} Tools Approved`,
+      `<strong>${approved} tool${approved !== 1 ? "s" : ""}</strong> have been approved and added to the Knowledge Base.
+       ${skipped > 0 ? `<br><br>${skipped} could not be processed and remain pending.` : ""}
+       <br><br>Atlas will incorporate these tools into agent instructions on the next scheduled run.`,
+    ));
+  });
+
   // ── GET /v1/tools/proposals/:token/approve ──────────────────────────────────
   // Token-based approval — safe to click directly from email.
   // No auth required (token is the secret). Returns HTML.
