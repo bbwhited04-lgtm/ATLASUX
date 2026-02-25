@@ -53,6 +53,16 @@ const EnvSchema = z.object({
   REDDIT_CLIENT_SECRET: z.string().optional(),
   REDDIT_REDIRECT_URI: z.string().optional(),
 
+  // Pinterest OAuth2
+  PINTEREST_APP_ID: z.string().optional(),
+  PINTEREST_SECRET_KEY: z.string().optional(),
+  PINTEREST_REDIRECT_URI: z.string().optional(),
+
+  // LinkedIn OAuth2
+  LINKEDIN_CLIENT_ID: z.string().optional(),
+  LINKEDIN_CLIENT_SECRET: z.string().optional(),
+  LINKEDIN_REDIRECT_URI: z.string().optional(),
+
   // Stripe (optional here; can be wired later)
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional()

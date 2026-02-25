@@ -2,7 +2,7 @@ import type { Env } from "./env.js";
 import { makeSupabase } from "./supabase.js";
 import { webcrypto } from "node:crypto";
 
-export type Provider = "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit";
+export type Provider = "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin";
 
 export function oauthEnabled(provider: Provider, env: Env): boolean {
   if (provider === "google") return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI);
@@ -23,6 +23,12 @@ export function oauthEnabled(provider: Provider, env: Env): boolean {
   }
   if (provider === "reddit") {
     return !!(env.REDDIT_CLIENT_ID && env.REDDIT_CLIENT_SECRET && env.REDDIT_REDIRECT_URI);
+  }
+  if (provider === "pinterest") {
+    return !!(env.PINTEREST_APP_ID && env.PINTEREST_SECRET_KEY && env.PINTEREST_REDIRECT_URI);
+  }
+  if (provider === "linkedin") {
+    return !!(env.LINKEDIN_CLIENT_ID && env.LINKEDIN_CLIENT_SECRET && env.LINKEDIN_REDIRECT_URI);
   }
   return false;
 }
@@ -279,6 +285,74 @@ export async function exchangeXCode(env: Env, args: {
     expires_in: number;
     scope?: string;
   };
+}
+
+// ── Pinterest OAuth 2.0 ───────────────────────────────────────────────────────
+
+const PINTEREST_SCOPES = ["boards:read", "pins:read", "pins:write", "user_accounts:read"].join(",");
+
+export function buildPinterestAuthUrl(env: Env, state: string) {
+  const params = new URLSearchParams({
+    client_id: env.PINTEREST_APP_ID!,
+    redirect_uri: env.PINTEREST_REDIRECT_URI!,
+    response_type: "code",
+    scope: PINTEREST_SCOPES,
+    state,
+  });
+  return `https://www.pinterest.com/oauth/?${params.toString()}`;
+}
+
+export async function exchangePinterestCode(env: Env, code: string) {
+  const basic = Buffer.from(`${env.PINTEREST_APP_ID!}:${env.PINTEREST_SECRET_KEY!}`).toString("base64");
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    code,
+    redirect_uri: env.PINTEREST_REDIRECT_URI!,
+  });
+  const r = await fetch("https://api.pinterest.com/v5/oauth/token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  const data = await r.json().catch(() => ({})) as any;
+  if (!r.ok || data.error) throw new Error(`Pinterest token exchange failed: ${data.message ?? data.error ?? JSON.stringify(data)}`);
+  return data as { access_token: string; refresh_token?: string; expires_in?: number; token_type?: string; scope?: string };
+}
+
+// ── LinkedIn OAuth 2.0 ───────────────────────────────────────────────────────
+
+const LINKEDIN_SCOPES = ["r_liteprofile", "r_emailaddress", "w_member_social", "rw_organization_social"].join(" ");
+
+export function buildLinkedInAuthUrl(env: Env, state: string) {
+  const params = new URLSearchParams({
+    response_type: "code",
+    client_id: env.LINKEDIN_CLIENT_ID!,
+    redirect_uri: env.LINKEDIN_REDIRECT_URI!,
+    state,
+    scope: LINKEDIN_SCOPES,
+  });
+  return `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+}
+
+export async function exchangeLinkedInCode(env: Env, code: string) {
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    code,
+    client_id: env.LINKEDIN_CLIENT_ID!,
+    client_secret: env.LINKEDIN_CLIENT_SECRET!,
+    redirect_uri: env.LINKEDIN_REDIRECT_URI!,
+  });
+  const r = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const data = await r.json().catch(() => ({})) as any;
+  if (!r.ok || data.error) throw new Error(`LinkedIn token exchange failed: ${data.error_description ?? data.error ?? JSON.stringify(data)}`);
+  return data as { access_token: string; expires_in?: number; scope?: string; token_type?: string };
 }
 
 // Token vault storage (Supabase table: token_vault)

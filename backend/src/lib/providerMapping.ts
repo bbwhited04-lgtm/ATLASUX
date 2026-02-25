@@ -8,7 +8,8 @@
 export type OAuthProvider = "meta" | "google" | "x" | "tumblr" | "pinterest" | "linkedin" | "microsoft" | "reddit";
 
 export const SUPPORTED_PROVIDERS: OAuthProvider[] = [
-  "meta", "google", "x", "tumblr", "pinterest", "linkedin", "microsoft", "reddit",
+  "google", "meta", "microsoft",
+  "x", "reddit", "tumblr", "pinterest", "linkedin",
 ];
 
 const EXACT: Record<string, OAuthProvider> = {

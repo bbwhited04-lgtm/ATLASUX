@@ -27,11 +27,13 @@ type Integration = {
   name: string;
   description: string;
   category: Category;
-  oauth: "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | null;
+  oauth: "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin" | null;
   /** Sub-services unlocked by this OAuth connection */
   covers?: string[];
   /** Priority groups sort above everything else */
   group?: boolean;
+  /** Show a note instead of disabled button */
+  pendingNote?: string;
 };
 
 const BACKEND_URL = API_BASE;
@@ -87,11 +89,11 @@ const INTEGRATIONS: Integration[] = [
   // ── Social platforms ──────────────────────────────────────────────────
   { id: "x",        name: "X (Twitter)", category: "Social",   description: "Tweet, schedule, and monitor.",                oauth: "x" },
   { id: "tumblr",   name: "Tumblr",      category: "Social",   description: "Publish blog posts and track distribution.",   oauth: "tumblr" },
-  { id: "linkedin", name: "LinkedIn",    category: "Social",   description: "Company + personal publishing.",               oauth: null },
-  { id: "pinterest",name: "Pinterest",   category: "Social",   description: "Pins, boards, and trends.",                   oauth: null },
-  { id: "tiktok",   name: "TikTok",      category: "Social",   description: "Post videos and view analytics.",             oauth: null },
+  { id: "linkedin", name: "LinkedIn",    category: "Social",   description: "Company + personal publishing.",               oauth: "linkedin", pendingNote: "App approval pending — credentials not yet configured." },
+  { id: "pinterest",name: "Pinterest",   category: "Social",   description: "Pins, boards, and trends.",                   oauth: "pinterest" },
+  { id: "tiktok",   name: "TikTok",      category: "Social",   description: "Post videos and view analytics.",             oauth: null, pendingNote: "Pending TikTok for Business approval." },
   { id: "reddit",   name: "Reddit",      category: "Social",   description: "Post, comment, monitor mentions.",            oauth: "reddit" },
-  { id: "snapchat", name: "Snapchat",    category: "Social",   description: "Spotlight and campaigns.",                    oauth: null },
+  { id: "snapchat", name: "Snapchat",    category: "Social",   description: "Spotlight and campaigns.",                    oauth: null, pendingNote: "Pending Snap Partner approval." },
   { id: "twitch",   name: "Twitch",      category: "Social",   description: "Streams, clips, channel ops.",                oauth: null },
 
   // ── Storage ───────────────────────────────────────────────────────────
@@ -163,13 +165,15 @@ export default function Integrations() {
 
   const refreshStatus = React.useCallback(async () => {
     try {
-      const r = await fetch(`${BACKEND_URL}/v1/integrations/status?tenantId=${encodeURIComponent(tenantId ?? "")}`, {
+      const r = await fetch(`${BACKEND_URL}/v1/integrations/summary?tenantId=${encodeURIComponent(tenantId ?? "")}`, {
         credentials: "include",
       });
       const raw = await r.json() as any;
-      const rows: StatusRow[] = Array.isArray(raw) ? raw : (raw?.integrations ?? []);
-      const providerMap: Record<string, boolean> = {};
-      for (const row of rows) providerMap[String(row.provider)] = !!row.connected;
+      // Prefer the flat providers map (canonical); fall back to integrations array
+      const providerMap: Record<string, boolean> =
+        raw?.providers && typeof raw.providers === "object"
+          ? raw.providers
+          : Object.fromEntries((raw?.integrations ?? []).map((r: any) => [String(r.provider), !!r.connected]));
 
       const map: Record<string, boolean> = {};
       for (const i of INTEGRATIONS) {
@@ -205,6 +209,8 @@ export default function Integrations() {
       : i.oauth === "tumblr"  ? `${BACKEND_URL}/v1/oauth/tumblr/start`
       : i.oauth === "microsoft" ? `${BACKEND_URL}/v1/oauth/microsoft/start`
       : i.oauth === "reddit"    ? `${BACKEND_URL}/v1/oauth/reddit/start`
+      : i.oauth === "pinterest" ? `${BACKEND_URL}/v1/oauth/pinterest/start`
+      : i.oauth === "linkedin"  ? `${BACKEND_URL}/v1/oauth/linkedin/start`
       : `${BACKEND_URL}/v1/oauth/x/start`;
 
     const params = new URLSearchParams({ tenantId: realTenantId, org_id: realTenantId, user_id });
@@ -361,10 +367,13 @@ export default function Integrations() {
                   </div>
                 )}
 
-                {!oauthReady && !i.group && (
+                {i.pendingNote && (
+                  <div className="text-[11px] text-amber-600">{i.pendingNote}</div>
+                )}
+                {!oauthReady && !i.group && !i.pendingNote && (
                   <div className="text-[11px] text-neutral-500">OAuth not wired yet.</div>
                 )}
-                {!oauthReady && i.group && (
+                {!oauthReady && i.group && !i.pendingNote && (
                   <div className="text-[11px] text-neutral-500">Coming soon.</div>
                 )}
               </div>

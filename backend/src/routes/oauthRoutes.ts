@@ -7,6 +7,8 @@ import {
   buildMetaAuthUrl, exchangeMetaCode,
   buildMicrosoftAuthUrl, exchangeMicrosoftCode,
   buildRedditAuthUrl, exchangeRedditCode,
+  buildPinterestAuthUrl, exchangePinterestCode,
+  buildLinkedInAuthUrl, exchangeLinkedInCode,
 } from "../oauth.js";
 import { tumblrAccessToken, tumblrAuthorizeUrl, tumblrRequestToken } from "../integrations/tumblr.client.js";
 import { prisma } from "../db/prisma.js";
@@ -325,6 +327,108 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
       return reply.redirect(buildReturnUrl({ connected: "reddit", org_id, user_id }));
     } catch (e: any) {
       return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "reddit_token_exchange_failed" }));
+    }
+  });
+
+  // ── Pinterest OAuth2 ──────────────────────────────────────────────────────
+
+  app.get("/pinterest/start", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
+    const user_id = String(q.user_id ?? q.userId ?? "");
+
+    if (!oauthEnabled("pinterest", env)) {
+      if (org_id) await markConnected(org_id, "pinterest");
+      return reply.redirect(buildReturnUrl({ connected: "pinterest", org_id, user_id }));
+    }
+
+    const nonce = genNonce();
+    csrfNonces.set(nonce, { org_id, user_id, createdAt: Date.now() });
+    pruneNonces();
+    const state = b64urlJson({ org_id, user_id, nonce });
+    return reply.redirect(buildPinterestAuthUrl(env, state));
+  });
+
+  app.get("/pinterest/callback", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    if (q.error) return reply.redirect(buildReturnUrl({ oauth_error: String(q.error_description ?? q.error) }));
+
+    let state: any = {};
+    try { state = parseState(String(q.state || "")); } catch {}
+    const org_id = String(state.org_id || "");
+    const user_id = String(state.user_id || "");
+
+    const nonce = String(state.nonce || "");
+    if (!nonce || !csrfNonces.has(nonce)) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    csrfNonces.delete(nonce);
+
+    try {
+      const tok = await exchangePinterestCode(env, String(q.code || ""));
+      const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
+      await storeTokenVault(env, {
+        org_id, user_id, provider: "pinterest",
+        access_token: tok.access_token,
+        refresh_token: tok.refresh_token ?? null,
+        expires_at, scope: tok.scope ?? null,
+        meta: { token_type: tok.token_type },
+      });
+      await markConnected(org_id, "pinterest");
+      return reply.redirect(buildReturnUrl({ connected: "pinterest", org_id, user_id }));
+    } catch (e: any) {
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "pinterest_token_exchange_failed" }));
+    }
+  });
+
+  // ── LinkedIn OAuth2 ────────────────────────────────────────────────────────
+
+  app.get("/linkedin/start", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
+    const user_id = String(q.user_id ?? q.userId ?? "");
+
+    if (!oauthEnabled("linkedin", env)) {
+      // Credentials not configured yet — redirect back with informative error
+      return reply.redirect(buildReturnUrl({ oauth_error: "linkedin_credentials_not_configured" }));
+    }
+
+    const nonce = genNonce();
+    csrfNonces.set(nonce, { org_id, user_id, createdAt: Date.now() });
+    pruneNonces();
+    const state = b64urlJson({ org_id, user_id, nonce });
+    return reply.redirect(buildLinkedInAuthUrl(env, state));
+  });
+
+  app.get("/linkedin/callback", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    if (q.error) return reply.redirect(buildReturnUrl({ oauth_error: String(q.error_description ?? q.error) }));
+
+    let state: any = {};
+    try { state = parseState(String(q.state || "")); } catch {}
+    const org_id = String(state.org_id || "");
+    const user_id = String(state.user_id || "");
+
+    const nonce = String(state.nonce || "");
+    if (!nonce || !csrfNonces.has(nonce)) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    csrfNonces.delete(nonce);
+
+    try {
+      const tok = await exchangeLinkedInCode(env, String(q.code || ""));
+      const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
+      await storeTokenVault(env, {
+        org_id, user_id, provider: "linkedin",
+        access_token: tok.access_token,
+        refresh_token: null,
+        expires_at, scope: tok.scope ?? null,
+        meta: { token_type: tok.token_type },
+      });
+      await markConnected(org_id, "linkedin");
+      return reply.redirect(buildReturnUrl({ connected: "linkedin", org_id, user_id }));
+    } catch (e: any) {
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "linkedin_token_exchange_failed" }));
     }
   });
 

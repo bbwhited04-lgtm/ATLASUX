@@ -111,7 +111,7 @@ model CrmCompany {
 model Integration {
   id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId         String               @map("tenant_id") @db.Uuid
-  provider         integration_provider
+  provider         String
   connected        Boolean              @default(false)
   access_token     String?
   refresh_token    String?
@@ -841,20 +841,8 @@ enum audit_level {
   security
 }
 
-enum integration_provider {
-  google
-  microsoft
-  icloud
-  facebook
-  instagram
-  tiktok
-  youtube
-  twilio
-  stripe
-  openai
-  deepseek
-  supabase
-}
+// integration_provider enum removed — provider column is now plain TEXT
+// so any provider key can be stored: google, meta, x, reddit, tumblr, linkedin, pinterest, etc.
 
 enum job_status {
   queued
