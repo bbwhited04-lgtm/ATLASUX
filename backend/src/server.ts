@@ -39,6 +39,7 @@ import { toolsRoutes } from "./routes/toolsRoutes.js";
 import { agentFlowRoutes } from "./routes/agentFlowRoutes.js";
 import { blogRoutes } from "./routes/blogRoutes.js";
 import { redditRoutes } from "./routes/redditRoutes.js";
+import { mobileRoutes } from "./routes/mobileRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -179,6 +180,9 @@ await app.register(blogRoutes, { prefix: "/v1/blog" });
 
 // Donna's Reddit approval queue
 await app.register(redditRoutes, { prefix: "/v1/reddit" });
+
+// Mobile device pairing (QR-based, in-memory store)
+await app.register(mobileRoutes, { prefix: "/v1/mobile" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
