@@ -978,21 +978,44 @@ handlers["WF-107"] = async (ctx) => {
   const backendUrl  = (process.env.BACKEND_URL ?? process.env.RENDER_EXTERNAL_URL ?? "https://atlasux-backend.onrender.com").replace(/\/$/, "");
   const today       = new Date().toISOString().slice(0, 10);
 
+  // ── Load already-decided proposals (skip duplicates) ─────────────────────────
+  const existingProposals = await prisma.toolProposal.findMany({
+    where:  { tenantId: ctx.tenantId, status: { in: ["pending", "approved"] } },
+    select: { agentId: true, toolName: true, status: true },
+  });
+  // Build a set of "agentId:toolName" keys to exclude from new proposals
+  const existingKeys = new Set(
+    existingProposals.map(p => `${p.agentId}:${p.toolName.toLowerCase()}`)
+  );
+  const alreadyApproved = existingProposals.filter(p => p.status === "approved");
+  const alreadyPending  = existingProposals.filter(p => p.status === "pending");
+
+  await writeStepAudit(ctx, "WF-107.dedup", `Skipping ${existingKeys.size} already-proposed tools (${alreadyApproved.length} approved, ${alreadyPending.length} pending)`);
+
   // ── Build agent context snapshot ────────────────────────────────────────────
-  // For each agent: name, title, current tools, SKILL.md snippet
   const agentSnapshots = agentRegistry
-    .filter(a => a.id !== "chairman") // skip board
+    .filter(a => a.id !== "chairman")
     .map(a => {
       const skill = getSkill(a.id);
       const skillSnippet = skill ? skill.slice(0, 600) : "(no SKILL.md)";
       const currentTools = (a.toolsAllowed ?? []).join(", ") || "none listed";
-      return `Agent: ${a.name} (${a.id}) — ${a.title}\nCurrent tools: ${currentTools}\nSKILL.md excerpt:\n${skillSnippet}`;
+      // Include approved tools so LLM knows what's already in the pipeline
+      const approvedForAgent = alreadyApproved
+        .filter(p => p.agentId === a.id)
+        .map(p => p.toolName)
+        .join(", ");
+      const approvedNote = approvedForAgent ? `\nApproved (pending impl): ${approvedForAgent}` : "";
+      return `Agent: ${a.name} (${a.id}) — ${a.title}\nCurrent tools: ${currentTools}${approvedNote}\nSKILL.md excerpt:\n${skillSnippet}`;
     })
     .join("\n\n---\n\n");
 
   await writeStepAudit(ctx, "WF-107.snapshot", `Built snapshots for ${agentRegistry.length} agents`);
 
   // ── LLM: Analyze gaps and generate proposals ────────────────────────────────
+  const alreadyList = existingKeys.size > 0
+    ? `\n\nDO NOT re-propose any of these already-proposed tools:\n${[...existingKeys].map(k => `- ${k}`).join("\n")}`
+    : "";
+
   const analysisText = await safeLLM(ctx, {
     agent:   "atlas",
     purpose: "tool-discovery",
@@ -1009,10 +1032,10 @@ IMPL: <one sentence — how to implement it, e.g. "query prisma.crmContact.findM
 Rules:
 - Propose 8–15 tools total across all agents. Prioritize the highest-impact gaps.
 - Each proposal must be specific and immediately actionable.
-- Do not propose tools the agent already has.
+- Do not re-propose tools the agent already has OR tools already in the approved/pending list.
 - Focus on: data access tools (KB search, CRM lookups), communication tools (email send, Teams message), and productivity tools (calendar read, file read).
 - End the list with END_PROPOSALS on its own line.`,
-    user: `Today: ${today}\n\nAgent snapshots:\n\n${agentSnapshots.slice(0, 8000)}`,
+    user: `Today: ${today}${alreadyList}\n\nAgent snapshots:\n\n${agentSnapshots.slice(0, 8000)}`,
   });
 
   await writeStepAudit(ctx, "WF-107.analysis", `LLM analysis complete (${analysisText.length} chars)`);
@@ -1038,16 +1061,24 @@ Rules:
     }
   }
 
-  if (!proposals.length) {
-    await writeStepAudit(ctx, "WF-107.no-proposals", "LLM returned no parseable proposals");
-    return { ok: true, message: "WF-107 complete — no proposals generated", output: { proposals: 0 } };
+  // Hard dedup — filter out anything the LLM proposed despite being told not to
+  const deduped = proposals.filter(p => {
+    const key = `${p.agentId}:${p.toolName.toLowerCase()}`;
+    return !existingKeys.has(key);
+  });
+
+  if (!deduped.length) {
+    await writeStepAudit(ctx, "WF-107.no-new-proposals", `All ${proposals.length} LLM proposals were duplicates — nothing new to propose`);
+    return { ok: true, message: "WF-107 complete — no new proposals (all already approved or pending)", output: { proposals: 0, skipped: proposals.length } };
   }
+
+  const proposals_final = deduped;
 
   // ── Save proposals to DB + generate approve/deny tokens ─────────────────────
   const crypto = await import("crypto");
   const savedProposals: Array<ProposalRaw & { token: string; num: number }> = [];
 
-  for (const p of proposals) {
+  for (const p of proposals_final) {
     const token = crypto.randomBytes(24).toString("hex");
     await prisma.toolProposal.create({
       data: {
