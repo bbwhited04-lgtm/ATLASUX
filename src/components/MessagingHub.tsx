@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Send, MessageSquare, Mail, Phone, RefreshCw, Bot } from "lucide-react";
+import { Send, MessageSquare, Mail, Phone, RefreshCw, Bot, Users } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { API_BASE } from "@/lib/api";
 import { useActiveTenant } from "@/lib/activeTenant";
 
-type Tab = "telegram" | "email" | "sms";
+type Tab = "telegram" | "teams" | "email" | "sms";
 
 type TelegramUpdate = {
   update_id: number;
@@ -24,6 +24,24 @@ const inputCls =
 export function MessagingHub() {
   const { tenantId } = useActiveTenant();
   const [tab, setTab] = useState<Tab>("telegram");
+
+  // ── Teams ────────────────────────────────────────────
+  const [teamsStatus, setTeamsStatus] = useState<{ connected: boolean; reason?: string } | null>(null);
+  const [teamsTeams, setTeamsTeams] = useState<any[]>([]);
+  const [teamsChannels, setTeamsChannels] = useState<any[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState("");
+  const [selectedChannel, setSelectedChannel] = useState("");
+  const [teamsMessages, setTeamsMessages] = useState<any[]>([]);
+  const [teamsMessagesLoading, setTeamsMessagesLoading] = useState(false);
+  const [teamsText, setTeamsText] = useState("");
+  const [teamsSending, setTeamsSending] = useState(false);
+  const [teamsResult, setTeamsResult] = useState<string | null>(null);
+  // Cross-agent
+  const [crossFromAgent, setCrossFromAgent] = useState("atlas");
+  const [crossToAgent, setCrossToAgent] = useState("");
+  const [crossMessage, setCrossMessage] = useState("");
+  const [crossSending, setCrossSending] = useState(false);
+  const [crossResult, setCrossResult] = useState<string | null>(null);
 
   // ── Telegram ────────────────────────────────────────
   const [botInfo, setBotInfo] = useState<any>(null);
@@ -52,6 +70,110 @@ export function MessagingHub() {
   const [smsResult, setSmsResult] = useState<string | null>(null);
 
   // ── Data fetchers ────────────────────────────────────
+
+  async function fetchTeamsStatus() {
+    try {
+      const res = await fetch(`${API_BASE}/v1/teams/status`);
+      const data = await res.json();
+      setTeamsStatus({ connected: data.connected ?? false, reason: data.reason });
+    } catch {
+      setTeamsStatus({ connected: false, reason: "Failed to reach backend" });
+    }
+  }
+
+  async function fetchTeamsList() {
+    try {
+      const res = await fetch(`${API_BASE}/v1/teams/teams`);
+      const data = await res.json();
+      if (data.ok) setTeamsTeams(data.teams ?? []);
+    } catch {
+      // silent
+    }
+  }
+
+  async function fetchChannels(teamId: string) {
+    setTeamsChannels([]);
+    setSelectedChannel("");
+    setTeamsMessages([]);
+    try {
+      const res = await fetch(`${API_BASE}/v1/teams/${teamId}/channels`);
+      const data = await res.json();
+      if (data.ok) setTeamsChannels(data.channels ?? []);
+    } catch {
+      // silent
+    }
+  }
+
+  async function fetchMessages() {
+    if (!selectedTeam || !selectedChannel) return;
+    setTeamsMessagesLoading(true);
+    try {
+      const res = await fetch(
+        `${API_BASE}/v1/teams/${selectedTeam}/channels/${selectedChannel}/messages?limit=20`
+      );
+      const data = await res.json();
+      if (data.ok) setTeamsMessages(data.messages ?? []);
+    } catch {
+      // silent
+    } finally {
+      setTeamsMessagesLoading(false);
+    }
+  }
+
+  async function sendTeamsMessage() {
+    if (!selectedTeam || !selectedChannel || !teamsText.trim()) return;
+    setTeamsSending(true);
+    setTeamsResult(null);
+    try {
+      const res = await fetch(`${API_BASE}/v1/teams/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
+        body: JSON.stringify({
+          teamId: selectedTeam,
+          channelId: selectedChannel,
+          text: teamsText.trim(),
+          fromAgent: "atlas",
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error ?? "send_failed");
+      setTeamsResult("Message sent!");
+      setTeamsText("");
+      void fetchMessages();
+    } catch (e: any) {
+      setTeamsResult(`Error: ${e.message}`);
+    } finally {
+      setTeamsSending(false);
+    }
+  }
+
+  async function sendCrossAgent() {
+    if (!selectedTeam || !selectedChannel || !crossFromAgent || !crossToAgent || !crossMessage.trim()) return;
+    setCrossSending(true);
+    setCrossResult(null);
+    try {
+      const res = await fetch(`${API_BASE}/v1/teams/cross-agent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
+        body: JSON.stringify({
+          fromAgent: crossFromAgent,
+          toAgent: crossToAgent,
+          teamId: selectedTeam,
+          channelId: selectedChannel,
+          message: crossMessage.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error ?? "cross_agent_failed");
+      setCrossResult(`Sent from ${crossFromAgent} → ${crossToAgent}`);
+      setCrossMessage("");
+      void fetchMessages();
+    } catch (e: any) {
+      setCrossResult(`Error: ${e.message}`);
+    } finally {
+      setCrossSending(false);
+    }
+  }
 
   async function fetchBotInfo() {
     setBotLoading(true);
@@ -100,13 +222,27 @@ export function MessagingHub() {
 
   useEffect(() => {
     fetchBotInfo();
+    fetchTeamsStatus();
   }, []);
 
   useEffect(() => {
     if (tab === "telegram") fetchUpdates();
     if (tab === "email") fetchOutbox();
+    if (tab === "teams") {
+      fetchTeamsList();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, tenantId]);
+
+  useEffect(() => {
+    if (selectedTeam) fetchChannels(selectedTeam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTeam]);
+
+  useEffect(() => {
+    if (selectedTeam && selectedChannel) fetchMessages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedChannel]);
 
   // ── Senders ─────────────────────────────────────────
 
@@ -261,6 +397,7 @@ export function MessagingHub() {
       <div className="flex gap-2 flex-wrap">
         {(
           [
+            { id: "teams" as Tab, label: "Teams", Icon: Users },
             { id: "telegram" as Tab, label: "Telegram", Icon: MessageSquare },
             { id: "email" as Tab, label: "Email", Icon: Mail },
             { id: "sms" as Tab, label: "SMS", Icon: Phone },
@@ -277,6 +414,169 @@ export function MessagingHub() {
           </Button>
         ))}
       </div>
+
+      {/* ─── Teams Tab ────────────────────────────────────── */}
+      {tab === "teams" && (
+        <div className="space-y-4">
+          {/* Status banner */}
+          {teamsStatus && !teamsStatus.connected && (
+            <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/10 text-xs text-amber-300">
+              Teams not connected: {teamsStatus.reason ?? "MS_TENANT_ID / MS_CLIENT_ID / MS_CLIENT_SECRET required in backend env."}
+            </div>
+          )}
+
+          {/* Team + Channel selectors */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Team</label>
+              <select
+                value={selectedTeam}
+                onChange={(e) => setSelectedTeam(e.target.value)}
+                className={inputCls}
+              >
+                <option value="">Select a team…</option>
+                {teamsTeams.map((t) => (
+                  <option key={t.id} value={t.id}>{t.displayName}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Channel</label>
+              <select
+                value={selectedChannel}
+                onChange={(e) => setSelectedChannel(e.target.value)}
+                disabled={!selectedTeam || teamsChannels.length === 0}
+                className={inputCls}
+              >
+                <option value="">Select a channel…</option>
+                {teamsChannels.map((c) => (
+                  <option key={c.id} value={c.id}>{c.displayName}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {selectedTeam && selectedChannel && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Compose + cross-agent */}
+              <div className="space-y-4">
+                {/* Direct compose */}
+                <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-5 space-y-3">
+                  <div className="font-semibold text-white">Send to Channel</div>
+                  <textarea
+                    className={`${inputCls} min-h-[100px] resize-none`}
+                    placeholder="Message (sent as Atlas)"
+                    value={teamsText}
+                    onChange={(e) => setTeamsText(e.target.value)}
+                  />
+                  {teamsResult && (
+                    <div className={`p-2 rounded-lg text-xs ${teamsResult.startsWith("Error") ? "bg-red-500/10 text-red-400" : "bg-emerald-500/10 text-emerald-400"}`}>
+                      {teamsResult}
+                    </div>
+                  )}
+                  <Button
+                    onClick={sendTeamsMessage}
+                    disabled={!teamsText.trim() || teamsSending}
+                    className="w-full bg-cyan-500 hover:bg-cyan-400"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    {teamsSending ? "Sending…" : "Send Message"}
+                  </Button>
+                </Card>
+
+                {/* Cross-agent */}
+                <Card className="bg-slate-900/50 border-purple-500/20 backdrop-blur-xl p-5 space-y-3">
+                  <div className="font-semibold text-white">Cross-Agent Notify</div>
+                  <p className="text-xs text-slate-400">Route a message between agents via this Teams channel.</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-slate-500 mb-0.5 block">From agent</label>
+                      <input
+                        className={inputCls}
+                        placeholder="atlas"
+                        value={crossFromAgent}
+                        onChange={(e) => setCrossFromAgent(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-500 mb-0.5 block">To agent</label>
+                      <input
+                        className={inputCls}
+                        placeholder="petra, cheryl…"
+                        value={crossToAgent}
+                        onChange={(e) => setCrossToAgent(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <textarea
+                    className={`${inputCls} min-h-[80px] resize-none`}
+                    placeholder="Message for the receiving agent…"
+                    value={crossMessage}
+                    onChange={(e) => setCrossMessage(e.target.value)}
+                  />
+                  {crossResult && (
+                    <div className={`p-2 rounded-lg text-xs ${crossResult.startsWith("Error") ? "bg-red-500/10 text-red-400" : "bg-purple-500/10 text-purple-300"}`}>
+                      {crossResult}
+                    </div>
+                  )}
+                  <Button
+                    onClick={sendCrossAgent}
+                    disabled={!crossFromAgent || !crossToAgent || !crossMessage.trim() || crossSending}
+                    className="w-full bg-purple-600 hover:bg-purple-500"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    {crossSending ? "Sending…" : "Send Cross-Agent"}
+                  </Button>
+                </Card>
+              </div>
+
+              {/* Message feed */}
+              <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="font-semibold text-white">Recent Messages</div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchMessages}
+                    disabled={teamsMessagesLoading}
+                    className="border-cyan-500/20"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${teamsMessagesLoading ? "animate-spin" : ""}`} />
+                  </Button>
+                </div>
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                  {teamsMessagesLoading ? (
+                    <div className="text-xs text-slate-500 text-center py-8">Loading…</div>
+                  ) : teamsMessages.length === 0 ? (
+                    <div className="text-xs text-slate-500 text-center py-8">No messages yet.</div>
+                  ) : (
+                    teamsMessages.map((m) => (
+                      <div key={m.id} className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-cyan-400">{m.from}</span>
+                          <span className="text-[10px] text-slate-500">
+                            {m.createdAt ? new Date(m.createdAt).toLocaleTimeString() : ""}
+                          </span>
+                        </div>
+                        <div
+                          className="text-xs text-slate-300 line-clamp-3"
+                          dangerouslySetInnerHTML={
+                            m.contentType === "html"
+                              ? { __html: m.body }
+                              : undefined
+                          }
+                        >
+                          {m.contentType !== "html" ? m.body : undefined}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </Card>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── Telegram Tab ─────────────────────────────────── */}
       {tab === "telegram" && (

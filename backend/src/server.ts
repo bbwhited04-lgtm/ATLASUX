@@ -41,6 +41,7 @@ import { blogRoutes } from "./routes/blogRoutes.js";
 import { redditRoutes } from "./routes/redditRoutes.js";
 import { mobileRoutes } from "./routes/mobileRoutes.js";
 import { telegramRoutes } from "./routes/telegramRoutes.js";
+import { teamsRoutes } from "./routes/teamsRoutes.js";
 import { crmRoutes } from "./routes/crmRoutes.js";
 import { analyticsRoutes } from "./routes/analyticsRoutes.js";
 import { cannedResponseRoutes } from "./routes/cannedResponseRoutes.js";
@@ -191,6 +192,9 @@ await app.register(mobileRoutes, { prefix: "/v1/mobile" });
 
 // Telegram Bot API bridge
 await app.register(telegramRoutes, { prefix: "/v1/telegram" });
+
+// Microsoft Teams — channel messaging + cross-agent comms
+await app.register(teamsRoutes, { prefix: "/v1/teams" });
 
 // CRM — contacts, companies, segments, activities
 await app.register(crmRoutes, { prefix: "/v1/crm" });

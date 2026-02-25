@@ -69,6 +69,62 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ ok: true, jobs });
   });
 
+  // Queue a Teams channel message as a TEAMS_SEND job.
+  app.post("/teams", async (req, reply) => {
+    const tenantId = String((req as any).tenantId ?? "");
+    const body = (req.body ?? {}) as any;
+    const teamId = String(body.teamId ?? "").trim();
+    const channelId = String(body.channelId ?? "").trim();
+    const text = String(body.text ?? "").trim();
+    const fromAgent = String(body.fromAgent ?? "atlas").trim();
+    const toAgent = body.toAgent ? String(body.toAgent).trim() : null;
+
+    if (!tenantId || !teamId || !channelId || !text) {
+      return reply.code(400).send({ ok: false, error: "tenantId, teamId, channelId, text required" });
+    }
+
+    const job = await prisma.job.create({
+      data: {
+        tenantId,
+        requested_by_user_id: (req as any).user?.id ?? tenantId,
+        status: "queued",
+        jobType: "TEAMS_SEND",
+        priority: 5,
+        input: { teamId, channelId, text, fromAgent, toAgent },
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorUserId: null,
+        actorExternalId: fromAgent,
+        actorType: "system",
+        level: "info",
+        action: "TEAMS_QUEUED",
+        entityType: "job",
+        entityId: job.id,
+        message: `Queued Teams message from ${fromAgent}${toAgent ? ` → ${toAgent}` : ""} in channel ${channelId}`,
+        meta: { teamId, channelId, fromAgent, toAgent },
+        timestamp: new Date(),
+      },
+    });
+
+    return reply.send({ ok: true, jobId: job.id });
+  });
+
+  // Teams outbox
+  app.get("/teams/outbox", async (req, reply) => {
+    const tenantId = String((req as any).tenantId ?? "");
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+    const jobs = await prisma.job.findMany({
+      where: { tenantId, jobType: "TEAMS_SEND" },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    return reply.send({ ok: true, jobs });
+  });
+
   // Lightweight stub so the UI can "send" an install link without wiring a provider yet.
   // Replace with Twilio/Vonage/etc when ready.
   app.post("/sms", async (req, reply) => {
