@@ -36,6 +36,11 @@ export function MessagingHub() {
   const [teamsText, setTeamsText] = useState("");
   const [teamsSending, setTeamsSending] = useState(false);
   const [teamsResult, setTeamsResult] = useState<string | null>(null);
+  // Webhook URL
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookSaving, setWebhookSaving] = useState(false);
+  const [webhookResult, setWebhookResult] = useState<string | null>(null);
+  const [savedWebhooks, setSavedWebhooks] = useState<any[]>([]);
   // Cross-agent
   const [crossFromAgent, setCrossFromAgent] = useState("atlas");
   const [crossToAgent, setCrossToAgent] = useState("");
@@ -152,8 +157,43 @@ export function MessagingHub() {
     }
   }
 
+  async function fetchSavedWebhooks() {
+    try {
+      const res = await fetch(`${API_BASE}/v1/teams/webhooks`, { headers: tHeaders });
+      const data = await res.json();
+      if (data.ok) setSavedWebhooks(data.channels ?? []);
+    } catch { /* silent */ }
+  }
+
+  async function saveWebhookUrl() {
+    if (!selectedChannel || !webhookUrl.trim()) return;
+    setWebhookSaving(true);
+    setWebhookResult(null);
+    try {
+      const channelName = teamsChannels.find((c) => c.id === selectedChannel)?.displayName ?? "";
+      const res = await fetch(`${API_BASE}/v1/teams/webhook-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
+        body: JSON.stringify({
+          channelId: selectedChannel,
+          webhookUrl: webhookUrl.trim(),
+          channelName,
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error ?? "save_failed");
+      setWebhookResult("Webhook URL saved! You can now send messages to this channel.");
+      setWebhookUrl("");
+      void fetchSavedWebhooks();
+    } catch (e: any) {
+      setWebhookResult(`Error: ${e.message}`);
+    } finally {
+      setWebhookSaving(false);
+    }
+  }
+
   async function sendTeamsMessage() {
-    if (!selectedTeam || !selectedChannel || !teamsText.trim()) return;
+    if (!selectedChannel || !teamsText.trim()) return;
     setTeamsSending(true);
     setTeamsResult(null);
     try {
@@ -161,7 +201,6 @@ export function MessagingHub() {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
         body: JSON.stringify({
-          teamId: selectedTeam,
           channelId: selectedChannel,
           text: teamsText.trim(),
           fromAgent: "atlas",
@@ -180,7 +219,7 @@ export function MessagingHub() {
   }
 
   async function sendCrossAgent() {
-    if (!selectedTeam || !selectedChannel || !crossFromAgent || !crossToAgent || !crossMessage.trim()) return;
+    if (!selectedChannel || !crossFromAgent || !crossToAgent || !crossMessage.trim()) return;
     setCrossSending(true);
     setCrossResult(null);
     try {
@@ -188,7 +227,6 @@ export function MessagingHub() {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
         body: JSON.stringify({
-          teamId: selectedTeam,
           channelId: selectedChannel,
           fromAgent: crossFromAgent,
           toAgent: crossToAgent,
@@ -266,6 +304,7 @@ export function MessagingHub() {
     if (tab === "email") fetchOutbox();
     if (tab === "teams") {
       fetchTeamsList();
+      fetchSavedWebhooks();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, tenantId]);
@@ -497,6 +536,41 @@ export function MessagingHub() {
               </select>
             </div>
           </div>
+
+          {/* Webhook URL config */}
+          {selectedChannel && (
+            <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-white text-sm">Incoming Webhook URL</div>
+                {savedWebhooks.some((w) => w.channelId === selectedChannel) && (
+                  <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Configured</span>
+                )}
+              </div>
+              <p className="text-xs text-slate-400">
+                In Teams: right-click the channel → Connectors → Incoming Webhook → Create → copy the URL and paste below.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  className={`${inputCls} flex-1`}
+                  placeholder="https://xxxxx.webhook.office.com/..."
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                />
+                <Button
+                  onClick={saveWebhookUrl}
+                  disabled={!webhookUrl.trim() || webhookSaving}
+                  className="bg-cyan-500 hover:bg-cyan-400 whitespace-nowrap"
+                >
+                  {webhookSaving ? "Saving…" : "Save"}
+                </Button>
+              </div>
+              {webhookResult && (
+                <div className={`p-2 rounded-lg text-xs ${webhookResult.startsWith("Error") ? "bg-red-500/10 text-red-400" : "bg-emerald-500/10 text-emerald-400"}`}>
+                  {webhookResult}
+                </div>
+              )}
+            </Card>
+          )}
 
           {/* Compose + cross-agent visible when a team + channel are selected */}
           {selectedTeam && selectedChannel && (
