@@ -27,3 +27,17 @@ services:
     rootDir: backend
     buildCommand: npm install && npm run build
     startCommand: npm run worker:engine
+
+  - type: worker
+    name: atlasux-jobs-worker
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run worker:jobs
+
+  - type: worker
+    name: atlasux-social-worker
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run worker:social
