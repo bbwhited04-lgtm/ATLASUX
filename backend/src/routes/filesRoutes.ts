@@ -13,6 +13,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { createClient } from "@supabase/supabase-js";
 import multipart from "@fastify/multipart";
+import { meterStorage } from "../lib/usageMeter.js";
 import { Readable } from "stream";
 import { prisma } from "../db/prisma.js";
 
@@ -104,6 +105,10 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
       });
 
       if (error) return reply.code(500).send({ ok: false, error: error.message });
+
+      // Phase 2: meter storage usage
+      const userId = (req as any).auth?.userId;
+      if (userId && tenantId) meterStorage(userId, tenantId, buf.length);
 
       return reply.code(201).send({
         ok: true,

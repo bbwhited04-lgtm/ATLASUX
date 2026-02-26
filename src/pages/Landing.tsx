@@ -215,6 +215,9 @@ export default function Landing() {
             <li>Agent-to-agent task handoff — new delegate_task tool lets exec/governor agents queue AGENT_TASK jobs for other agents directly from chat; "delegate to sunday: draft a memo" creates a queued job, logs to audit trail, and Sunday picks it up on next engine tick; Atlas, Binky, Cheryl, Tina, Larry, Petra, Mercer, Sunday all enabled</li>
             <li>Deep mode expansion — Tina (CFO), Larry (Audit), Petra (PM), and Sunday (Comms Writer) now run the full 3-stage pipeline (planning → execution → verification + memory)</li>
             <li>Code splitting — 18 app + public page components now lazy-loaded via React.lazy() with Suspense fallback; initial bundle reduced, pages load on demand</li>
+            <li>Per-user identity (Phase 1) — new global "users" table cross-tenant, auto-provisioned on first Supabase auth; TenantMember now carries seat_type (free_beta, starter, pro, enterprise); /v1/user/me returns user profile + all tenant memberships + current seat tier</li>
+            <li>Usage metering (Phase 2) — every API call, LLM chat, job creation, and file upload now tracked per user/tenant/month in usage_meters table; /v1/user/me/usage returns current month stats + tier limits; /v1/user/me/usage/history returns last 6 months</li>
+            <li>Billing &amp; seats (Phase 3) — subscriptions table with Stripe fields ready; seat tier limits enforced: free_beta (50K tokens/day, 500MB, 5 agents), starter $19/mo (200K tokens, 5GB, 15 agents), pro $49/mo (1M tokens, 25GB, all agents), enterprise custom; admin can view/change seats via /v1/user/tenants/:id/seats; public pricing endpoint at /v1/user/pricing</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

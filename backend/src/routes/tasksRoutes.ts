@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../prisma.js";
+import { meterJobCreated } from "../lib/usageMeter.js";
 
 type CreateTaskRequest = {
   tenantId: string;
@@ -54,6 +55,10 @@ export const tasksRoutes: FastifyPluginAsync = async (app) => {
         timestamp: new Date(),
       },
     });
+
+    // Phase 2: meter job creation
+    const userId = (req as any).auth?.userId;
+    if (userId && tenantId) meterJobCreated(userId, tenantId);
 
     return reply.send({ ok: true, taskId: job.id });
   });

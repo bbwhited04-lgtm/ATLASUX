@@ -8,6 +8,7 @@ import { getSkillBlock, loadAllSkills } from "../core/kb/skillLoader.js";
 import { classifyQuery } from "../core/kb/queryClassifier.js";
 import { resolveAgentTools } from "../core/agent/agentTools.js";
 import { agentRegistry } from "../agents/registry.js";
+import { meterTokens } from "../lib/usageMeter.js";
 import { runDeepAgent } from "../core/agent/deepAgentPipeline.js";
 
 // Load all SKILL.md files into memory at module init (runs once at server boot).
@@ -219,6 +220,13 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const result = await runChat(enrichedBody, process.env as any);
+
+    // Phase 2: meter token usage (fire-and-forget)
+    if (userId && tenantId) {
+      const tokens = (result as any)?.usage?.total_tokens ?? (result as any)?.usage?.prompt_tokens ?? 500;
+      meterTokens(userId, tenantId, tokens);
+    }
+
     return reply.send(result);
   });
 };

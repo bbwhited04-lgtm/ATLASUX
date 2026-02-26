@@ -1,6 +1,7 @@
 import fp from "fastify-plugin";
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
+import { meterApiCall } from "../lib/usageMeter.js";
 
 /**
  * Global tenant resolution plugin (alpha-safe).
@@ -12,8 +13,11 @@ import { prisma } from "../db/prisma.js";
  * Sets req.tenantId so every route handler can use it.
  * Never blocks a request on its own — routes enforce their own requirements.
  *
- * When auth IS wired (req.auth.userId), membership is verified and
- * req.tenantRole is set. In alpha (no auth) the member check is skipped.
+ * When auth IS wired (req.auth.userId), membership is verified,
+ * req.tenantRole and req.seatType are set. In alpha (no auth)
+ * the member check is skipped.
+ *
+ * Phase 2: Also meters the API call for the authenticated user.
  */
 const plugin: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", async (req, reply) => {
@@ -35,6 +39,7 @@ const plugin: FastifyPluginAsync = async (app) => {
         });
         if (member) {
           (req as any).tenantRole = member.role;
+          (req as any).seatType = member.seatType;
         } else {
           // Authenticated user is not a member of this tenant — hard reject
           return reply.code(403).send({ ok: false, error: "TENANT_ACCESS_DENIED" });
@@ -43,6 +48,9 @@ const plugin: FastifyPluginAsync = async (app) => {
         // Member check unavailable — fail closed
         return reply.code(503).send({ ok: false, error: "TENANT_CHECK_UNAVAILABLE" });
       }
+
+      // Phase 2: meter this API call (fire-and-forget)
+      meterApiCall(userId, tenantId);
     }
 
     (req as any).tenantId = tenantId;
