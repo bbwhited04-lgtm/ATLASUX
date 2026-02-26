@@ -19,7 +19,7 @@ type Contact = {
   createdAt?: string;
 };
 
-type ImportSource = "google" | "csv" | "hubspot" | "salesforce" | "manual";
+type ImportSource = "google" | "csv" | "vcf" | "hubspot" | "salesforce" | "manual";
 
 function normalizeContactName(c: Contact): string {
   const full = `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim();
@@ -160,7 +160,7 @@ export default function CRM() {
 
   // ---- CRUD-ish handlers ----
   const handleOpenImport = () => {
-    setImportSource("csv");
+    setImportSource("vcf");
     setCsvFile(null);
     setImportResult(null);
     setShowImportModal(true);
@@ -201,6 +201,93 @@ export default function CRM() {
     });
   }
 
+  /** Parse vCard (.vcf) text into contact row objects. Handles vCard 2.1, 3.0, and 4.0 formats. */
+  function parseVcf(text: string): Record<string, string>[] {
+    const contacts: Record<string, string>[] = [];
+
+    // Unfold continuation lines (RFC 6350 §3.2: line starting with space/tab is continuation)
+    const unfolded = text.replace(/\r?\n[ \t]/g, "");
+    const lines = unfolded.split(/\r?\n/);
+
+    let current: Record<string, string> | null = null;
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) continue;
+
+      if (line.toUpperCase() === "BEGIN:VCARD") {
+        current = {};
+        continue;
+      }
+
+      if (line.toUpperCase() === "END:VCARD") {
+        if (current && (current.firstName || current.lastName || current.email || current.phone)) {
+          contacts.push(current);
+        }
+        current = null;
+        continue;
+      }
+
+      if (!current) continue;
+
+      // Split property name (with params) from value
+      // Handle: PROP;PARAM=VAL:value  or  PROP:value
+      const colonIdx = line.indexOf(":");
+      if (colonIdx < 0) continue;
+      const propPart = line.slice(0, colonIdx);
+      const value = line.slice(colonIdx + 1).replace(/\\n/g, " ").replace(/\\;/g, ";").replace(/\\,/g, ",").replace(/\\\\/g, "\\").trim();
+      if (!value) continue;
+
+      // Property name is the part before any semicolons (parameters)
+      const propName = propPart.split(";")[0].toUpperCase();
+
+      switch (propName) {
+        case "N": {
+          // N:Last;First;Middle;Prefix;Suffix
+          const parts = value.split(";");
+          if (parts[1]?.trim()) current.firstName = parts[1].trim();
+          if (parts[0]?.trim()) current.lastName = parts[0].trim();
+          break;
+        }
+        case "FN": {
+          // Full name — only use as fallback if N wasn't parsed
+          if (!current.firstName && !current.lastName) {
+            const parts = value.split(/\s+/);
+            if (parts.length >= 2) {
+              current.firstName = parts[0];
+              current.lastName = parts.slice(1).join(" ");
+            } else {
+              current.firstName = value;
+            }
+          }
+          break;
+        }
+        case "EMAIL": {
+          // Take the first email found
+          if (!current.email) current.email = value;
+          break;
+        }
+        case "TEL": {
+          // Take the first phone found
+          if (!current.phone) current.phone = value;
+          break;
+        }
+        case "ORG": {
+          // ORG:Company;Department — take the company part
+          if (!current.company) current.company = value.split(";")[0].trim();
+          break;
+        }
+        case "NOTE": {
+          current.notes = value;
+          break;
+        }
+        // Ignore PHOTO, ADR, URL, etc. — not needed for contact import
+      }
+    }
+
+    return contacts;
+  }
+
   const handleRunImport = async () => {
     if (importSource === "csv" && csvFile) {
       setLoading(true);
@@ -234,7 +321,39 @@ export default function CRM() {
       return;
     }
 
-    // Non-CSV sources: just reload
+    if (importSource === "vcf" && csvFile) {
+      setLoading(true);
+      setError(null);
+      setImportResult(null);
+      try {
+        const text = await csvFile.text();
+        const rows = parseVcf(text);
+        if (!rows.length) { setError("No contacts found in vCard file. Make sure it contains BEGIN:VCARD blocks."); setLoading(false); return; }
+
+        const res = await fetch(`${API_BASE}/v1/crm/contacts/import-csv`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
+          body: JSON.stringify({ rows, source: "vcf" }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error ?? "Import failed");
+        setImportResult({ created: data.created, skipped: data.skipped, errors: data.errors ?? [] });
+
+        // Reload contacts list
+        const listRes = await fetch(`${API_BASE}/v1/crm/contacts`, {
+          headers: { "x-tenant-id": tenantId ?? "" },
+        });
+        const listData = await listRes.json();
+        if (listRes.ok) setContacts(listData.contacts ?? []);
+      } catch (e: any) {
+        setError(e?.message ?? "vCard import failed");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Non-CSV/VCF sources: just reload
     setShowImportModal(false);
     setLoading(true);
     setError(null);
@@ -665,7 +784,7 @@ export default function CRM() {
               <div>
                 <h2 className="text-lg font-semibold">Import Contacts</h2>
                 <p className="text-sm opacity-70">
-                  Choose a source. This can be wired to real integrations.
+                  Upload a vCard (.vcf) or CSV file to import your contacts.
                 </p>
               </div>
               <button
@@ -684,6 +803,7 @@ export default function CRM() {
                 onChange={(e) => { setImportSource(e.target.value as ImportSource); setCsvFile(null); setImportResult(null); }}
                 className="w-full h-11 px-4 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-white/25"
               >
+                <option value="vcf">vCard (.vcf) — iCloud, Outlook, Google</option>
                 <option value="csv">CSV Upload</option>
                 <option value="google">Google (coming soon)</option>
                 <option value="hubspot">HubSpot (coming soon)</option>
@@ -691,12 +811,12 @@ export default function CRM() {
               </select>
             </div>
 
-            {importSource === "csv" && (
+            {(importSource === "csv" || importSource === "vcf") && (
               <div className="space-y-3">
                 <div className="rounded-xl border border-dashed border-white/20 bg-white/5 p-4 text-center">
                   <input
                     type="file"
-                    accept=".csv,.txt"
+                    accept={importSource === "vcf" ? ".vcf,.vcard" : ".csv,.txt"}
                     onChange={(e) => { setCsvFile(e.target.files?.[0] ?? null); setImportResult(null); }}
                     className="block mx-auto text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-4 file:py-2 file:text-sm file:font-medium file:text-cyan-400 hover:file:bg-cyan-500/30"
                   />
@@ -704,16 +824,23 @@ export default function CRM() {
                     <p className="mt-2 text-xs opacity-70">{csvFile.name} ({(csvFile.size / 1024).toFixed(1)} KB)</p>
                   )}
                 </div>
-                <p className="text-xs opacity-60">
-                  Expected columns: <span className="font-mono text-cyan-400/80">First Name, Last Name, Email, Phone, Company, Notes</span>.
-                  Also accepts: <span className="font-mono text-cyan-400/80">firstName, email, phone, company</span> and iCloud vCard export CSV formats.
-                </p>
+                {importSource === "vcf" ? (
+                  <p className="text-xs opacity-60">
+                    Drop a <span className="font-mono text-cyan-400/80">.vcf</span> file exported from <span className="text-white/80">iCloud, Outlook, or Google Contacts</span>.
+                    Supports vCard 2.1, 3.0, and 4.0 — extracts name, email, phone, company, and notes from each contact card.
+                  </p>
+                ) : (
+                  <p className="text-xs opacity-60">
+                    Expected columns: <span className="font-mono text-cyan-400/80">First Name, Last Name, Email, Phone, Company, Notes</span>.
+                    Also accepts: <span className="font-mono text-cyan-400/80">firstName, email, phone, company</span>.
+                  </p>
+                )}
               </div>
             )}
 
-            {importSource !== "csv" && (
+            {importSource !== "csv" && importSource !== "vcf" && (
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm opacity-70 text-center">
-                This import source is not yet available. Use CSV to import contacts from iCloud, Outlook, or any other app that exports .csv files.
+                This import source is not yet available. Use vCard (.vcf) or CSV to import your contacts.
               </div>
             )}
 
@@ -742,7 +869,7 @@ export default function CRM() {
                 <button
                   type="button"
                   onClick={handleRunImport}
-                  disabled={importSource === "csv" && !csvFile}
+                  disabled={(importSource === "csv" || importSource === "vcf") && !csvFile}
                   className="h-11 px-4 rounded-xl bg-white text-black font-semibold hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Import

@@ -194,4 +194,115 @@ export const blogRoutes: FastifyPluginAsync = async (app) => {
 
     return reply.send({ ok: true, id: created.id, slug: created.slug });
   });
+
+  // PATCH /v1/blog/posts/:id — update an existing blog post
+  app.patch("/posts/:id", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId || !isUUID(tenantId)) {
+      return reply.code(400).send({ ok: false, error: "tenantId_required" });
+    }
+
+    const { id } = req.params as { id: string };
+    const body = (req.body ?? {}) as any;
+
+    const existing = await prisma.kbDocument.findFirst({ where: { id, tenantId } });
+    if (!existing) return reply.code(404).send({ ok: false, error: "not_found" });
+
+    const data: any = {};
+    if (body.title !== undefined) data.title = String(body.title).trim();
+    if (body.body !== undefined || body.content !== undefined) {
+      data.body = String(body.body ?? body.content ?? "").trim();
+    }
+    if (body.featuredImageUrl !== undefined) {
+      data.featuredImageUrl = body.featuredImageUrl?.trim() || null;
+    }
+    if (body.publish !== undefined) {
+      data.status = body.publish ? KbDocumentStatus.published : KbDocumentStatus.draft;
+    }
+    if (body.excerpt !== undefined) {
+      // excerpt is derived, not stored — ignore
+    }
+
+    const updated = await prisma.kbDocument.update({ where: { id }, data });
+
+    // Update category tag if provided
+    if (body.category) {
+      const catName = String(body.category).toLowerCase().trim();
+      const catTag = await prisma.kbTag.upsert({
+        where: { tenantId_name: { tenantId, name: catName } },
+        create: { tenantId, name: catName },
+        update: {},
+      });
+      // Remove old non-"blog-post" tags and add the new category
+      const existingTags = await prisma.kbTagOnDocument.findMany({
+        where: { documentId: id },
+        include: { tag: true },
+      });
+      for (const t of existingTags) {
+        if (t.tag.name !== "blog-post") {
+          await prisma.kbTagOnDocument.delete({
+            where: { documentId_tagId: { documentId: id, tagId: t.tagId } },
+          }).catch(() => null);
+        }
+      }
+      await prisma.kbTagOnDocument.upsert({
+        where: { documentId_tagId: { documentId: id, tagId: catTag.id } },
+        create: { documentId: id, tagId: catTag.id },
+        update: {},
+      });
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: (req as any).auth?.userId ?? null,
+        actorExternalId: null,
+        level: "info",
+        action: "BLOG_POST_UPDATED",
+        entityType: "kb_document",
+        entityId: id,
+        message: `Blog post updated: "${(data.title ?? existing.title).slice(0, 80)}"`,
+        meta: { slug: existing.slug },
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
+    return reply.send({ ok: true, id: updated.id, slug: updated.slug });
+  });
+
+  // DELETE /v1/blog/posts/:id — delete a blog post
+  app.delete("/posts/:id", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId || !isUUID(tenantId)) {
+      return reply.code(400).send({ ok: false, error: "tenantId_required" });
+    }
+
+    const { id } = req.params as { id: string };
+
+    const existing = await prisma.kbDocument.findFirst({ where: { id, tenantId } });
+    if (!existing) return reply.code(404).send({ ok: false, error: "not_found" });
+
+    // Remove tag associations first, then the document
+    await prisma.kbTagOnDocument.deleteMany({ where: { documentId: id } });
+    await prisma.kbDocument.delete({ where: { id } });
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: (req as any).auth?.userId ?? null,
+        actorExternalId: null,
+        level: "info",
+        action: "BLOG_POST_DELETED",
+        entityType: "kb_document",
+        entityId: id,
+        message: `Blog post deleted: "${existing.title.slice(0, 80)}"`,
+        meta: { slug: existing.slug },
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
+    return reply.send({ ok: true });
+  });
 };

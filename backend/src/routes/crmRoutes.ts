@@ -419,6 +419,7 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
 
     const body = (req.body ?? {}) as any;
     const rows: any[] = Array.isArray(body.rows) ? body.rows : [];
+    const importSource = s(body.source) ?? "csv";
     if (!rows.length) return reply.code(400).send({ ok: false, error: "No rows provided" });
     if (rows.length > 5000) return reply.code(400).send({ ok: false, error: "Max 5000 rows per import" });
 
@@ -450,7 +451,7 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
             phone:     phone     ?? undefined,
             company:   company   ?? undefined,
             notes:     notes     ?? undefined,
-            source:    "csv",
+            source:    importSource,
             tags:      [],
           },
         });
@@ -468,11 +469,11 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
         actorUserId: null,
         actorExternalId: (req as any).auth?.userId ?? null,
         level: "info",
-        action: "CRM_CSV_IMPORTED",
+        action: "CRM_CONTACTS_IMPORTED",
         entityType: "crm_contact",
         entityId: null,
-        message: `CSV import: ${created} created, ${skipped} skipped`,
-        meta: { created, skipped, totalRows: rows.length, errorCount: errors.length },
+        message: `${importSource.toUpperCase()} import: ${created} created, ${skipped} skipped`,
+        meta: { source: importSource, created, skipped, totalRows: rows.length, errorCount: errors.length },
         timestamp: new Date(),
       },
     } as any).catch(() => null);

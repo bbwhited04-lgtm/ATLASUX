@@ -97,7 +97,7 @@ export function BlogManager() {
     setSelectedPost(null);
   }
 
-  function loadPostIntoEditor(post: BlogPost) {
+  async function loadPostIntoEditor(post: BlogPost) {
     setSelectedPost(post);
     setForm({
       title: post.title ?? "",
@@ -109,6 +109,19 @@ export function BlogManager() {
     });
     setErr(null);
     setSuccess(null);
+
+    // Fetch full post body by slug
+    if (post.slug) {
+      try {
+        const res = await fetch(`${API_BASE}/v1/blog/posts/${post.slug}`, {
+          headers: { "x-tenant-id": activeTenantId ?? "" },
+        });
+        const json = await res.json();
+        if (json.ok && json.post?.body) {
+          setForm((f) => ({ ...f, body: json.post.body }));
+        }
+      } catch { /* non-fatal */ }
+    }
   }
 
   async function handlePublish() {
@@ -142,6 +155,55 @@ export function BlogManager() {
       setErr(e?.message || "publish_failed");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleUpdate() {
+    if (!selectedPost?.id || !activeTenantId) return;
+    setSaving(true);
+    setErr(null);
+    setSuccess(null);
+    try {
+      const res = await fetch(`${API_BASE}/v1/blog/posts/${selectedPost.id}`, {
+        method: "PATCH",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          title: form.title,
+          category: form.category,
+          excerpt: form.excerpt,
+          body: form.body || undefined,
+          featuredImageUrl: form.featuredImageUrl || undefined,
+          publish: form.publish,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "update_failed");
+      setSuccess("Post updated!");
+      resetForm();
+      void load();
+    } catch (e: any) {
+      setErr(e?.message || "update_failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(postId: string, e?: React.MouseEvent) {
+    e?.stopPropagation();
+    if (!activeTenantId) return;
+    try {
+      const res = await fetch(`${API_BASE}/v1/blog/posts/${postId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "delete_failed");
+      }
+      if (selectedPost?.id === postId) resetForm();
+      void load();
+    } catch (e: any) {
+      setErr(e?.message || "delete_failed");
     }
   }
 
@@ -268,16 +330,23 @@ export function BlogManager() {
                   if (!file || !activeTenantId) return;
                   const fd = new FormData();
                   fd.append("file", file);
-                  fd.append("tenantId", activeTenantId);
                   try {
-                    const res = await fetch(`${API_BASE}/v1/files`, {
+                    // Upload to Supabase via /v1/files/upload
+                    const res = await fetch(`${API_BASE}/v1/files/upload`, {
                       method: "POST",
                       headers: { "x-tenant-id": activeTenantId },
                       body: fd,
                     });
                     const json = await res.json();
-                    if (json.url) setForm((f) => ({ ...f, featuredImageUrl: json.url }));
-                    else if (json.signedUrl) setForm((f) => ({ ...f, featuredImageUrl: json.signedUrl }));
+                    if (!json.ok || !json.file?.path) return;
+
+                    // Get a signed URL for the uploaded file
+                    const urlRes = await fetch(
+                      `${API_BASE}/v1/files/url?path=${encodeURIComponent(json.file.path)}`,
+                      { headers: { "x-tenant-id": activeTenantId } }
+                    );
+                    const urlJson = await urlRes.json();
+                    if (urlJson.url) setForm((f) => ({ ...f, featuredImageUrl: urlJson.url }));
                   } catch { /* non-fatal */ }
                   e.target.value = "";
                 }}
@@ -346,18 +415,29 @@ export function BlogManager() {
             >
               Clear
             </Button>
-            <Button
-              onClick={handlePublish}
-              disabled={saving || !form.title.trim() || !form.body.trim()}
-              className="bg-cyan-500 hover:bg-cyan-400 min-w-[120px]"
-            >
-              <Send className="w-4 h-4 mr-2" />
-              {saving
-                ? "Publishing…"
-                : form.publish
-                ? "Publish Post"
-                : "Save Draft"}
-            </Button>
+            {selectedPost?.id ? (
+              <Button
+                onClick={handleUpdate}
+                disabled={saving || !form.title.trim()}
+                className="bg-cyan-500 hover:bg-cyan-400 min-w-[120px]"
+              >
+                <PenLine className="w-4 h-4 mr-2" />
+                {saving ? "Saving…" : "Update Post"}
+              </Button>
+            ) : (
+              <Button
+                onClick={handlePublish}
+                disabled={saving || !form.title.trim() || !form.body.trim()}
+                className="bg-cyan-500 hover:bg-cyan-400 min-w-[120px]"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                {saving
+                  ? "Publishing…"
+                  : form.publish
+                  ? "Publish Post"
+                  : "Save Draft"}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -433,6 +513,13 @@ export function BlogManager() {
                     )}
                   </div>
                   <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); loadPostIntoEditor(p); }}
+                      className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-cyan-400 transition-colors"
+                      title="Edit post"
+                    >
+                      <PenLine className="w-3.5 h-3.5" />
+                    </button>
                     {p.slug && (
                       <button
                         onClick={(e) => {
@@ -443,6 +530,15 @@ export function BlogManager() {
                         title="Open post"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {p.id && (
+                      <button
+                        onClick={(e) => handleDelete(p.id!, e)}
+                        className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-colors"
+                        title="Delete post"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
