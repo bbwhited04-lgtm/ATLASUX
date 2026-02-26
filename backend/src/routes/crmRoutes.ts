@@ -413,7 +413,7 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
 
   // ── CSV Import ────────────────────────────────────────────────────────────
 
-  app.post("/contacts/import-csv", async (req, reply) => {
+  app.post("/contacts/import-csv", { bodyLimit: 20 * 1024 * 1024 }, async (req, reply) => {
     const tenantId = (req as any).tenantId as string | undefined;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
