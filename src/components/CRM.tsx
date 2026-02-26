@@ -303,56 +303,48 @@ export default function CRM() {
     return contacts;
   }
 
-  const handleRunImport = async () => {
-    if (importSource === "csv" && csvFile) {
-      setLoading(true);
-      setError(null);
-      setImportResult(null);
-      try {
-        const text = await csvFile.text();
-        const rows = parseCsv(text);
-        if (!rows.length) { setError("CSV has no data rows. Check the file and try again."); setLoading(false); return; }
+  /** Send rows in batches of 200 to stay under Render's ~1MB proxy limit. */
+  async function importBatched(rows: Record<string, string>[], source: string) {
+    const BATCH_SIZE = 200;
+    let totalCreated = 0;
+    let totalSkipped = 0;
+    const allErrors: string[] = [];
 
-        const res = await fetch(`${API_BASE}/v1/crm/contacts/import-csv`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
-          body: JSON.stringify({ rows }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error ?? "Import failed");
-        setImportResult({ created: data.created, skipped: data.skipped, errors: data.errors ?? [] });
-
-        // Reload contacts list
-        const listRes = await fetch(`${API_BASE}/v1/crm/contacts`, {
-          headers: { "x-tenant-id": tenantId ?? "" },
-        });
-        const listData = await listRes.json();
-        if (listRes.ok) setContacts(listData.contacts ?? []);
-      } catch (e: any) {
-        setError(e?.message ?? "CSV import failed");
-      } finally {
-        setLoading(false);
-      }
-      return;
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const batch = rows.slice(i, i + BATCH_SIZE);
+      const res = await fetch(`${API_BASE}/v1/crm/contacts/import-csv`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
+        body: JSON.stringify({ rows: batch, source }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? `Batch ${Math.floor(i / BATCH_SIZE) + 1} failed`);
+      totalCreated += data.created ?? 0;
+      totalSkipped += data.skipped ?? 0;
+      if (data.errors?.length) allErrors.push(...data.errors);
     }
 
-    if (importSource === "vcf" && csvFile) {
+    return { created: totalCreated, skipped: totalSkipped, errors: allErrors };
+  }
+
+  const handleRunImport = async () => {
+    if ((importSource === "csv" || importSource === "vcf") && csvFile) {
       setLoading(true);
       setError(null);
       setImportResult(null);
       try {
         const text = await csvFile.text();
-        const rows = parseVcf(text);
-        if (!rows.length) { setError("No contacts found in vCard file. Make sure it contains BEGIN:VCARD blocks."); setLoading(false); return; }
+        const rows = importSource === "vcf" ? parseVcf(text) : parseCsv(text);
+        if (!rows.length) {
+          setError(importSource === "vcf"
+            ? "No contacts found in vCard file. Make sure it contains BEGIN:VCARD blocks."
+            : "CSV has no data rows. Check the file and try again.");
+          setLoading(false);
+          return;
+        }
 
-        const res = await fetch(`${API_BASE}/v1/crm/contacts/import-csv`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
-          body: JSON.stringify({ rows, source: "vcf" }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error ?? "Import failed");
-        setImportResult({ created: data.created, skipped: data.skipped, errors: data.errors ?? [] });
+        const result = await importBatched(rows, importSource);
+        setImportResult({ created: result.created, skipped: result.skipped, errors: result.errors.slice(0, 10) });
 
         // Reload contacts list
         const listRes = await fetch(`${API_BASE}/v1/crm/contacts`, {
@@ -361,7 +353,7 @@ export default function CRM() {
         const listData = await listRes.json();
         if (listRes.ok) setContacts(listData.contacts ?? []);
       } catch (e: any) {
-        setError(e?.message ?? "vCard import failed");
+        setError(e?.message ?? `${importSource.toUpperCase()} import failed`);
       } finally {
         setLoading(false);
       }
