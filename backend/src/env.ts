@@ -40,6 +40,9 @@ const EnvSchema = z.object({
   X_CLIENT_ID: z.string().optional(),
   X_CLIENT_SECRET: z.string().optional(),
   X_REDIRECT_URI: z.string().optional(),
+  X_BEARER_TOKEN: z.string().optional(),
+  X_ACCESS_TOKEN: z.string().optional(),
+  X_ACCESS_TOKEN_SECRET: z.string().optional(),
 
   // Tumblr OAuth 1.0a
   TUMBLR_REQUEST_TOKEN_URL: z.string().optional(),
