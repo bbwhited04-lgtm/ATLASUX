@@ -154,18 +154,91 @@ export default function CRM() {
 
   const clearSelection = () => setSelectedIds(new Set());
 
+  // CSV import state
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [importResult, setImportResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null);
+
   // ---- CRUD-ish handlers ----
   const handleOpenImport = () => {
-    setImportSource("google");
+    setImportSource("csv");
+    setCsvFile(null);
+    setImportResult(null);
     setShowImportModal(true);
   };
 
+  /** Parse CSV text into an array of row objects. Handles quoted fields and commas inside quotes. */
+  function parseCsv(text: string): Record<string, string>[] {
+    const lines = text.split(/\r?\n/).filter((l) => l.trim());
+    if (lines.length < 2) return [];
+
+    // Parse a CSV line respecting quoted fields
+    const parseLine = (line: string): string[] => {
+      const fields: string[] = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (inQuotes) {
+          if (ch === '"' && line[i + 1] === '"') { current += '"'; i++; }
+          else if (ch === '"') { inQuotes = false; }
+          else { current += ch; }
+        } else {
+          if (ch === '"') { inQuotes = true; }
+          else if (ch === ',') { fields.push(current.trim()); current = ""; }
+          else { current += ch; }
+        }
+      }
+      fields.push(current.trim());
+      return fields;
+    };
+
+    const headers = parseLine(lines[0]);
+    return lines.slice(1).map((line) => {
+      const vals = parseLine(line);
+      const row: Record<string, string> = {};
+      headers.forEach((h, i) => { if (h && vals[i]) row[h] = vals[i]; });
+      return row;
+    });
+  }
+
   const handleRunImport = async () => {
+    if (importSource === "csv" && csvFile) {
+      setLoading(true);
+      setError(null);
+      setImportResult(null);
+      try {
+        const text = await csvFile.text();
+        const rows = parseCsv(text);
+        if (!rows.length) { setError("CSV has no data rows. Check the file and try again."); setLoading(false); return; }
+
+        const res = await fetch(`${API_BASE}/v1/crm/contacts/import-csv`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
+          body: JSON.stringify({ rows }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error ?? "Import failed");
+        setImportResult({ created: data.created, skipped: data.skipped, errors: data.errors ?? [] });
+
+        // Reload contacts list
+        const listRes = await fetch(`${API_BASE}/v1/crm/contacts`, {
+          headers: { "x-tenant-id": tenantId ?? "" },
+        });
+        const listData = await listRes.json();
+        if (listRes.ok) setContacts(listData.contacts ?? []);
+      } catch (e: any) {
+        setError(e?.message ?? "CSV import failed");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Non-CSV sources: just reload
     setShowImportModal(false);
     setLoading(true);
     setError(null);
     try {
-      // Reload from DB after import source is wired — for now reload contacts
       if (tenantId) {
         const res = await fetch(`${API_BASE}/v1/crm/contacts`, {
           headers: { "x-tenant-id": tenantId },
@@ -608,32 +681,73 @@ export default function CRM() {
               <label className="text-sm opacity-80">Source</label>
               <select
                 value={importSource}
-                onChange={(e) => setImportSource(e.target.value as ImportSource)}
+                onChange={(e) => { setImportSource(e.target.value as ImportSource); setCsvFile(null); setImportResult(null); }}
                 className="w-full h-11 px-4 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-white/25"
               >
-                <option value="google">Google</option>
                 <option value="csv">CSV Upload</option>
-                <option value="hubspot">HubSpot</option>
-                <option value="salesforce">Salesforce</option>
-                <option value="manual">Manual</option>
+                <option value="google">Google (coming soon)</option>
+                <option value="hubspot">HubSpot (coming soon)</option>
+                <option value="salesforce">Salesforce (coming soon)</option>
               </select>
             </div>
+
+            {importSource === "csv" && (
+              <div className="space-y-3">
+                <div className="rounded-xl border border-dashed border-white/20 bg-white/5 p-4 text-center">
+                  <input
+                    type="file"
+                    accept=".csv,.txt"
+                    onChange={(e) => { setCsvFile(e.target.files?.[0] ?? null); setImportResult(null); }}
+                    className="block mx-auto text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-4 file:py-2 file:text-sm file:font-medium file:text-cyan-400 hover:file:bg-cyan-500/30"
+                  />
+                  {csvFile && (
+                    <p className="mt-2 text-xs opacity-70">{csvFile.name} ({(csvFile.size / 1024).toFixed(1)} KB)</p>
+                  )}
+                </div>
+                <p className="text-xs opacity-60">
+                  Expected columns: <span className="font-mono text-cyan-400/80">First Name, Last Name, Email, Phone, Company, Notes</span>.
+                  Also accepts: <span className="font-mono text-cyan-400/80">firstName, email, phone, company</span> and iCloud vCard export CSV formats.
+                </p>
+              </div>
+            )}
+
+            {importSource !== "csv" && (
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm opacity-70 text-center">
+                This import source is not yet available. Use CSV to import contacts from iCloud, Outlook, or any other app that exports .csv files.
+              </div>
+            )}
+
+            {importResult && (
+              <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4 space-y-1">
+                <p className="text-sm font-medium text-cyan-400">
+                  Import complete: {importResult.created} created, {importResult.skipped} skipped
+                </p>
+                {importResult.errors.length > 0 && (
+                  <div className="text-xs opacity-70 space-y-0.5">
+                    {importResult.errors.map((e, i) => <p key={i}>{e}</p>)}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setShowImportModal(false)}
+                onClick={() => { setShowImportModal(false); setImportResult(null); }}
                 className="h-11 px-4 rounded-xl border border-white/10 hover:border-white/20 transition"
               >
-                Cancel
+                {importResult ? "Done" : "Cancel"}
               </button>
-              <button
-                type="button"
-                onClick={handleRunImport}
-                className="h-11 px-4 rounded-xl bg-white text-black font-semibold hover:opacity-90 transition"
-              >
-                Import
-              </button>
+              {!importResult && (
+                <button
+                  type="button"
+                  onClick={handleRunImport}
+                  disabled={importSource === "csv" && !csvFile}
+                  className="h-11 px-4 rounded-xl bg-white text-black font-semibold hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Import
+                </button>
+              )}
             </div>
           </div>
         </div>

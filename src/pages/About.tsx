@@ -198,7 +198,7 @@ export default function About() {
             <Link to="/acceptable-use" className="hover:text-white">Acceptable Use</Link>
           </div>
           <p className="text-center text-xs text-slate-500">
-            © {new Date().getFullYear()} Atlas UX, a product of DEAD APP CORP. All rights reserved.
+            © {new Date().getFullYear()} Atlas UX — a product of DEAD APP CORP, a Missouri closed corporation owned by THE DEAD APP CORP TRUST. All rights reserved.
           </p>
         </footer>
       </main>

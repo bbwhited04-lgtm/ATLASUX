@@ -122,7 +122,7 @@ export default function Landing() {
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Feb 27, 2026</span>
+            <span className="text-sm text-white/60">Last updated: Feb 28, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
             <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
@@ -197,6 +197,9 @@ export default function Landing() {
             <li>JobRunner auto-refreshes every 10s (was manual-only)</li>
             <li>Telegram "Use chat" button — now visible as a cyan badge; shows "Use &amp; send" when you have a message typed and sends immediately on click</li>
             <li>seedAiKb.ts — 62 comprehensive AI/tech KB documents across 11 categories: prompt engineering, AI agents, RAG retrieval, LLMOps, AI marketing, AI CRM, productivity, security, strategy, data engineering, and social media AI</li>
+            <li>Full codebase audit sweep — fixed 100+ findings across 45 files: removed all Neptune/Pluto legacy naming, replaced demo_org stubs, fixed false feature claims in Store/HelpSection, converted Store/About/Product/Blog pages to dark theme, corrected agent role descriptions and emails, deleted duplicate/orphan files, updated license to DEAD APP CORP, replaced all simulated/mock responses with honest error states, moved OAuth PKCE/CSRF state from in-memory maps to Postgres-backed oauth_state table</li>
+            <li>CRM CSV import — you can now upload a .csv file (iCloud contacts, Outlook export, any standard CSV) directly from the CRM Import modal; parser handles quoted fields, flexible column names (First Name/firstName/First), and imports up to 5,000 contacts per batch with audit trail logging</li>
+            <li>Corporate structure updated — footer and legal text now reflects ATLAS UX as a product of DEAD APP CORP, a Missouri closed corporation owned by THE DEAD APP CORP TRUST</li>
             <li>Full codebase audit — fixed 9 broken Prisma imports, added audit logging to 8 endpoints, Telegram webhook auth + secret token validation, Helmet security headers, ToolsHub dark theme fix, Electron dev-only DevTools, reduced Agent Watcher polling (4s→15s), added email-worker + engine-worker to render.yaml, cleaned up duplicate DB indexes, added missing env var definitions, blog post route fix (#/app/blog/:slug now works), replaced all alert() calls with toast notifications, rate-limited job creation + file uploads, fixed all routes to use reply.send() consistently, added tenant check to mobile pairing, fixed Dashboard navigation, cleaned up console.error across business-manager/ApiKeyManager/TaskAutomation, replaced remaining alert() in DecisionEnginesHub and SubscriptionManager with sonner toasts</li>
             <li>DB migration sprint — added tenant_id to publish_events, all atlas_ip_* tables, and atlas_suggestions (multi-tenancy compliance); DecisionMemo now has optional FK to source Job and Intent for audit traceability; fixed job queue race conditions across 3 workers with optimistic locking (prevents double-execution); KB chunks endpoint now paginated (offset/limit, max 500 per page); per-tenant file upload quotas (500 files, 500 MB default, configurable via env)</li>
             <li>Fix Telegram/Teams "tenant id required" — MessagingHub now sends x-tenant-id header on all API calls (was missing from /me, /updates, /send, and all Teams endpoints); selecting a business now propagates tenant context to every messaging tab</li>
@@ -265,7 +268,7 @@ export default function Landing() {
             <Link to="/acceptable-use" className="hover:text-white">Acceptable Use</Link>
           </div>
   <p className="mt-6 text-center text-xs text-slate-500">
-    © {new Date().getFullYear()} Atlas UX, a product of DEAD APP CORP, All rights reserved.
+    © {new Date().getFullYear()} Atlas UX — a product of DEAD APP CORP, a Missouri closed corporation owned by THE DEAD APP CORP TRUST. All rights reserved.
   </p>
 </footer>
 

@@ -411,6 +411,75 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ ok: true, contacts, total: contacts.length });
   });
 
+  // ── CSV Import ────────────────────────────────────────────────────────────
+
+  app.post("/contacts/import-csv", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const body = (req.body ?? {}) as any;
+    const rows: any[] = Array.isArray(body.rows) ? body.rows : [];
+    if (!rows.length) return reply.code(400).send({ ok: false, error: "No rows provided" });
+    if (rows.length > 5000) return reply.code(400).send({ ok: false, error: "Max 5000 rows per import" });
+
+    let created = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const firstName = s(row.firstName ?? row.first_name ?? row["First Name"] ?? row["First"]);
+      const lastName  = s(row.lastName ?? row.last_name ?? row["Last Name"] ?? row["Last"]);
+      const email     = s(row.email ?? row.Email ?? row["E-mail"] ?? row["Email Address"] ?? row["E-mail Address"]);
+      const phone     = s(row.phone ?? row.Phone ?? row["Phone Number"] ?? row["Phone number"]);
+      const company   = s(row.company ?? row.Company ?? row["Organization"] ?? row["Company Name"]);
+      const notes     = s(row.notes ?? row.Notes ?? row["Note"]);
+
+      if (!email && !phone && !firstName && !lastName) {
+        skipped++;
+        continue;
+      }
+
+      try {
+        await prisma.crmContact.create({
+          data: {
+            tenantId,
+            firstName: firstName ?? undefined,
+            lastName:  lastName  ?? undefined,
+            email:     email     ?? undefined,
+            phone:     phone     ?? undefined,
+            company:   company   ?? undefined,
+            notes:     notes     ?? undefined,
+            source:    "csv",
+            tags:      [],
+          },
+        });
+        created++;
+      } catch (err: any) {
+        errors.push(`Row ${i + 1}: ${err?.message?.slice(0, 80) ?? "unknown error"}`);
+        skipped++;
+      }
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: null,
+        actorExternalId: (req as any).auth?.userId ?? null,
+        level: "info",
+        action: "CRM_CSV_IMPORTED",
+        entityType: "crm_contact",
+        entityId: null,
+        message: `CSV import: ${created} created, ${skipped} skipped`,
+        meta: { created, skipped, totalRows: rows.length, errorCount: errors.length },
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
+    return reply.send({ ok: true, created, skipped, errors: errors.slice(0, 10) });
+  });
+
   // ── Deduplication ──────────────────────────────────────────────────────────
 
   app.get("/contacts/duplicates", async (req, reply) => {
