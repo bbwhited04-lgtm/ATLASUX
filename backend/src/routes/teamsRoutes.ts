@@ -81,50 +81,30 @@ async function graphGet(token: string, path: string): Promise<any> {
   return res.json();
 }
 
-// ── Incoming Webhook sender ───────────────────────────────────────────────
-// Sends an Adaptive Card (or simple text) to a Teams channel via its webhook URL.
-async function sendViaWebhook(webhookUrl: string, text: string, title?: string | null): Promise<void> {
-  const card: any = {
-    type: "message",
-    attachments: [
-      {
-        contentType: "application/vnd.microsoft.card.adaptive",
-        content: {
-          $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
-          type: "AdaptiveCard",
-          version: "1.4",
-          body: [
-            ...(title
-              ? [{ type: "TextBlock", text: title, weight: "Bolder", size: "Medium" }]
-              : []),
-            { type: "TextBlock", text, wrap: true },
-          ],
-        },
-      },
-    ],
-  };
-
-  const res = await fetch(webhookUrl, {
+// ── Graph API POST (for sending messages) ─────────────────────────────────
+// Requires Group.ReadWrite.All (Application) with admin consent.
+async function graphPost(token: string, path: string, body: unknown): Promise<any> {
+  const url = path.startsWith("http") ? path : `${GRAPH}${path}`;
+  const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(card),
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
   });
-
   if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Teams webhook failed (${res.status}): ${body.slice(0, 300)}`);
+    const err = await res.json().catch(() => ({})) as any;
+    const msg = err?.error?.message ?? JSON.stringify(err);
+    if (res.status === 403) {
+      throw new Error(
+        "Graph API 403: Ensure Group.ReadWrite.All (Application) is granted with admin consent. " +
+        `Graph error: ${msg}`
+      );
+    }
+    throw new Error(`Graph POST ${path} → ${res.status}: ${msg}`);
   }
-}
-
-// ── Resolve webhook URL for a channel ─────────────────────────────────────
-async function getWebhookUrl(tenantId: string, channelId: string): Promise<string | null> {
-  const integration = await prisma.integration.findUnique({
-    where: { tenantId_provider: { tenantId, provider: "teams" } },
-    select: { config: true },
-  });
-  const cfg = (integration?.config ?? {}) as Record<string, any>;
-  const webhooks = cfg.webhooks ?? {};
-  return webhooks[channelId] ?? cfg.defaultWebhookUrl ?? null;
+  return res.status === 204 ? null : res.json();
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
@@ -195,126 +175,33 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // POST /v1/teams/webhook-url — save a channel's Incoming Webhook URL
-  // Body: { channelId, webhookUrl, channelName? }
-  app.post("/webhook-url", async (req, reply) => {
-    const tenantId = String((req as any).tenantId ?? "");
-    if (!tenantId) return reply.code(401).send({ ok: false, error: "tenantId required" });
-
-    const body = (req.body ?? {}) as any;
-    const channelId = String(body.channelId ?? "").trim();
-    const webhookUrl = String(body.webhookUrl ?? "").trim();
-    const channelName = body.channelName ? String(body.channelName).trim() : null;
-
-    if (!channelId || !webhookUrl) {
-      return reply.code(400).send({ ok: false, error: "channelId and webhookUrl are required" });
-    }
-
-    if (!webhookUrl.includes("webhook.office.com") && !webhookUrl.includes("microsoft.com")) {
-      return reply.code(400).send({ ok: false, error: "webhookUrl must be a valid Teams webhook URL" });
-    }
-
-    try {
-      // Upsert the integration record with the webhook URL in config.webhooks
-      const existing = await prisma.integration.findUnique({
-        where: { tenantId_provider: { tenantId, provider: "teams" } },
-      });
-
-      const cfg = (existing?.config ?? {}) as Record<string, any>;
-      const webhooks = cfg.webhooks ?? {};
-      webhooks[channelId] = webhookUrl;
-      const channelNames = cfg.channelNames ?? {};
-      if (channelName) channelNames[channelId] = channelName;
-
-      await prisma.integration.upsert({
-        where: { tenantId_provider: { tenantId, provider: "teams" } },
-        update: {
-          config: { ...cfg, webhooks, channelNames, defaultWebhookUrl: cfg.defaultWebhookUrl ?? webhookUrl },
-          connected: true,
-        },
-        create: {
-          tenantId,
-          provider: "teams",
-          connected: true,
-          config: { webhooks, channelNames, defaultWebhookUrl: webhookUrl },
-        },
-      });
-
-      return reply.send({ ok: true, channelId, saved: true });
-    } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
-    }
-  });
-
-  // GET /v1/teams/webhook-url/:channelId — get saved webhook URL for a channel
-  app.get("/webhook-url/:channelId", async (req, reply) => {
-    const tenantId = String((req as any).tenantId ?? "");
-    if (!tenantId) return reply.code(401).send({ ok: false, error: "tenantId required" });
-    const { channelId } = req.params as any;
-
-    try {
-      const url = await getWebhookUrl(tenantId, channelId);
-      return reply.send({ ok: true, channelId, webhookUrl: url });
-    } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
-    }
-  });
-
-  // GET /v1/teams/webhooks — list all saved webhook channels
-  app.get("/webhooks", async (req, reply) => {
-    const tenantId = String((req as any).tenantId ?? "");
-    if (!tenantId) return reply.code(401).send({ ok: false, error: "tenantId required" });
-
-    try {
-      const integration = await prisma.integration.findUnique({
-        where: { tenantId_provider: { tenantId, provider: "teams" } },
-        select: { config: true, connected: true },
-      });
-      const cfg = (integration?.config ?? {}) as Record<string, any>;
-      const webhooks = cfg.webhooks ?? {};
-      const channelNames = cfg.channelNames ?? {};
-      const channels = Object.keys(webhooks).map((id) => ({
-        channelId: id,
-        channelName: channelNames[id] ?? null,
-        hasWebhook: true,
-      }));
-      return reply.send({ ok: true, channels, defaultWebhookUrl: cfg.defaultWebhookUrl ?? null });
-    } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
-    }
-  });
-
-  // POST /v1/teams/send — send a channel message via Incoming Webhook
-  // Body: { channelId, text, fromAgent?, title?, webhookUrl? }
+  // POST /v1/teams/send — send a channel message via Graph API
+  // Body: { teamId, channelId, text, fromAgent?, title? }
+  // Requires Group.ReadWrite.All (Application) with admin consent.
   app.post("/send", async (req, reply) => {
     const tenantId = String((req as any).tenantId ?? "");
     const body = (req.body ?? {}) as any;
+    const teamId = String(body.teamId ?? "").trim();
     const channelId = String(body.channelId ?? "").trim();
     const text = String(body.text ?? "").trim();
     const fromAgent = String(body.fromAgent ?? "atlas").trim();
     const title = body.title ? String(body.title).trim() : null;
 
-    if (!text) {
-      return reply.code(400).send({ ok: false, error: "text is required" });
+    if (!teamId || !channelId || !text) {
+      return reply.code(400).send({ ok: false, error: "teamId, channelId, and text are required" });
     }
 
-    // Resolve webhook URL: explicit > saved per-channel > default
-    let webhookUrl = body.webhookUrl ? String(body.webhookUrl).trim() : "";
-    if (!webhookUrl && tenantId && channelId) {
-      webhookUrl = (await getWebhookUrl(tenantId, channelId)) ?? "";
-    }
-    if (!webhookUrl) {
-      return reply.code(400).send({
-        ok: false,
-        error: "No webhook URL found. Save one first via POST /v1/teams/webhook-url or pass webhookUrl in the request body.",
-      });
-    }
-
-    const fullText = `${text}\n\n_Sent by ${fromAgent} via Atlas UX_`;
-    const fullTitle = title ?? `Message from ${fromAgent}`;
+    const content = title
+      ? `<strong>${title}</strong><br><br>${text}<br><br><em>Sent by ${fromAgent} via Atlas UX</em>`
+      : `${text}<br><br><em>Sent by ${fromAgent} via Atlas UX</em>`;
 
     try {
-      await sendViaWebhook(webhookUrl, fullText, fullTitle);
+      const token = await getMsToken();
+      await graphPost(
+        token,
+        `/teams/${encodeURIComponent(teamId)}/channels/${encodeURIComponent(channelId)}/messages`,
+        { body: { content, contentType: "html" } }
+      );
 
       if (tenantId) {
         await prisma.auditLog.create({
@@ -326,9 +213,9 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
             level: "info",
             action: "TEAMS_MESSAGE_SENT",
             entityType: "teams_channel",
-            entityId: channelId.slice(0, 80) || "default",
-            message: `Teams message sent by ${fromAgent}`,
-            meta: { fromAgent, title, channelId, preview: text.slice(0, 200) },
+            entityId: `${teamId}/${channelId}`.slice(0, 80),
+            message: `Teams message sent by ${fromAgent} to channel ${channelId}`,
+            meta: { fromAgent, title, teamId, channelId, preview: text.slice(0, 200) },
             timestamp: new Date(),
           },
         } as any).catch(() => null);
@@ -340,37 +227,37 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // POST /v1/teams/cross-agent — cross-agent notification via Incoming Webhook
-  // Body: { channelId, fromAgent, toAgent, message, context?, webhookUrl? }
+  // POST /v1/teams/cross-agent — cross-agent notification via Graph API
+  // Body: { teamId, channelId, fromAgent, toAgent, message, context? }
   app.post("/cross-agent", async (req, reply) => {
     const tenantId = String((req as any).tenantId ?? "");
     const body = (req.body ?? {}) as any;
+    const teamId = String(body.teamId ?? "").trim();
     const channelId = String(body.channelId ?? "").trim();
     const fromAgent = String(body.fromAgent ?? "").trim();
     const toAgent = String(body.toAgent ?? "").trim();
     const message = String(body.message ?? "").trim();
     const context = body.context ? String(body.context).trim() : null;
 
-    if (!fromAgent || !toAgent || !message) {
+    if (!teamId || !channelId || !fromAgent || !toAgent || !message) {
       return reply.code(400).send({
         ok: false,
-        error: "fromAgent, toAgent, and message are required",
+        error: "teamId, channelId, fromAgent, toAgent, and message are required",
       });
     }
 
-    let webhookUrl = body.webhookUrl ? String(body.webhookUrl).trim() : "";
-    if (!webhookUrl && tenantId && channelId) {
-      webhookUrl = (await getWebhookUrl(tenantId, channelId)) ?? "";
-    }
-    if (!webhookUrl) {
-      return reply.code(400).send({ ok: false, error: "No webhook URL found for this channel." });
-    }
-
-    const title = `${fromAgent.toUpperCase()} → ${toAgent.toUpperCase()}`;
-    const fullText = message + (context ? `\n\n_Context: ${context}_` : "") + "\n\n_Cross-agent via Atlas UX_";
+    const content =
+      `<strong>${fromAgent.toUpperCase()} → ${toAgent.toUpperCase()}</strong><br><br>${message}` +
+      (context ? `<br><br><em>Context: ${context}</em>` : "") +
+      `<br><br><em>Cross-agent via Atlas UX</em>`;
 
     try {
-      await sendViaWebhook(webhookUrl, fullText, title);
+      const token = await getMsToken();
+      await graphPost(
+        token,
+        `/teams/${encodeURIComponent(teamId)}/channels/${encodeURIComponent(channelId)}/messages`,
+        { body: { content, contentType: "html" } }
+      );
 
       if (tenantId) {
         await prisma.auditLog.create({
@@ -382,9 +269,9 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
             level: "info",
             action: "TEAMS_CROSS_AGENT_NOTIFY",
             entityType: "teams_channel",
-            entityId: channelId.slice(0, 80) || "default",
+            entityId: `${teamId}/${channelId}`.slice(0, 80),
             message: `Cross-agent Teams: ${fromAgent} → ${toAgent}`,
-            meta: { fromAgent, toAgent, channelId, preview: message.slice(0, 200) },
+            meta: { fromAgent, toAgent, teamId, channelId, preview: message.slice(0, 200) },
             timestamp: new Date(),
           },
         } as any).catch(() => null);
