@@ -168,9 +168,6 @@ export function AgentsHub() {
       <Tabs.Root value={tab} onValueChange={(v) => setTab(v)}>
         <Tabs.List className="flex flex-wrap gap-2 rounded-xl border border-cyan-500/20 bg-slate-900/50 backdrop-blur-xl p-2">
           {[
-            { value: "atlas",      Icon: Briefcase,     label: "Atlas + Staff" },
-            { value: "binky",      Icon: Shield,        label: "Binky + Crew" },
-            { value: "board",      Icon: Crown,         label: "Board & Governors" },
             { value: "workflows",  Icon: WorkflowIcon,  label: "Workflows" },
             { value: "tools",      Icon: Wrench,        label: "Tools" },
             { value: "deployment", Icon: Bell,          label: "Deployment" },
