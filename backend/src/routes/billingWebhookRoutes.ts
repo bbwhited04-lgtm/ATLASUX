@@ -107,7 +107,7 @@ export const billingWebhookRoutes: FastifyPluginAsync = async (app) => {
           // Log to audit trail (use default tenant for storefront purchases)
           await prisma.auditLog.create({
             data: {
-              tenantId: "9a8a332c-c47d-4792-a0d4-56ad4e4a3391",
+              tenantId: process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391",
               actorUserId: null,
               actorExternalId: email ?? "anonymous",
               actorType: "user",
@@ -148,7 +148,7 @@ export const billingWebhookRoutes: FastifyPluginAsync = async (app) => {
 
           await prisma.auditLog.create({
             data: {
-              tenantId: "9a8a332c-c47d-4792-a0d4-56ad4e4a3391",
+              tenantId: process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391",
               actorUserId: null,
               actorExternalId: charge?.billing_details?.email ?? "stripe",
               actorType: "system",

@@ -248,6 +248,9 @@ export default function Landing() {
             <li>Customer Reviews section on Store — Trustpilot and Google Reviews links for verified purchasers; review prompt placeholder visible until first reviews come in</li>
             <li>Fixed Telegram webhook "chat not linked" — resolveTenantByChatId now uses Prisma JSON path filtering to match chat_id regardless of stored type (string vs number); added numeric fallback and error logging so tenant lookup no longer silently fails</li>
             <li>Atlas UX Mobile (Expo React Native) — full mobile app with 5 tabs: Dashboard (stats grid, quick actions, recent jobs with pull-to-refresh), Chat (agent picker with Atlas/Binky/Cheryl/Sunday, conversation bubbles, real-time AI chat), Agents (roster with status dots, expandable detail cards), Jobs (filterable by status with color-coded badges), Settings (preferences, integrations, org info, logout); dark theme matching web app, SecureStore auth, gate code login</li>
+            <li>Stripe billing webhook — POST /v1/billing/stripe/webhook with HMAC signature verification; logs checkout completions, payment successes, and refunds to audit trail; STRIPE_WEBHOOK_SECRET pushed to Render</li>
+            <li>Teams Graph API fix — sending channel messages now uses Group.ReadWrite.All (Application permission) instead of nonexistent ChannelMessage.Send; all 22 Azure AD permissions granted with admin consent; error messages updated with accurate permission guidance</li>
+            <li>Deep project audit — fixed broken Store payment link (hhttps typo), corrected Business/Enterprise annual pricing, removed duplicate imports and dead route files, registered /v1/runtime status endpoint, replaced hardcoded tenant IDs with env var fallback</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

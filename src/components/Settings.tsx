@@ -49,7 +49,6 @@ import Integrations from './Integrations';
 import { FileManagement } from './FileManagement';
 import { ProcessingSettings } from './ProcessingSettings'; 
 import { MobileIntegration } from './premium/MobileIntegration';
-import { API_BASE } from "@/lib/api";
 import { getOrgUser } from "@/lib/org";
 
 // Icon mapping for permissions

@@ -51,6 +51,7 @@ import { filesRoutes } from "./routes/filesRoutes.js";
 import { userRoutes } from "./routes/userRoutes.js";
 import { metaRoutes } from "./routes/metaRoutes.js";
 import { googleRoutes } from "./routes/googleRoutes.js";
+import { runtimeRoutes } from "./routes/runtimeRoutes.js";
 import { billingWebhookRoutes } from "./routes/billingWebhookRoutes.js";
 
 const app = Fastify({ logger: true });
@@ -228,6 +229,9 @@ await app.register(metaRoutes, { prefix: "/v1/meta" });
 
 // Google — data deletion callback (OAuth verification compliance)
 await app.register(googleRoutes, { prefix: "/v1/google" });
+
+// Runtime status (engine enabled, pending approvals, last tick)
+await app.register(runtimeRoutes, { prefix: "/v1/runtime" });
 
 // Stripe billing webhook (scoped raw body parser for signature verification)
 await app.register(billingWebhookRoutes, { prefix: "/v1/billing" });
