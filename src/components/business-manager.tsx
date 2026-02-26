@@ -90,12 +90,9 @@ export function BusinessManager() {
     setActiveTenantId(tenantId);
     setWarning(null); // clear stale warning from previous state
     await loadAssetsForTenant(tenantId).catch((err) => {
-      console.error("Failed to load assets:", err);
       setWarning(err instanceof Error ? err.message : String(err));
     });
-    await loadLedgerForTenant(tenantId).catch((err) => {
-      console.error("Failed to load ledger:", err);
-    });
+    await loadLedgerForTenant(tenantId).catch(() => null);
   }
 
   // If a tenant was selected elsewhere (or persisted), adopt it.
@@ -130,7 +127,6 @@ const { org_id, user_id } = useMemo(() => getOrgUser(), []);
   // Load tenants (businesses) once on mount
   useEffect(() => {
     loadTenants().catch((err) => {
-      console.error("Failed to load tenants:", err);
       setWarning(err instanceof Error ? err.message : String(err));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -985,7 +981,6 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
       setShowColorPicker(false);
       setNewBusinessForm({ name: "", description: "", color: "from-cyan-500 to-blue-500" });
     } catch (err) {
-      console.error("Create business failed:", err);
       setWarning(err instanceof Error ? err.message : String(err));
     }
   }}
@@ -1365,7 +1360,6 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                             setNewAssetForm({ type: "domain", name: "", url: "", platform: "", costMonthlyUsd: "", costVendor: "", costCadence: "monthly", costCategory: "hosting" }); // reset all fields
                             setShowAddAsset(false);
                           } catch (err) {
-                            console.error(err);
                             setWarning(err instanceof Error ? err.message : String(err));
                           }
                         }}
@@ -1546,7 +1540,6 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                             setShowEditAsset(false);
                             setEditingAsset(null);
                           } catch (err) {
-                            console.error(err);
                             setWarning(err instanceof Error ? err.message : String(err));
                           }
                         }}

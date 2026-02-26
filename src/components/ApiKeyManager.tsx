@@ -151,8 +151,8 @@ export function ApiKeyManager() {
         const services = new Set(data.keys.map((k: any) => k.service));
         setConfiguredServices(services);
       }
-    } catch (error) {
-      console.error('Error loading configured services:', error);
+    } catch {
+      // Silently fail — service list will just show as unconfigured
     }
   };
 
@@ -183,8 +183,7 @@ export function ApiKeyManager() {
         const error = await response.json();
         toast.error(`Failed to configure ${serviceId}: ${error.error}`);
       }
-    } catch (error) {
-      console.error('Error saving service:', error);
+    } catch {
       toast.error('Failed to save API keys');
     } finally {
       setLoading(false);
@@ -211,8 +210,7 @@ export function ApiKeyManager() {
           return newSet;
         });
       }
-    } catch (error) {
-      console.error('Error deleting service:', error);
+    } catch {
       toast.error('Failed to remove API keys');
     }
   };

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from "sonner";
 import { motion, AnimatePresence } from 'motion/react';
 import {
   CreditCard,
@@ -289,14 +290,14 @@ export function SubscriptionManager() {
     });
     
     setAdditionalSeats(0);
-    alert(`Successfully added ${additionalSeats} seat(s)! Your next invoice will be updated.`);
+    toast.success(`Successfully added ${additionalSeats} seat(s)! Your next invoice will be updated.`);
   };
 
   // Handler to redirect to Stripe Payment Link
   const handleUpgradePlan = (plan: PricingPlan) => {
     if (!plan.paymentLink) {
       // For Enterprise, show contact message
-      alert('Please contact sales@atlasux.com for Enterprise pricing.');
+      toast.info('Please contact sales@atlasux.com for Enterprise pricing.');
       return;
     }
     

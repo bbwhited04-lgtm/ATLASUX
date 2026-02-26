@@ -1,4 +1,5 @@
 import { API_BASE } from "@/lib/api";
+import { toast } from "sonner";
 import { useEffect, useMemo, useState } from "react";
 import { useActiveTenant } from "@/lib/activeTenant";
 import { useSearchParams } from "react-router-dom";
@@ -189,10 +190,9 @@ const res = await fetch(`${API_BASE}/v1/engine/run`, {
       // Optional: jump to Jobs page
       window.location.hash = "#/app/jobs";
     } catch (err) {
-      console.error(err);
       setWorkflows((prev) => prev.map((w) => (w.id === workflowId ? { ...w, status: "idle" } : w)));
       if (selectedWorkflow?.id === workflowId) setSelectedWorkflow((prev) => (prev ? { ...prev, status: "idle" } : prev));
-      alert(err instanceof Error ? err.message : "Failed to start workflow");
+      toast.error(err instanceof Error ? err.message : "Failed to start workflow");
     }
   };
 

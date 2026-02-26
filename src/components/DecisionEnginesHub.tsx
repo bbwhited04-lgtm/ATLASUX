@@ -1,4 +1,5 @@
 import * as React from "react";
+import { toast } from "sonner";
 import { API_BASE } from "../lib/api";
 
 type DecisionPresetId = "binky" | "tina" | "larry" | "jenny" | "benny" | "cheryl";
@@ -102,7 +103,7 @@ export function DecisionEnginesHub() {
   const requestApproval = async () => {
     if (!packet) return;
     await postAudit("decision.packet.approval_requested", { preset, packet_id: packet.packet_id, question: packet.question });
-    alert("Approval requested (audit logged). Paste this packet into the approval email thread.");
+    toast.success("Approval requested (audit logged). Paste this packet into the approval email thread.");
   };
 
   const copyJson = async () => {
