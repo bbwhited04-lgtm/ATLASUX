@@ -100,9 +100,11 @@ export function MessagingHub() {
     }
   }
 
+  const tHeaders = tenantId ? { "x-tenant-id": tenantId } : {};
+
   async function fetchTeamsStatus() {
     try {
-      const res = await fetch(`${API_BASE}/v1/teams/status`);
+      const res = await fetch(`${API_BASE}/v1/teams/status`, { headers: tHeaders });
       const data = await res.json();
       setTeamsStatus({ connected: data.connected ?? false, reason: data.reason });
     } catch {
@@ -112,7 +114,7 @@ export function MessagingHub() {
 
   async function fetchTeamsList() {
     try {
-      const res = await fetch(`${API_BASE}/v1/teams/teams`);
+      const res = await fetch(`${API_BASE}/v1/teams/teams`, { headers: tHeaders });
       const data = await res.json();
       if (data.ok) setTeamsTeams(data.teams ?? []);
     } catch {
@@ -125,7 +127,7 @@ export function MessagingHub() {
     setSelectedChannel("");
     setTeamsMessages([]);
     try {
-      const res = await fetch(`${API_BASE}/v1/teams/${teamId}/channels`);
+      const res = await fetch(`${API_BASE}/v1/teams/${teamId}/channels`, { headers: tHeaders });
       const data = await res.json();
       if (data.ok) setTeamsChannels(data.channels ?? []);
     } catch {
@@ -138,7 +140,8 @@ export function MessagingHub() {
     setTeamsMessagesLoading(true);
     try {
       const res = await fetch(
-        `${API_BASE}/v1/teams/${selectedTeam}/channels/${selectedChannel}/messages?limit=20`
+        `${API_BASE}/v1/teams/${selectedTeam}/channels/${selectedChannel}/messages?limit=20`,
+        { headers: tHeaders }
       );
       const data = await res.json();
       if (data.ok) setTeamsMessages(data.messages ?? []);
@@ -208,7 +211,9 @@ export function MessagingHub() {
     setBotLoading(true);
     setBotError(null);
     try {
-      const res = await fetch(`${API_BASE}/v1/telegram/me`);
+      const res = await fetch(`${API_BASE}/v1/telegram/me`, {
+        headers: tenantId ? { "x-tenant-id": tenantId } : {},
+      });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error ?? "bot_check_failed");
       setBotInfo(data.bot);
@@ -223,7 +228,9 @@ export function MessagingHub() {
   async function fetchUpdates() {
     setUpdatesLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/v1/telegram/updates`);
+      const res = await fetch(`${API_BASE}/v1/telegram/updates`, {
+        headers: tenantId ? { "x-tenant-id": tenantId } : {},
+      });
       const data = await res.json();
       if (data.ok) setTgUpdates(data.updates ?? []);
     } catch {
@@ -283,7 +290,10 @@ export function MessagingHub() {
     try {
       const res = await fetch(`${API_BASE}/v1/telegram/send`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+        },
         body: JSON.stringify({ chat_id: chatId, text: tgText }),
       });
       const data = await res.json();
