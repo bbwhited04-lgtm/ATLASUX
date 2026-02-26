@@ -4,12 +4,13 @@ import { prisma } from "../db/prisma.js";
 import { KbDocumentStatus } from "@prisma/client";
 
 const BlogPostSchema = z.object({
-  title:    z.string().min(1).max(500),
-  body:     z.string().min(1).optional(),
-  content:  z.string().min(1).optional(),
-  category: z.string().max(100).optional(),
-  publish:  z.boolean().optional(),
-  slug:     z.string().max(120).optional(),
+  title:            z.string().min(1).max(500),
+  body:             z.string().min(1).optional(),
+  content:          z.string().min(1).optional(),
+  category:         z.string().max(100).optional(),
+  publish:          z.boolean().optional(),
+  slug:             z.string().max(120).optional(),
+  featuredImageUrl: z.string().max(2000).optional(),
 }).refine(d => d.body || d.content, { message: "body or content required" });
 
 // System actor UUID used in alpha when no auth user is present.
@@ -59,6 +60,7 @@ export const blogRoutes: FastifyPluginAsync = async (app) => {
         slug: doc.slug,
         title: doc.title,
         body: doc.body,
+        featuredImageUrl: (doc as any).featuredImageUrl ?? null,
         category,
         excerpt: doc.body.slice(0, 220).replace(/#+\s/g, "").trim(),
         date: doc.createdAt.toISOString().slice(0, 10),
@@ -93,6 +95,7 @@ export const blogRoutes: FastifyPluginAsync = async (app) => {
       id: d.id,
       slug: d.slug,
       title: d.title,
+      featuredImageUrl: (d as any).featuredImageUrl ?? null,
       category: d.tags
         .map((t) => t.tag.name)
         .filter((n) => n !== "blog-post")
@@ -123,6 +126,7 @@ export const blogRoutes: FastifyPluginAsync = async (app) => {
     const content = (parsed.body ?? parsed.content ?? "").trim();
     const category = (parsed.category ?? "Updates").trim();
     const publish = parsed.publish !== false;
+    const featuredImageUrl = parsed.featuredImageUrl?.trim() || null;
 
     // Ensure slug is unique per tenant by appending timestamp if needed
     const baseSlug = slugify(parsed.slug ? String(parsed.slug) : title);
@@ -143,6 +147,7 @@ export const blogRoutes: FastifyPluginAsync = async (app) => {
           title,
           slug,
           body: content,
+          featuredImageUrl,
           status: publish ? KbDocumentStatus.published : KbDocumentStatus.draft,
           createdBy: SYSTEM_ACTOR,
         },

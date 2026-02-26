@@ -8,6 +8,9 @@ import {
   Trash2,
   Globe,
   PenLine,
+  Image,
+  Upload,
+  X as XIcon,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -19,6 +22,7 @@ type BlogPost = {
   id?: string;
   slug?: string;
   title?: string;
+  featuredImageUrl?: string | null;
   category?: string;
   excerpt?: string;
   date?: string;
@@ -53,6 +57,7 @@ export function BlogManager() {
     category: "Updates",
     excerpt: "",
     body: "",
+    featuredImageUrl: "",
     publish: true,
   });
 
@@ -86,7 +91,7 @@ export function BlogManager() {
   }, [activeTenantId]);
 
   function resetForm() {
-    setForm({ title: "", category: "Updates", excerpt: "", body: "", publish: true });
+    setForm({ title: "", category: "Updates", excerpt: "", body: "", featuredImageUrl: "", publish: true });
     setErr(null);
     setSuccess(null);
     setSelectedPost(null);
@@ -99,6 +104,7 @@ export function BlogManager() {
       category: post.category ?? "Updates",
       excerpt: post.excerpt ?? "",
       body: "",
+      featuredImageUrl: post.featuredImageUrl ?? "",
       publish: post.status === "published",
     });
     setErr(null);
@@ -122,6 +128,7 @@ export function BlogManager() {
           category: form.category,
           excerpt: form.excerpt,
           body: form.body,
+          featuredImageUrl: form.featuredImageUrl || undefined,
           publish: form.publish,
         }),
       });
@@ -238,6 +245,41 @@ export function BlogManager() {
             </div>
           </div>
 
+          {/* Featured Image */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-400">
+              <Image className="w-3 h-3 inline mr-1" />
+              Featured Image (optional)
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                className={`${inputCls} flex-1`}
+                placeholder="Paste image URL or upload via Media Processing tab…"
+                value={form.featuredImageUrl}
+                onChange={(e) => setForm((f) => ({ ...f, featuredImageUrl: e.target.value }))}
+              />
+              {form.featuredImageUrl && (
+                <button
+                  onClick={() => setForm((f) => ({ ...f, featuredImageUrl: "" }))}
+                  className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                  title="Remove image"
+                >
+                  <XIcon className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              )}
+            </div>
+            {form.featuredImageUrl && (
+              <div className="mt-2 rounded-lg border border-cyan-500/20 overflow-hidden bg-slate-950/40">
+                <img
+                  src={form.featuredImageUrl}
+                  alt="Featured preview"
+                  className="max-h-40 w-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Body */}
           <div className="flex-1 space-y-1">
             <label className="text-xs font-medium text-slate-400">Body (Markdown) *</label>
@@ -321,6 +363,11 @@ export function BlogManager() {
                       : "border-cyan-500/10 bg-slate-950/40 hover:border-cyan-500/20 hover:bg-slate-900/60"
                   }`}
                 >
+                  {p.featuredImageUrl && (
+                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-cyan-500/10">
+                      <img src={p.featuredImageUrl} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <PenLine className="w-3 h-3 text-slate-500 flex-shrink-0" />

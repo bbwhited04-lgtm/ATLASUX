@@ -236,18 +236,19 @@ model Asset {
 }
 
 model KbDocument {
-  id        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId  String            @map("tenant_id") @db.Uuid
-  title     String
-  slug      String
-  body      String
-  status    KbDocumentStatus  @default(draft)
-  createdBy String            @map("created_by") @db.Uuid
-  updatedBy String?           @map("updated_by") @db.Uuid
-  createdAt DateTime          @default(now()) @map("created_at")
-  updatedAt DateTime          @updatedAt @map("updated_at")
-  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tags      KbTagOnDocument[]
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String            @map("tenant_id") @db.Uuid
+  title            String
+  slug             String
+  body             String
+  featuredImageUrl String?           @map("featured_image_url")
+  status           KbDocumentStatus  @default(draft)
+  createdBy        String            @map("created_by") @db.Uuid
+  updatedBy        String?           @map("updated_by") @db.Uuid
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tags             KbTagOnDocument[]
 
   @@unique([tenantId, slug])
   @@index([tenantId, status, updatedAt])

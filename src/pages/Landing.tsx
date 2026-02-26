@@ -205,6 +205,7 @@ export default function Landing() {
             <li>Wired Intelligence tab — live KPI dashboard (impressions, CTR, conversions, spend), financial overview from real ledger data, decision analytics (approval rate, cost per decision, by-agent breakdown), channel ROI table, period-over-period comparison with range selector (24h/7d/30d/90d), workforce overview with agent count</li>
             <li>Wired Security &amp; Compliance tab — real audit log activity timeline with color-coded levels, compliance status panel (audit trail, approval workflow, action caps, spend limits), agent access control grouped by tier, managed files inventory from Supabase, security overview stats from live data</li>
             <li>Wired Media Processing tab — full file browser with upload/download/delete against Supabase storage, type-based filtering (images, videos, PDFs, docs), file stats with total storage usage, quick action buttons; replaced all empty mock arrays with real tenant-scoped file data</li>
+            <li>Blog featured images — new featured_image_url field on kb_documents (DB migration), Blog Studio now has image URL input with live preview, posts list shows thumbnail; WF-108 Reynolds workflow now calls Venny to generate a DALL-E 3 blog header image before publishing (brand-consistent navy/cyan); image URL included in publish email and workflow output</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

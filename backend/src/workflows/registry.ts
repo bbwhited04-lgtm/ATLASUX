@@ -1292,6 +1292,67 @@ handlers["WF-108"] = async (ctx) => {
 
   const body = lines.slice(1).join("\n").trim() || blogText;
 
+  // 4b. Venny — generate a featured image prompt for the blog post
+  let featuredImageUrl: string | null = null;
+  try {
+    const vennySkill = getSkill("venny");
+    const imagePromptResult = await safeLLM(ctx, {
+      agent:   "VENNY",
+      purpose: "blog_featured_image",
+      route:   "ORCHESTRATION_REASONING",
+      system: [
+        "You are VENNY, Atlas UX Image Production Specialist.",
+        vennySkill ? `\n${vennySkill}` : "",
+        "\nYour task: generate a concise image generation prompt for a blog post featured image.",
+        "Brand standards: deep navy (#0f172a) background with cyan/blue accents (#06b6d4, #3b82f6).",
+        "Style: modern, clean, professional, tech-forward, minimal text overlay.",
+        "\nRESPOND WITH ONLY THE IMAGE PROMPT — no explanation, no markdown, just the prompt text.",
+      ].join("\n"),
+      user: [
+        `Blog post title: "${title}"`,
+        `Category: ${category}`,
+        `Post preview: ${body.slice(0, 400)}`,
+        "\nGenerate a single image prompt (under 200 words) for a 1200x630 blog header image.",
+      ].join("\n"),
+    });
+
+    await writeStepAudit(ctx, "WF-108.venny-prompt", `Venny image prompt generated (${imagePromptResult.length} chars)`);
+
+    // If OPENAI_API_KEY is present, call DALL-E to generate the actual image
+    const openaiKey = process.env.OPENAI_API_KEY?.trim();
+    if (openaiKey && imagePromptResult.length > 10) {
+      const dalleRes = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${openaiKey}`,
+        },
+        body: JSON.stringify({
+          model: "dall-e-3",
+          prompt: imagePromptResult.slice(0, 1000),
+          n: 1,
+          size: "1792x1024",
+          quality: "standard",
+        }),
+      });
+
+      if (dalleRes.ok) {
+        const dalleJson = (await dalleRes.json()) as any;
+        featuredImageUrl = dalleJson?.data?.[0]?.url ?? null;
+        if (featuredImageUrl) {
+          await writeStepAudit(ctx, "WF-108.venny-image", "Venny generated featured image via DALL-E 3");
+        }
+      } else {
+        await writeStepAudit(ctx, "WF-108.venny-image-fail", `DALL-E returned ${dalleRes.status}`);
+      }
+    } else {
+      await writeStepAudit(ctx, "WF-108.venny-skip", "No OPENAI_API_KEY — skipping image generation");
+    }
+  } catch (err: any) {
+    await writeStepAudit(ctx, "WF-108.venny-error", `Image generation failed: ${err?.message ?? err}`);
+    // Non-fatal — post publishes without image
+  }
+
   // 5. Publish blog post — upsert KbDocument + tag (same logic as blogRoutes.ts)
   const baseSlug = slugify108(title);
   const slug     = `${baseSlug}-${Date.now()}`;
@@ -1315,6 +1376,7 @@ handlers["WF-108"] = async (ctx) => {
           title,
           slug,
           body,
+          featuredImageUrl,
           status:    "published",
           createdBy: BLOG_SYSTEM_ACTOR,
         },
@@ -1372,6 +1434,7 @@ handlers["WF-108"] = async (ctx) => {
     `Slug:     ${publishedSlug}`,
     `Date:     ${today}`,
     `Agent:    REYNOLDS (WF-108)`,
+    `Image:    ${featuredImageUrl ? "Venny generated" : "None"}`,
     `SERP:     ${serpData ? "Live data" : "KB-only"}`,
     `KB docs:  ${kb.items.length}`,
     `Trace:    ${ctx.traceId ?? ctx.intentId}`,
@@ -1430,6 +1493,7 @@ handlers["WF-108"] = async (ctx) => {
       slug:       publishedSlug,
       documentId: publishedId,
       category,
+      featuredImageUrl,
       serpActive: !!serpData,
       kbItems:    kb.items.length,
       bodyChars:  body.length,
