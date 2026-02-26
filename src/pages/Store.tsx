@@ -290,7 +290,7 @@ const digitalProducts: DigitalProduct[] = [
       "Automation & scaling strategies",
       "Common mistakes to avoid",
     ],
-    paymentLink: "https://buy.stripe.com/aFabJ25L37hR766frR8IU0b",
+    paymentLink: "https://buy.stripe.com/14A4gAddv9pZ4XYcfF8IU0o",
     downloadUrl: "/downloads/passive-income-guide-ebook.pdf",
   },
   {
@@ -311,7 +311,7 @@ const digitalProducts: DigitalProduct[] = [
       "Automation with Zapier, Make & n8n",
       "Monetization & scaling playbook",
     ],
-    paymentLink: "https://buy.stripe.com/28EcN6gpHgSrfCCcfF8IU0a",
+    paymentLink: "https://buy.stripe.com/14A14oc9r31B7661B18IU0n",
     downloadUrl: "/downloads/master-chatgpt5-guide-ebook.pdf",
   },
   {
@@ -332,7 +332,7 @@ const digitalProducts: DigitalProduct[] = [
       "10 categories from portraits to abstract",
       "Advanced techniques & style mixing",
     ],
-    paymentLink: "https://buy.stripe.com/28E5kE4GZdGf622djJ8IU09",
+    paymentLink: "https://buy.stripe.com/7sYdRa2yR1Xx4XY5Rh8IU0m",
     downloadUrl: "/downloads/nano-banana-ai-prompts-guide.pdf",
   },
   {
@@ -353,7 +353,7 @@ const digitalProducts: DigitalProduct[] = [
       "E-commerce & customer support",
       "Beginner to advanced difficulty levels",
     ],
-    paymentLink: "https://buy.stripe.com/aFabJ25L37hR766frR8IU0b",
+    paymentLink: "https://buy.stripe.com/14A6oI8Xf45Faii1B18IU0l",
     downloadUrl: "/downloads/n8n-automation-templates-guide.pdf",
   },
 ];
