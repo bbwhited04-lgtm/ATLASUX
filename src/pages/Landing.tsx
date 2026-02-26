@@ -207,6 +207,7 @@ export default function Landing() {
             <li>Wired Media Processing tab — full file browser with upload/download/delete against Supabase storage, type-based filtering (images, videos, PDFs, docs), file stats with total storage usage, quick action buttons; replaced all empty mock arrays with real tenant-scoped file data</li>
             <li>Blog featured images — new featured_image_url field on kb_documents (DB migration), Blog Studio now has image URL input with live preview, posts list shows thumbnail; WF-108 Reynolds workflow now calls Venny to generate a DALL-E 3 blog header image before publishing (brand-consistent navy/cyan); image URL included in publish email and workflow output</li>
             <li>Fixed workflow email routing — agents no longer email themselves their own reports; all workflow completion reports now go to Atlas (CEO) with CC to the agent's direct leader based on org hierarchy; platform intel reports, daily brief, blog publish confirmations, and all n8n workflow outputs now follow proper chain-of-command reporting</li>
+            <li>Left nav cleanup — consolidated 15 sidebar items down to 9; Decisions, Budgets, Tickets, Blog, and Analytics now live as tabs inside Business Manager; old URLs redirect automatically; Agent Watcher heartbeat now always visible in the header bar showing running jobs, last active agent, and timestamp — click to open full watcher view</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

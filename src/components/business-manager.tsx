@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import {
   Briefcase, Plus, Globe, Facebook, Instagram, Twitter,
   Youtube, TrendingUp, Users, DollarSign, Settings,
   Edit, Trash2, ExternalLink, Copy, CheckCircle,
   Store, MessageSquare, Mail, Calendar, Video, ArrowRight, Hash, Link, Zap,
   Cpu, Gauge, Activity, Database, FolderOpen, Shield, Film,
-  BarChart3, Bell, AlertCircle, Key, X as XIcon
+  BarChart3, Bell, AlertCircle, Key, X as XIcon,
+  ClipboardCheck, Newspaper
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { API_BASE } from '@/lib/api';
@@ -23,6 +24,10 @@ import { FinancialManagement } from './premium/FinancialManagement';
 import { CalendarScheduling } from './premium/CalendarScheduling';
 import { SmartAutomation } from './premium/SmartAutomation';
 import { EmailClient } from './premium/EmailClient';
+import { DecisionsInbox } from './DecisionsInbox';
+import { BudgetTracker } from './BudgetTracker';
+import { TicketsView } from './TicketsView';
+import { BlogManager } from './BlogManager';
 
 
 interface Asset {
@@ -81,7 +86,13 @@ interface Tenant {
 }
 
 
+const VALID_TABS = ["assets", "intelligence", "media", "security", "suite", "decisions", "budgets", "tickets", "blog"] as const;
+
 export function BusinessManager() {
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const initialTab = VALID_TABS.includes(tabParam as any) ? tabParam! : "assets";
+
   const { tenantId: activeTenantId, setTenantId: setActiveTenantId } = useActiveTenant();
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(activeTenantId ?? null);
 
@@ -545,29 +556,44 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
         </div>
       </div>
 
-      <Tabs defaultValue="assets" className="space-y-6">
-        <TabsList className="bg-slate-900/50 border border-cyan-500/20">
+      <Tabs defaultValue={initialTab} className="space-y-6">
+        <TabsList className="bg-slate-900/50 border border-cyan-500/20 flex-wrap">
           <TabsTrigger value="assets" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Briefcase className="w-4 h-4 mr-2" />
-            Business Assets
+            Assets
           </TabsTrigger>
           <TabsTrigger value="intelligence" className="text-slate-300 data-[state=active]:text-cyan-400">
             <TrendingUp className="w-4 h-4 mr-2" />
             Intelligence
           </TabsTrigger>
+          <TabsTrigger value="decisions" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <ClipboardCheck className="w-4 h-4 mr-2" />
+            Decisions
+          </TabsTrigger>
+          <TabsTrigger value="budgets" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <DollarSign className="w-4 h-4 mr-2" />
+            Budgets
+          </TabsTrigger>
+          <TabsTrigger value="blog" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Newspaper className="w-4 h-4 mr-2" />
+            Blog
+          </TabsTrigger>
+          <TabsTrigger value="tickets" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <AlertCircle className="w-4 h-4 mr-2" />
+            Tickets
+          </TabsTrigger>
           <TabsTrigger value="media" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Film className="w-4 h-4 mr-2" />
-            Media Processing
+            Media
           </TabsTrigger>
           <TabsTrigger value="security" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Shield className="w-4 h-4 mr-2" />
-            Security & Compliance
+            Security
           </TabsTrigger>
           <TabsTrigger value="suite" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Zap className="w-4 h-4 mr-2" />
-            Operations Suite
+            Suite
           </TabsTrigger>
-
         </TabsList>
 
         {/* Business Assets Tab */}
@@ -1219,7 +1245,27 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
         <TabsContent value="security">
           <SecurityCompliance />
         </TabsContent>
-      
+
+        {/* Decisions Tab (consolidated from /app/decisions) */}
+        <TabsContent value="decisions">
+          <DecisionsInbox />
+        </TabsContent>
+
+        {/* Budgets Tab (consolidated from /app/budgets) */}
+        <TabsContent value="budgets">
+          <BudgetTracker />
+        </TabsContent>
+
+        {/* Tickets Tab (consolidated from /app/tickets) */}
+        <TabsContent value="tickets">
+          <TicketsView />
+        </TabsContent>
+
+        {/* Blog Studio Tab (consolidated from /app/blog) */}
+        <TabsContent value="blog">
+          <BlogManager />
+        </TabsContent>
+
         {/* Operations Suite Tab (relocated from Premium Hub) */}
         <TabsContent value="suite" className="space-y-6">
           {suiteView !== 'hub' && (

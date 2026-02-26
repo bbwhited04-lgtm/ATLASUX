@@ -1,6 +1,6 @@
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { CreditCard, HelpCircle } from "lucide-react";
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import * as React from 'react';
 import { MobileConnectionModal } from './MobileConnectionModal';
 import { MobileInstallModal } from './MobileInstallModal';
@@ -8,25 +8,19 @@ import { MobileCompanionSetup } from "./MobileCompanionSetup";
 import { MobileConnectionProvider, useMobileConnection } from './mobile/MobileConnectionContext';
 import {
   LayoutDashboard,
-  Bell,
   Cpu,
   MessageSquare,
   Radio,
   Users,
   UserCog,
-  BarChart3,
   Briefcase,
   Settings as SettingsIcon,
   ChevronRight,
   ChevronLeft,
   BookOpen,
-  ClipboardCheck,
-  Newspaper,
   Power,
   Activity,
   Send,
-  AlertCircle,
-  DollarSign,
 } from 'lucide-react';
 
 import { API_BASE } from "../lib/api";
@@ -122,6 +116,7 @@ function RootLayoutInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Pending decisions badge (used on Business Manager nav item) ──
   const [pendingDecisionsCount, setPendingDecisionsCount] = React.useState<number>(0);
   React.useEffect(() => {
     let cancelled = false;
@@ -143,9 +138,7 @@ function RootLayoutInner() {
     };
 
     fetchCount();
-    // 60 s polling — decisions don't need sub-minute freshness.
     const t = window.setInterval(fetchCount, 60000);
-    // Refresh badge as soon as the user returns to the tab.
     const onVis = () => { if (document.visibilityState === "visible") void fetchCount(); };
     document.addEventListener("visibilitychange", onVis);
     return () => {
@@ -154,9 +147,49 @@ function RootLayoutInner() {
       document.removeEventListener("visibilitychange", onVis);
     };
   }, [tenantId]);
+
+  // ── Agent heartbeat — lightweight polling for header indicator ──
+  const [heartbeat, setHeartbeat] = React.useState<{
+    lastEvent: string | null;
+    runningJobs: number;
+    recentAgent: string | null;
+  }>({ lastEvent: null, runningJobs: 0, recentAgent: null });
+
+  const fetchHeartbeat = useCallback(async () => {
+    const headers: Record<string, string> = {};
+    if (tenantId) headers["x-tenant-id"] = tenantId;
+    try {
+      const [auditRes, jobsRes] = await Promise.all([
+        fetch(`${API_BASE}/v1/audit/list?limit=1`, { headers }).then(r => r.json()).catch(() => null),
+        fetch(`${API_BASE}/v1/jobs/list`, { headers }).then(r => r.json()).catch(() => null),
+      ]);
+      const latest = auditRes?.items?.[0];
+      const runningJobs = Array.isArray(jobsRes?.jobs)
+        ? jobsRes.jobs.filter((j: any) => j.status === "running" || j.status === "queued").length
+        : 0;
+      setHeartbeat({
+        lastEvent: latest?.timestamp ?? latest?.createdAt ?? null,
+        runningJobs,
+        recentAgent: latest?.actorExternalId ?? latest?.actorUserId ?? null,
+      });
+    } catch { /* silent */ }
+  }, [tenantId]);
+
+  React.useEffect(() => {
+    fetchHeartbeat();
+    const t = window.setInterval(fetchHeartbeat, 30000);
+    const onVis = () => { if (document.visibilityState === "visible") void fetchHeartbeat(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.clearInterval(t);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [fetchHeartbeat]);
   
   const atlasLogo = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z'/%3E%3C/svg%3E";
   
+  // Consolidated nav — Analytics, Blog, Decisions, Budgets, Tickets now live
+  // inside Business Manager as tabs. Agent Watcher heartbeat is in the header.
   const navItems: Array<{ path: string; icon: any; label: string; badge?: number }> = [
     { path: "/app", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/app/jobs", icon: Cpu, label: "Pluto Jobs" },
@@ -164,16 +197,9 @@ function RootLayoutInner() {
     { path: "/app/agents", icon: UserCog, label: "Agents" },
     { path: "/app/monitoring", icon: Radio, label: "Monitoring" },
     { path: "/app/crm", icon: Users, label: "CRM" },
-    { path: "/app/analytics", icon: BarChart3, label: "Analytics" },
-    // Consolidated business tooling lives under Business Manager now.
-    { path: "/app/business-manager", icon: Briefcase, label: "Business Manager" },
+    { path: "/app/business-manager", icon: Briefcase, label: "Business Manager", badge: pendingDecisionsCount },
     { path: "/app/kb", icon: BookOpen, label: "Knowledge Base" },
-    { path: "/app/blog", icon: Newspaper, label: "Blog" },
-    { path: "/app/watcher", icon: Activity, label: "Agent Watcher" },
-    { path: "/app/decisions", icon: ClipboardCheck, label: "Decisions", badge: pendingDecisionsCount },
     { path: "/app/messaging", icon: Send, label: "Messaging" },
-    { path: "/app/tickets", icon: AlertCircle, label: "Tickets" },
-    { path: "/app/budgets", icon: DollarSign, label: "Budgets" },
     ];
 
   // (Kept for future “setup wizard” flows; currently the modal is opened via context.)
@@ -268,12 +294,15 @@ function RootLayoutInner() {
   </div>
 </Link>
 
-          <button onClick={() => window.location.hash = "#/app/decisions"} className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all relative group">
-            <Bell className="w-5 h-5" />
+          <Link
+            to="/app/watcher"
+            className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-cyan-300 hover:bg-slate-800/50 transition-all relative group"
+          >
+            <Activity className="w-5 h-5" />
             <div className="absolute left-16 bg-slate-800 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 border border-cyan-500/20">
-              Notifications
+              Agent Watcher
             </div>
-          </button>
+          </Link>
         </div>
       </div>
       
@@ -286,7 +315,32 @@ function RootLayoutInner() {
               ATLAS UX
             </h1>
             <p className="text-xs text-slate-400">The AI Worker who works Where You Work</p>
-          </div>          <div className="flex items-center gap-4">
+          </div>
+          <div className="flex items-center gap-4">
+            {/* Agent Heartbeat — always-visible pulse */}
+            <Link
+              to="/app/watcher"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/60 border border-cyan-500/15 hover:border-cyan-500/30 transition-all group"
+              title="Agent activity — click for full Agent Watcher"
+            >
+              <Activity className={`w-3.5 h-3.5 ${heartbeat.runningJobs > 0 ? "text-cyan-400 animate-pulse" : "text-slate-500"}`} />
+              {heartbeat.runningJobs > 0 ? (
+                <span className="text-xs text-cyan-300 font-medium">{heartbeat.runningJobs} running</span>
+              ) : (
+                <span className="text-xs text-slate-500">idle</span>
+              )}
+              {heartbeat.recentAgent && (
+                <span className="text-[10px] text-slate-600 hidden sm:inline">
+                  {heartbeat.recentAgent}
+                </span>
+              )}
+              {heartbeat.lastEvent && (
+                <span className="text-[10px] text-slate-600 hidden md:inline">
+                  {new Date(heartbeat.lastEvent).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
+            </Link>
+
             {/* Atlas State Pill */}
             <button
               onClick={() => {

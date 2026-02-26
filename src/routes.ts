@@ -73,21 +73,23 @@ export const router = createHashRouter([
       { path: "apps", Component: () => React.createElement(Navigate, { to: "/app/settings", replace: true }) },
       { path: "monitoring", Component: SocialMonitoring },
       { path: "crm", Component: CRM },
-      { path: "analytics", Component: Analytics },
+      // Analytics, Decisions, Budgets, Tickets, Blog consolidated into Business Manager tabs.
+      // Keep direct routes so deep links and redirects still work.
+      { path: "analytics", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=intelligence", replace: true }) },
       { path: "automation", Component: () => React.createElement(Navigate, { to: "/app/agents?view=automation", replace: true }) },
       { path: "business-manager", Component: BusinessManager },
       { path: "kb", Component: KnowledgeBaseHub },
-      { path: "blog", Component: BlogManager },
+      { path: "blog", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=blog", replace: true }) },
       { path: "blog/:slug", Component: () => {
         const { slug } = useParams();
         return React.createElement(Navigate, { to: `/blog/${slug ?? ""}`, replace: true });
       }},
       { path: "settings", Component: Settings },
       { path: "help", Component: HelpPage },
-      { path: "decisions", Component: DecisionsInbox },
+      { path: "decisions", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=decisions", replace: true }) },
       { path: "messaging", Component: MessagingHub },
-      { path: "tickets", Component: TicketsView },
-      { path: "budgets", Component: BudgetTracker },
+      { path: "tickets", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=tickets", replace: true }) },
+      { path: "budgets", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=budgets", replace: true }) },
       { path: "watcher", Component: AgentWatcher },
       ],
   },
