@@ -269,7 +269,7 @@ const digitalProducts: DigitalProduct[] = [
       "Client acquisition strategies",
       "Scaling from side hustle to business",
     ],
-    paymentLink: "https://buy.stripe.com/28E5kE4GZdGf622djJ8IU09",
+    paymentLink: "https://buy.stripe.com/00w6oI8Xf31Beyy93t8IU0p",
     downloadUrl: "/downloads/chatgpt-side-hustles-ebook.pdf",
   },
   {
