@@ -297,7 +297,7 @@ export function SubscriptionManager() {
   const handleUpgradePlan = (plan: PricingPlan) => {
     if (!plan.paymentLink) {
       // For Enterprise, show contact message
-      toast.info('Please contact sales@atlasux.com for Enterprise pricing.');
+      toast.info('Please contact billy@deadapp.info for Enterprise pricing.');
       return;
     }
     

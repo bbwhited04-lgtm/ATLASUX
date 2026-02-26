@@ -209,7 +209,7 @@ export function OnboardingWizard({ isOpen, onComplete, onSkip }: OnboardingWizar
                   </h2>
                   <p className="text-lg text-slate-300 mb-8">
                     Atlas UX operates directly from your PC with two powerful systems: 
-                    <span className="text-cyan-400 font-semibold"> Neptune</span> (Control) and 
+                    <span className="text-cyan-400 font-semibold"> Atlas</span> (AI CEO) and
                     <span className="text-blue-400 font-semibold"> Pluto</span> (Job Runner)
                   </p>
                 </div>
@@ -272,7 +272,7 @@ export function OnboardingWizard({ isOpen, onComplete, onSkip }: OnboardingWizar
                     </div>
                     <h3 className="text-xl font-bold text-white mb-2">Secure by Design</h3>
                     <p className="text-slate-400">
-                      Neptune validates all commands with enterprise-grade security protocols
+                      Atlas validates all commands with enterprise-grade security protocols
                     </p>
                   </motion.div>
                 </div>
@@ -570,7 +570,7 @@ export function OnboardingWizard({ isOpen, onComplete, onSkip }: OnboardingWizar
                         <Shield className="w-6 h-6 text-blue-400" />
                       </div>
                       <div className="flex-1">
-                        <div className="text-sm font-semibold text-white">Neptune & Pluto Online</div>
+                        <div className="text-sm font-semibold text-white">Atlas Workforce Online</div>
                         <div className="text-xs text-slate-400">Security control and job runner active</div>
                       </div>
                       <CheckCircle2 className="w-5 h-5 text-green-400" />

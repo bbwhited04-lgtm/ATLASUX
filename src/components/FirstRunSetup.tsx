@@ -307,7 +307,7 @@ export function FirstRunSetup({ onComplete }: { onComplete: () => void }) {
                   <div className="text-left">
                     <h4 className="font-semibold text-sm mb-1">Security & Privacy</h4>
                     <p className="text-xs text-slate-300">
-                      All permissions can be modified later in Settings. Atlas UX uses AES-256 encryption for all sensitive data and Neptune validates every operation before execution.
+                      All permissions can be modified later in Settings. Atlas UX uses AES-256 encryption for all sensitive data and Atlas validates every operation before execution.
                     </p>
                   </div>
                 </div>
@@ -707,7 +707,7 @@ export function FirstRunSetup({ onComplete }: { onComplete: () => void }) {
               <div>
                 <h2 className="text-2xl font-bold mb-2">Completing Setup...</h2>
                 <p className="text-sm text-slate-400">
-                  Initializing Neptune security system and configuring drive access
+                  Initializing Atlas security system and configuring drive access
                 </p>
               </div>
               
@@ -724,7 +724,7 @@ export function FirstRunSetup({ onComplete }: { onComplete: () => void }) {
                   {progress >= 40 ? "✓" : "•"} Configuring drive access...
                 </div>
                 <div className={progress >= 60 ? "text-cyan-400" : ""}>
-                  {progress >= 60 ? "✓" : "•"} Initializing Neptune AI...
+                  {progress >= 60 ? "✓" : "•"} Initializing Atlas AI...
                 </div>
                 <div className={progress >= 80 ? "text-cyan-400" : ""}>
                   {progress >= 80 ? "✓" : "•"} Setting up encryption...

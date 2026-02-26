@@ -31,7 +31,7 @@ export default function Payment() {
 
         <Section title="Refunds & Cancellations">
           <p className="text-slate-200">
-            Add your refund/cancellation terms here. (Keep this simple and explicit.)
+            All subscription payments are non-refundable. You may cancel your subscription at any time, and your access will continue through the end of the current billing period. No partial refunds are issued for unused time. Contact support@deadapp.info for billing questions.
           </p>
         </Section>
 

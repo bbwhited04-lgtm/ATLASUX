@@ -114,7 +114,7 @@ const navigate = useNavigate();
             </h2>
             <p className="text-slate-300 max-w-xl">
               Your AI workforce of {liveStats.agents || "—"} agents is live — monitoring social media,
-              executing workflows, and logging every action. Neptune access control is active.
+              executing workflows, and logging every action. Atlas access control is active.
             </p>
             <div className="flex gap-3 pt-2">
               
@@ -295,12 +295,12 @@ const navigate = useNavigate();
           </div>
         </div>
         
-        {/* Neptune Access Control */}
+        {/* Atlas Access Control */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Globe className="w-5 h-5 text-blue-400" />
-              Neptune Control
+              Atlas Control
             </h3>
           </div>
           

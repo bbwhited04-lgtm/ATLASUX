@@ -137,11 +137,14 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const tenantId = String((req as any).tenantId ?? "");
+    if (!tenantId) {
+      return reply.code(400).send({ ok: false, error: "tenantId is required" });
+    }
 
     const job = await prisma.job.create({
       data: {
-        tenantId: tenantId || "demo_org",
-        requested_by_user_id: (req as any).user?.id || tenantId || "demo_org",
+        tenantId,
+        requested_by_user_id: (req as any).user?.id || tenantId,
         status: "queued",
         jobType: "SMS_SEND",
         priority: 5,
@@ -153,7 +156,7 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
     try {
       await prisma.auditLog.create({
         data: {
-          tenantId: tenantId || "demo_org",
+          tenantId,
           actorUserId: null,
           actorExternalId: String((req as any).user?.id ?? ""),
           actorType: "system",

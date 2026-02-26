@@ -1,28 +1,36 @@
 export const agentEmails = {
-  ATLAS: "atlas@deadappcorp.org",
-  BINKY: "binky@deadappcorp.org",
-  ARCHY: "archy@deadappcorp.org",
-  VENNY: "venny@deadappcorp.org",
-  PENNY: "penny@deadappcorp.org",
-  CORNWALL: "cornwall@deadappcorp.org",
-  DAILY_INTEL: "daily-intel@deadappcorp.org",
-  DONNA: "donna@deadappcorp.org",
-  DWIGHT: "dwight@deadappcorp.org",
-  EMMA: "emma@deadappcorp.org",
-  FRAN: "fran@deadappcorp.org",
-  KELLY: "kelly@deadappcorp.org",
-  LINK: "link@deadappcorp.org",
-  REYNOLDS: "reynolds@deadappcorp.org",
-  SUNDAY: "sunday@deadappcorp.org",
-  TERRY: "terry@deadappcorp.org",
-  TIMMY: "timmy@deadappcorp.org",
-  JENNY: "jenny@deadappcorp.org",
-  BENNY: "benny@deadappcorp.org",
-  LARRY: "larry@deadappcorp.org",
-  TINA: "tina@deadappcorp.org",
-  CHERYL: "cheryl@deadappcorp.org",
-  POSTMASTER: "postmaster@deadappcorp.org",
-  ABUSE: "abuse@deadappcorp.org",
+  // C-Suite & Core
+  ATLAS:      "atlas@deadapp.info",
+  BINKY:      "binky.cro@deadapp.info",
+  BENNY:      "benny.cto@deadapp.info",
+  TINA:       "tina.cfo@deadapp.info",
+  LARRY:      "larry.auditor@deadapp.info",
+  JENNY:      "jenny.clo@deadapp.info",
+  CHERYL:     "support@deadapp.info",
+
+  // Team Binky
+  ARCHY:      "archy.binkypro@deadapp.info",
+  MERCER:     "mercer.teambinky@deadapp.info",
+  SUNDAY:     "sunday.teambinky@deadapp.info",
+  DAILY_INTEL:"daily-intel@deadapp.info",
+
+  // Social Media Agents
+  CORNWALL:   "cornwall.pinterest@deadapp.info",
+  DONNA:      "donna.redditor@deadapp.info",
+  DWIGHT:     "dwight.threads@deadapp.info",
+  EMMA:       "emma.alignable@deadapp.info",
+  FRAN:       "fran.facebook@deadapp.info",
+  KELLY:      "kelly.x@deadapp.info",
+  LINK:       "link.linkedin@deadapp.info",
+  PENNY:      "penny.facebook@deadapp.info",
+  REYNOLDS:   "reynolds.blogger@deadapp.info",
+  TERRY:      "terry.tumblr@deadapp.info",
+  TIMMY:      "timmy.tiktok@deadapp.info",
+  VENNY:      "venny.videographer@deadapp.info",
+
+  // Shared Inboxes
+  POSTMASTER: "postmaster@deadapp.info",
+  ABUSE:      "abuse@deadapp.info",
 } as const;
 
 export type AgentEmailKey = keyof typeof agentEmails;

@@ -28,7 +28,7 @@ export function AgentDeploymentHub() {
   const [taskWorkflow, setTaskWorkflow] = React.useState("WF-020");
 
   // Email send
-  const [emailTo, setEmailTo] = React.useState("atlas@deadappcorp.org");
+  const [emailTo, setEmailTo] = React.useState("atlas@deadapp.info");
   const [emailSubject, setEmailSubject] = React.useState("Agent test ping");
   const [emailText, setEmailText] = React.useState("Test message from agent via Atlas UX outbox.");
 

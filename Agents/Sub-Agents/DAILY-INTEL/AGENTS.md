@@ -7,7 +7,7 @@ Local Soul: SOUL.md
 
 ## Identity
 - Agent Code: **DAILY-INTEL**
-- Primary Inbox (Shared): **TBD**
+- Primary Inbox (Shared): **daily-intel@deadapp.info**
 - Operator Access: **Billy + ATLAS** (shared inbox access; Send As/Send on behalf as configured)
 
 ## Role

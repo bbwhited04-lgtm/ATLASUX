@@ -183,7 +183,7 @@ const handleSend = async () => {
           .map(m => ({ role: m.role, content: m.content })),
         { role: "user", content: userMessage.content }
       ],
-      // If user explicitly selects "Atlas"/"Neptune" persona in the future, pass systemPrompt here.
+      // If user explicitly selects a different persona in the future, pass systemPrompt here.
       systemPrompt: null
     };
 
@@ -403,7 +403,7 @@ const handleSend = async () => {
               <div>
                 <div className="text-sm font-medium">Voice Mode</div>
                 <div className="text-xs text-slate-400">
-                  {voiceMode === "speech" ? "Speech-to-Speech (Neptune responds with voice)" : "Speech-to-Text (Text responses only)"}
+                  {voiceMode === "speech" ? "Speech-to-Speech (Atlas responds with voice)" : "Speech-to-Text (Text responses only)"}
                 </div>
               </div>
             </div>
@@ -458,7 +458,7 @@ const handleSend = async () => {
                   />
                 </div>
                 <div>
-                  <div className="text-sm text-blue-400 font-medium">Neptune is speaking...</div>
+                  <div className="text-sm text-blue-400 font-medium">Atlas is speaking...</div>
                   <div className="text-xs text-slate-400">Voice response in progress</div>
                 </div>
               </div>
@@ -706,13 +706,13 @@ const handleSend = async () => {
           <div className="border-t border-cyan-500/20 p-4">
             <HelpSection
               title="Chat Interface Help"
-              description="Learn how to use voice commands, activate AI platforms, and coordinate tasks with Neptune"
+              description="Learn how to use voice commands, activate AI platforms, and coordinate tasks with Atlas"
               faqs={ChatHelp}
               quickTips={[
                 "Click the microphone icon to activate voice recognition",
                 "Activate multiple AI platforms for enhanced capabilities",
-                "Neptune validates all permissions before executing tasks",
-                "Use voice or text - both work seamlessly with Neptune"
+                "Atlas validates all permissions before executing tasks",
+                "Use voice or text - both work seamlessly with Atlas"
               ]}
               videoUrl="/tutorials/chat-interface"
             />

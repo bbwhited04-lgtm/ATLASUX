@@ -2,8 +2,8 @@
   "name": "atlas-ux",
   "version": "1.0.0",
   "description": "Your Standalone AI Employee - All-in-One Productivity Platform",
-  "author": "Atlas UX Inc.",
-  "license": "MIT",
+  "author": "DEAD APP CORP",
+  "license": "UNLICENSED",
   "homepage": "https://atlasux.com",
   "main": "electron/main.js",
   "scripts": {

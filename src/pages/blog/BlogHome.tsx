@@ -28,14 +28,14 @@ export default function BlogHome() {
   const hero = featured.length > 0 ? featured : posts.slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
       <PublicHeader />
 
       <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">Blog</h1>
-            <p className="mt-1 max-w-2xl text-base text-slate-700">
+            <h1 className="text-2xl font-bold text-white">Blog</h1>
+            <p className="mt-1 max-w-2xl text-base text-slate-400">
               Practical updates, workflow playbooks, and real build logs — written to be
               simple, safe, and useful.
             </p>
@@ -55,7 +55,7 @@ export default function BlogHome() {
         <section className="mt-10 grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-800">Latest posts</h2>
+              <h2 className="text-base font-bold text-white">Latest posts</h2>
               <div className="text-sm text-slate-500">{posts.length} total</div>
             </div>
 
@@ -66,8 +66,8 @@ export default function BlogHome() {
             </div>
 
             {/* Guardrails note */}
-            <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-4 text-base text-slate-700">
-              <div className="font-bold text-slate-800">Safety & clarity</div>
+            <div className="mt-8 rounded-2xl border border-cyan-500/20 bg-slate-900/50 p-4 text-base text-slate-400">
+              <div className="font-bold text-white">Safety & clarity</div>
               <div className="mt-1">
                 Posts are written for everyday people. No dark patterns, no bait, and no
                 hidden subscriptions.
@@ -85,9 +85,9 @@ export default function BlogHome() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white">
+      <footer className="border-t border-cyan-500/20 bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-slate-500">
-          © {new Date().getFullYear()} ATLAS UX • Built for governed automation
+          &copy; {new Date().getFullYear()} ATLAS UX &bull; Built for governed automation
         </div>
       </footer>
     </div>

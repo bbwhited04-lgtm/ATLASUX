@@ -282,6 +282,10 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
       ));
     }
 
+    // Resolve the approving user from auth context, falling back to "link_approver"
+    // (these are token-based email links — no auth header, so we identify by link origin)
+    const approver = (req as any).auth?.userId ?? (req as any).auth?.email ?? "link_approver";
+
     // KB first, then approve — same safe ordering as single approve
     let approved = 0;
     for (const p of pending) {
@@ -289,7 +293,7 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
         await addToolToKb(p.tenantId, p.agentId, p.toolName, p.toolPurpose, p.toolImpl);
         await prisma.toolProposal.update({
           where: { id: p.id },
-          data:  { status: "approved", decidedAt: new Date(), decidedBy: "billy" },
+          data:  { status: "approved", decidedAt: new Date(), decidedBy: approver },
         });
         approved++;
       } catch {
@@ -300,7 +304,7 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
     await prisma.auditLog.create({
       data: {
         tenantId: anchor.tenantId, actorType: "human", actorUserId: null,
-        actorExternalId: "billy", level: "info", action: "TOOL_PROPOSALS_BULK_APPROVED",
+        actorExternalId: approver, level: "info", action: "TOOL_PROPOSALS_BULK_APPROVED",
         entityType: "tool_proposal", entityId: anchor.runId ?? anchor.id,
         message: `Bulk-approved ${approved} of ${pending.length} tool proposals (run ${anchor.runId ?? "unknown"})`,
         meta: { approved, total: pending.length, runId: anchor.runId },
@@ -346,20 +350,22 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
       ));
     }
 
+    const approver = (req as any).auth?.userId ?? (req as any).auth?.email ?? "link_approver";
+
     // KB first — if it fails, status stays "pending" so the link remains clickable
     await addToolToKb(proposal.tenantId, proposal.agentId, proposal.toolName, proposal.toolPurpose, proposal.toolImpl);
 
     // KB succeeded — now mark approved
     await prisma.toolProposal.update({
       where: { approvalToken: token },
-      data:  { status: "approved", decidedAt: new Date(), decidedBy: "billy" },
+      data:  { status: "approved", decidedAt: new Date(), decidedBy: approver },
     });
 
     // Audit log
     await prisma.auditLog.create({
       data: {
         tenantId: proposal.tenantId, actorType: "human", actorUserId: null,
-        actorExternalId: "billy", level: "info", action: "TOOL_PROPOSAL_APPROVED",
+        actorExternalId: approver, level: "info", action: "TOOL_PROPOSAL_APPROVED",
         entityType: "tool_proposal", entityId: proposal.id,
         message: `Approved tool "${proposal.toolName}" for agent ${proposal.agentId}`,
         meta: { toolName: proposal.toolName, agentId: proposal.agentId },
@@ -390,15 +396,17 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
       ));
     }
 
+    const approver = (req as any).auth?.userId ?? (req as any).auth?.email ?? "link_approver";
+
     await prisma.toolProposal.update({
       where: { approvalToken: token },
-      data:  { status: "denied", decidedAt: new Date(), decidedBy: "billy" },
+      data:  { status: "denied", decidedAt: new Date(), decidedBy: approver },
     });
 
     await prisma.auditLog.create({
       data: {
         tenantId: proposal.tenantId, actorType: "human", actorUserId: null,
-        actorExternalId: "billy", level: "info", action: "TOOL_PROPOSAL_DENIED",
+        actorExternalId: approver, level: "info", action: "TOOL_PROPOSAL_DENIED",
         entityType: "tool_proposal", entityId: proposal.id,
         message: `Denied tool "${proposal.toolName}" for agent ${proposal.agentId}`,
         meta: { toolName: proposal.toolName, agentId: proposal.agentId },

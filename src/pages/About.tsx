@@ -15,17 +15,17 @@ const STACK = [
   { icon: Layers,    label: "React + Vite",     desc: "TypeScript frontend, hash-routed SPA" },
   { icon: Zap,       label: "Fastify",           desc: "High-performance Node.js backend on Render" },
   { icon: Database,  label: "PostgreSQL + Prisma", desc: "Hosted on Supabase with row-level security" },
-  { icon: Cpu,       label: "AI Agents",         desc: "Atlas, Neptune, Donna, Pluto — each with a defined role" },
-  { icon: Shield,    label: "Security-first",    desc: "Ed25519, CSRF nonces, Zod validation, tenant isolation" },
-  { icon: Globe,     label: "Cross-platform",    desc: "Web app + Tauri desktop build + iOS companion (in progress)" },
+  { icon: Cpu,       label: "AI Agents",         desc: "Atlas, Binky, Tina, Larry, Cheryl, Sunday — and 20+ specialist agents" },
+  { icon: Shield,    label: "Security-first",    desc: "JWT auth, tenant isolation, Zod validation, audit trail on every action" },
+  { icon: Globe,     label: "Cross-platform",    desc: "Web app + Electron desktop build + iOS companion (coming soon)" },
 ];
 
 const TIMELINE = [
   { year: "2024",  event: "Concept sketched in Figma. First wireframe published." },
   { year: "Early 2025", event: "Went live — frontend deployed, backend wired to Render." },
-  { year: "Mid 2025",   event: "Agent system built: Atlas, Neptune, Donna, Pluto." },
+  { year: "Mid 2025",   event: "Agent hierarchy built: Board → Executive → Governor → Specialist → Subagent tiers, 30+ autonomous agents." },
   { year: "Late 2025",  event: "Integrations hub, OAuth flows, KB, Blog, Decisions inbox." },
-  { year: "2026 Q1",    event: "Mobile pairing backend, security hardening, desktop Tauri build." },
+  { year: "2026 Q1",    event: "Mobile pairing backend, security hardening, desktop Electron build." },
   { year: "2026 →",     event: "iOS companion app, iCloud sync, co-founder search ongoing." },
 ];
 
@@ -89,7 +89,7 @@ export default function About() {
             in an audit log. A real AI worker, not just a chatbot.
           </p>
           <p className="text-white/75 leading-relaxed">
-            The platform runs locally (Tauri desktop), connects via web, and will sync
+            The platform runs locally (Electron desktop), connects via web, and will sync
             with your iPhone once the iOS companion app clears Apple review. Privacy-first,
             execution-focused, built to grow with your business.
           </p>

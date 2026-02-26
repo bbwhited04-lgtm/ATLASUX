@@ -230,19 +230,19 @@ export function HelpSection({ title, description, faqs, quickTips, videoUrl }: H
               ))}
             </div>
 
-            {/* Neptune Voice Assistance */}
+            {/* Atlas Voice Assistance */}
             <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30 backdrop-blur-xl p-4">
               <div className="flex items-start gap-3">
                 <Shield className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h5 className="text-sm font-semibold mb-1">Ask Neptune</h5>
+                  <h5 className="text-sm font-semibold mb-1">Ask Atlas</h5>
                   <p className="text-xs text-slate-300 mb-3">
-                    Need more help? Neptune can provide personalized guidance. Use voice commands or type your question in the chat interface.
+                    Need more help? Atlas can provide personalized guidance. Use voice commands or type your question in the chat interface.
                   </p>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" className="text-xs border-blue-500/20">
                       <HelpCircle className="w-3 h-3 mr-1" />
-                      Ask Neptune
+                      Ask Atlas
                     </Button>
                   </div>
                 </div>
@@ -264,12 +264,12 @@ export const IntegrationsHelp: FAQItem[] = [
   },
   {
     question: "Can I import passwords from my browser or phone?",
-    answer: "Yes! Atlas UX supports secure password import with proper authorization from:\n\n• Microsoft Edge Password Manager\n• iPhone Keychain / Passwords App\n\nAll imported credentials are encrypted using AES-256 encryption and are never visible in plaintext. Neptune cannot access your stored passwords - they remain end-to-end encrypted.",
+    answer: "Password import is not currently supported. Atlas UX uses JWT-based authentication, tenant isolation, and comprehensive audit logging on every action to keep your account secure.",
     category: "security"
   },
   {
     question: "What happens to my data when I connect an integration?",
-    answer: "Your data is protected with enterprise-grade security:\n\n• All credentials are encrypted with AES-256\n• Passwords are never stored in plaintext\n• OAuth tokens are securely stored\n• Neptune requires explicit permission for each access\n• You can disconnect any integration at any time\n• All data is encrypted in transit and at rest",
+    answer: "Your data is protected with multiple layers of security:\n\n• JWT-based authentication on every request\n• Tenant isolation — your data is scoped to your organization\n• Comprehensive audit logging on every action\n• OAuth tokens are securely stored\n• You can disconnect any integration at any time\n• All data is encrypted in transit and at rest",
     category: "security"
   },
   {
@@ -279,7 +279,7 @@ export const IntegrationsHelp: FAQItem[] = [
   },
   {
     question: "Why do I need to verify ownership?",
-    answer: "Ownership verification is a critical security measure that:\n\n• Confirms you have legitimate access to the accounts\n• Prevents unauthorized access to your platforms\n• Ensures compliance with platform terms of service\n• Protects against account hijacking\n\nVerification is completed through secure OAuth login or API key validation, which Neptune validates before activating the integration.",
+    answer: "Ownership verification is a critical security measure that:\n\n• Confirms you have legitimate access to the accounts\n• Prevents unauthorized access to your platforms\n• Ensures compliance with platform terms of service\n• Protects against account hijacking\n\nVerification is completed through secure OAuth login or API key validation, which Atlas validates before activating the integration.",
     category: "security"
   },
   {
@@ -299,12 +299,12 @@ export const IntegrationsHelp: FAQItem[] = [
   },
   {
     question: "I'm getting an 'Authorization Failed' error. What should I do?",
-    answer: "If authorization fails, try these steps:\n\n1. Verify your credentials are correct\n2. Check if your account has the necessary permissions\n3. Ensure you're not blocking pop-ups (for OAuth)\n4. Try disconnecting and reconnecting\n5. Clear your browser cache and cookies\n6. Check if the platform is experiencing downtime\n\nIf the issue persists, ask Neptune for help or contact support with the specific error message.",
+    answer: "If authorization fails, try these steps:\n\n1. Verify your credentials are correct\n2. Check if your account has the necessary permissions\n3. Ensure you're not blocking pop-ups (for OAuth)\n4. Try disconnecting and reconnecting\n5. Clear your browser cache and cookies\n6. Check if the platform is experiencing downtime\n\nIf the issue persists, ask Atlas for help or contact support with the specific error message.",
     category: "troubleshooting"
   },
   {
     question: "Are my integrations synced to the mobile app?",
-    answer: "Yes! All integrations are automatically synchronized to your Atlas UX mobile companion app. You can:\n\n• View all connected integrations\n• Approve access requests from Neptune\n• Manage connection settings\n• Monitor integration activity\n• Disconnect integrations remotely\n\nChanges made on desktop or mobile are instantly synced across all devices.",
+    answer: "Yes! All integrations are automatically synchronized to your Atlas UX mobile companion app. You can:\n\n• View all connected integrations\n• Approve access requests from Atlas\n• Manage connection settings\n• Monitor integration activity\n• Disconnect integrations remotely\n\nChanges made on desktop or mobile are instantly synced across all devices.",
     category: "getting-started"
   }
 ];
@@ -312,17 +312,17 @@ export const IntegrationsHelp: FAQItem[] = [
 export const CRMHelp: FAQItem[] = [
   {
     question: "How do I import contacts from social media platforms?",
-    answer: "Once you've connected a social media integration, you can import contacts:\n\n1. Go to the Integrations tab\n2. Connect and verify your social media account\n3. Return to CRM and click 'Import Contacts'\n4. Select which platform to import from\n5. Choose specific contacts or import all\n6. Neptune will verify permissions and import the data\n\nImported contacts are automatically categorized and deduplicated.",
+    answer: "Once you've connected a social media integration, you can import contacts:\n\n1. Go to the Integrations tab\n2. Connect and verify your social media account\n3. Return to CRM and click 'Import Contacts'\n4. Select which platform to import from\n5. Choose specific contacts or import all\n6. Atlas will verify permissions and import the data\n\nImported contacts are automatically categorized and deduplicated.",
     category: "getting-started"
   },
   {
     question: "Can I export my CRM data?",
-    answer: "Yes! You can export your CRM data in multiple formats:\n\n• CSV for spreadsheets\n• vCard for contact managers\n• JSON for developers\n\nClick the export button in the CRM toolbar, choose your format, and Neptune will generate the file. All exports are encrypted and require authentication.",
+    answer: "Yes! You can export your CRM data in multiple formats:\n\n• CSV for spreadsheets\n• vCard for contact managers\n• JSON for developers\n\nClick the export button in the CRM toolbar, choose your format, and Atlas will generate the file. All exports are encrypted and require authentication.",
     category: "advanced"
   },
   {
     question: "How does contact deduplication work?",
-    answer: "Neptune automatically detects duplicate contacts using:\n\n• Email address matching\n• Phone number matching\n• Name similarity algorithms\n• Social media profile links\n\nWhen duplicates are found, Neptune suggests merging them while preserving all unique information from both records. You can review and approve merges before they're finalized.",
+    answer: "Atlas automatically detects duplicate contacts using:\n\n• Email address matching\n• Phone number matching\n• Name similarity algorithms\n• Social media profile links\n\nWhen duplicates are found, Atlas suggests merging them while preserving all unique information from both records. You can review and approve merges before they're finalized.",
     category: "advanced"
   }
 ];
@@ -335,7 +335,7 @@ export const AnalyticsHelp: FAQItem[] = [
   },
   {
     question: "How do I export analytics reports?",
-    answer: "To export analytics:\n\n1. Navigate to the Analytics section\n2. Select your desired date range and filters\n3. Click 'Export Report'\n4. Choose format (PDF, Excel, CSV)\n5. Neptune will generate and encrypt the report\n\nScheduled reports can be set up to automatically email you daily, weekly, or monthly summaries.",
+    answer: "To export analytics:\n\n1. Navigate to the Analytics section\n2. Select your desired date range and filters\n3. Click 'Export Report'\n4. Choose format (PDF, Excel, CSV)\n5. Atlas will generate and encrypt the report\n\nScheduled reports can be set up to automatically email you daily, weekly, or monthly summaries.",
     category: "advanced"
   }
 ];
@@ -343,50 +343,50 @@ export const AnalyticsHelp: FAQItem[] = [
 export const AutomationHelp: FAQItem[] = [
   {
     question: "How do I create a custom workflow?",
-    answer: "To create a custom automation workflow:\n\n1. Click 'Create Custom Workflow' in the Automation tab\n2. Choose a trigger (time-based, event-based, or manual)\n3. Add actions (post to social, send email, create file, etc.)\n4. Set conditions and filters\n5. Test your workflow with sample data\n6. Activate when ready\n\nNeptune validates all permissions before running automated tasks.",
+    answer: "To create a custom automation workflow:\n\n1. Click 'Create Custom Workflow' in the Automation tab\n2. Choose a trigger (time-based, event-based, or manual)\n3. Add actions (post to social, send email, create file, etc.)\n4. Set conditions and filters\n5. Test your workflow with sample data\n6. Activate when ready\n\nAtlas validates all permissions before running automated tasks.",
     category: "getting-started"
   },
   {
     question: "Can workflows access my integrations automatically?",
-    answer: "Workflows can access connected integrations, but with security controls:\n\n• Each workflow requests specific permissions\n• Neptune validates access before execution\n• You can review and approve automation requests on mobile\n• Sensitive actions require explicit approval\n• All workflow activity is logged for audit\n\nYou maintain full control over what automations can access.",
+    answer: "Workflows can access connected integrations, but with security controls:\n\n• Each workflow requests specific permissions\n• Atlas validates access before execution\n• You can review and approve automation requests on mobile\n• Sensitive actions require explicit approval\n• All workflow activity is logged for audit\n\nYou maintain full control over what automations can access.",
     category: "security"
   }
 ];
 
 export const ChatHelp: FAQItem[] = [
   {
-    question: "How do I use voice commands with Neptune?",
-    answer: "Neptune features advanced voice recognition with two modes:\n\n**Speech-to-Text Mode:**\n• Click the microphone icon\n• Speak your command\n• Neptune transcribes to text\n• You receive text responses\n\n**Speech-to-Speech Mode (Default):**\n• Click the microphone icon\n• Speak your command\n• Neptune transcribes AND responds with voice\n• Full conversational experience\n\nToggle between modes using the Voice Mode selector above the input area. Voice commands work for all Neptune functions including task requests, file access, integration management, and system controls.",
+    question: "How do I use voice commands with Atlas?",
+    answer: "Atlas features advanced voice recognition with two modes:\n\n**Speech-to-Text Mode:**\n• Click the microphone icon\n• Speak your command\n• Atlas transcribes to text\n• You receive text responses\n\n**Speech-to-Speech Mode (Default):**\n• Click the microphone icon\n• Speak your command\n• Atlas transcribes AND responds with voice\n• Full conversational experience\n\nToggle between modes using the Voice Mode selector above the input area. Voice commands work for all Atlas functions including task requests, file access, integration management, and system controls.",
     category: "getting-started"
   },
   {
     question: "What's the difference between Speech-to-Text and Speech-to-Speech mode?",
-    answer: "**Speech-to-Text:**\n• Your voice is converted to text\n• Neptune responds with text in the chat\n• Best for documentation or quiet environments\n• You can copy/paste Neptune's responses\n\n**Speech-to-Speech (Default):**\n• Your voice is converted to text\n• Neptune responds with VOICE\n• Natural conversational experience\n• Hands-free operation\n• Audio waveform animation shows Neptune speaking\n• Best for multitasking or accessibility\n\nYou can switch between modes at any time without interrupting your conversation.",
+    answer: "**Speech-to-Text:**\n• Your voice is converted to text\n• Atlas responds with text in the chat\n• Best for documentation or quiet environments\n• You can copy/paste Atlas's responses\n\n**Speech-to-Speech (Default):**\n• Your voice is converted to text\n• Atlas responds with VOICE\n• Natural conversational experience\n• Hands-free operation\n• Audio waveform animation shows Atlas speaking\n• Best for multitasking or accessibility\n\nYou can switch between modes at any time without interrupting your conversation.",
     category: "getting-started"
   },
   {
     question: "What AI platforms can I activate?",
-    answer: "Atlas UX integrates with multiple AI platforms:\n\nLanguage Models: GPT-4, Claude, DeepSeek, Gemini, Llama, Mistral, Perplexity, Grok, Cohere\n\nImage Generation: DALL-E, Midjourney, Stable Diffusion\n\nVideo Creation: Sora, Runway, Pika\n\nBrowser Automation: Chrome, Edge\n\nActivate multiple platforms simultaneously for enhanced capabilities. Neptune coordinates between them intelligently.",
+    answer: "Atlas UX integrates with OpenAI, Microsoft 365 (Outlook, Teams, OneDrive, Planner, SharePoint), Telegram, and social platforms (X/Twitter, Facebook, Reddit, Pinterest, LinkedIn, Tumblr, TikTok, Threads, Alignable). More integrations are being added — check Settings > Integrations for the current list.",
     category: "getting-started"
   },
   {
-    question: "What is Neptune's role in the system?",
-    answer: "Neptune is your AI security control system. Neptune:\n\n• Validates all access requests and permissions\n• Manages authentication and authorization\n• Monitors system security in real-time\n• Provides voice-controlled interface (speech-to-speech)\n• Coordinates between AI platforms\n• Protects your credentials and data\n• Sends approval requests to your mobile device\n\nNeptune operates with a professional, security-focused demeanor and requires explicit permission for sensitive operations.",
+    question: "What is Atlas's role in the system?",
+    answer: "Atlas is your AI security control system. Atlas:\n\n• Validates all access requests and permissions\n• Manages authentication and authorization\n• Monitors system security in real-time\n• Provides voice-controlled interface (speech-to-speech)\n• Coordinates between AI platforms\n• Protects your credentials and data\n• Sends approval requests to your mobile device\n\nAtlas operates with a professional, security-focused demeanor and requires explicit permission for sensitive operations.",
     category: "security"
   },
   {
-    question: "How does Neptune handle my data and privacy?",
-    answer: "Neptune is designed with security-first principles:\n\n• Cannot access encrypted passwords or credentials\n• Requires permission for all file access\n• Logs all security-related activities\n• Sends real-time alerts for suspicious activity\n• Uses end-to-end encryption for all communications\n• Never shares data with third parties\n• Complies with enterprise security standards\n\nNeptune's primary function is to protect your data while enabling AI capabilities.",
+    question: "How does Atlas handle my data and privacy?",
+    answer: "Atlas is designed with security-first principles:\n\n• Cannot access encrypted passwords or credentials\n• Requires permission for all file access\n• Logs all security-related activities\n• Sends real-time alerts for suspicious activity\n• Uses end-to-end encryption for all communications\n• Never shares data with third parties\n• Complies with enterprise security standards\n\nAtlas's primary function is to protect your data while enabling AI capabilities.",
     category: "security"
   },
   {
-    question: "Can Neptune understand me if I have an accent or speak quickly?",
-    answer: "Neptune uses advanced voice recognition that:\n\n• Adapts to various accents and speaking styles\n• Learns from your speech patterns over time\n• Allows you to speak at natural pace\n• Asks for clarification if unsure\n\nFor best results:\n• Speak clearly but naturally\n• Use a quality microphone\n• Minimize background noise\n• If recognition fails, Neptune will ask you to repeat or you can type instead",
+    question: "Can Atlas understand me if I have an accent or speak quickly?",
+    answer: "Atlas uses advanced voice recognition that:\n\n• Adapts to various accents and speaking styles\n• Learns from your speech patterns over time\n• Allows you to speak at natural pace\n• Asks for clarification if unsure\n\nFor best results:\n• Speak clearly but naturally\n• Use a quality microphone\n• Minimize background noise\n• If recognition fails, Atlas will ask you to repeat or you can type instead",
     category: "troubleshooting"
   },
   {
-    question: "How do I stop Neptune from speaking in the middle of a response?",
-    answer: "To interrupt Neptune's voice response:\n\n• Click the microphone button to activate listening\n• Say 'Stop' or 'Cancel'\n• Switch to Speech-to-Text mode for text-only responses\n• Close and reopen the chat\n\nNeptune is designed to respond concisely, but you have full control over the conversation flow.",
+    question: "How do I stop Atlas from speaking in the middle of a response?",
+    answer: "To interrupt Atlas's voice response:\n\n• Click the microphone button to activate listening\n• Say 'Stop' or 'Cancel'\n• Switch to Speech-to-Text mode for text-only responses\n• Close and reopen the chat\n\nAtlas is designed to respond concisely, but you have full control over the conversation flow.",
     category: "advanced"
   }
 ];

@@ -76,13 +76,13 @@ app.on('activate', () => {
   }
 });
 
-// IPC handlers for Neptune Control System
+// IPC handlers for Atlas Control System
 ipcMain.handle('request-file-access', async (event, filePath) => {
   const result = await dialog.showMessageBox(mainWindow, {
     type: 'question',
     buttons: ['Allow', 'Deny'],
     defaultId: 0,
-    title: 'Neptune Access Request',
+    title: 'Atlas Access Request',
     message: 'Atlas UX is requesting file access',
     detail: `File: ${filePath}\n\nAllow this operation?`
   });
@@ -95,7 +95,7 @@ ipcMain.handle('request-api-access', async (event, apiName) => {
     type: 'question',
     buttons: ['Allow', 'Deny'],
     defaultId: 0,
-    title: 'Neptune API Request',
+    title: 'Atlas API Request',
     message: `Atlas UX wants to access ${apiName}`,
     detail: 'This will allow the AI to make API calls on your behalf.'
   });

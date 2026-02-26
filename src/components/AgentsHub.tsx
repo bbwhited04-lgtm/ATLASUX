@@ -188,28 +188,7 @@ export function AgentsHub() {
             </Tabs.Trigger>
           ))}
         </Tabs.List>
-
-        <Tabs.Content value="atlas" className="mt-4 space-y-4">
-          <Section title="Atlas Execution Layer" icon={Briefcase} rootId="atlas" />
-          <div className="grid gap-4 md:grid-cols-2">
-            {AGENTS.filter((a) => a.reportsTo === "atlas" && a.id !== "binky").map((a) => (
-              <AgentCard key={a.id} agent={a} />
-            ))}
-          </div>
-        </Tabs.Content>
-
-        <Tabs.Content value="binky" className="mt-4">
-          <Section title="Binky Research Command" icon={Shield} rootId="binky" />
-        </Tabs.Content>
-
-        <Tabs.Content value="board" className="mt-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            {["atlas", "tina", "larry", "jenny", "benny"].map((id) => {
-              const a = AGENTS.find((x) => x.id === id);
-              return a ? <AgentCard key={id} agent={a} /> : null;
-            })}
-          </div>
-        </Tabs.Content>
+          
 
         <Tabs.Content value="all" className="mt-4">
           <div className="grid gap-4 md:grid-cols-2">

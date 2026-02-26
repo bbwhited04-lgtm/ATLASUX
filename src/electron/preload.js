@@ -8,7 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximizeWindow: () => ipcRenderer.send('maximize-window'),
   closeWindow: () => ipcRenderer.send('close-window'),
   
-  // Neptune Control System
+  // Atlas Control System
   requestFileAccess: (filePath) => ipcRenderer.invoke('request-file-access', filePath),
   requestAPIAccess: (apiName) => ipcRenderer.invoke('request-api-access', apiName),
   

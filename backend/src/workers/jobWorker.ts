@@ -90,7 +90,7 @@ async function handleSocialPost(jobId: string, tenantId: string, input: any) {
   const accessToken = integration.access_token;
   if (!accessToken) throw new Error(`No access token for ${platform}`);
 
-  let postResult: any = { status: "simulated", platform, eventId: event.id };
+  let postResult: any;
 
   // Real posting per platform (expand as OAuth flows are completed)
   if (platform === "twitter" || platform === "x") {
@@ -102,15 +102,23 @@ async function handleSocialPost(jobId: string, tenantId: string, input: any) {
     const data = await r.json() as any;
     if (!r.ok) throw new Error(data?.detail ?? `Twitter error ${r.status}`);
     postResult = { id: data?.data?.id, platform: "twitter" };
+
+    // Update distribution event with result
+    await prisma.distributionEvent.update({
+      where: { id: event.id },
+      data: { eventType: "POST_PUBLISHED", meta: { ...((event.meta as any) ?? {}), result: postResult } },
+    });
+
+    return postResult;
   }
 
-  // Update distribution event with result
+  // Platform not yet implemented — fail explicitly instead of faking success
   await prisma.distributionEvent.update({
     where: { id: event.id },
-    data: { eventType: "POST_PUBLISHED", meta: { ...((event.meta as any) ?? {}), result: postResult } },
+    data: { eventType: "NOT_SUPPORTED", meta: { ...((event.meta as any) ?? {}), error: `Platform not yet supported: ${platform}` } },
   });
 
-  return postResult;
+  throw new Error(`Platform not yet supported: ${platform}. Only X (Twitter) is currently live.`);
 }
 
 // ── WORKFLOW handler ──────────────────────────────────────────────────────────

@@ -12,28 +12,13 @@ import {
 } from "../oauth.js";
 import { tumblrAccessToken, tumblrAuthorizeUrl, tumblrRequestToken } from "../integrations/tumblr.client.js";
 import { prisma } from "../db/prisma.js";
+import { setOAuthState, getOAuthState, deleteOAuthState, pruneExpiredOAuthState } from "../lib/oauthState.js";
 
 export const oauthRoutes: FastifyPluginAsync = async (app) => {
   const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
   const env = loadEnv(process.env);
 
-  // PKCE verifier store. Keyed by nonce, pruned at 15 min.
-  const pkce = new Map<string, { code_verifier: string; createdAt: number }>();
-
-  // CSRF nonce store for Google / Meta / Microsoft / Reddit flows. Pruned at 15 min.
-  const csrfNonces = new Map<string, { org_id: string; user_id: string; createdAt: number }>();
-
   function genNonce() { return randomBytes(16).toString("hex"); }
-
-  function pruneNonces() {
-    const cutoff = Date.now() - 15 * 60 * 1000;
-    for (const [k, v] of csrfNonces.entries()) {
-      if (v.createdAt < cutoff) csrfNonces.delete(k);
-    }
-  }
-
-  // Tumblr request-token secret store. Keyed by oauth_token.
-  const tumblrTmp = new Map<string, { tokenSecret: string; createdAt: number; org_id: string; user_id: string }>();
 
   function b64urlJson(obj: any) {
     return Buffer.from(JSON.stringify(obj))
@@ -75,16 +60,27 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     return base.toString();
   }
 
-  /** Bounce-back redirect used when a real OAuth flow isn't configured. */
-  async function stubConnect(req: any, provider: "google" | "meta") {
+  /** Bounce-back redirect used when a real OAuth flow isn't configured.
+   *  Does NOT mark the integration as connected — returns an error to the frontend. */
+  function stubConnectUrl(req: any, provider: string): string {
     const q = (req.query ?? {}) as any;
     const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
     const user_id = String(q.user_id ?? q.userId ?? "");
 
-    if (org_id) await markConnected(org_id, provider);
-
-    return buildReturnUrl({ connected: provider, ...(org_id ? { org_id } : {}), ...(user_id ? { user_id } : {}) });
+    return buildReturnUrl({
+      error: "oauth_not_configured",
+      provider,
+      ...(org_id ? { org_id } : {}),
+      ...(user_id ? { user_id } : {}),
+    });
   }
+
+  // Periodically prune expired oauth_state rows (every 5 minutes)
+  const pruneInterval = setInterval(() => {
+    pruneExpiredOAuthState().catch(() => null);
+  }, 5 * 60 * 1000);
+  // Clean up interval when Fastify shuts down
+  app.addHook("onClose", async () => clearInterval(pruneInterval));
 
   // ── Google ────────────────────────────────────────────────────────────────
 
@@ -95,8 +91,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
     if (oauthEnabled("google", env)) {
       const nonce = genNonce();
-      csrfNonces.set(nonce, { org_id, user_id, createdAt: Date.now() });
-      pruneNonces();
+      await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
       const state = b64urlJson({ org_id, user_id, nonce });
       const scopes = [
         "openid", "email", "profile",
@@ -109,7 +104,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
       return reply.redirect(buildGoogleAuthUrl(env, state, scopes));
     }
 
-    return reply.redirect(await stubConnect(req, "google"));
+    return reply.redirect(stubConnectUrl(req, "google"));
   });
 
   app.get("/google/callback", async (req, reply) => {
@@ -124,10 +119,11 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
     // CSRF nonce check — reject if nonce missing or not in our store
     const nonce = String(state.nonce || "");
-    if (!nonce || !csrfNonces.has(nonce)) {
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
       return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
     }
-    csrfNonces.delete(nonce);
+    await deleteOAuthState(`csrf:${nonce}`);
 
     try {
       const tok = await exchangeGoogleCode(env, String(q.code || ""));
@@ -149,8 +145,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
     if (oauthEnabled("meta", env)) {
       const nonce = genNonce();
-      csrfNonces.set(nonce, { org_id, user_id, createdAt: Date.now() });
-      pruneNonces();
+      await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
       const state = b64urlJson({ org_id, user_id, nonce });
       const scopes = [
         "pages_read_engagement", "pages_manage_posts",
@@ -160,7 +155,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
       return reply.redirect(buildMetaAuthUrl(env, state, scopes));
     }
 
-    return reply.redirect(await stubConnect(req, "meta"));
+    return reply.redirect(stubConnectUrl(req, "meta"));
   });
 
   app.get("/meta/callback", async (req, reply) => {
@@ -174,10 +169,11 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const user_id = String(state.user_id || "");
 
     const nonce = String(state.nonce || "");
-    if (!nonce || !csrfNonces.has(nonce)) {
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
       return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
     }
-    csrfNonces.delete(nonce);
+    await deleteOAuthState(`csrf:${nonce}`);
 
     try {
       const tok = await exchangeMetaCode(env, String(q.code || ""));
@@ -199,11 +195,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
     const nonce = randomBytes(32).toString("hex");
     const pair = await makePkcePair();
-    pkce.set(nonce, { code_verifier: pair.code_verifier, createdAt: Date.now() });
-
-    for (const [k, v] of pkce.entries()) {
-      if (Date.now() - v.createdAt > 15 * 60 * 1000) pkce.delete(k);
-    }
+    await setOAuthState(`pkce:${nonce}`, { code_verifier: pair.code_verifier });
 
     const state = b64urlJson({ org_id, user_id, nonce });
     const scopes = ["tweet.read", "tweet.write", "users.read", "offline.access"];
@@ -226,13 +218,14 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const nonce = String(state.nonce || "");
     const org_id = String(state.org_id || "");
     const user_id = String(state.user_id || "");
-    const verifier = pkce.get(nonce)?.code_verifier;
+    const pkceData = nonce ? await getOAuthState<{ code_verifier: string }>(`pkce:${nonce}`) : null;
+    const verifier = pkceData?.code_verifier;
 
     if (!verifier) return reply.redirect(buildReturnUrl({ oauth_error: "pkce_expired" }));
 
     try {
       const tok = await exchangeXCode(env, { code: String(code), code_verifier: verifier });
-      pkce.delete(nonce);
+      await deleteOAuthState(`pkce:${nonce}`);
       const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
       await storeTokenVault(env, { org_id, user_id, provider: "x", access_token: tok.access_token, refresh_token: tok.refresh_token ?? null, expires_at, scope: tok.scope ?? null, meta: { token_type: tok.token_type } });
       await markConnected(org_id, "x");
@@ -250,11 +243,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const user_id = String(q.user_id ?? q.userId ?? "");
 
     const tok = await tumblrRequestToken(env);
-    tumblrTmp.set(tok.oauth_token, { tokenSecret: tok.oauth_token_secret, createdAt: Date.now(), org_id, user_id });
-
-    for (const [k, v] of tumblrTmp.entries()) {
-      if (Date.now() - v.createdAt > 15 * 60 * 1000) tumblrTmp.delete(k);
-    }
+    await setOAuthState(`tumblr:${tok.oauth_token}`, { tokenSecret: tok.oauth_token_secret, org_id, user_id });
 
     reply.redirect(tumblrAuthorizeUrl(env, tok.oauth_token));
   });
@@ -263,14 +252,14 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const q = (req.query ?? {}) as any;
     const oauth_token = String(q.oauth_token ?? "");
     const oauth_verifier = String(q.oauth_verifier ?? "");
-    const tmp = tumblrTmp.get(oauth_token);
+    const tmp = oauth_token ? await getOAuthState<{ tokenSecret: string; org_id: string; user_id: string }>(`tumblr:${oauth_token}`) : null;
     if (!oauth_token || !oauth_verifier || !tmp) {
       return reply.redirect(buildReturnUrl({ oauth_error: "tumblr_missing_or_expired" }));
     }
 
     try {
       const acc = await tumblrAccessToken(env, oauth_token, oauth_verifier, tmp.tokenSecret);
-      tumblrTmp.delete(oauth_token);
+      await deleteOAuthState(`tumblr:${oauth_token}`);
       await storeTokenVault(env, { org_id: tmp.org_id, user_id: tmp.user_id, provider: "tumblr", access_token: acc.oauth_token, refresh_token: null, expires_at: null, scope: null, meta: { oauth_token_secret: acc.oauth_token_secret, raw: acc } });
       await markConnected(tmp.org_id, "tumblr");
       return reply.redirect(buildReturnUrl({ connected: "tumblr", org_id: tmp.org_id, user_id: tmp.user_id }));
@@ -287,13 +276,11 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const user_id = String(q.user_id ?? "");
 
     if (!oauthEnabled("reddit", env)) {
-      if (org_id) await markConnected(org_id, "reddit" as any);
-      return reply.redirect(buildReturnUrl({ connected: "reddit", org_id, user_id }));
+      return reply.redirect(buildReturnUrl({ error: "oauth_not_configured", provider: "reddit", org_id, user_id }));
     }
 
     const nonce = genNonce();
-    csrfNonces.set(nonce, { org_id, user_id, createdAt: Date.now() });
-    pruneNonces();
+    await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
     const state = b64urlJson({ org_id, user_id, nonce });
     return reply.redirect(buildRedditAuthUrl(env, state));
   });
@@ -308,10 +295,11 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const user_id = String(state.user_id || "");
 
     const nonce = String(state.nonce || "");
-    if (!nonce || !csrfNonces.has(nonce)) {
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
       return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
     }
-    csrfNonces.delete(nonce);
+    await deleteOAuthState(`csrf:${nonce}`);
 
     try {
       const tok = await exchangeRedditCode(env, String(q.code || ""));
@@ -338,13 +326,11 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const user_id = String(q.user_id ?? q.userId ?? "");
 
     if (!oauthEnabled("pinterest", env)) {
-      if (org_id) await markConnected(org_id, "pinterest");
-      return reply.redirect(buildReturnUrl({ connected: "pinterest", org_id, user_id }));
+      return reply.redirect(buildReturnUrl({ error: "oauth_not_configured", provider: "pinterest", org_id, user_id }));
     }
 
     const nonce = genNonce();
-    csrfNonces.set(nonce, { org_id, user_id, createdAt: Date.now() });
-    pruneNonces();
+    await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
     const state = b64urlJson({ org_id, user_id, nonce });
     return reply.redirect(buildPinterestAuthUrl(env, state));
   });
@@ -359,10 +345,11 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const user_id = String(state.user_id || "");
 
     const nonce = String(state.nonce || "");
-    if (!nonce || !csrfNonces.has(nonce)) {
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
       return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
     }
-    csrfNonces.delete(nonce);
+    await deleteOAuthState(`csrf:${nonce}`);
 
     try {
       const tok = await exchangePinterestCode(env, String(q.code || ""));
@@ -390,12 +377,11 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
     if (!oauthEnabled("linkedin", env)) {
       // Credentials not configured yet — redirect back with informative error
-      return reply.redirect(buildReturnUrl({ oauth_error: "linkedin_credentials_not_configured" }));
+      return reply.redirect(buildReturnUrl({ error: "oauth_not_configured", provider: "linkedin" }));
     }
 
     const nonce = genNonce();
-    csrfNonces.set(nonce, { org_id, user_id, createdAt: Date.now() });
-    pruneNonces();
+    await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
     const state = b64urlJson({ org_id, user_id, nonce });
     return reply.redirect(buildLinkedInAuthUrl(env, state));
   });
@@ -410,10 +396,11 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const user_id = String(state.user_id || "");
 
     const nonce = String(state.nonce || "");
-    if (!nonce || !csrfNonces.has(nonce)) {
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
       return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
     }
-    csrfNonces.delete(nonce);
+    await deleteOAuthState(`csrf:${nonce}`);
 
     try {
       const tok = await exchangeLinkedInCode(env, String(q.code || ""));
@@ -440,14 +427,11 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const user_id = String(q.user_id ?? "");
 
     if (!oauthEnabled("microsoft", env)) {
-      // Stub: mark connected and redirect back
-      if (org_id) await markConnected(org_id, "microsoft" as any);
-      return reply.redirect(buildReturnUrl({ connected: "microsoft", org_id, user_id }));
+      return reply.redirect(buildReturnUrl({ error: "oauth_not_configured", provider: "microsoft", org_id, user_id }));
     }
 
     const nonce = genNonce();
-    csrfNonces.set(nonce, { org_id, user_id, createdAt: Date.now() });
-    pruneNonces();
+    await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
     const state = JSON.stringify({ org_id, user_id, nonce });
     const stateB64 = Buffer.from(state).toString("base64url");
     return reply.redirect(buildMicrosoftAuthUrl(env, stateB64));
@@ -463,10 +447,11 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
     const user_id = String(state.user_id || "");
 
     const nonce = String(state.nonce || "");
-    if (!nonce || !csrfNonces.has(nonce)) {
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
       return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
     }
-    csrfNonces.delete(nonce);
+    await deleteOAuthState(`csrf:${nonce}`);
 
     try {
       const tok = await exchangeMicrosoftCode(env, String(q.code || ""));

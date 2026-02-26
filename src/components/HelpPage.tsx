@@ -6,7 +6,7 @@ export function HelpPage() {
       <h1 className="text-2xl font-semibold text-slate-100">Help</h1>
 
       <HelpSection
-        title="Neptune Help & FAQ"
+        title="Atlas Help & FAQ"
         description="Common questions and quick answers for using Atlas UX."
         faqs={ChatHelp}
         quickTips={[

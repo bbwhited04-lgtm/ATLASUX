@@ -45,20 +45,19 @@ function s(v: unknown): string | null {
 }
 
 /**
- * Resolve tenant slug from query.
+ * Resolve tenant slug from query. Returns null if not provided.
  */
-function getOrgSlug(req: any) {
+function getOrgSlug(req: any): string | null {
   const q = req.query ?? {};
-  return s(q.org_id) || s(q.orgId) || "demo_org";
+  return s(q.org_id) || s(q.orgId) || null;
 }
 
-function getUserId(req: any) {
+function getUserId(req: any): string | null {
   const q = req.query ?? {};
-  return s(q.user_id) || s(q.userId) || "demo_user";
+  return s(q.user_id) || s(q.userId) || null;
 }
 
 async function ensureTenant(slug: string) {
-  // Upsert so demo_org always works without manual setup
   return prisma.tenant.upsert({
     where: { slug },
     update: {},
@@ -72,6 +71,7 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
    */
   app.get("/status", async (req, reply) => {
     const orgSlug = getOrgSlug(req);
+    if (!orgSlug) return reply.code(400).send({ ok: false, error: "org_id is required" });
 
     const tenant = await ensureTenant(orgSlug);
 
@@ -96,6 +96,7 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
   app.get("/site_integration", async (req, reply) => {
     const orgSlug = getOrgSlug(req);
     const userId = getUserId(req);
+    if (!orgSlug) return reply.code(400).send({ ok: false, error: "org_id is required" });
 
     const tenant = await ensureTenant(orgSlug);
 
@@ -138,6 +139,7 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
    */
   app.get("/list", async (req, reply) => {
     const orgSlug = getOrgSlug(req);
+    if (!orgSlug) return reply.code(400).send({ ok: false, error: "org_id is required" });
     const tenant = await ensureTenant(orgSlug);
 
     const items = await prisma.integration.findMany({
@@ -160,6 +162,7 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
    */
   app.get("/summary", async (req, reply) => {
     const orgSlug = getOrgSlug(req);
+    if (!orgSlug) return reply.code(400).send({ ok: false, error: "org_id is required" });
     const tenant = await ensureTenant(orgSlug);
 
     const total = await prisma.integration.count({ where: { tenantId: tenant.id } });
@@ -180,9 +183,10 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
    */
   app.post("/disconnect", async (req, reply) => {
     const body = (req.body ?? {}) as any;
-    const orgSlug = s(body.org_id) || "demo_org";
+    const orgSlug = s(body.org_id);
     const provider = s(body.provider);
 
+    if (!orgSlug) return reply.code(400).send({ ok: false, error: "org_id is required" });
     if (!provider) return reply.code(400).send({ ok: false, error: "provider required" });
 
     const tenant = await ensureTenant(orgSlug);
@@ -216,9 +220,10 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
    */
   app.post("/mark_connected", async (req, reply) => {
     const body = (req.body ?? {}) as any;
-    const orgSlug = s(body.org_id) || "demo_org";
+    const orgSlug = s(body.org_id);
     const provider = s(body.provider);
 
+    if (!orgSlug) return reply.code(400).send({ ok: false, error: "org_id is required" });
     if (!provider) return reply.code(400).send({ ok: false, error: "provider required" });
 
     const tenant = await ensureTenant(orgSlug);

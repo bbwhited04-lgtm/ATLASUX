@@ -135,7 +135,7 @@ export function BusinessManager() {
   });
   const [showColorPicker, setShowColorPicker] = useState(false);
 
-// -------------------- Backend-backed dashboards (Neptune internals, surfaced as Atlas Core / Business Manager) --------------------
+// -------------------- Backend-backed dashboards (Atlas internals, surfaced as Atlas Core / Business Manager) --------------------
 const { org_id, user_id } = useMemo(() => getOrgUser(), []);
 
   // Load tenants (businesses) once on mount

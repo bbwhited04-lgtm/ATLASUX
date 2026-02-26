@@ -23,8 +23,8 @@
 - **VENNY (Video)** — venny.videographer@deadapp.info
 - **POSTMASTER** — postmaster@deadapp.info
 - **ABUSE** — abuse@deadapp.info
-- **DAILY-INTEL** — TBD (set when mailbox exists)
-- **TIMMY** — TBD (set when mailbox exists)
+- **DAILY-INTEL** — daily-intel@deadapp.info
+- **TIMMY** — timmy.tiktok@deadapp.info
 
 Rule: Only **ATLAS** is a licensed user. All other addresses are **shared inboxes**. Billy + ATLAS have access to all shared inboxes; all work is traceable via email threads.
 
@@ -278,22 +278,21 @@ ARCHY
 ------------------------------------------------------------
 
 Role:
-Instagram Publisher
+Research Subagent -- Binky Intel Team
 
 Goal:
-Create daily Instagram posts.
+Deep-dive research specialist for Binky.
 
 Input:
-Daily summary from Binky.
+Daily summary from Binky + research directives from ATLAS.
 
 Output:
-- Post caption
-- Carousel idea (if applicable)
-- Hashtags
-- Reels script if needed
+- In-depth research reports
+- Source-cited analysis
+- Follow-up recommendations
 
 Constraints:
-- Platform-optimized.
+- Source-verified only.
 - No duplicate spam content.
 - Logged + tracked.
 

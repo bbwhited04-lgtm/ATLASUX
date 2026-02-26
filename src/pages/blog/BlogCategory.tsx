@@ -35,22 +35,22 @@ export default function BlogCategory() {
   const editorsChoice = posts.filter((p) => p.frontmatter.featured).slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
       <PublicHeader />
 
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <div className="text-sm text-slate-600">
-          <Link to="/blog" className="font-semibold text-slate-700 hover:underline">
+        <div className="text-sm text-slate-400">
+          <Link to="/blog" className="font-semibold text-slate-300 hover:underline">
             Blog
           </Link>
-          <span className="mx-2 text-slate-400">/</span>
-          <span className="font-semibold text-slate-700">{decoded}</span>
+          <span className="mx-2 text-slate-600">/</span>
+          <span className="font-semibold text-slate-300">{decoded}</span>
         </div>
 
         <div className="mt-4 flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">{decoded}</h1>
-            <p className="mt-1 text-base text-slate-700">
+            <h1 className="text-2xl font-bold text-white">{decoded}</h1>
+            <p className="mt-1 text-base text-slate-400">
               {filtered.length} post{filtered.length === 1 ? "" : "s"}
             </p>
           </div>
@@ -74,9 +74,9 @@ export default function BlogCategory() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white">
+      <footer className="border-t border-cyan-500/20 bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-slate-500">
-          © {new Date().getFullYear()} ATLAS UX
+          &copy; {new Date().getFullYear()} ATLAS UX
         </div>
       </footer>
     </div>

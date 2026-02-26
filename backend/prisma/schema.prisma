@@ -1023,3 +1023,12 @@ model Subscription {
   @@index([stripeCustomerId])
   @@map("subscriptions")
 }
+
+model OAuthState {
+  key       String   @id
+  value     String
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  @@index([expiresAt])
+  @@map("oauth_state")
+}

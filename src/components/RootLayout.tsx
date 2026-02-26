@@ -29,7 +29,7 @@ import { useActiveTenant } from "../lib/activeTenant";
 function RootLayoutInner() {
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isNeptunePanelOpen, setIsNeptunePanelOpen] = useState(false);
+  const [isAtlasPanelOpen, setIsAtlasPanelOpen] = useState(false);
   const [showMobileInstall, setShowMobileInstall] = useState(false);
   const { openModal } = useMobileConnection();
   const { tenantId } = useActiveTenant();
@@ -358,12 +358,12 @@ function RootLayoutInner() {
               </span>
             </button>
 
-            {/* Neptune Status Pill */}
+            {/* Atlas Status Pill */}
             <button
-              onClick={() => setIsNeptunePanelOpen(true)}
+              onClick={() => setIsAtlasPanelOpen(true)}
               className={`px-5 py-2 rounded-lg font-bold tracking-wide uppercase shadow-lg transition-all duration-200 ${statusStyles[currentStatus]}`}
               >
-              NEPTUNE · {currentStatus}
+              ATLAS · {currentStatus}
             </button>
 
           </div>
@@ -384,21 +384,21 @@ function RootLayoutInner() {
       />
       
       
-      {/* Neptune Status Panel */}
-      {isNeptunePanelOpen && (
+      {/* Atlas Status Panel */}
+      {isAtlasPanelOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl bg-slate-950/90 border border-cyan-500/20 shadow-2xl shadow-cyan-500/10">
             <div className="flex items-center justify-between px-5 py-4 border-b border-cyan-500/10">
               <div className="flex items-center gap-3">
                 <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
                 <div>
-                  <div className="text-sm font-semibold text-white">Neptune Status</div>
+                  <div className="text-sm font-semibold text-white">Atlas Status</div>
                   <div className="text-xs text-slate-400">System + Companion connectivity</div>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setIsNeptunePanelOpen(false)}
+                onClick={() => setIsAtlasPanelOpen(false)}
                 className="px-3 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-200 text-xs border border-cyan-500/10"
               >
                 Close
@@ -410,7 +410,7 @@ function RootLayoutInner() {
               <div className="rounded-xl bg-slate-900/40 border border-cyan-500/10 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-xs text-slate-400">Neptune</div>
+                    <div className="text-xs text-slate-400">Atlas</div>
                     <div className="text-sm text-white">Online</div>
                   </div>
                   <div className="text-xs text-slate-400">Mode: <span className="text-slate-200">Operational</span></div>
@@ -438,7 +438,7 @@ function RootLayoutInner() {
                     <button
                       type="button"
                       onClick={() => {
-                        setIsNeptunePanelOpen(false);
+                        setIsAtlasPanelOpen(false);
                         openModal();
                       }}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-200 text-xs border border-cyan-500/10"
@@ -448,7 +448,7 @@ function RootLayoutInner() {
                     <button
                       type="button"
                       onClick={() => {
-                        setIsNeptunePanelOpen(false);
+                        setIsAtlasPanelOpen(false);
                         setShowMobileInstall(true);
                       }}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-200 text-xs border border-cyan-500/10"

@@ -4,7 +4,7 @@ import { LedgerEntryType } from "@prisma/client";
 
 export const accountingRoutes: FastifyPluginAsync = async (app) => {
   // GET /v1/accounting/summary?tenantId=...
-  app.get("/summary", async (req) => {
+  app.get("/summary", async (req, reply) => {
     const q = (req.query ?? {}) as any;
     const tenantId =
       (req.headers as any)["x-tenant-id"] ??
@@ -13,11 +13,7 @@ export const accountingRoutes: FastifyPluginAsync = async (app) => {
       null;
 
     if (!tenantId) {
-      return {
-        ok: true,
-        summary: { revenue: 0, expenses: 0, net: 0, approvalsPending: 0, flags: 0 },
-        ts: new Date().toISOString(),
-      };
+      return reply.code(400).send({ ok: false, error: "tenantId required" });
     }
 
     const monthStart = new Date();
