@@ -18,6 +18,7 @@
  *   read_ip_register          — IP request records from DB
  *   read_planner              — Microsoft Planner tasks via Graph API
  *   send_telegram_message     — send a Telegram notification to the tenant's default chat
+ *   search_my_memories        — unified recall: conversation memory, audit trail, workflow history, agent KB
  *
  * Usage: resolveAgentTools(tenantId, query, agentId) — returns formatted context string.
  */
@@ -26,6 +27,7 @@ import { prisma }                    from "../../prisma.js";
 import { getKbContext }              from "../kb/getKbContext.js";
 import { callGraph }                 from "../../lib/m365Tools.js";
 import { sendTelegramNotification }  from "../../lib/telegramNotify.js";
+import { getMemory }                 from "./agentMemory.js";
 
 export type ToolResult = {
   tool:   string;
@@ -317,6 +319,111 @@ async function sendTelegramMessage(tenantId: string, query: string): Promise<Too
   }
 }
 
+// ── Tool: search_my_memories ─────────────────────────────────────────────────
+// Unified recall across 4 sources: conversation memory, audit trail, KB docs,
+// and previous workflow outputs. Gives agents instant recall of past actions.
+
+async function searchMyMemories(
+  tenantId: string,
+  agentId: string,
+  query: string,
+): Promise<ToolResult> {
+  const sections: string[] = [];
+  const q = query.trim().toLowerCase();
+
+  try {
+    // 1. Conversation memory — last 10 turns from agent_memory
+    const memory = await getMemory(tenantId, agentId, "default", 10).catch(() => []);
+    if (memory.length) {
+      const memLines = memory.map((m) => `  [${m.role}] ${m.content.slice(0, 200)}`);
+      sections.push(`📝 CONVERSATION MEMORY (last ${memory.length} turns):\n${memLines.join("\n")}`);
+    }
+
+    // 2. Audit trail — this agent's recent actions (last 15)
+    const auditEntries = await prisma.auditLog.findMany({
+      where: {
+        tenantId,
+        OR: [
+          { actorExternalId: agentId },
+          { actorExternalId: agentId.toUpperCase() },
+        ],
+      },
+      orderBy: { timestamp: "desc" },
+      take: 15,
+      select: {
+        action: true,
+        level: true,
+        message: true,
+        entityType: true,
+        entityId: true,
+        timestamp: true,
+      },
+    }).catch(() => []);
+    if (auditEntries.length) {
+      const auditLines = auditEntries.map((e) => {
+        const ts = e.timestamp ? new Date(e.timestamp).toISOString().slice(0, 19) : "—";
+        return `  [${ts}] ${e.action}: ${(e.message ?? "").slice(0, 150)}`;
+      });
+      sections.push(`📋 MY RECENT ACTIONS (last ${auditEntries.length}):\n${auditLines.join("\n")}`);
+    }
+
+    // 3. Workflow outputs — recent WORKFLOW_COMPLETE entries for this agent
+    const wfResults = await prisma.auditLog.findMany({
+      where: {
+        tenantId,
+        action: { in: ["WORKFLOW_STEP", "WORKFLOW_COMPLETE"] },
+        OR: [
+          { actorExternalId: agentId },
+          { actorExternalId: agentId.toUpperCase() },
+          { message: { contains: agentId, mode: "insensitive" } },
+        ],
+      },
+      orderBy: { timestamp: "desc" },
+      take: 8,
+      select: { action: true, message: true, meta: true, timestamp: true },
+    }).catch(() => []);
+    if (wfResults.length) {
+      const wfLines = wfResults.map((w) => {
+        const ts = w.timestamp ? new Date(w.timestamp).toISOString().slice(0, 19) : "—";
+        const wfId = (w.meta as any)?.workflowId ?? "";
+        return `  [${ts}] ${wfId ? `${wfId}: ` : ""}${(w.message ?? "").slice(0, 150)}`;
+      });
+      sections.push(`🔄 MY WORKFLOW HISTORY (last ${wfResults.length}):\n${wfLines.join("\n")}`);
+    }
+
+    // 4. Agent-specific KB docs — personal knowledge base
+    const kb = await getKbContext({
+      tenantId,
+      agentId,
+      query: q.slice(0, 200),
+    }).catch(() => ({ text: "", items: [], totalChars: 0, budgetChars: 0 }));
+    if (kb.items.length) {
+      const kbTitles = kb.items.slice(0, 8).map((d) => `  • ${d.title ?? d.slug ?? "untitled"}`);
+      sections.push(`📚 MY KNOWLEDGE BASE (${kb.items.length} docs):\n${kbTitles.join("\n")}\n\n${kb.text.slice(0, 2000)}`);
+    }
+
+    if (!sections.length) {
+      return {
+        tool: "search_my_memories",
+        data: `No memories found for agent ${agentId}. This agent has no conversation history, audit trail, workflow outputs, or KB docs yet.`,
+        usedAt: new Date().toISOString(),
+      };
+    }
+
+    return {
+      tool: "search_my_memories",
+      data: `Agent ${agentId.toUpperCase()} memory recall (query: "${q.slice(0, 60)}"):\n\n${sections.join("\n\n" + "─".repeat(40) + "\n\n")}`,
+      usedAt: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    return {
+      tool: "search_my_memories",
+      data: `[error searching memories: ${err?.message}]`,
+      usedAt: new Date().toISOString(),
+    };
+  }
+}
+
 // ── Pattern detection ─────────────────────────────────────────────────────────
 
 const SUBSCRIPTION_PATTERNS = [
@@ -397,36 +504,45 @@ const TELEGRAM_PATTERNS = [
   /\b(let me know.*telegram|telegram.*let me know)\b/i,
 ];
 
+const MEMORY_PATTERNS = [
+  /\b(remember|recall|memor|what did (i|we|you)|previous|last time|before|earlier)\b/i,
+  /\b(history|past|my (actions|tasks|work|output|report)|what.*done|what.*happened)\b/i,
+  /\b(search.*memory|search.*memories|check.*memory|look.*back|look.*up.*past)\b/i,
+  /\b(my.*log|my.*audit|my.*record|my.*activity|what.*completed|what.*finished)\b/i,
+  /\b(context|recap|summary of (my|our|past)|catch me up|bring me up to speed)\b/i,
+  /\b(review.*work|review.*output|previous.*result|past.*workflow)\b/i,
+];
+
 // ── Agent → allowed tools map (from WF-107 approved proposals) ───────────────
 // Controls which tools can fire for which agent — prevents unnecessary DB hits.
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
-  atlas:       ["subscription", "calendar", "ledger", "team", "telegram"],
-  binky:       ["calendar", "knowledge", "telegram"],
-  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram"],
-  tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram"],
-  larry:       ["calendar", "ledger", "legal", "ipRegister", "telegram"],
-  jenny:       ["calendar", "legal", "telegram"],
-  benny:       ["calendar", "legal"],
-  petra:       ["calendar", "planner", "telegram"],
-  mercer:      ["crm", "email", "telegram"],
-  frank:       ["userProfile"],
-  sandy:       ["calendar", "email", "userProfile", "telegram"],
-  "daily-intel": ["calendar", "email", "telegram"],
-  emma:        ["crm"],
-  claire:      ["calendar"],
-  link:        ["calendar"],
-  cornwall:    ["calendar"],
-  donna:       ["calendar"],
-  kelly:       ["calendar"],
-  timmy:       ["calendar"],
-  fran:        ["calendar"],
-  dwight:      ["calendar"],
-  reynolds:    ["calendar"],
-  terry:       ["calendar"],
-  penny:       ["calendar"],
-  archy:       ["calendar"],
-  venny:       ["calendar"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory"],
+  binky:       ["calendar", "knowledge", "telegram", "memory"],
+  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory"],
+  tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory"],
+  larry:       ["calendar", "ledger", "legal", "ipRegister", "telegram", "memory"],
+  jenny:       ["calendar", "legal", "telegram", "memory"],
+  benny:       ["calendar", "legal", "memory"],
+  petra:       ["calendar", "planner", "telegram", "memory"],
+  mercer:      ["crm", "email", "telegram", "memory"],
+  frank:       ["userProfile", "memory"],
+  sandy:       ["calendar", "email", "userProfile", "telegram", "memory"],
+  "daily-intel": ["calendar", "email", "telegram", "memory"],
+  emma:        ["crm", "memory"],
+  claire:      ["calendar", "memory"],
+  link:        ["calendar", "memory"],
+  cornwall:    ["calendar", "memory"],
+  donna:       ["calendar", "memory"],
+  kelly:       ["calendar", "memory"],
+  timmy:       ["calendar", "memory"],
+  fran:        ["calendar", "memory"],
+  dwight:      ["calendar", "memory"],
+  reynolds:    ["calendar", "memory"],
+  terry:       ["calendar", "memory"],
+  penny:       ["calendar", "memory"],
+  archy:       ["calendar", "memory"],
+  venny:       ["calendar", "memory"],
 };
 
 export type ToolNeeds = {
@@ -443,6 +559,7 @@ export type ToolNeeds = {
   ipRegister:   boolean;
   planner:      boolean;
   telegram:     boolean;
+  memory:       boolean;
   query:        string;
 };
 
@@ -466,6 +583,7 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     ipRegister:   can("ipRegister")   && IP_REGISTER_PATTERNS.some(p => p.test(q)),
     planner:      can("planner")      && PLANNER_PATTERNS.some(p => p.test(q)),
     telegram:     can("telegram")     && TELEGRAM_PATTERNS.some(p => p.test(q)),
+    memory:       can("memory")       && MEMORY_PATTERNS.some(p => p.test(q)),
     query:        q,
   };
 }
@@ -501,6 +619,7 @@ export async function resolveAgentTools(
     needs.ipRegister   ? readIpRegister(tenantId)                              : Promise.resolve(null),
     needs.planner      ? readPlanner(tenantId)                                 : Promise.resolve(null),
     needs.telegram     ? sendTelegramMessage(tenantId, needs.query)            : Promise.resolve(null),
+    needs.memory       ? searchMyMemories(tenantId, aid, needs.query)          : Promise.resolve(null),
   ];
 
   const results = (await Promise.all(jobs)).filter(Boolean) as ToolResult[];
