@@ -65,6 +65,14 @@ export default function CRM() {
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [newActivity, setNewActivity] = useState({ type: "note", subject: "", body: "" });
 
+  // Companies state
+  type Company = { id: string; name: string; domain?: string; industry?: string; notes?: string; createdAt?: string };
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [companyQuery, setCompanyQuery] = useState("");
+  const [showAddCompany, setShowAddCompany] = useState(false);
+  const [newCompany, setNewCompany] = useState({ name: "", domain: "", industry: "", notes: "" });
+
   // Segments state
   const [segments, setSegments] = useState<any[]>([]);
   const [newSegmentName, setNewSegmentName] = useState("");
@@ -101,6 +109,13 @@ export default function CRM() {
   useEffect(() => {
     if (activeTab === "segments" && tenantId) {
       loadSegments();
+    }
+  }, [activeTab, tenantId]);
+
+  // Load companies when companies tab is active
+  useEffect(() => {
+    if (activeTab === "companies" && tenantId) {
+      loadCompanies();
     }
   }, [activeTab, tenantId]);
 
@@ -432,6 +447,63 @@ export default function CRM() {
     }
   };
 
+  // ---- Company handlers ----
+  async function loadCompanies() {
+    if (!tenantId) return;
+    setCompaniesLoading(true);
+    try {
+      const q = companyQuery.trim() ? `?q=${encodeURIComponent(companyQuery.trim())}` : "";
+      const res = await fetch(`${API_BASE}/v1/crm/companies${q}`, {
+        headers: { "x-tenant-id": tenantId },
+      });
+      const json = await res.json();
+      if (json.ok) setCompanies(json.companies ?? []);
+    } catch {} finally { setCompaniesLoading(false); }
+  }
+
+  async function createCompany() {
+    if (!tenantId || !newCompany.name.trim()) return;
+    try {
+      const res = await fetch(`${API_BASE}/v1/crm/companies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId },
+        body: JSON.stringify({
+          name: newCompany.name.trim(),
+          domain: newCompany.domain.trim() || undefined,
+          industry: newCompany.industry.trim() || undefined,
+          notes: newCompany.notes.trim() || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok && json.company) {
+        setCompanies((prev) => [json.company, ...prev]);
+        setNewCompany({ name: "", domain: "", industry: "", notes: "" });
+        setShowAddCompany(false);
+      }
+    } catch {}
+  }
+
+  async function deleteCompany(id: string) {
+    if (!tenantId) return;
+    try {
+      await fetch(`${API_BASE}/v1/crm/companies/${id}`, {
+        method: "DELETE",
+        headers: { "x-tenant-id": tenantId },
+      });
+      setCompanies((prev) => prev.filter((c) => c.id !== id));
+    } catch {}
+  }
+
+  // Derive companies from contacts for the count badge
+  const contactsByCompany = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const c of contacts) {
+      const co = (c.company ?? "").trim().toLowerCase();
+      if (co) map[co] = (map[co] ?? 0) + 1;
+    }
+    return map;
+  }, [contacts]);
+
   // ---- Activity Timeline handlers ----
   async function loadActivities(contactId: string) {
     setActivitiesLoading(true);
@@ -674,12 +746,138 @@ export default function CRM() {
         </div>
       )}
 
-      {/* Companies tab (placeholder but non-breaking) */}
+      {/* Companies tab */}
       {activeTab === "companies" && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-          <div className="text-sm opacity-70">
-            Companies view is ready to wire next. (We can derive companies from contacts or
-            load from your backend.)
+        <div className="space-y-4">
+          {/* Search + Add */}
+          <div className="flex flex-col md:flex-row md:items-center gap-3 justify-between">
+            <div className="flex-1">
+              <input
+                value={companyQuery}
+                onChange={(e) => setCompanyQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") loadCompanies(); }}
+                placeholder="Search companies (name, domain, industry)…"
+                className="w-full h-11 px-4 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-white/25"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={loadCompanies}
+                className="h-11 px-4 rounded-xl border border-white/10 hover:border-white/20 transition"
+              >
+                Search
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddCompany((v) => !v)}
+                className="h-11 px-4 rounded-xl bg-white text-black font-semibold hover:opacity-90 transition"
+              >
+                Add Company
+              </button>
+            </div>
+          </div>
+
+          {/* Add company form */}
+          {showAddCompany && (
+            <div className="rounded-xl border border-cyan-500/20 bg-slate-800/50 p-4 space-y-3">
+              <h3 className="text-sm font-medium text-slate-200">New Company</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input
+                  value={newCompany.name}
+                  onChange={(e) => setNewCompany((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Company name *"
+                  className="h-10 px-3 rounded-lg bg-slate-800 border border-cyan-500/20 outline-none focus:border-cyan-500/40 text-sm text-slate-200"
+                />
+                <input
+                  value={newCompany.domain}
+                  onChange={(e) => setNewCompany((p) => ({ ...p, domain: e.target.value }))}
+                  placeholder="Domain (e.g. acme.com)"
+                  className="h-10 px-3 rounded-lg bg-slate-800 border border-cyan-500/20 outline-none focus:border-cyan-500/40 text-sm text-slate-200"
+                />
+                <input
+                  value={newCompany.industry}
+                  onChange={(e) => setNewCompany((p) => ({ ...p, industry: e.target.value }))}
+                  placeholder="Industry"
+                  className="h-10 px-3 rounded-lg bg-slate-800 border border-cyan-500/20 outline-none focus:border-cyan-500/40 text-sm text-slate-200"
+                />
+                <input
+                  value={newCompany.notes}
+                  onChange={(e) => setNewCompany((p) => ({ ...p, notes: e.target.value }))}
+                  placeholder="Notes"
+                  className="h-10 px-3 rounded-lg bg-slate-800 border border-cyan-500/20 outline-none focus:border-cyan-500/40 text-sm text-slate-200"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={createCompany}
+                  disabled={!newCompany.name.trim()}
+                  className="flex-1 h-9 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-400 text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition"
+                >
+                  Create
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowAddCompany(false); setNewCompany({ name: "", domain: "", industry: "", notes: "" }); }}
+                  className="px-4 h-9 rounded-lg text-xs text-slate-400 hover:text-white transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Companies table */}
+          <div className="rounded-2xl border border-white/10 overflow-hidden">
+            <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs uppercase tracking-wide opacity-70 bg-white/5">
+              <div className="col-span-3">Name</div>
+              <div className="col-span-3">Domain</div>
+              <div className="col-span-2">Industry</div>
+              <div className="col-span-2">Contacts</div>
+              <div className="col-span-2">Actions</div>
+            </div>
+
+            {companiesLoading ? (
+              <div className="p-6 text-sm opacity-70">Loading companies…</div>
+            ) : companies.length === 0 ? (
+              <div className="p-6 text-sm opacity-70">
+                No companies yet. Click <span className="font-semibold">Add Company</span> or import contacts with company names.
+              </div>
+            ) : (
+              companies.map((co) => (
+                <div
+                  key={co.id}
+                  className="grid grid-cols-12 gap-2 px-4 py-3 text-sm border-t border-white/10 hover:bg-white/5 transition"
+                >
+                  <div className="col-span-3 font-medium">{co.name}</div>
+                  <div className="col-span-3 opacity-80">{co.domain ?? "—"}</div>
+                  <div className="col-span-2 opacity-80">{co.industry ?? "—"}</div>
+                  <div className="col-span-2">
+                    {contactsByCompany[co.name.toLowerCase()] ? (
+                      <button
+                        type="button"
+                        onClick={() => { setActiveTab("contacts"); setQuery(co.name); }}
+                        className="text-cyan-400 hover:text-cyan-300 text-xs underline"
+                      >
+                        {contactsByCompany[co.name.toLowerCase()]} contacts
+                      </button>
+                    ) : (
+                      <span className="opacity-50 text-xs">0</span>
+                    )}
+                  </div>
+                  <div className="col-span-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => deleteCompany(co.id)}
+                      className="h-7 px-3 rounded-lg border border-red-500/20 hover:border-red-500/40 text-xs text-red-400 hover:text-red-300 transition"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
