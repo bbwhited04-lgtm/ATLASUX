@@ -20,6 +20,11 @@ import {
   Camera,
   Mail,
   Calculator,
+  BookOpen,
+  Lightbulb,
+  Cpu,
+  Palette,
+  Workflow,
 } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -86,7 +91,7 @@ const digitalProducts: DigitalProduct[] = [
       "10 research & intelligence prompts",
       "5 career & personal brand prompts",
     ],
-    paymentLink: "https://buy.stripe.com/00g5kE4GZdGf622djJ8IU09",
+    paymentLink: "https://buy.stripe.com/28E28s8Xf45F622cfF8IU0e",
     downloadUrl: "/downloads/100-chatgpt-ai-tools-prompts.txt",
   },
   {
@@ -114,7 +119,7 @@ const digitalProducts: DigitalProduct[] = [
       "10 Shopify-specific prompts",
       "10 Amazon-specific prompts",
     ],
-    paymentLink: "https://buy.stripe.com/14A7sM8Xf0Ttbmma7x8IU0c",
+    paymentLink: "https://buy.stripe.com/9B67sMc9rau3aiigvV8IU0d",
     downloadUrl: "/downloads/200-ecommerce-pod-prompts.txt",
   },
   {
@@ -135,7 +140,7 @@ const digitalProducts: DigitalProduct[] = [
       "8 sales copy & conversion prompts",
       "7 content creation shortcuts",
     ],
-    paymentLink: "https://buy.stripe.com/28E5kE4GZdGf622djJ8IU09",
+    paymentLink: "https://buy.stripe.com/7sYbJ26P78lVbmm0wX8IU0f",
     downloadUrl: "/downloads/50-small-business-prompts.txt",
   },
   {
@@ -156,7 +161,7 @@ const digitalProducts: DigitalProduct[] = [
       "8 AI-powered personal brand prompts",
       "7 creative & thinking partner prompts",
     ],
-    paymentLink: "https://buy.stripe.com/aFabJ25L37hR766frR8IU0b",
+    paymentLink: "https://buy.stripe.com/4gMeVe1uN7hR6221B18IU0g",
     downloadUrl: "/downloads/50-personalize-ai-prompts.txt",
   },
   {
@@ -177,7 +182,7 @@ const digitalProducts: DigitalProduct[] = [
       "10 social media copy prompts",
       "10 sales & conversion copy prompts",
     ],
-    paymentLink: "https://buy.stripe.com/28EcN6gpHgSrfCCcfF8IU0a",
+    paymentLink: "https://buy.stripe.com/5kQ7sMflDeKjgGGa7x8IU0h",
     downloadUrl: "/downloads/50-marketing-copywriting-prompts.txt",
   },
   {
@@ -198,7 +203,7 @@ const digitalProducts: DigitalProduct[] = [
       "10 creative & artistic effects",
       "10 DSLR technical style prompts",
     ],
-    paymentLink: "https://buy.stripe.com/aFabJ25L37hR766frR8IU0b",
+    paymentLink: "https://buy.stripe.com/eVq00k3CVcCb9ee5Rh8IU0i",
     downloadUrl: "/downloads/50-camera-ai-image-prompts.txt",
   },
   {
@@ -245,6 +250,111 @@ const digitalProducts: DigitalProduct[] = [
     ],
     paymentLink: "https://buy.stripe.com/28EcN6gpHgSrfCCcfF8IU0a",
     downloadUrl: "/downloads/50-accounting-bookkeeper-prompts.txt",
+  },
+  {
+    id: "ebook-chatgpt-side-hustles",
+    name: "Learning ChatGPT Side Hustles",
+    description:
+      "20-page PDF ebook covering freelance writing, social media management, copywriting, e-commerce, course creation, and more — all powered by ChatGPT. Includes real prompts, pricing tables, and a step-by-step launch plan.",
+    price: 0.99,
+    priceLabel: "$0.99",
+    promptCount: 16,
+    icon: BookOpen,
+    color: "from-indigo-500 to-purple-500",
+    badge: "Ebook",
+    highlights: [
+      "16 chapters of actionable content",
+      "Real ChatGPT prompts for each hustle",
+      "Pricing & income projections",
+      "Client acquisition strategies",
+      "Scaling from side hustle to business",
+    ],
+    paymentLink: "https://buy.stripe.com/28E5kE4GZdGf622djJ8IU09",
+    downloadUrl: "/downloads/chatgpt-side-hustles-ebook.pdf",
+  },
+  {
+    id: "ebook-passive-income-guide",
+    name: "Passive Income Guide: 5 Online Side Hustles",
+    description:
+      "20-page PDF covering digital products, affiliate marketing, content creation, online courses, and print-on-demand. Includes a 30-day launch plan and automation strategies.",
+    price: 0.99,
+    priceLabel: "$0.99",
+    promptCount: 10,
+    icon: Lightbulb,
+    color: "from-amber-500 to-yellow-500",
+    badge: "Ebook",
+    highlights: [
+      "5 proven passive income models",
+      "Platform comparisons & setup guides",
+      "30-day beginner launch plan",
+      "Automation & scaling strategies",
+      "Common mistakes to avoid",
+    ],
+    paymentLink: "https://buy.stripe.com/aFabJ25L37hR766frR8IU0b",
+    downloadUrl: "/downloads/passive-income-guide-ebook.pdf",
+  },
+  {
+    id: "ebook-master-chatgpt5",
+    name: "Master ChatGPT-5.0 Guide",
+    description:
+      "20-page PDF deep dive into ChatGPT-5.0 — prompt engineering, AI side hustles, automation workflows, digital product creation, and monetization strategies.",
+    price: 0.99,
+    priceLabel: "$0.99",
+    promptCount: 10,
+    icon: Cpu,
+    color: "from-cyan-500 to-teal-500",
+    badge: "Ebook",
+    highlights: [
+      "ChatGPT-5.0 new features explained",
+      "Advanced prompt engineering techniques",
+      "10 AI-powered side hustles",
+      "Automation with Zapier, Make & n8n",
+      "Monetization & scaling playbook",
+    ],
+    paymentLink: "https://buy.stripe.com/28EcN6gpHgSrfCCcfF8IU0a",
+    downloadUrl: "/downloads/master-chatgpt5-guide-ebook.pdf",
+  },
+  {
+    id: "nano-banana-ai-prompts",
+    name: "Nano Banana AI Prompts Guide",
+    description:
+      "500+ copy-paste prompts for Midjourney, DALL-E, and Stable Diffusion. Covers portraits, landscapes, product photography, fantasy art, architecture, food, fashion, and advanced techniques.",
+    price: 0.99,
+    priceLabel: "$0.99",
+    promptCount: 500,
+    icon: Palette,
+    color: "from-yellow-400 to-orange-500",
+    badge: "500+ Prompts",
+    highlights: [
+      "500+ image generation prompts",
+      "Midjourney, DALL-E & Stable Diffusion",
+      "Platform-specific parameters included",
+      "10 categories from portraits to abstract",
+      "Advanced techniques & style mixing",
+    ],
+    paymentLink: "https://buy.stripe.com/28E5kE4GZdGf622djJ8IU09",
+    downloadUrl: "/downloads/nano-banana-ai-prompts-guide.pdf",
+  },
+  {
+    id: "n8n-automation-templates",
+    name: "100+ n8n Automation Templates",
+    description:
+      "AI agents, OpenAI workflows, and no-code business automation. 100+ templates covering lead gen, content creation, email, social media, e-commerce, customer support, and DevOps.",
+    price: 0.99,
+    priceLabel: "$0.99",
+    promptCount: 100,
+    icon: Workflow,
+    color: "from-orange-500 to-red-500",
+    badge: "No-Code",
+    highlights: [
+      "100+ ready-to-use n8n templates",
+      "AI agent & OpenAI workflows",
+      "Lead gen, email & social automation",
+      "E-commerce & customer support",
+      "Beginner to advanced difficulty levels",
+    ],
+    paymentLink: "https://buy.stripe.com/aFabJ25L37hR766frR8IU0b",
+    downloadUrl: "/downloads/n8n-automation-templates-guide.pdf",
   },
 ];
 
@@ -426,11 +536,13 @@ export default function Store() {
 
           <div className="flex items-center gap-3">
             <FileText className="h-5 w-5 text-cyan-400" />
-            <h2 className="text-xl font-semibold">Prompt Packs</h2>
+            <h2 className="text-xl font-semibold">
+              Prompt Packs &amp; Ebooks
+            </h2>
           </div>
           <p className="mt-2 text-sm text-slate-400">
-            Copy-paste ready prompts for ChatGPT, AI image tools, e-commerce,
-            and more. Instant download — crafted by the Atlas UX AI workforce.
+            Copy-paste ready prompts, AI image guides, automation templates, and
+            PDF ebooks. Instant download — crafted by the Atlas UX AI workforce.
           </p>
 
           <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -584,7 +696,11 @@ function ProductCard({ product }: { product: DigitalProduct }) {
           <div>
             <div className="text-lg font-semibold">{product.name}</div>
             <div className="text-xs text-slate-400">
-              {product.promptCount} prompts
+              {product.id.startsWith("ebook-")
+                ? `${product.promptCount} chapters`
+                : product.id === "n8n-automation-templates"
+                  ? `${product.promptCount}+ templates`
+                  : `${product.promptCount} prompts`}
             </div>
           </div>
         </div>
