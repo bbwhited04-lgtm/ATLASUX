@@ -19,6 +19,7 @@
  *   read_planner              — Microsoft Planner tasks via Graph API
  *   send_telegram_message     — send a Telegram notification to the tenant's default chat
  *   search_my_memories        — unified recall: conversation memory, audit trail, workflow history, agent KB
+ *   delegate_task             — agent-to-agent task handoff: creates a queued AGENT_TASK job for another agent
  *
  * Usage: resolveAgentTools(tenantId, query, agentId) — returns formatted context string.
  */
@@ -424,6 +425,92 @@ async function searchMyMemories(
   }
 }
 
+// ── Tool: delegate_task — agent-to-agent task handoff ─────────────────────────
+
+import { agentRegistry } from "../../agents/registry.js";
+
+async function delegateTask(
+  tenantId: string,
+  fromAgentId: string,
+  query: string,
+): Promise<ToolResult> {
+  try {
+    // Parse target agent and task from query
+    // Patterns: "delegate to binky: research X", "hand off to tina: review budget", "ask sunday to draft memo"
+    const delegateMatch = query.match(
+      /(?:delegate|hand\s*off|assign|send|forward|pass|route|ask)\s+(?:to\s+)?(\w+)[\s:,]+(.+)/i
+    );
+
+    if (!delegateMatch) {
+      return {
+        tool: "delegate_task",
+        data: `Could not parse delegation. Use format: "delegate to [agent]: [task description]". Available agents: ${agentRegistry.map(a => a.name).join(", ")}`,
+        usedAt: new Date().toISOString(),
+      };
+    }
+
+    const targetName = delegateMatch[1].toLowerCase();
+    const taskDesc = delegateMatch[2].trim();
+
+    const target = agentRegistry.find(
+      (a) => a.id === targetName || a.name.toLowerCase() === targetName
+    );
+
+    if (!target) {
+      return {
+        tool: "delegate_task",
+        data: `Unknown agent "${targetName}". Available: ${agentRegistry.map(a => `${a.name} (${a.title})`).join(", ")}`,
+        usedAt: new Date().toISOString(),
+      };
+    }
+
+    const job = await prisma.job.create({
+      data: {
+        tenantId,
+        requested_by_user_id: fromAgentId,
+        status: "queued",
+        jobType: "AGENT_TASK",
+        priority: 1,
+        input: {
+          assignedAgentId: target.id,
+          title: `[From ${fromAgentId.toUpperCase()}] ${taskDesc.slice(0, 200)}`,
+          description: taskDesc,
+          delegatedBy: fromAgentId,
+          traceId: `delegate-${fromAgentId}-${Date.now()}`,
+        },
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorUserId: null,
+        actorExternalId: fromAgentId,
+        actorType: "agent",
+        level: "info",
+        action: "TASK_DELEGATED",
+        entityType: "job",
+        entityId: job.id,
+        message: `${fromAgentId} delegated task to ${target.id}: ${taskDesc.slice(0, 120)}`,
+        meta: { from: fromAgentId, to: target.id, jobId: job.id },
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
+    return {
+      tool: "delegate_task",
+      data: `Task delegated to ${target.name} (${target.title}).\nJob ID: ${job.id}\nStatus: queued\nTask: ${taskDesc.slice(0, 200)}\n\nThe task has been queued and ${target.name} will pick it up on the next engine tick.`,
+      usedAt: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    return {
+      tool: "delegate_task",
+      data: `[error delegating task: ${err?.message}]`,
+      usedAt: new Date().toISOString(),
+    };
+  }
+}
+
 // ── Pattern detection ─────────────────────────────────────────────────────────
 
 const SUBSCRIPTION_PATTERNS = [
@@ -513,19 +600,26 @@ const MEMORY_PATTERNS = [
   /\b(review.*work|review.*output|previous.*result|past.*workflow)\b/i,
 ];
 
+const DELEGATE_PATTERNS = [
+  /\b(delegate|hand\s*off|hand off)\s+(to\s+)?\w+/i,
+  /\b(assign|send|forward|pass|route)\s+(to|this to)\s+\w+/i,
+  /\b(ask|tell|have)\s+\w+\s+(to\s+)/i,
+  /\b(task\s+for|job\s+for|work\s+for)\s+\w+/i,
+];
+
 // ── Agent → allowed tools map (from WF-107 approved proposals) ───────────────
 // Controls which tools can fire for which agent — prevents unnecessary DB hits.
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
-  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory"],
-  binky:       ["calendar", "knowledge", "telegram", "memory"],
-  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory"],
-  tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory"],
-  larry:       ["calendar", "ledger", "legal", "ipRegister", "telegram", "memory"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate"],
+  binky:       ["calendar", "knowledge", "telegram", "memory", "delegate"],
+  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate"],
+  tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory", "delegate"],
+  larry:       ["calendar", "ledger", "legal", "ipRegister", "telegram", "memory", "delegate"],
   jenny:       ["calendar", "legal", "telegram", "memory"],
   benny:       ["calendar", "legal", "memory"],
-  petra:       ["calendar", "planner", "telegram", "memory"],
-  mercer:      ["crm", "email", "telegram", "memory"],
+  petra:       ["calendar", "planner", "telegram", "memory", "delegate"],
+  mercer:      ["crm", "email", "telegram", "memory", "delegate"],
   frank:       ["userProfile", "memory"],
   sandy:       ["calendar", "email", "userProfile", "telegram", "memory"],
   "daily-intel": ["calendar", "email", "telegram", "memory"],
@@ -542,6 +636,7 @@ const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   terry:       ["calendar", "memory"],
   penny:       ["calendar", "memory"],
   archy:       ["calendar", "memory"],
+  sunday:      ["calendar", "memory", "delegate"],
   venny:       ["calendar", "memory"],
 };
 
@@ -560,6 +655,7 @@ export type ToolNeeds = {
   planner:      boolean;
   telegram:     boolean;
   memory:       boolean;
+  delegate:     boolean;
   query:        string;
 };
 
@@ -584,6 +680,7 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     planner:      can("planner")      && PLANNER_PATTERNS.some(p => p.test(q)),
     telegram:     can("telegram")     && TELEGRAM_PATTERNS.some(p => p.test(q)),
     memory:       can("memory")       && MEMORY_PATTERNS.some(p => p.test(q)),
+    delegate:     can("delegate")     && DELEGATE_PATTERNS.some(p => p.test(q)),
     query:        q,
   };
 }
@@ -620,6 +717,7 @@ export async function resolveAgentTools(
     needs.planner      ? readPlanner(tenantId)                                 : Promise.resolve(null),
     needs.telegram     ? sendTelegramMessage(tenantId, needs.query)            : Promise.resolve(null),
     needs.memory       ? searchMyMemories(tenantId, aid, needs.query)          : Promise.resolve(null),
+    needs.delegate     ? delegateTask(tenantId, aid, needs.query)              : Promise.resolve(null),
   ];
 
   const results = (await Promise.all(jobs)).filter(Boolean) as ToolResult[];

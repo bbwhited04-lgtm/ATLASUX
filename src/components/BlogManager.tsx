@@ -254,10 +254,42 @@ export function BlogManager() {
             <div className="flex items-center gap-2">
               <input
                 className={`${inputCls} flex-1`}
-                placeholder="Paste image URL or upload via Media Processing tab…"
+                placeholder="Paste image URL or click Upload…"
                 value={form.featuredImageUrl}
                 onChange={(e) => setForm((f) => ({ ...f, featuredImageUrl: e.target.value }))}
               />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                id="blog-featured-upload"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !activeTenantId) return;
+                  const fd = new FormData();
+                  fd.append("file", file);
+                  fd.append("tenantId", activeTenantId);
+                  try {
+                    const res = await fetch(`${API_BASE}/v1/files`, {
+                      method: "POST",
+                      headers: { "x-tenant-id": activeTenantId },
+                      body: fd,
+                    });
+                    const json = await res.json();
+                    if (json.url) setForm((f) => ({ ...f, featuredImageUrl: json.url }));
+                    else if (json.signedUrl) setForm((f) => ({ ...f, featuredImageUrl: json.signedUrl }));
+                  } catch { /* non-fatal */ }
+                  e.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => document.getElementById("blog-featured-upload")?.click()}
+                className="p-2 hover:bg-slate-700 rounded-lg transition-colors border border-cyan-500/20"
+                title="Upload image"
+              >
+                <Upload className="w-3.5 h-3.5 text-cyan-400" />
+              </button>
               {form.featuredImageUrl && (
                 <button
                   onClick={() => setForm((f) => ({ ...f, featuredImageUrl: "" }))}

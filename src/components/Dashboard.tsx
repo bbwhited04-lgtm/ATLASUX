@@ -28,7 +28,7 @@ export function Dashboard() {
 const navigate = useNavigate();
   const { tenantId } = useActiveTenant();
   const [pendingDecisionsCount, setPendingDecisionsCount] = React.useState<number>(0);
-  const [liveStats, setLiveStats] = React.useState<{active: number, completed: number}>({ active: 0, completed: 0 });
+  const [liveStats, setLiveStats] = React.useState<{active: number, completed: number, agents: number, kbDocs: number, auditEvents: number, spendUsd: number}>({ active: 0, completed: 0, agents: 0, kbDocs: 0, auditEvents: 0, spendUsd: 0 });
   const [growthRuns, setGrowthRuns] = React.useState<any[]>([]);
   const [recentJobs, setRecentJobs] = React.useState<any[]>([]);
 
@@ -62,24 +62,31 @@ const navigate = useNavigate();
     let cancelled = false;
     const fetchLiveData = async () => {
       if (!tenantId) return;
+      const h = { "x-tenant-id": tenantId };
       try {
-        const [jobsRes, growthRes] = await Promise.all([
-          fetch(`${API_BASE}/v1/jobs?status=running&limit=5`, { headers: { "x-tenant-id": tenantId } }),
-          fetch(`${API_BASE}/v1/analytics/summary?range=7d`, { headers: { "x-tenant-id": tenantId } }),
+        const [jobsRes, growthRes, agentsRes, accountingRes, auditRes] = await Promise.all([
+          fetch(`${API_BASE}/v1/jobs?status=running&limit=5`, { headers: h }).then(r => r.json()).catch(() => ({})),
+          fetch(`${API_BASE}/v1/analytics/summary?range=7d`, { headers: h }).then(r => r.json()).catch(() => ({})),
+          fetch(`${API_BASE}/v1/agents`, { headers: h }).then(r => r.json()).catch(() => ({})),
+          fetch(`${API_BASE}/v1/accounting/summary`, { headers: h }).then(r => r.json()).catch(() => ({})),
+          fetch(`${API_BASE}/v1/audit/list?limit=1`, { headers: h }).then(r => r.json()).catch(() => ({})),
         ]);
-        const jobsJson = await jobsRes.json().catch(() => ({}));
-        const growthJson = await growthRes.json().catch(() => ({}));
 
         if (!cancelled) {
-          const jobs: any[] = Array.isArray(jobsJson?.jobs) ? jobsJson.jobs :
-                              Array.isArray(jobsJson?.data) ? jobsJson.data : [];
+          const jobs: any[] = Array.isArray(jobsRes?.jobs) ? jobsRes.jobs :
+                              Array.isArray(jobsRes?.data) ? jobsRes.data : [];
           const activeCount = jobs.filter((j: any) => j.status === "running" || j.status === "RUNNING").length;
-          const completedCount = typeof jobsJson?.completedToday === "number" ? jobsJson.completedToday : 0;
-          setLiveStats({ active: activeCount, completed: completedCount });
+          const completedCount = typeof jobsRes?.completedToday === "number" ? jobsRes.completedToday : 0;
+          const agentCount = Array.isArray(agentsRes?.agents) ? agentsRes.agents.length : 0;
+          const spendUsd = typeof accountingRes?.summary?.totalDebitsCents === "number"
+            ? accountingRes.summary.totalDebitsCents / 100
+            : 0;
+          const auditTotal = typeof auditRes?.total === "number" ? auditRes.total : (Array.isArray(auditRes?.items) ? auditRes.items.length : 0);
+          setLiveStats({ active: activeCount, completed: completedCount, agents: agentCount, kbDocs: 0, auditEvents: auditTotal, spendUsd });
           setRecentJobs(jobs);
 
-          const runs: any[] = Array.isArray(growthJson?.runs) ? growthJson.runs :
-                               Array.isArray(growthJson?.timeline) ? growthJson.timeline : [];
+          const runs: any[] = Array.isArray(growthRes?.runs) ? growthRes.runs :
+                               Array.isArray(growthRes?.timeline) ? growthRes.timeline : [];
           setGrowthRuns(runs);
         }
       } catch {
@@ -90,10 +97,10 @@ const navigate = useNavigate();
   }, [tenantId]);
 
   const stats = [
-    { label: "Active Jobs", value: String(liveStats.active), icon: Activity, color: "cyan", trend: "+3" },
-    { label: "Completed Today", value: String(liveStats.completed), icon: CheckCircle2, color: "green", trend: "+12" },
-    { label: "Learning Progress", value: "89%", icon: Brain, color: "purple", trend: "+5%" },
-    { label: "Avg Response Time", value: "2.3s", icon: Zap, color: "yellow", trend: "-0.4s" },
+    { label: "Active Jobs", value: String(liveStats.active), icon: Activity, color: "cyan" },
+    { label: "Completed Today", value: String(liveStats.completed), icon: CheckCircle2, color: "green" },
+    { label: "Registered Agents", value: String(liveStats.agents), icon: Brain, color: "purple" },
+    { label: "Total Spend", value: `$${liveStats.spendUsd.toFixed(2)}`, icon: TrendingUp, color: "yellow" },
   ];
   
   return (
@@ -106,14 +113,14 @@ const navigate = useNavigate();
               Welcome to Atlas UX
             </h2>
             <p className="text-slate-300 max-w-xl">
-              Your AI employee is actively working across 12 tasks, monitoring social media, 
-              and learning from your workflows. Neptune access control is active.
+              Your AI workforce of {liveStats.agents || "—"} agents is live — monitoring social media,
+              executing workflows, and logging every action. Neptune access control is active.
             </p>
             <div className="flex gap-3 pt-2">
               
               <button
                 type="button"
-                onClick={() => navigate("/app/automation?new=1")}
+                onClick={() => navigate("/app/agents?view=automation")}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-cyan-500/20"
               >
               New Task
@@ -140,7 +147,7 @@ const navigate = useNavigate();
                   <Icon className={`w-5 h-5 text-${stat.color}-400`} />
                 </div>
                 <Badge variant="outline" className="text-xs border-cyan-500/20 text-cyan-400">
-                  {stat.trend}
+                  Live
                 </Badge>
               </div>
               <div className="space-y-1">
@@ -167,7 +174,7 @@ const navigate = useNavigate();
           </div>
           <button
             type="button"
-            onClick={() => navigate("/app/decisions")}
+            onClick={() => navigate("/app/business-manager?tab=decisions")}
             className="mt-4 w-full px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-bold border border-cyan-500/20 flex items-center justify-center gap-2"
           >
             Review Decisions <ArrowRight className="w-4 h-4" />
@@ -210,7 +217,7 @@ const navigate = useNavigate();
           </div>
           <button
             type="button"
-            onClick={() => navigate("/app/blog")}
+            onClick={() => navigate("/app/business-manager?tab=blog")}
             className="mt-4 w-full px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-bold border border-cyan-500/20 flex items-center justify-center gap-2"
           >
             Open Blog <ArrowRight className="w-4 h-4" />
@@ -228,7 +235,7 @@ const navigate = useNavigate();
             </h3>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-xs text-slate-400">5 Active Jobs</span>
+              <span className="text-xs text-slate-400">{liveStats.active} Active Job{liveStats.active !== 1 ? "s" : ""}</span>
             </div>
           </div>
           
@@ -321,13 +328,13 @@ const navigate = useNavigate();
           </Card>
           
           <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-cyan-500/30 backdrop-blur-xl p-4">
-            <div className="text-sm font-medium mb-2">System Learning</div>
+            <div className="text-sm font-medium mb-2">Workforce</div>
             <div className="flex items-center gap-3">
               <Brain className="w-8 h-8 text-purple-400" />
               <div className="flex-1">
-                <Progress value={89} className="h-2 mb-1" />
+                <div className="text-2xl font-bold text-white">{liveStats.agents}</div>
                 <div className="text-xs text-slate-400">
-                  AI adapting to your workflow patterns
+                  Registered agents • {liveStats.auditEvents} audit events
                 </div>
               </div>
             </div>

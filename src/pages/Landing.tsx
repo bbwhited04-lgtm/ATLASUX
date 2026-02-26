@@ -122,7 +122,7 @@ export default function Landing() {
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Feb 26, 2026</span>
+            <span className="text-sm text-white/60">Last updated: Feb 27, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
             <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
@@ -209,6 +209,12 @@ export default function Landing() {
             <li>Fixed workflow email routing — agents no longer email themselves their own reports; all workflow completion reports now go to Atlas (CEO) with CC to the agent's direct leader based on org hierarchy; platform intel reports, daily brief, blog publish confirmations, and all n8n workflow outputs now follow proper chain-of-command reporting</li>
             <li>Left nav cleanup — consolidated 15 sidebar items down to 9; Decisions, Budgets, Tickets, Blog, and Analytics now live as tabs inside Business Manager; old URLs redirect automatically; Agent Watcher heartbeat now always visible in the header bar showing running jobs, last active agent, and timestamp — click to open full watcher view</li>
             <li>New agent tool: search_my_memories — every agent can now recall their own conversation history, audit trail, workflow outputs, and KB docs on demand; triggers on "remember", "recall", "what did I do", "my history", "previous", "past work", "catch me up"; searches 4 sources in parallel (agent_memory turns, audit log actions, workflow step history, agent-specific KB) and returns a unified memory report</li>
+            <li>Dashboard real KPIs — stats grid now shows live data (active jobs, completed today, registered agents, total spend) instead of hardcoded mock values; hero text, job count, and workforce card all wired to real API endpoints; nav buttons point to correct consolidated routes</li>
+            <li>Blog Studio file upload — featured image input now has a direct Upload button that sends to Supabase storage via /v1/files; no more copy-pasting URLs from the Media Processing tab</li>
+            <li>Markdown engine upgrade — public blog posts now support **bold**, *italic*, blockquotes (&gt; quoted text), images (![alt](src)), and horizontal rules (---); inline images render with figcaptions</li>
+            <li>Agent-to-agent task handoff — new delegate_task tool lets exec/governor agents queue AGENT_TASK jobs for other agents directly from chat; "delegate to sunday: draft a memo" creates a queued job, logs to audit trail, and Sunday picks it up on next engine tick; Atlas, Binky, Cheryl, Tina, Larry, Petra, Mercer, Sunday all enabled</li>
+            <li>Deep mode expansion — Tina (CFO), Larry (Audit), Petra (PM), and Sunday (Comms Writer) now run the full 3-stage pipeline (planning → execution → verification + memory)</li>
+            <li>Code splitting — 18 app + public page components now lazy-loaded via React.lazy() with Suspense fallback; initial bundle reduced, pages load on demand</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

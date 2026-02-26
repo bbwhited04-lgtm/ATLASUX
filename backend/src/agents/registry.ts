@@ -68,6 +68,7 @@ export const agentRegistry: AgentSummary[] = [
     toolsAllowed: ["Ledger writer", "Accounting reports", "Email", "Budget rules editor", "Spend alerts"],
     toolsForbidden: ["Deployments", "Policy edits"],
     escalationTargets: ["atlas", "chairman"],
+    deepMode: true,
   }),
   withM365("larry", {
     id: "larry",
@@ -79,6 +80,7 @@ export const agentRegistry: AgentSummary[] = [
     toolsAllowed: ["Policy reader", "Docs", "Email"],
     toolsForbidden: ["DB writes", "Ledger writes", "Deployments", "Policy edits"],
     escalationTargets: ["atlas", "chairman"],
+    deepMode: true,
   }),
   withM365("jenny", {
     id: "jenny",
@@ -278,6 +280,7 @@ export const agentRegistry: AgentSummary[] = [
     toolsAllowed: ["Docs drafting"],
     toolsForbidden: ["Publishing"],
     escalationTargets: ["binky"],
+    deepMode: true,
   }),
   withM365("mercer", {
     id: "mercer",
@@ -302,6 +305,7 @@ export const agentRegistry: AgentSummary[] = [
     toolsAllowed: ["Planner write", "Docs drafting", "Teams draft"],
     toolsForbidden: ["Execution tools", "Ledger writes"],
     escalationTargets: ["atlas"],
+    deepMode: true,
   }),
   withM365("porter", {
     id: "porter",
