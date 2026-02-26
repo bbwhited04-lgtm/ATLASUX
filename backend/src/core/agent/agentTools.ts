@@ -725,33 +725,40 @@ const X_SEARCH_PATTERNS = [
 // Controls which tools can fire for which agent — prevents unnecessary DB hits.
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
+  // ── Executives ───────────────────────────────────────────────────────
   atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate"],
   binky:       ["calendar", "knowledge", "telegram", "memory", "delegate"],
   cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate"],
   tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory", "delegate"],
-  larry:       ["calendar", "ledger", "legal", "ipRegister", "telegram", "memory", "delegate"],
-  jenny:       ["calendar", "legal", "telegram", "memory"],
-  benny:       ["calendar", "legal", "memory"],
+  larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "telegram", "memory", "delegate"],
+  jenny:       ["calendar", "legal", "policy", "knowledge", "telegram", "memory", "delegate"],
+  benny:       ["calendar", "legal", "ipRegister", "knowledge", "telegram", "memory", "delegate"],
+
+  // ── Ops & Support ────────────────────────────────────────────────────
   petra:       ["calendar", "planner", "telegram", "memory", "delegate"],
-  mercer:      ["crm", "email", "telegram", "memory", "delegate"],
-  frank:       ["userProfile", "memory"],
-  sandy:       ["calendar", "email", "userProfile", "telegram", "memory"],
-  "daily-intel": ["calendar", "email", "telegram", "memory"],
-  emma:        ["crm", "memory"],
-  claire:      ["calendar", "memory"],
-  link:        ["calendar", "memory"],
-  cornwall:    ["calendar", "memory"],
-  donna:       ["calendar", "memory"],
-  kelly:       ["calendar", "memory", "xPost", "xSearch"],
-  timmy:       ["calendar", "memory"],
-  fran:        ["calendar", "memory"],
-  dwight:      ["calendar", "memory"],
-  reynolds:    ["calendar", "memory"],
-  terry:       ["calendar", "memory"],
-  penny:       ["calendar", "memory"],
-  archy:       ["calendar", "memory"],
-  sunday:      ["calendar", "memory", "delegate", "xSearch"],
-  venny:       ["calendar", "memory"],
+  mercer:      ["crm", "email", "knowledge", "telegram", "memory", "delegate"],
+  frank:       ["userProfile", "telegram", "memory", "delegate"],
+  sandy:       ["calendar", "email", "userProfile", "telegram", "memory", "delegate"],
+  claire:      ["calendar", "email", "telegram", "memory", "delegate"],
+  "daily-intel": ["calendar", "email", "knowledge", "telegram", "memory", "delegate"],
+
+  // ── Content & Comms ──────────────────────────────────────────────────
+  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch"],
+  archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate"],
+  venny:       ["calendar", "knowledge", "telegram", "memory", "delegate"],
+  reynolds:    ["calendar", "knowledge", "telegram", "memory", "delegate"],
+
+  // ── Social Publishers ────────────────────────────────────────────────
+  kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch"],
+  fran:        ["calendar", "knowledge", "telegram", "memory", "delegate"],
+  dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate"],
+  timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate"],
+  terry:       ["calendar", "knowledge", "telegram", "memory", "delegate"],
+  cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate"],
+  link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate"],
+  emma:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate"],
+  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate"],
+  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate"],
 };
 
 export type ToolNeeds = {

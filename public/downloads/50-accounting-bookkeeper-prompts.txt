@@ -1,0 +1,363 @@
+============================================================
+  50+ ChatGPT Accounting Prompts for Bookkeepers
+  Emails · Tax Season · Reports · Daily Bookkeeping
+  by Atlas UX · atlasux.cloud — $2.99
+============================================================
+
+Thank you for purchasing the Atlas UX Accounting Prompt Pack.
+Whether you are a solo bookkeeper managing a dozen clients,
+a CPA firm looking to speed up routine communications, or a
+small business owner doing your own books, these 52 prompts
+will save you hours every single week. Each prompt is ready
+to copy and paste into ChatGPT (or any AI assistant). Just
+replace the [PLACEHOLDER] brackets with your own details and
+you will get polished, professional output in seconds — from
+client emails and tax checklists to financial narratives and
+practice management workflows. No more staring at a blank
+screen when you need to write a late-payment reminder or
+summarize a P&L for a client who hates numbers.
+
+
+============================================================
+  BOOKKEEPING & DAILY TASKS (10 Prompts)
+============================================================
+
+1. CHART OF ACCOUNTS SETUP
+
+You are an experienced bookkeeper setting up a new chart of accounts. Create a complete, industry-appropriate chart of accounts for a [INDUSTRY TYPE] business called [BUSINESS NAME] that operates as a [ENTITY TYPE — e.g., sole proprietorship, LLC, S-Corp]. Include account numbers using a standard numbering system (1000s for assets, 2000s for liabilities, 3000s for equity, 4000s for revenue, 5000s for COGS, 6000s for operating expenses, 7000s for other income/expenses). For each account, provide the account number, account name, account type, a brief description of what transactions belong there, and a note on whether it is commonly used or optional for this industry. The business has approximately [NUMBER] employees and annual revenue of roughly [REVENUE AMOUNT].
+
+---
+
+2. TRANSACTION CATEGORIZATION GUIDE
+
+Act as a senior bookkeeper. I am going to give you a list of bank transactions for [BUSINESS NAME], a [INDUSTRY TYPE] business. For each transaction, tell me: (1) the correct expense or income category, (2) the chart of accounts line item it should be posted to, (3) whether it is tax-deductible and under which IRS category, and (4) any red flags or notes (e.g., possible personal expense, split transaction needed, or sales tax implications). If a transaction is ambiguous, give me your best recommendation and explain your reasoning. Here are the transactions: [PASTE TRANSACTION LIST — date, payee, amount].
+
+---
+
+3. BANK RECONCILIATION WALKTHROUGH
+
+You are a bookkeeper performing a monthly bank reconciliation for [CLIENT NAME]'s [BANK NAME] checking account for the month of [MONTH/YEAR]. The bank statement ending balance is [BANK ENDING BALANCE] and the book balance is [BOOK BALANCE]. Walk me through the full reconciliation process step by step: identifying outstanding checks, deposits in transit, bank fees not yet recorded, interest earned, and any discrepancies. Provide a reconciliation summary template I can use, and list the adjusting journal entries I need to make to bring the books into agreement with the bank statement. Flag any differences that might indicate errors or fraud.
+
+---
+
+4. ACCOUNTS RECEIVABLE FOLLOW-UP PLAN
+
+Create a complete accounts receivable follow-up system for my bookkeeping practice. I have [NUMBER] clients who frequently have outstanding invoices. Design a tiered follow-up schedule that includes: (1) a friendly reminder at [X] days past due, (2) a firmer reminder at [Y] days past due, (3) a final notice at [Z] days past due, and (4) a collections escalation procedure. For each tier, write the exact email or phone script I should use, including professional but firm language. Also suggest how to track these follow-ups in [SOFTWARE — e.g., QuickBooks, Xero, Excel] and recommend when to stop providing services to chronically late-paying clients.
+
+---
+
+5. EXPENSE TRACKING TEMPLATE & POLICY
+
+Design a comprehensive expense tracking template and policy document for [BUSINESS NAME], a [INDUSTRY TYPE] business with [NUMBER] employees. The template should include columns for date, vendor/payee, description, amount, payment method, category, receipt attached (yes/no), approved by, and tax-deductible status. Also write a one-page expense policy that covers: which expenses require pre-approval, receipt requirements and thresholds (e.g., receipts required for anything over [AMOUNT]), reimbursement timelines, prohibited expenses, and the process for submitting expense reports. Format everything so I can paste it into a Google Sheet and a Word document.
+
+---
+
+6. JOURNAL ENTRY DRAFTING
+
+Act as a staff accountant. I need to record the following transaction as a journal entry for [BUSINESS NAME] using [ACCRUAL/CASH] basis accounting: [DESCRIBE THE TRANSACTION IN DETAIL — e.g., "We received a $5,000 advance payment from a customer for services we will perform over the next 3 months"]. Provide the complete journal entry with: date, account names, account numbers (use standard numbering), debit and credit amounts, and a memo/description for each line. Explain the accounting logic behind the entry, cite the relevant accounting principle (e.g., revenue recognition, matching principle), and note any follow-up entries that will be needed in future periods.
+
+---
+
+7. MONTH-END CLOSE CHECKLIST
+
+Create a detailed month-end closing checklist for a [INDUSTRY TYPE] business called [BUSINESS NAME] with approximately [REVENUE AMOUNT] in monthly revenue. The checklist should be organized by day (Day 1 through Day [X] of the following month) and include every task needed to close the books accurately: bank and credit card reconciliations, revenue recognition review, prepaid expense amortization, depreciation entries, accrued expenses, payroll reconciliation, inventory adjustments (if applicable), intercompany entries (if applicable), sales tax reconciliation, review of suspense/clearing accounts, financial statement preparation, and management review. For each task, include who is responsible, estimated time, and common mistakes to watch for.
+
+---
+
+8. PETTY CASH MANAGEMENT PROCEDURE
+
+Write a complete petty cash management procedure for [BUSINESS NAME]. The petty cash fund is [FUND AMOUNT] and is replenished [FREQUENCY — e.g., weekly, biweekly, monthly]. Include: (1) step-by-step instructions for the petty cash custodian, (2) a petty cash log template with columns for date, description, category, amount, receipt number, and running balance, (3) rules for what can and cannot be purchased with petty cash, (4) the replenishment process including the journal entry to record it, (5) surprise count procedures, and (6) how to handle overages and shortages. Also explain the internal controls that should be in place to prevent theft or misuse.
+
+---
+
+9. VENDOR PAYMENT TRACKING SYSTEM
+
+Design a vendor payment tracking system for [BUSINESS NAME], which works with approximately [NUMBER] regular vendors. Create a master vendor list template that includes: vendor name, contact info, payment terms (Net 15/30/60/etc.), preferred payment method, W-9 on file (yes/no), 1099 required (yes/no), average monthly spend, and account number. Then create a weekly payment run checklist that covers: reviewing bills due this week, verifying bills against purchase orders or contracts, checking for duplicate payments, scheduling payments to maximize cash flow while maintaining vendor relationships, and recording payments in [ACCOUNTING SOFTWARE]. Include tips for negotiating better payment terms with key vendors.
+
+---
+
+10. ACCRUAL VS. CASH BASIS EXPLANATION FOR CLIENTS
+
+Write a clear, jargon-free explanation I can send to my client [CLIENT NAME] who owns [BUSINESS NAME], a [INDUSTRY TYPE] business. They have asked me to explain the difference between cash basis and accrual basis accounting and which one is right for them. Cover: what each method means in plain English with real examples from their type of business, the pros and cons of each, IRS rules on who can and cannot use cash basis (including the $[THRESHOLD] gross receipts test), how the choice affects their tax bill and financial statements, and my specific recommendation for their situation given that they have approximately [REVENUE AMOUNT] in annual revenue and [NUMBER] employees. End with a clear action item they need to approve.
+
+
+============================================================
+  TAX SEASON PREPARATION (8 Prompts)
+============================================================
+
+11. TAX DOCUMENT CHECKLIST FOR CLIENTS
+
+Create a comprehensive tax document checklist I can send to my client [CLIENT NAME] who owns [BUSINESS NAME], a [ENTITY TYPE] in the [INDUSTRY TYPE] industry, for tax year [TAX YEAR]. Organize the checklist into clear sections: income documents (W-2s, 1099s, K-1s, etc.), expense documentation (receipts, mileage logs, home office measurements, etc.), asset-related documents (purchase/sale records, depreciation schedules), payroll records, estimated tax payment confirmations, prior year return, and any industry-specific items. For each item, include a checkbox, a brief description of what it is and why I need it, and the deadline for getting it to me. Add a friendly introduction paragraph and a note about what happens if documents are late.
+
+---
+
+12. ESTIMATED QUARTERLY TAX CALCULATION
+
+Act as a tax advisor. My client [CLIENT NAME] is a [ENTITY TYPE] owner of [BUSINESS NAME] in [STATE]. Their projected annual net income for [TAX YEAR] is approximately [PROJECTED INCOME], and their [SPOUSE/FILING STATUS] has W-2 income of [SPOUSE INCOME] (if applicable). Calculate their estimated quarterly tax payments for federal and [STATE] state taxes. Show your work step by step: projected adjusted gross income, standard or itemized deductions (they typically [ITEMIZE/TAKE STANDARD]), applicable tax brackets, self-employment tax calculation, any applicable credits (such as [CREDIT TYPE]), total estimated tax liability, minus any withholding from W-2 income, divided into four quarterly payments. Include the due dates for each quarter and the penalties for underpayment.
+
+---
+
+13. DEDUCTION TRACKER AND MAXIMIZER
+
+You are a tax-savvy bookkeeper. Review the following expense categories for [BUSINESS NAME], a [INDUSTRY TYPE] business, and help me make sure we are capturing every legitimate tax deduction for [TAX YEAR]. For each category I list, tell me: (1) what qualifies as deductible and what does not, (2) any dollar limits or phase-outs, (3) documentation required to defend the deduction in an audit, (4) common deductions in this category that businesses frequently miss, and (5) any recent tax law changes that affect this deduction. Categories to review: [LIST CATEGORIES — e.g., vehicle expenses, home office, meals & entertainment, travel, professional development, insurance, retirement contributions, equipment purchases/Section 179, marketing, professional services]. Also suggest any deductions I might not have considered for this specific industry.
+
+---
+
+14. 1099 PREPARATION AND REVIEW
+
+Help me prepare 1099-NEC and 1099-MISC forms for [BUSINESS NAME] for tax year [TAX YEAR]. I have [NUMBER] contractors/vendors who may need 1099s. Walk me through the complete process: (1) how to determine who needs a 1099 (the $600 threshold, entity type exclusions, payment type rules), (2) a checklist for verifying I have current W-9s on file for all applicable vendors, (3) how to reconcile my 1099 list against my accounts payable ledger to make sure nobody is missed, (4) the filing deadlines for recipient copies vs. IRS copies, (5) how to handle corrections if I discover errors after filing, and (6) penalties for late or incorrect filings. Also create a template email I can send to vendors whose W-9 information is missing or outdated.
+
+---
+
+15. TAX PLANNING STRATEGIES MEMO
+
+Write a year-end tax planning memo for my client [CLIENT NAME], owner of [BUSINESS NAME] ([ENTITY TYPE]), with projected [TAX YEAR] net income of approximately [PROJECTED INCOME]. Cover at least 10 actionable strategies they can implement before December 31, including: accelerating or deferring income, timing of major purchases and Section 179/bonus depreciation, retirement contribution strategies (SEP-IRA, Solo 401k, etc.), charitable giving strategies, hiring family members, health insurance deductions, vehicle expense optimization (actual vs. standard mileage), bad debt write-offs, inventory adjustments, and entity structure changes to consider for next year. For each strategy, estimate the approximate tax savings and any deadlines or requirements. Write it in a professional memo format I can put on my firm's letterhead.
+
+---
+
+16. YEAR-END TAX REVIEW CHECKLIST
+
+Create a year-end tax review checklist I can use when reviewing [CLIENT NAME]'s books for [BUSINESS NAME] before sending them to the tax preparer. Include every item I need to verify: all bank and credit card accounts reconciled through December 31, all revenue recorded (including any December invoices not yet paid), prepaid expenses properly allocated, depreciation schedules updated with any new assets and disposals, loan balances agree with lender statements, payroll reconciled to W-2s/W-3, all 1099 vendors identified, inventory count completed (if applicable), owner draws vs. salary properly classified, and any unusual or large transactions flagged for the CPA. For each item, include a status field (done/not done/N/A) and space for notes.
+
+---
+
+17. COMMON TAX MISTAKES AUDIT
+
+Act as a senior tax reviewer. I am about to finalize the books for [BUSINESS NAME] ([ENTITY TYPE]) for [TAX YEAR]. Go through this list of the most common bookkeeping mistakes that lead to tax problems and give me specific things to check in the books: personal expenses mixed with business expenses, meals deducted at 100% instead of the correct percentage, assets expensed instead of capitalized (and vice versa), payroll taxes not reconciled, estimated payments not recorded, prior year carryforwards not applied, state tax obligations in multiple states, sales tax collected but not remitted, incorrect entity classification on returns, and missing or inadequate documentation for deductions. For each mistake, explain the tax consequence if it is not caught and how to fix it.
+
+---
+
+18. CLIENT TAX QUESTIONNAIRE
+
+Create a professional tax organizer questionnaire I can send to [CLIENT NAME] for [TAX YEAR]. The questionnaire should cover: personal information updates (address, dependents, marital status changes), income sources (employment, self-employment, investments, rental, retirement distributions, cryptocurrency, gig economy), major life events (marriage, divorce, birth of child, home purchase/sale, job change, starting/closing a business), deduction-related questions (mortgage interest, property taxes, charitable donations, medical expenses, education expenses, student loan interest, state/local taxes paid), health insurance coverage for every month, estimated tax payments made, and any correspondence received from the IRS or state tax authority. Use yes/no checkboxes wherever possible and include space for explanations. Add an introduction paragraph explaining why this questionnaire matters and a confidentiality note.
+
+
+============================================================
+  CLIENT COMMUNICATION EMAILS (8 Prompts)
+============================================================
+
+19. CLIENT ONBOARDING WELCOME EMAIL
+
+Write a professional and warm welcome email from [YOUR NAME/FIRM NAME] to a new bookkeeping client, [CLIENT NAME], owner of [BUSINESS NAME]. This is our first email after they signed the engagement letter. Cover: a warm welcome and expression of excitement to work with them, a summary of what services they are getting [LIST SERVICES — e.g., monthly bookkeeping, quarterly reporting, payroll, tax prep], what they need to do in the first week (provide bank/credit card login access, upload last 2 years of tax returns, complete the intake questionnaire I've attached), my preferred communication channels and response time expectations, their dedicated point of contact at my firm, and a brief overview of what the first 30 days will look like. Keep the tone professional but personable — we want them to feel taken care of, not overwhelmed.
+
+---
+
+20. DOCUMENT REQUEST EMAIL
+
+Write an email from [YOUR NAME/FIRM NAME] to [CLIENT NAME] requesting the following documents I need to complete their [MONTH/QUARTER/YEAR-END] bookkeeping: [LIST SPECIFIC DOCUMENTS NEEDED — e.g., "January bank statements for Chase checking and savings, credit card statements for Amex, receipts for any purchases over $500, payroll reports from Gusto, loan amortization schedule from SBA loan"]. For each document, briefly explain why I need it. Include a deadline of [DATE] and mention that delays in providing documents will push back their reporting timeline. Offer to hop on a quick call if they are unsure where to find anything. Add a gentle note that if they have already sent any of these, I apologize and ask them to disregard that item. Keep the tone helpful and patient.
+
+---
+
+21. MISSING RECEIPT FOLLOW-UP
+
+Write a follow-up email from [YOUR NAME/FIRM NAME] to [CLIENT NAME] about [NUMBER] transactions from [MONTH/YEAR] that are missing receipts or supporting documentation. List the specific transactions: [LIST TRANSACTIONS — e.g., "Feb 3 — Amazon, $347.82; Feb 11 — Home Depot, $1,205.00; Feb 18 — Unknown charge, $89.99"]. Explain why receipts matter (IRS documentation requirements, audit defense, accurate categorization), offer practical tips for locating them (check email for e-receipts, log into vendor accounts, check credit card statement details), and provide a deadline of [DATE]. Mention that if receipts truly cannot be found, I will need them to sign a written attestation of the business purpose for each transaction. Keep the tone understanding but clear that this is not optional.
+
+---
+
+22. MONTHLY FINANCIAL SUMMARY COVER LETTER
+
+Write a cover letter email from [YOUR NAME/FIRM NAME] to accompany the monthly financial reports for [BUSINESS NAME] for the month of [MONTH/YEAR]. The key highlights to mention are: total revenue of [REVENUE] (up/down [PERCENTAGE]% from last month), total expenses of [EXPENSES], net income of [NET INCOME], cash on hand of [CASH BALANCE], and accounts receivable of [AR BALANCE]. Call out [NUMBER] items that need the client's attention or decision (e.g., "[ITEM 1 — an expense I need them to clarify], [ITEM 2 — a large receivable that is overdue], [ITEM 3 — a budget category that is significantly over]"). End with an offer to schedule a 15-minute call to walk through the reports if they prefer a verbal summary. Keep it concise — most clients skim these emails.
+
+---
+
+23. LATE PAYMENT REMINDER (PROFESSIONAL)
+
+Write a professional but firm late payment reminder email from [YOUR NAME/FIRM NAME] to [CLIENT NAME]. Their invoice #[INVOICE NUMBER] for [AMOUNT] was due on [DUE DATE] and is now [NUMBER] days past due. This is the [FIRST/SECOND/FINAL] reminder. Mention the original services rendered ([DESCRIPTION OF SERVICES]), reference the payment terms from our engagement letter, list the accepted payment methods (check, ACH, credit card via [PAYMENT LINK]), and state clearly when payment is expected (within [X] business days of this email). If this is a second or final reminder, include a note about late fees per our agreement ([LATE FEE PERCENTAGE]% per month) and that continued non-payment may result in suspension of services. Keep the tone professional — preserve the relationship while being unmistakably clear that payment is required.
+
+---
+
+24. ENGAGEMENT LETTER / SCOPE OF SERVICES EMAIL
+
+Write a formal engagement letter email from [YOUR NAME/FIRM NAME] to [CLIENT NAME] for [BUSINESS NAME] outlining the scope of bookkeeping and accounting services for [TAX YEAR/PERIOD]. Include: a detailed description of services included ([LIST — e.g., monthly bookkeeping, bank reconciliation, financial statements, quarterly payroll tax filings, annual 1099 preparation, tax-ready year-end package]), services explicitly NOT included (e.g., tax preparation, audit representation, CFO advisory — unless listed), the monthly/annual fee of [FEE AMOUNT] and payment terms, the start date, both parties' responsibilities (what I will do, what they must provide and by when), confidentiality commitment, termination terms (either party with [X] days written notice), and a clear call to action asking them to reply with "I agree" or sign and return. Keep it professional but readable — avoid dense legalese.
+
+---
+
+25. FEE INCREASE NOTIFICATION
+
+Write a fee increase notification email from [YOUR NAME/FIRM NAME] to [CLIENT NAME]. Our bookkeeping/accounting fees will be increasing from [CURRENT FEE] to [NEW FEE] per month, effective [EFFECTIVE DATE]. Explain the reasons for the increase: rising costs of software subscriptions and continuing education, increased complexity of their account (e.g., [SPECIFIC REASONS — additional bank accounts, new state registrations, expanded payroll]), and the increased value we have provided since their last rate adjustment on [LAST ADJUSTMENT DATE] (mention specific improvements or additions like [EXAMPLES]). Emphasize the value they receive relative to the cost. Offer to schedule a call to discuss if they have questions. Give them at least [NUMBER] days notice before the new rate takes effect. Keep the tone confident and appreciative — do not apologize for the increase.
+
+---
+
+26. YEAR-END RECAP AND THANK YOU EMAIL
+
+Write a year-end recap and thank you email from [YOUR NAME/FIRM NAME] to [CLIENT NAME] for [BUSINESS NAME] as we close out [TAX YEAR]. Include: a brief summary of what we accomplished together this year (e.g., "We processed [NUMBER] transactions, reconciled [NUMBER] accounts monthly, prepared [NUMBER] payroll runs, and filed all quarterly returns on time"), a highlight of any notable achievements or improvements (e.g., "We reduced your average monthly close time from 15 days to 7 days," or "We identified [AMOUNT] in previously missed deductions"), a preview of what is coming up (tax prep timeline, any planned process improvements, new services available), a reminder of any year-end action items they need to complete by December 31, and a genuine thank you for their business and trust. Keep it personal and specific — this should not feel like a mass email.
+
+
+============================================================
+  FINANCIAL REPORTS & ANALYSIS (8 Prompts)
+============================================================
+
+27. PROFIT & LOSS STATEMENT NARRATIVE SUMMARY
+
+Act as a financial analyst. I am attaching the Profit & Loss statement for [BUSINESS NAME] for [PERIOD — e.g., "the month of January 2026" or "Q4 2025"]. Write a narrative summary that a non-accountant business owner can understand. Cover: total revenue and how it compares to [PRIOR PERIOD] and to budget, gross profit margin and what is driving any changes, the top 5 expense categories and whether any are trending up or down, net income and what it means for the health of the business, and 3 specific recommendations I should discuss with the client based on what the numbers show. Use plain language, not accounting jargon. Format it as a one-page summary I can include with the financial package. Here is the P&L data: [PASTE P&L DATA OR KEY FIGURES].
+
+---
+
+28. BALANCE SHEET ANALYSIS
+
+Analyze the following balance sheet for [BUSINESS NAME] as of [DATE]. Explain what the numbers mean in plain English for the business owner. Cover: current assets and liquidity (can the business pay its bills for the next 90 days?), accounts receivable health (aging analysis if data is provided), fixed assets and accumulated depreciation, current liabilities and upcoming obligations, long-term debt and payoff timeline, owner's equity and what retained earnings mean for the business, and the key ratios: current ratio, quick ratio, and debt-to-equity ratio. Flag any numbers that are concerning or unusually good. End with 2-3 recommendations. Here is the balance sheet data: [PASTE BALANCE SHEET DATA OR KEY FIGURES].
+
+---
+
+29. CASH FLOW STATEMENT NARRATIVE
+
+Write a cash flow statement narrative for [BUSINESS NAME] for [PERIOD]. The three sections show: operating activities generated/used [OPERATING CASH FLOW], investing activities generated/used [INVESTING CASH FLOW], and financing activities generated/used [FINANCING CASH FLOW], for a net change in cash of [NET CHANGE]. Beginning cash was [BEGINNING CASH] and ending cash is [ENDING CASH]. Explain each section in plain English: what drove operating cash flow (was net income positive but cash flow negative due to rising receivables?), what the company invested in or sold, and how debt or equity financing affected cash. Highlight the difference between profit and cash flow if they diverge significantly. Include 2-3 recommendations for improving cash position. Write this for a business owner who understands their business but not financial statements.
+
+---
+
+30. BUDGET VS. ACTUAL VARIANCE REPORT
+
+Create a budget vs. actual variance analysis for [BUSINESS NAME] for [PERIOD]. The budgeted revenue was [BUDGET REVENUE] and actual revenue was [ACTUAL REVENUE]. Budgeted total expenses were [BUDGET EXPENSES] and actual total expenses were [ACTUAL EXPENSES]. For each major category below, calculate the variance (both dollar amount and percentage), classify it as favorable or unfavorable, and provide a brief explanation of what likely caused the variance and whether it is a one-time event or a trend to watch: [LIST CATEGORIES WITH BUDGET AND ACTUAL AMOUNTS]. Summarize the overall performance, highlight the 3 largest variances that need attention, and recommend specific actions for next month or quarter. Format this as a management report.
+
+---
+
+31. ACCOUNTS AGING ANALYSIS REPORT
+
+Analyze the following accounts receivable aging report for [BUSINESS NAME] as of [DATE]. Total AR is [TOTAL AR], broken down as: Current (0-30 days): [AMOUNT], 31-60 days: [AMOUNT], 61-90 days: [AMOUNT], Over 90 days: [AMOUNT]. For each aging bucket, calculate the percentage of total AR and compare to healthy benchmarks for a [INDUSTRY TYPE] business. Identify the [NUMBER] largest individual invoices that are overdue and recommend specific collection actions for each. Calculate the estimated bad debt expense using the aging method and recommend the appropriate allowance for doubtful accounts journal entry. Also recommend process improvements to prevent receivables from aging past 60 days in the future.
+
+---
+
+32. KEY FINANCIAL RATIOS DASHBOARD
+
+Calculate and explain the following key financial ratios for [BUSINESS NAME] for [PERIOD], using the financial data I provide. For each ratio, show: the formula, the calculation with actual numbers, the result, how it compares to the industry benchmark for [INDUSTRY TYPE] businesses, and what it means in plain English for the business owner. Ratios to calculate: gross profit margin, net profit margin, current ratio, quick ratio, debt-to-equity ratio, accounts receivable turnover, inventory turnover (if applicable), return on assets, return on equity, and operating expense ratio. At the end, provide a "financial health scorecard" that rates each ratio as strong, acceptable, or needs attention. Here is the financial data: [PASTE KEY FINANCIAL FIGURES].
+
+---
+
+33. MONTHLY FINANCIAL DASHBOARD
+
+Design a one-page monthly financial dashboard for [BUSINESS NAME] that I can populate each month and send to [CLIENT NAME]. Include these sections: (1) a header with business name, period, and date prepared, (2) a "Key Numbers at a Glance" section with boxes for revenue, expenses, net income, cash on hand, AR outstanding, and AP outstanding (each with current month, prior month, and month-over-month change), (3) a revenue trend section showing the last 6 months, (4) a top 5 expense categories breakdown, (5) a cash flow summary (cash in vs. cash out), (6) 3 KPIs specific to [INDUSTRY TYPE] businesses, and (7) an "Action Items" section with 3-5 bullet points. Describe the layout and formatting in enough detail that I can build this in Google Sheets or Excel.
+
+---
+
+34. ANNUAL FINANCIAL REVIEW PRESENTATION
+
+Create an outline and talking points for an annual financial review meeting with [CLIENT NAME] for [BUSINESS NAME], reviewing [TAX YEAR]. The presentation should cover: year-over-year revenue comparison (this year: [THIS YEAR REVENUE], last year: [LAST YEAR REVENUE]), profitability trends over the past 3 years, major expense changes and what drove them, cash position and how it changed throughout the year, significant business events that impacted the financials (e.g., [LIST EVENTS — new hires, equipment purchases, lost clients, new revenue streams]), tax implications and estimated tax liability, key ratios compared to prior year and industry benchmarks, and forward-looking recommendations for the coming year. Write it as a script with talking points I can use during the meeting, not just bullet points.
+
+
+============================================================
+  QUICKBOOKS & SOFTWARE (6 Prompts)
+============================================================
+
+35. QUICKBOOKS CLEANUP CHECKLIST
+
+Create a comprehensive QuickBooks [ONLINE/DESKTOP] cleanup checklist for [BUSINESS NAME]. The file has not been properly maintained for approximately [TIME PERIOD] and has the following known issues: [LIST ISSUES — e.g., "unreconciled bank accounts since March, duplicate transactions, uncategorized expenses totaling $15,000, outdated chart of accounts, customers and vendors never cleaned up"]. Walk me through the cleanup in priority order, step by step: (1) backup the file first, (2) fix the chart of accounts, (3) clean up the bank feeds and reconcile month by month, (4) resolve duplicates, (5) recategorize uncategorized transactions, (6) clean up customer/vendor lists, (7) fix any payroll discrepancies, (8) verify opening balances, and (9) run final reports to verify everything ties out. For each step, estimate the time it will take and warn me about common pitfalls.
+
+---
+
+36. CHART OF ACCOUNTS OPTIMIZATION
+
+Review and optimize the chart of accounts for [BUSINESS NAME], a [INDUSTRY TYPE] business using QuickBooks [ONLINE/DESKTOP]. They currently have [NUMBER] accounts and the chart has become bloated and disorganized over [NUMBER] years. Recommend which accounts to merge (and how to do it without losing historical data), which accounts to inactivate, which new accounts to add for better tracking, and how to renumber everything using a logical system. Make sure the optimized chart of accounts will work well for: accurate financial reporting, easy tax preparation (mapping to Schedule C, 1120, or 1120-S lines), management decision-making, and industry benchmarking. Provide the before-and-after account list and step-by-step instructions for making the changes in QuickBooks.
+
+---
+
+37. RECONCILIATION TROUBLESHOOTING GUIDE
+
+I am stuck on a bank reconciliation in QuickBooks [ONLINE/DESKTOP] for [CLIENT NAME]'s [ACCOUNT NAME] account for [MONTH/YEAR]. The difference between my QuickBooks balance and the bank statement balance is [DIFFERENCE AMOUNT]. Walk me through a systematic troubleshooting process: (1) verify the opening balance is correct, (2) check for transactions dated in the wrong period, (3) look for duplicate transactions, (4) check for transactions that were edited after being reconciled, (5) look for voided checks or deleted transactions, (6) verify bank fees and interest were recorded, (7) check for transactions in the wrong account, (8) run the reconciliation discrepancy report and explain what to look for, and (9) as a last resort, how to make an adjusting entry (and whether that is advisable). Explain each step as if I am a bookkeeper who knows QuickBooks basics but has never troubleshot a tricky reconciliation.
+
+---
+
+38. REPORT CUSTOMIZATION AND AUTOMATION
+
+Help me set up the following customized reports in QuickBooks [ONLINE/DESKTOP] for [BUSINESS NAME], a [INDUSTRY TYPE] business. For each report, tell me exactly how to create it, what filters and columns to use, and how to save it for reuse: (1) a monthly P&L compared to prior month and same month last year, (2) a P&L by [CLASS/LOCATION/DEPARTMENT] for their [NUMBER] business segments, (3) an AR aging summary grouped by customer with only 30/60/90/90+ buckets, (4) a vendor spending report showing total paid to each vendor YTD, (5) a monthly expense report with budget vs. actual columns, and (6) a cash flow forecast based on open invoices and bills. Also explain how to schedule these reports to auto-email to [CLIENT EMAIL] on the [DAY] of each month.
+
+---
+
+39. PAYROLL PROCESSING CHECKLIST
+
+Create a step-by-step payroll processing checklist for [BUSINESS NAME] using [PAYROLL SOFTWARE — e.g., QuickBooks Payroll, Gusto, ADP]. They have [NUMBER] employees: [BREAKDOWN — e.g., "3 salaried, 5 hourly, 2 independent contractors"]. The checklist should cover the complete payroll cycle: (1) collecting and verifying timesheets or hours by [DEADLINE], (2) reviewing any changes (new hires, terminations, rate changes, benefit deductions), (3) calculating gross pay including any overtime, bonuses, or commissions of [DETAILS], (4) verifying tax withholdings and deductions, (5) processing the payroll run, (6) reviewing the payroll register before finalizing, (7) distributing pay stubs, (8) recording the payroll journal entry in the accounting system, (9) remitting payroll taxes by the proper deadlines, and (10) filing quarterly payroll reports (941, state returns). Include a calendar of all federal and [STATE] state payroll tax deadlines.
+
+---
+
+40. SOFTWARE INTEGRATIONS SETUP GUIDE
+
+Create a guide for setting up and optimizing software integrations for [BUSINESS NAME]'s accounting stack. Their primary accounting software is [SOFTWARE — e.g., QuickBooks Online] and they also use: [LIST OTHER TOOLS — e.g., "Stripe for payments, Shopify for e-commerce, Gusto for payroll, Bill.com for AP, Expensify for expense reports, HubSpot for CRM"]. For each integration, walk me through: (1) how to connect it properly (API, direct integration, or third-party connector like Zapier), (2) what data syncs and in which direction, (3) the ideal sync settings to avoid duplicates, (4) how to map accounts and categories between systems, (5) common issues and how to troubleshoot them, and (6) a monthly maintenance checklist to keep the integrations running cleanly. Also recommend any additional integrations that would save time for a [INDUSTRY TYPE] business of this size.
+
+
+============================================================
+  BUSINESS ADVISORY & STRATEGY (6 Prompts)
+============================================================
+
+41. PRICING STRATEGY ADVICE FOR CLIENTS
+
+My client [CLIENT NAME] owns [BUSINESS NAME], a [INDUSTRY TYPE] business, and has asked me for advice on pricing their [PRODUCTS/SERVICES]. Their current pricing is [CURRENT PRICING STRUCTURE] and their gross profit margin is [GROSS MARGIN]%. Help me prepare a pricing analysis and recommendation. Cover: a cost-plus pricing model based on their actual costs of [COST DETAILS], a value-based pricing perspective considering their market position, a competitive analysis framework (what to research about competitors' pricing), the impact of a [X]% price increase on revenue and profitability (assuming [Y]% customer loss), how to implement a price increase without losing clients (timing, communication, grandfathering), and specific pricing structures to consider (tiered, bundled, retainer, hourly, project-based). Give me numbers and scenarios I can present in a client advisory meeting.
+
+---
+
+42. CASH FLOW FORECASTING MODEL
+
+Help me build a 13-week cash flow forecast for [BUSINESS NAME], a [INDUSTRY TYPE] business. Their current cash position is [CASH ON HAND], average weekly revenue is approximately [WEEKLY REVENUE] (with seasonal variations in [MONTHS]), and their fixed weekly obligations total approximately [FIXED COSTS]. Create the forecast template with columns for each of the next 13 weeks and rows for: beginning cash balance, cash inflows (broken down by revenue stream, collections on AR, other income), total cash in, cash outflows (broken down by payroll, rent, vendor payments, loan payments, taxes, other), total cash out, net cash flow, and ending cash balance. Pre-populate with their estimates and flag any weeks where cash drops below a [MINIMUM CASH] safety threshold. Also include a section for "what-if" scenarios: what happens if revenue drops 20%, if a major customer pays 30 days late, or if they need to make an unplanned [AMOUNT] purchase.
+
+---
+
+43. BREAK-EVEN ANALYSIS
+
+Perform a break-even analysis for [BUSINESS NAME], a [INDUSTRY TYPE] business. Their fixed costs are approximately [FIXED COSTS] per month (including: [LIST MAJOR FIXED COSTS]), variable costs are approximately [VARIABLE COST]% of revenue, and their average selling price per [UNIT/PROJECT/SERVICE] is [PRICE]. Calculate: the break-even point in both dollars and units, the margin of safety based on their current revenue of [CURRENT REVENUE], how many additional [UNITS/CLIENTS/PROJECTS] they need to reach a profit target of [TARGET PROFIT], and what happens to the break-even point if they raise prices by [X]%, reduce variable costs by [Y]%, or add [AMOUNT] in new fixed costs (e.g., a new hire). Present this with clear formulas, a summary table, and a visual description of a break-even chart I can recreate for the client. Write a brief narrative explaining what these numbers mean for their business decisions.
+
+---
+
+44. ENTITY STRUCTURE COMPARISON
+
+My client [CLIENT NAME] currently operates [BUSINESS NAME] as a [CURRENT ENTITY TYPE] and is considering whether to change their business structure. Their annual net income is approximately [NET INCOME], they have [NUMBER] employees, their state is [STATE], and [ADDITIONAL RELEVANT DETAILS — e.g., "they are considering bringing on a partner," or "they want to raise outside investment," or "they want to reduce self-employment tax"]. Compare the following entity structures for their specific situation: sole proprietorship, single-member LLC, multi-member LLC, S-Corporation, and C-Corporation. For each, cover: tax treatment and estimated annual tax bill, self-employment tax implications, liability protection, ease of administration and compliance costs, ability to raise capital, and any state-specific considerations for [STATE]. End with a clear recommendation and the steps to make the change, including timing considerations.
+
+---
+
+45. RETIREMENT PLANNING BASICS FOR BUSINESS OWNERS
+
+My client [CLIENT NAME] owns [BUSINESS NAME] ([ENTITY TYPE]) with net income of approximately [NET INCOME] and [NUMBER] employees. They want to start saving for retirement through the business and have asked me to explain their options. Compare the following retirement plan types for their specific situation: SEP-IRA, SIMPLE IRA, Solo 401(k) (if eligible), and traditional 401(k). For each plan, cover: maximum contribution limits for [TAX YEAR], employer vs. employee contribution rules, tax deduction for the business, requirements if they have employees (including vesting schedules and mandatory employer contributions), administrative complexity and costs, and the deadline to establish and fund the plan. Recommend the best option for their situation and calculate the estimated tax savings if they contribute [AMOUNT] this year. Write this in language a business owner can understand, not IRS-speak.
+
+---
+
+46. GROWTH FINANCIAL PLANNING
+
+My client [CLIENT NAME] owns [BUSINESS NAME], a [INDUSTRY TYPE] business with current annual revenue of [CURRENT REVENUE] and net income of [NET INCOME]. They want to grow to [TARGET REVENUE] within [TIMEFRAME]. Help me build a financial growth plan that covers: the additional investment needed in [AREAS — e.g., "hiring 2 new employees, upgrading equipment, increasing marketing spend, expanding to a second location"], a projected P&L showing quarterly milestones from current state to target, the funding gap and options to fill it (reinvesting profits, SBA loan, line of credit, outside investors), cash flow implications of the growth plan (when will they need the most cash and how much), key financial KPIs to track monthly during the growth phase, and the risks and contingency plan if revenue growth is slower than projected. Present this as a professional financial growth plan I can walk through with the client.
+
+
+============================================================
+  PRACTICE MANAGEMENT (6 Prompts)
+============================================================
+
+47. CLIENT ONBOARDING WORKFLOW
+
+Design a complete client onboarding workflow for my [SOLO/FIRM] bookkeeping and accounting practice, [FIRM NAME]. A new client has just signed the engagement letter. Map out every step from signed engagement to "fully onboarded" status, organized by timeline: Day 1 (welcome email, access setup), Week 1 (intake call, document collection, software access), Week 2 (historical data review, chart of accounts setup, system integrations), Week 3-4 (first month of bookkeeping, initial cleanup if needed). For each step, include: what happens, who is responsible, what tools/templates are needed, and what the deliverable is. Also include a new client intake form template with every question I need to ask, a checklist of system access I need (bank feeds, credit cards, payroll, merchant services, etc.), and common onboarding pitfalls to avoid.
+
+---
+
+48. SERVICE PRICING PACKAGES
+
+Help me design a tiered pricing structure for my bookkeeping and accounting practice, [FIRM NAME]. I want to offer [NUMBER — e.g., 3] service tiers that appeal to different client sizes and needs. My target market is [TARGET MARKET — e.g., "small businesses with $100K-$2M in annual revenue in the [INDUSTRY] space"]. For each tier, define: the package name (something professional, not cutesy), exactly what is included (number of transactions, accounts reconciled, reports delivered, meeting frequency, response time SLA), what is NOT included (and available as add-ons), the monthly price (based on a target effective hourly rate of [RATE] and estimated hours per month), and the ideal client profile for that tier. Also create a pricing page description I can put on my website and a comparison table. Include add-on services with pricing: payroll, tax preparation, CFO advisory sessions, cleanup/catch-up bookkeeping, and [OTHER SERVICES].
+
+---
+
+49. PROPOSAL AND ENGAGEMENT LETTER TEMPLATE
+
+Write a professional proposal and engagement letter for [FIRM NAME] to send to a prospective client, [PROSPECT NAME], owner of [BUSINESS NAME], a [INDUSTRY TYPE] business with approximately [REVENUE] in annual revenue and [NUMBER] employees. The proposal should include: an executive summary of their current challenges (based on our discovery call where they mentioned [PAIN POINTS — e.g., "books are 6 months behind, they failed to file 1099s last year, they have no monthly reporting"]), our proposed solution and scope of services, the implementation timeline, our qualifications and relevant experience with similar businesses, the investment (monthly fee of [FEE] with a one-time cleanup fee of [CLEANUP FEE] for the historical work), and clear next steps. Follow the proposal with a formal engagement letter section that includes the legal terms (scope, fees, responsibilities, confidentiality, termination). Write it to win the client — show them we understand their problems and have a clear plan to fix them.
+
+---
+
+50. WORKFLOW AUTOMATION IDEAS
+
+I run a bookkeeping practice, [FIRM NAME], with [NUMBER] clients and [NUMBER] staff members. I currently use [LIST CURRENT TOOLS — e.g., "QuickBooks Online, Google Workspace, Slack, Loom, Karbon/Jetpack Workflow"]. Identify the top 15 workflow automations I should implement to save time and reduce errors, ranked by estimated time savings. For each automation, describe: the current manual process and estimated time it takes, the automated workflow (trigger, steps, tools involved), the tool or integration needed to set it up (Zapier, built-in automation, API connection, etc.), estimated setup time, and estimated weekly time savings. Focus on real, practical automations for bookkeeping firms, such as: auto-importing bank transactions, automated client reminders for missing documents, recurring invoice generation, scheduled report delivery, new client setup automation, task creation from emails, and payroll deadline reminders.
+
+---
+
+51. STAFF TRAINING CHECKLIST
+
+Create a comprehensive training checklist for a new [ROLE — e.g., "staff bookkeeper," "senior bookkeeper," "accounting assistant"] joining my practice, [FIRM NAME]. Organize the training by week over a [NUMBER]-week onboarding period. Week 1 should cover: firm policies and procedures, software access and training ([LIST SOFTWARE]), communication protocols, and shadowing assignments. Week 2+ should progressively build their skills: transaction categorization standards, reconciliation procedures, client communication templates, report preparation, and quality review processes. For each training item, include: the topic, the learning objective, the training method (video, documentation, shadowing, hands-on with review), the trainer/resource, and the competency check (how we verify they can do it independently). Include a 30/60/90 day performance evaluation framework with specific, measurable criteria for [ROLE] success at my firm.
+
+---
+
+52. CLIENT RETENTION STRATEGIES
+
+Act as a business consultant specializing in accounting firm growth. My bookkeeping practice, [FIRM NAME], has [NUMBER] clients and our annual client churn rate is approximately [CHURN RATE]%. The top reasons clients have left in the past year are: [LIST REASONS — e.g., "price sensitivity, went in-house, switched to a competitor who offered advisory services, felt communication was lacking"]. Develop a comprehensive client retention strategy with specific, actionable tactics I can implement this quarter. Cover: a client satisfaction survey template I can send immediately, a client segmentation strategy (A/B/C clients) with different service levels, communication cadence improvements (what to send and when), value-add services I can offer without significant additional cost, a client advisory program structure, early warning signs that a client is about to leave and how to intervene, a re-engagement campaign for clients who have become disengaged, and a referral program that incentivizes loyal clients to send new business. For each tactic, include the implementation steps and expected impact on retention.
+
+
+============================================================
+  Thanks for your purchase!
+  Visit atlasux.cloud for AI-powered business tools.
+
+  Disclaimer: These prompts generate draft content. Always
+  verify financial information against source documents and
+  consult a licensed CPA for tax advice.
+
+  © 2026 Atlas UX — A product of DEAD APP CORP
+============================================================

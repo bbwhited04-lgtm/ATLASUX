@@ -1,0 +1,816 @@
+============================================================
+  50 ChatGPT Prompts for Small Business Owners
+  AI Marketing & Content Templates
+  by Atlas UX · atlasux.cloud — $0.99
+============================================================
+
+Thank you for purchasing this prompt pack! Inside you'll
+find 50 carefully crafted, copy-paste-ready ChatGPT prompts
+designed specifically for small business owners who want to
+level up their marketing, content creation, and customer
+outreach using AI. Each prompt includes [PLACEHOLDER]
+brackets — just swap in your own details and paste directly
+into ChatGPT, Claude, or any other LLM. No fluff, no filler
+— every prompt is built to save you time and produce
+results you can actually use in your business today.
+
+
+============================================================
+  MARKETING STRATEGY & PLANNING (10 Prompts)
+============================================================
+
+1. COMPLETE MARKETING PLAN GENERATOR
+
+Create a comprehensive 90-day marketing plan for my
+[INDUSTRY] business called [BUSINESS NAME] located in
+[CITY/REGION]. My target customers are [DESCRIBE IDEAL
+CUSTOMER — age, income, interests, pain points]. My monthly
+marketing budget is approximately [BUDGET]. Include specific
+weekly action items broken into three phases: awareness
+(month 1), engagement (month 2), and conversion (month 3),
+with recommended channels, content types, and measurable
+KPIs for each phase.
+
+
+2. COMPETITOR ANALYSIS FRAMEWORK
+
+Analyze the competitive landscape for a [INDUSTRY] small
+business. My top three competitors are [COMPETITOR 1],
+[COMPETITOR 2], and [COMPETITOR 3]. For each competitor,
+break down their apparent brand positioning, pricing
+strategy, social media presence, website strengths and
+weaknesses, and unique selling points. Then identify three
+to five gaps or underserved opportunities in the market
+that my business [BUSINESS NAME] could exploit to
+differentiate itself.
+
+
+3. BRAND POSITIONING STATEMENT
+
+Help me craft a clear brand positioning statement for
+[BUSINESS NAME], a [INDUSTRY] business that serves
+[TARGET AUDIENCE]. Our main products/services are
+[LIST PRODUCTS OR SERVICES]. What makes us different from
+competitors is [KEY DIFFERENTIATOR]. Write the positioning
+statement in the format: "For [target customer] who
+[need/want], [brand] is the [category] that [key benefit]
+because [reason to believe]." Then provide three variations
+I can test with customers.
+
+
+4. IDEAL CUSTOMER AVATAR BUILDER
+
+Build a detailed customer avatar for my [INDUSTRY]
+business. My best existing customers tend to be [BRIEF
+DESCRIPTION]. Create a full profile including: demographic
+details (age, gender, income, location, education),
+psychographic details (values, interests, lifestyle,
+media consumption habits), their top five pain points
+related to [YOUR PRODUCT/SERVICE CATEGORY], what triggers
+them to search for a solution, and the objections they
+typically have before purchasing.
+
+
+5. UNIQUE SELLING PROPOSITION DEVELOPMENT
+
+I run a [INDUSTRY] business called [BUSINESS NAME] in
+[LOCATION]. My products/services include [LIST OFFERINGS].
+My competitors mostly compete on [PRICE / QUALITY /
+CONVENIENCE / OTHER]. Help me develop three distinct unique
+selling propositions (USPs) that I could test in my
+marketing. For each USP, provide: a one-sentence hook, a
+supporting paragraph explaining why it matters to the
+customer, and a suggestion for how to communicate it across
+my website headline, social media bio, and elevator pitch.
+
+
+6. QUARTERLY GOAL SETTING FOR MARKETING
+
+I own a [INDUSTRY] small business currently generating
+approximately [MONTHLY REVENUE] in monthly revenue. My
+biggest marketing challenge right now is [DESCRIBE
+CHALLENGE — e.g., low website traffic, poor social
+engagement, not enough leads]. Help me set three SMART
+marketing goals for the next quarter, along with the
+specific tactics I should use to achieve each goal, the
+tools or platforms I should leverage, and a simple weekly
+tracking method I can use to measure progress without
+spending more than 15 minutes per week on reporting.
+
+
+7. MARKETING BUDGET ALLOCATION ADVISOR
+
+I have a monthly marketing budget of [BUDGET] for my
+[INDUSTRY] business. My current marketing channels are
+[LIST CURRENT CHANNELS — e.g., Facebook ads, Google Ads,
+email, local events]. My primary goal this quarter is
+[GOAL — e.g., increase foot traffic, grow online sales,
+build email list]. Recommend how I should allocate my budget
+across channels, including any new channels I should test.
+Provide percentage breakdowns, expected cost-per-acquisition
+estimates where possible, and a rationale for each
+allocation decision.
+
+
+8. SEASONAL MARKETING CAMPAIGN PLANNER
+
+Plan a seasonal marketing campaign for my [INDUSTRY]
+business around [HOLIDAY / SEASON / EVENT — e.g.,
+Valentine's Day, Back to School, Black Friday, Summer].
+My products/services are [LIST OFFERINGS] and my target
+audience is [TARGET AUDIENCE]. Create a timeline starting
+[X WEEKS] before the event with specific content to post,
+email sequences to send, promotional offers to run, and
+in-store or online event ideas. Include estimated timelines
+for creative production so nothing feels last-minute.
+
+
+9. REFERRAL PROGRAM DESIGNER
+
+Design a customer referral program for my [INDUSTRY]
+business called [BUSINESS NAME]. My average customer
+lifetime value is approximately [CLV OR AVERAGE ORDER
+VALUE]. My current customer base is roughly [NUMBER]
+people. Create a referral program structure including:
+what incentive to offer the referrer, what incentive to
+offer the new customer, how to communicate the program
+(email, in-store signage, social media), tracking method
+recommendations, and three example referral messages
+customers could share with friends.
+
+
+10. ANNUAL MARKETING CALENDAR TEMPLATE
+
+Create a 12-month marketing calendar framework for my
+[INDUSTRY] business targeting [TARGET AUDIENCE] in
+[LOCATION/MARKET]. Include monthly themes that align with
+seasonal trends relevant to my industry, key promotional
+periods, content pillars I should focus on each month,
+recommended email sends per month, and social media posting
+frequency. Format it as a month-by-month outline I can
+paste into a spreadsheet, with columns for: Month, Theme,
+Key Dates, Content Focus, Promotions, and Email Campaigns.
+
+
+============================================================
+  SOCIAL MEDIA CONTENT TEMPLATES (10 Prompts)
+============================================================
+
+11. INSTAGRAM 30-DAY CONTENT CALENDAR
+
+Create a 30-day Instagram content calendar for my
+[INDUSTRY] business called [BUSINESS NAME]. My target
+audience is [TARGET AUDIENCE] and my brand voice is
+[DESCRIBE TONE — e.g., friendly and approachable,
+professional but warm, edgy and bold]. For each day,
+provide: the content type (Reel, carousel, single image,
+Story), a specific post topic or concept, a complete
+caption (150-200 words with a call to action), and five
+relevant hashtags. Alternate between educational,
+entertaining, promotional, and behind-the-scenes content.
+
+
+12. FACEBOOK ENGAGEMENT POST SERIES
+
+Write 10 Facebook posts designed to maximize engagement
+for my [INDUSTRY] business page. My audience consists of
+[TARGET AUDIENCE] in [LOCATION]. Include a mix of: two
+"this or that" polls, two fill-in-the-blank posts, two
+storytelling posts about common customer experiences, two
+educational tips that solve a problem my audience has
+related to [PAIN POINT], and two promotional posts that
+feel conversational rather than salesy. Each post should
+be 50-150 words and end with a question or clear call to
+action that encourages comments.
+
+
+13. LINKEDIN THOUGHT LEADERSHIP SERIES
+
+Write a series of five LinkedIn posts that position me as
+a thought leader in [INDUSTRY]. I am [YOUR NAME], the
+[TITLE] of [BUSINESS NAME]. My areas of expertise include
+[LIST 2-3 EXPERTISE AREAS]. Each post should be 150-250
+words, start with a compelling hook in the first line,
+share a specific insight or lesson from my experience
+running a small business, and end with a question that
+invites discussion. Include one post about an industry
+trend, one about a mistake I learned from, one about a
+contrarian opinion, one offering practical advice, and
+one celebrating a milestone or customer success.
+
+
+14. TIKTOK PRODUCT DEMO SCRIPT SERIES
+
+Write five TikTok video scripts (30-60 seconds each) that
+showcase my [PRODUCT/SERVICE] in an engaging, authentic
+way. My business is [BUSINESS NAME] in the [INDUSTRY]
+space and my target audience on TikTok is [TARGET
+AUDIENCE — age range, interests]. Each script should
+include: an attention-grabbing hook for the first three
+seconds, step-by-step demonstration or storytelling
+middle section, a satisfying conclusion or reveal, and
+suggested text overlays and trending audio style
+recommendations. Make them feel native to TikTok — not
+like ads.
+
+
+15. CROSS-PLATFORM WEEKLY POSTING SCHEDULE
+
+Create a complete one-week social media posting schedule
+for my [INDUSTRY] business across Instagram, Facebook,
+LinkedIn, and TikTok. I can realistically create [NUMBER]
+pieces of original content per week. Show me how to
+repurpose each piece of content across all four platforms
+with platform-specific adaptations (different caption
+lengths, format adjustments, hashtag strategies). Include
+the best posting times for each platform, and provide
+the actual captions and copy for each post so I can
+batch-create everything in one sitting.
+
+
+16. SOCIAL MEDIA BIO AND PROFILE OPTIMIZER
+
+Rewrite my social media bios for Instagram, Facebook,
+LinkedIn, TikTok, and X (Twitter) for my [INDUSTRY]
+business called [BUSINESS NAME]. My current bio is:
+"[PASTE CURRENT BIO]." My target customer is [TARGET
+AUDIENCE] and the main action I want people to take is
+[DESIRED ACTION — e.g., visit my website, book a call,
+shop online]. For each platform, write an optimized bio
+that includes: a clear statement of what I do and who I
+serve, a unique value hook, a call to action, and relevant
+keywords or hashtags where appropriate. Keep each bio
+within the platform's character limits.
+
+
+17. USER-GENERATED CONTENT CAMPAIGN
+
+Design a user-generated content (UGC) campaign for my
+[INDUSTRY] business. My product/service is [DESCRIBE
+PRODUCT/SERVICE] and my customers are typically [TARGET
+AUDIENCE]. Create a campaign concept including: a
+memorable campaign hashtag, the incentive for customers
+to participate (contest, feature, discount), step-by-step
+instructions I can share with customers on how to
+participate, five example social media posts to launch
+and promote the campaign, and a plan for how to reshare
+and repurpose the UGC content I receive across my own
+channels for the next 30 days.
+
+
+18. SOCIAL PROOF AND TESTIMONIAL POSTS
+
+Write eight social media posts that leverage customer
+testimonials and social proof for my [INDUSTRY] business.
+I have these customer quotes to work with: [PASTE 3-4
+REAL CUSTOMER QUOTES OR DESCRIBE COMMON POSITIVE
+FEEDBACK]. For each post, take the testimonial and build
+a compelling narrative around it — do not just quote and
+tag. Include a storytelling intro, the customer's
+experience, the result they achieved, and a call to
+action encouraging others to experience the same. Format
+two for Instagram carousels, two for Facebook, two for
+LinkedIn, and two for Stories/Reels.
+
+
+19. SOCIAL MEDIA CRISIS AND NEGATIVE COMMENT RESPONSES
+
+Create a response template library for my [INDUSTRY]
+business to handle common negative social media situations.
+Include professional, empathetic response templates for:
+a one-star review complaining about [COMMON COMPLAINT IN
+YOUR INDUSTRY], a comment accusing my pricing of being too
+high, a customer publicly posting about a bad experience,
+a competitor or troll leaving inflammatory comments, and a
+misunderstanding about my product/service. Each response
+should be 2-4 sentences, acknowledge the person's concern,
+offer to resolve it privately, and protect my brand
+reputation without being defensive.
+
+
+20. HOLIDAY AND TRENDING CONTENT IDEAS
+
+Generate 15 social media post ideas for my [INDUSTRY]
+business that tie into upcoming holidays, awareness days,
+and trending cultural moments over the next [3 MONTHS /
+QUARTER]. My brand voice is [DESCRIBE TONE] and my
+audience is [TARGET AUDIENCE]. For each post idea, provide:
+the specific date or event to tie into, the platform best
+suited for the post, a brief content concept (one to two
+sentences), and a draft caption. Make sure the connections
+to my business feel natural — not forced — and that at
+least five of the ideas could go viral with the right
+creative execution.
+
+
+============================================================
+  EMAIL MARKETING FOR SMALL BUSINESS (8 Prompts)
+============================================================
+
+21. WELCOME EMAIL SEQUENCE (5 EMAILS)
+
+Write a five-email welcome sequence for new subscribers
+to my [INDUSTRY] business email list. My business is
+[BUSINESS NAME] and people typically sign up because
+[REASON — e.g., they downloaded a freebie, made a first
+purchase, signed up for a newsletter]. The sequence should
+span 10 days with this structure: Email 1 (immediate) —
+warm welcome and deliver the promised value; Email 2
+(day 2) — share my brand story and mission; Email 3
+(day 4) — provide a valuable tip related to [TOPIC];
+Email 4 (day 7) — share a customer success story or
+testimonial; Email 5 (day 10) — make a soft offer or
+invitation to [DESIRED ACTION]. Include subject lines,
+preview text, and full body copy for each email.
+
+
+22. PROMOTIONAL FLASH SALE CAMPAIGN
+
+Write a three-email flash sale sequence for my [INDUSTRY]
+business promoting [SPECIFIC PRODUCT/SERVICE OR CATEGORY]
+at [DISCOUNT PERCENTAGE OR OFFER]. The sale runs for
+[DURATION — e.g., 48 hours, one weekend]. Email 1 (sale
+launch) should create excitement and urgency; Email 2
+(midpoint reminder) should address a common objection and
+include a customer testimonial; Email 3 (final hours)
+should be a last-chance urgency email. For each email,
+provide: a subject line (and one A/B test alternative),
+preview text, body copy with clear call-to-action buttons,
+and recommended send times.
+
+
+23. MONTHLY NEWSLETTER TEMPLATE
+
+Create a reusable monthly newsletter template for my
+[INDUSTRY] business called [BUSINESS NAME]. My subscribers
+are [TARGET AUDIENCE] who care about [TOPICS OF INTEREST].
+The template should include these sections: a personal
+note from me (the owner), one educational article or tip
+(300-400 words), a product or service spotlight, a customer
+story or testimonial, upcoming events or dates to know, and
+a special subscriber-only offer. Write the first complete
+newsletter using [THIS MONTH'S THEME OR TOPIC] as the
+featured content so I can see the template in action. Make
+the tone [BRAND VOICE — e.g., warm and conversational,
+professional, witty].
+
+
+24. SEASONAL EMAIL SERIES (4 EMAILS)
+
+Write a four-email seasonal campaign for my [INDUSTRY]
+business around [SEASON OR HOLIDAY — e.g., Spring, Holiday
+Season, Back to School]. My products/services are [LIST
+OFFERINGS] and my audience is [TARGET AUDIENCE]. Structure:
+Email 1 (three weeks before) — seasonal inspiration and
+early-bird offer; Email 2 (two weeks before) — gift guide
+or seasonal product roundup; Email 3 (one week before) —
+urgency-driven promotion with social proof; Email 4 (day
+of or day after) — last chance or post-event follow-up
+with a thank-you offer. Include subject lines, preview
+text, and complete body copy for each. Make sure each email
+stands alone but also builds on the previous one.
+
+
+25. RE-ENGAGEMENT CAMPAIGN FOR INACTIVE SUBSCRIBERS
+
+Write a three-email re-engagement sequence targeting
+subscribers who have not opened my emails in [60 / 90 /
+120] days. My business is [BUSINESS NAME] in the
+[INDUSTRY] space. Email 1 should be a casual, friendly
+"we miss you" message with a compelling reason to re-engage
+(exclusive content, a special offer, or updated products);
+Email 2 (three days later) should share what they have been
+missing with highlights of recent content, products, or
+news; Email 3 (five days later) should be a final "should
+we part ways?" email that gives them a clear choice to stay
+or unsubscribe. Include subject lines optimized for
+re-opens and a strategy note on what to do with subscribers
+who still do not engage after the sequence.
+
+
+26. CART ABANDONMENT EMAIL SEQUENCE
+
+Write a three-email cart abandonment sequence for my
+[INDUSTRY] e-commerce business. My average cart value is
+[AVERAGE CART VALUE] and my most commonly abandoned
+products are [LIST COMMON PRODUCTS]. Email 1 (one hour
+after abandonment) should be a gentle reminder with the
+product image and a direct link back to the cart; Email 2
+(24 hours later) should address common hesitations for my
+product category and include a customer review; Email 3
+(48 hours later) should include a time-limited incentive
+such as [FREE SHIPPING / X% DISCOUNT / BONUS ITEM].
+Provide subject lines, preview text, and full body copy
+for each, keeping the tone helpful rather than pushy.
+
+
+27. POST-PURCHASE FOLLOW-UP SEQUENCE
+
+Create a four-email post-purchase follow-up sequence for
+customers who just bought [PRODUCT/SERVICE] from my
+[INDUSTRY] business. Email 1 (immediately after purchase)
+— order confirmation with a personal thank-you and what to
+expect next; Email 2 (three days later) — helpful tips on
+getting the most from their purchase, setup guides, or
+usage ideas; Email 3 (seven days later) — request a review
+or testimonial with a simple one-click rating system and an
+optional incentive of [INCENTIVE]; Email 4 (14 days later)
+— cross-sell or upsell a complementary product/service with
+a returning-customer discount. Write all four emails with
+subject lines, preview text, and complete copy.
+
+
+28. PARTNERSHIP OR CO-MARKETING EMAIL
+
+Write a professional outreach email I can send to potential
+business partners for a co-marketing collaboration. My
+business is [BUSINESS NAME] in the [INDUSTRY] space
+serving [TARGET AUDIENCE]. I want to propose a partnership
+with [TYPE OF BUSINESS — e.g., a complementary local
+business, an influencer, a non-competing online brand] to
+[COLLABORATION TYPE — e.g., co-host an event, cross-
+promote to each other's email lists, create a bundle, do a
+joint giveaway]. The email should be concise (under 200
+words), immediately communicate what is in it for them,
+reference something specific about their business to show
+I did my research (leave a [SPECIFIC DETAIL] placeholder),
+and include a clear next step.
+
+
+============================================================
+  LOCAL BUSINESS & SEO (7 Prompts)
+============================================================
+
+29. GOOGLE BUSINESS PROFILE OPTIMIZATION
+
+Help me fully optimize my Google Business Profile for
+[BUSINESS NAME], a [INDUSTRY] business located at
+[ADDRESS] in [CITY, STATE]. My main services are [LIST
+SERVICES] and my target customers are [TARGET AUDIENCE]
+within a [X]-mile radius. Write: an optimized business
+description (750 characters max) with relevant local
+keywords, a list of 10 Google Business categories I should
+select (primary and secondary), 10 Google Posts I should
+publish over the next month (include the full text for
+each), and a strategy for which photos I should upload
+and how often to update my profile to improve local search
+rankings.
+
+
+30. LOCAL SEO KEYWORD STRATEGY
+
+Develop a local SEO keyword strategy for my [INDUSTRY]
+business in [CITY/REGION]. My main services are [LIST
+SERVICES] and my competitors who rank well locally are
+[COMPETITOR 1] and [COMPETITOR 2]. Identify 30 local
+keywords I should target, organized into three tiers:
+10 high-intent transactional keywords (e.g., "[service]
+near me"), 10 informational keywords that potential
+customers search before buying, and 10 long-tail keywords
+with lower competition that I can realistically rank for
+within six months. For each keyword, suggest the type of
+content I should create (blog post, service page, FAQ
+entry, or Google Post) and a working title.
+
+
+31. COMMUNITY ENGAGEMENT CONTENT PLAN
+
+Create a community engagement content plan for my
+[INDUSTRY] business in [CITY/NEIGHBORHOOD]. I want to be
+seen as an active, invested member of the local community.
+Provide 12 content ideas (one per week for three months)
+that highlight local partnerships, community events,
+behind-the-scenes of my business, and local causes I
+support. For each idea, include: the content format (social
+post, blog, email, or video), a brief description, a
+draft caption or headline, and how it ties back to my
+business without being overtly promotional. Also suggest
+five local organizations, events, or hashtags I should
+engage with online.
+
+
+32. LOCAL PARTNERSHIP OUTREACH TEMPLATES
+
+Write three outreach message templates I can use to
+propose partnerships with local businesses in [CITY].
+My business is [BUSINESS NAME] in the [INDUSTRY] space.
+Template 1: a cold email to a complementary local business
+proposing a cross-promotion (e.g., we display their
+flyers, they display ours); Template 2: a direct message
+to a local Instagram influencer or community page
+proposing a product/service exchange for a feature;
+Template 3: an email to a local event organizer proposing
+my business as a sponsor or vendor at [TYPE OF EVENT].
+Each template should be under 150 words, warm but
+professional, and clearly state the mutual benefit.
+
+
+33. REVIEW GENERATION CAMPAIGN
+
+Design a review generation campaign for my [INDUSTRY]
+business. I currently have [NUMBER] Google reviews with
+an average rating of [RATING]. My goal is to reach
+[TARGET NUMBER] reviews within [TIMEFRAME]. Create: an
+in-store or in-office script my team can use to ask
+satisfied customers for a review (make it natural, not
+awkward), a follow-up email template to send 24 hours
+after service, a follow-up SMS/text message template
+(under 160 characters), a social media post encouraging
+reviews with an incentive (that complies with Google's
+review policies), and five strategies to make leaving a
+review as frictionless as possible for the customer.
+
+
+34. LOCAL EVENT MARKETING PLAN
+
+Create a marketing plan for a [TYPE OF EVENT — e.g.,
+grand opening, anniversary celebration, pop-up shop,
+workshop, open house] at my [INDUSTRY] business in [CITY].
+The event is on [DATE] from [TIME]. My budget for the
+event is [BUDGET]. Include: a six-week promotional
+timeline with specific actions each week, social media
+posts to build anticipation (write five complete posts),
+an email invitation template, a press release I can send
+to local media outlets (write the full text), ideas for
+event-day content I can capture for future marketing, and
+a post-event follow-up plan to convert attendees into
+repeat customers.
+
+
+35. "BEST OF [CITY]" CONTENT STRATEGY
+
+Create a content strategy that positions my [INDUSTRY]
+business as a local authority in [CITY]. Write five blog
+post outlines (title, intro paragraph, subheadings, and
+300-word first draft for one) that feature local content
+such as "Best [RELATED TOPIC] in [CITY]," "A Local's
+Guide to [RELATED ACTIVITY]," or "[CITY] [INDUSTRY]
+Trends in [YEAR]." Each blog post should naturally
+incorporate mentions of my business [BUSINESS NAME]
+without being a hard sell. Also explain how these posts
+can improve my local SEO, attract backlinks from other
+local businesses, and drive foot traffic from people
+searching for information about the area.
+
+
+============================================================
+  SALES COPY & CONVERSION (8 Prompts)
+============================================================
+
+36. LANDING PAGE COPY GENERATOR
+
+Write complete landing page copy for my [PRODUCT/SERVICE]
+offered by [BUSINESS NAME]. My target customer is [TARGET
+AUDIENCE] whose main pain point is [PRIMARY PAIN POINT].
+The main offer is [DESCRIBE OFFER — including price if
+applicable]. Structure the page with: a headline and
+subheadline that communicate the core benefit, a problem
+agitation section (three to four sentences describing the
+pain), a solution section introducing my product/service,
+three to five bullet-point benefits (feature + benefit
+format), a social proof section with placeholders for
+testimonials, an FAQ section with five common questions
+and answers, and a strong closing CTA with urgency. Write
+the full copy for each section.
+
+
+37. SALES EMAIL SEQUENCE (5 EMAILS)
+
+Write a five-email sales sequence for converting warm
+leads into paying customers for my [PRODUCT/SERVICE]. The
+lead has [HOW THEY ENTERED MY FUNNEL — e.g., downloaded
+a free guide, attended a webinar, requested a quote].
+Email 1: value-add and soft introduction to the offer;
+Email 2: case study or detailed customer success story
+featuring results like [SPECIFIC RESULT]; Email 3: address
+the top three objections my prospects typically have, which
+are [OBJECTION 1], [OBJECTION 2], and [OBJECTION 3];
+Email 4: limited-time incentive or bonus offer; Email 5:
+final decision email with clear deadline. Include subject
+lines, preview text, and complete body copy for all five.
+
+
+38. OBJECTION HANDLING SCRIPTS
+
+Create detailed objection handling scripts for the five
+most common objections my [INDUSTRY] business faces during
+the sales process. The objections are: 1) [OBJECTION 1 —
+e.g., "Your price is too high"], 2) [OBJECTION 2 — e.g.,
+"I need to think about it"], 3) [OBJECTION 3 — e.g., "I'm
+already working with someone else"], 4) [OBJECTION 4], and
+5) [OBJECTION 5]. For each objection, provide: a brief
+acknowledgment that validates the concern, a reframe that
+shifts the perspective, a specific response script (word
+for word, in a conversational tone), and a follow-up
+question that moves the conversation forward toward a
+decision.
+
+
+39. TESTIMONIAL REQUEST TEMPLATES
+
+Write five different testimonial request messages for my
+[INDUSTRY] business that I can send to satisfied customers.
+Include: one email for recent purchasers (within the last
+week), one email for long-term customers, one short SMS
+message, one direct message for social media, and one
+in-person script for my team. Each request should make it
+easy by providing three to four guiding questions the
+customer can answer instead of staring at a blank page.
+The guiding questions should prompt them to describe their
+problem before finding us, their experience working with
+us, the specific results they achieved, and whether they
+would recommend us. Keep each message warm, brief, and
+low-pressure.
+
+
+40. FOLLOW-UP SEQUENCE AFTER PROPOSAL OR QUOTE
+
+Write a five-touchpoint follow-up sequence for prospects
+who received a proposal or quote from my [INDUSTRY]
+business but have not yet responded. Touchpoint 1 (two
+days after proposal): a brief check-in email asking if
+they have questions; Touchpoint 2 (five days): share a
+relevant case study or testimonial from a similar client;
+Touchpoint 3 (eight days): address a common concern and
+offer a brief call; Touchpoint 4 (12 days): add value
+with a useful tip or resource related to their situation;
+Touchpoint 5 (18 days): a polite final follow-up with a
+soft deadline. Write the full email or message for each
+touchpoint, keeping them concise (under 150 words each)
+and progressively more direct without being aggressive.
+
+
+41. PRODUCT OR SERVICE DESCRIPTION REWRITES
+
+Rewrite the following product/service descriptions for my
+[INDUSTRY] business to be more compelling and conversion-
+focused. Current descriptions: [PASTE 3-5 CURRENT PRODUCT
+OR SERVICE DESCRIPTIONS]. For each rewrite, use this
+framework: lead with the primary benefit the customer
+receives (not the feature), include sensory or emotional
+language that helps the customer envision the outcome, add
+a specific proof point or detail that builds credibility,
+and end with a micro-CTA or next step. Keep each
+description between 50 and 100 words. Also suggest a
+compelling one-line tagline for each product/service that
+I can use in ads or social media.
+
+
+42. WEBSITE HOMEPAGE COPY AUDIT AND REWRITE
+
+Audit and rewrite the homepage copy for my [INDUSTRY]
+business website. My current homepage copy is: [PASTE
+CURRENT HOMEPAGE COPY OR DESCRIBE WHAT IT SAYS]. My target
+audience is [TARGET AUDIENCE] and the primary action I want
+visitors to take is [DESIRED ACTION — e.g., book a call,
+shop now, get a quote]. Rewrite the following sections:
+hero headline and subheadline, a three-part value
+proposition section, an "about us" blurb (under 100
+words), a services/products overview, and a closing CTA
+section. Apply direct-response copywriting principles:
+clarity over cleverness, customer-focused language, and
+specific benefits over vague claims.
+
+
+43. PRICING PAGE COPY AND STRATEGY
+
+Write persuasive pricing page copy for my [INDUSTRY]
+business that presents my [NUMBER] pricing tiers clearly
+and encourages customers to choose the [PREFERRED TIER]
+option. My tiers are: [TIER 1 NAME — PRICE — FEATURES],
+[TIER 2 NAME — PRICE — FEATURES], [TIER 3 NAME — PRICE —
+FEATURES]. For each tier, write a short description (two
+to three sentences) that highlights who it is best for and
+the key benefit. Include a "most popular" badge strategy,
+an FAQ section addressing pricing objections (write five
+Q&As), and a money-back guarantee statement. Also suggest
+three psychological pricing tactics I can apply (e.g.,
+anchoring, decoy effect, charm pricing) with specific
+implementation advice.
+
+
+============================================================
+  CONTENT CREATION SHORTCUTS (7 Prompts)
+============================================================
+
+44. BLOG POST FROM YOUR EXPERTISE
+
+I am an expert in [YOUR AREA OF EXPERTISE] and I run
+[BUSINESS NAME] in the [INDUSTRY] space. Write a 1,000-
+word blog post titled "[SUGGESTED TITLE OR TOPIC]" based
+on the following key points I want to cover: [LIST 3-5
+BULLET POINTS OF YOUR MAIN IDEAS OR OPINIONS]. Write it in
+my voice, which is [DESCRIBE YOUR WRITING STYLE — e.g.,
+conversational and practical, authoritative but friendly,
+witty and opinionated]. Include an engaging introduction
+that hooks the reader with a relatable scenario, clear
+subheadings, actionable takeaways the reader can implement
+today, and a conclusion that ties back to my business
+with a soft call to action.
+
+
+45. CONTENT REPURPOSING MACHINE
+
+Take the following piece of content and repurpose it into
+seven different formats for my [INDUSTRY] business.
+Original content: [PASTE A BLOG POST, EMAIL, VIDEO
+TRANSCRIPT, OR ARTICLE — or summarize the key points in
+5-7 sentences]. Repurpose into: 1) an Instagram carousel
+(write all slide text for 8-10 slides), 2) a LinkedIn
+article summary post (200 words), 3) a Twitter/X thread
+(7-10 tweets), 4) a TikTok/Reels script (45 seconds),
+5) an email newsletter excerpt (150 words), 6) three
+pull-quote graphics with text overlay suggestions, and
+7) a podcast episode talking-points outline. Maintain my
+brand voice throughout, which is [BRAND VOICE].
+
+
+46. FAQ PAGE GENERATOR
+
+Create a comprehensive FAQ page for my [INDUSTRY] business
+website. My products/services are [LIST OFFERINGS], my
+target customers are [TARGET AUDIENCE], and the most common
+questions I get from prospects and customers are: [LIST 3-5
+QUESTIONS YOU ACTUALLY RECEIVE]. Generate 20 total FAQs
+organized into categories: General (5), Products/Services
+(5), Pricing & Payment (4), Shipping/Delivery/Process (3),
+and Support & Policies (3). For each FAQ, write the
+question in the customer's natural language (how they would
+actually ask it) and a clear, helpful answer in two to four
+sentences. Where appropriate, include a subtle CTA that
+guides the reader toward a purchase or contact action.
+
+
+47. CASE STUDY WRITER
+
+Write a compelling case study for my [INDUSTRY] business
+based on the following customer experience. Customer name:
+[CUSTOMER NAME OR ANONYMIZED NAME]. Their situation before
+working with us: [DESCRIBE THEIR CHALLENGE OR PAIN POINT].
+What we did for them: [DESCRIBE THE SOLUTION YOU PROVIDED].
+The results: [DESCRIBE MEASURABLE OUTCOMES — revenue
+increase, time saved, problem solved]. Write the case study
+in a narrative format with these sections: The Challenge
+(two paragraphs), The Solution (two paragraphs), The
+Results (one paragraph with specific metrics highlighted),
+and a Customer Quote placeholder. Keep the total length
+between 500 and 700 words, and end with a CTA for readers
+who want similar results.
+
+
+48. PRESS RELEASE TEMPLATE
+
+Write a press release for my [INDUSTRY] business called
+[BUSINESS NAME] announcing [NEWS — e.g., a new product
+launch, a milestone, an award, a partnership, a grand
+opening, a community initiative]. My business is based in
+[CITY, STATE] and serves [TARGET AUDIENCE]. Follow standard
+press release format: a compelling headline (under 80
+characters), a dateline, a strong opening paragraph
+covering the who-what-when-where-why, two to three body
+paragraphs with supporting details and a quote from me
+([YOUR NAME], [YOUR TITLE]), and a boilerplate "About
+[BUSINESS NAME]" closing paragraph. Write the full press
+release ready to submit to local media outlets, keeping
+the total length between 400 and 500 words.
+
+
+49. WEEKLY CONTENT BATCH CREATOR
+
+I have two hours per week to create all my marketing
+content. My business is [BUSINESS NAME] in the [INDUSTRY]
+space. My active platforms are [LIST PLATFORMS — e.g.,
+Instagram, Facebook, email newsletter, blog]. Create a
+complete week of content for me right now, including:
+three social media posts (with full captions and image
+descriptions), one email newsletter (300 words with
+subject line), and one short blog post outline (title plus
+five subheadings plus two-sentence summary for each
+section). Base all content around the theme of [THIS
+WEEK'S THEME OR TOPIC]. Make everything ready to copy,
+paste, and publish with minimal editing needed.
+
+
+50. CONTENT IDEA GENERATOR (90 DAYS)
+
+Generate 90 content ideas for my [INDUSTRY] business —
+one for every day of the next three months. My target
+audience is [TARGET AUDIENCE] and my content pillars are:
+[PILLAR 1 — e.g., educational tips], [PILLAR 2 — e.g.,
+behind the scenes], [PILLAR 3 — e.g., customer stories],
+and [PILLAR 4 — e.g., promotional]. For each day, provide:
+a content idea title, the pillar it falls under, the
+recommended platform (Instagram, Facebook, LinkedIn,
+TikTok, Blog, or Email), and a one-sentence description
+of the specific angle. Organize them in a numbered list
+by day (Day 1 through Day 90) and ensure no idea repeats.
+Mark the 10 highest-potential ideas with a star so I know
+which to prioritize if I am short on time.
+
+
+============================================================
+  Thanks for your purchase!
+  Visit atlasux.cloud for AI-powered business tools.
+
+  © 2026 Atlas UX — A product of DEAD APP CORP
+============================================================

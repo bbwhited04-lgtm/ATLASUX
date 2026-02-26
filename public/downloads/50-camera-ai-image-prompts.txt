@@ -1,0 +1,495 @@
+============================================================
+  50 Camera-Inspired AI Image Prompts
+  Photorealistic Prompt Pack — DSLR Style
+  Works with: ChatGPT · Gemini · Grok · Copilot · Midjourney
+  by Atlas UX · atlasux.cloud — $1.99
+============================================================
+
+Why camera-specific prompts? AI image generators are trained on
+millions of real photographs — and those photographs carry EXIF
+metadata, captions, and descriptions that reference specific
+cameras, lenses, focal lengths, and lighting setups. When you
+include "shot on Canon EOS R5 with 85mm f/1.2 at f/1.4" in your
+prompt, the AI doesn't just read text — it activates the visual
+patterns it learned from actual images taken with that exact gear.
+The result is dramatically more photorealistic output: proper
+depth of field, accurate bokeh, natural skin tones, and the
+subtle optical character that separates a "generated image" from
+something that looks like it came straight off a memory card.
+These 50 prompts are engineered to exploit that connection.
+Copy, paste, generate.
+
+
+============================================================
+  PORTRAIT & PEOPLE PHOTOGRAPHY (10 Prompts)
+============================================================
+
+1. Professional corporate headshot of a confident woman in her
+40s wearing a tailored navy blazer, shot on Canon EOS R5 with
+RF 85mm f/1.2L USM at f/2.0, single Profoto B10 beauty dish
+at 45 degrees camera-right with white V-flat fill, medium gray
+seamless paper backdrop, sharp eye focus, shallow depth of field
+with smooth background separation, neutral color grading, 5600K
+color temperature, ISO 100, clean and editorial corporate style.
+
+2. Environmental portrait of a woodworker in his workshop
+surrounded by hand tools and wood shavings, shot on Nikon Z9
+with Nikkor Z 50mm f/1.2 S at f/2.8, natural window light
+streaming from camera-left creating directional Rembrandt
+lighting with visible shadow triangle on the far cheek, warm
+amber tones at 4200K, shallow depth of field with bokeh on
+background tools, ISO 400 with fine grain, documentary
+photojournalism style with authentic mood.
+
+3. High-fashion studio portrait with dramatic split lighting,
+model with geometric face paint and slicked-back hair, shot on
+Sony A7R V with FE 135mm f/1.8 GM at f/2.0, single bare strobe
+at 90 degrees creating hard light with deep shadow on one half
+of the face, jet-black background, high contrast with crushed
+blacks, 5000K daylight balance, tethered shooting sharpness,
+editorial Vogue-style fashion photography.
+
+4. Candid street photography portrait of an elderly man reading
+a newspaper at a European sidewalk cafe, shot on Leica M11 with
+Summilux-M 35mm f/1.4 ASPH at f/2.0, available overcast daylight
+providing soft even illumination, shallow depth of field with
+busy street bokeh behind the subject, muted desaturated color
+palette with lifted shadows, slight film-like tonality,
+documentary Henri Cartier-Bresson inspired decisive moment.
+
+5. Fashion editorial full-body shot of a model walking toward
+camera on a wet city street at dusk, shot on Canon EOS R3 with
+RF 70-200mm f/2.8L IS USM at 135mm f/2.8, neon sign reflections
+on wet pavement creating colorful bokeh, rim light from a street
+lamp behind the subject, mixed lighting with warm tungsten and
+cool blue ambient tones, cinematic color grading, slight motion
+in the coat fabric, aspirational luxury fashion campaign style.
+
+6. Dramatic low-key portrait of a boxer in a dark gym with sweat
+on skin, shot on Nikon Z8 with Nikkor Z 85mm f/1.2 S at f/1.8,
+single overhead practical light creating harsh top-down lighting
+with deep eye socket shadows, specular highlights on sweat
+droplets, near-black background with minimal fill, high ISO 1600
+gritty look, desaturated with pulled highlights, intense moody
+sports portrait style.
+
+7. Golden hour portrait of a young couple at the beach during
+sunset, shot on Sony A7 IV with FE 85mm f/1.4 GM at f/1.8,
+backlit with warm golden sun creating a glowing rim light and
+lens flare, fill light bounced from a gold reflector, warm color
+temperature at 3500K, creamy out-of-focus ocean waves in the
+background, lifted shadows with soft pastel tones, romantic
+warm editorial engagement photography style.
+
+8. Classic black and white portrait of a jazz musician holding a
+saxophone, shot on Leica SL3 with APO-Summicron-SL 75mm f/2
+ASPH at f/2.8, single tungsten Fresnel spotlight from 45 degrees
+above, deep contrast with rich midtones and luminous skin
+highlights, converted to monochrome with Tri-X 400 film
+emulation, visible but refined grain structure, timeless studio
+portrait reminiscent of Herman Leonard jazz photography.
+
+9. Lifestyle portrait of a woman in a sun-drenched kitchen
+pouring coffee in the morning, shot on Fujifilm X-H2S with
+XF 56mm f/1.2 R WR at f/1.6, natural soft window light from
+behind creating a backlit haze with warm golden flare, shallow
+depth of field with out-of-focus kitchen elements, Fujifilm
+Classic Chrome film simulation with muted warm tones, cozy
+and authentic everyday lifestyle editorial.
+
+10. Group shot of five friends laughing around a bonfire at
+twilight, shot on Canon EOS R6 Mark II with RF 24-70mm f/2.8L
+IS USM at 35mm f/3.2, warm firelight illuminating faces from
+below with cool blue dusk sky ambient fill, mixed color
+temperature creating a natural warm-cool contrast, moderate
+depth of field keeping all subjects sharp with soft background,
+ISO 3200 with controlled noise, candid spontaneous moment,
+warm and inviting social lifestyle photography.
+
+
+============================================================
+  PRODUCT & COMMERCIAL PHOTOGRAPHY (10 Prompts)
+============================================================
+
+11. Overhead flat lay product arrangement of premium skincare
+bottles and botanical ingredients on a marble surface, shot on
+Canon EOS R5 with RF 24-105mm f/4L IS USM at 50mm f/8, two
+large softboxes providing even flat illumination from above,
+zero hard shadows, crisp edge-to-edge sharpness at ISO 100,
+neutral 5500K white balance, clean negative space composition,
+minimal luxury branding flat lay for e-commerce and social media.
+
+12. Lifestyle product photograph of wireless headphones resting
+on a wooden desk beside a coffee cup and open notebook, shot on
+Sony A7C II with FE 35mm f/1.4 GM at f/2.8, natural window
+light from camera-left with a white bounce card for fill, warm
+morning tones at 4800K, shallow depth of field drawing the eye
+to the headphones, soft bokeh on background elements, authentic
+aspirational workspace lifestyle product photography.
+
+13. Dramatic food photography close-up of a gourmet burger with
+melting cheese and steam rising, shot on Nikon Z8 with Micro-
+Nikkor Z MC 105mm f/2.8 VR S at f/4.0, single large stripbox
+as key light from camera-left with a black flag on the opposite
+side for shadow depth, backlight creating rim highlights on the
+steam, rich saturated warm color grading emphasizing reds and
+golds, dark moody restaurant backdrop, editorial food magazine
+style at ISO 100.
+
+14. Luxury watch macro photograph showing dial texture and
+crystal reflections, shot on Canon EOS R5 with RF 100mm f/2.8L
+Macro IS USM at f/5.6, focus-stacked composite for front-to-back
+sharpness, two small LED panels with diffusion at opposing 45-
+degree angles for even specular control, black acrylic reflective
+surface beneath, 5600K neutral balance, ultra-clean retouched
+commercial look, high-end horological advertising photography.
+
+15. Beauty and cosmetics flat lay of lipstick tubes and rose
+petals scattered on pink silk fabric, shot on Sony A7R V with
+FE 90mm f/2.8 Macro G OSS at f/4.5, overhead large octabox for
+soft wrapping light, pink gel on a secondary fill light for
+complementary toning, delicate shallow depth of field at the
+edges, pastel color palette with boosted reds and pinks, ISO 100
+tack-sharp capture, feminine luxury beauty editorial for
+Instagram and print advertising.
+
+16. Tech product hero shot of a matte-black smartphone floating
+at an angle with screen glowing, shot on Fujifilm GFX 100 II
+with GF 110mm f/2 R LM WR at f/5.6, gradient gray background
+transitioning from dark to light, three-point lighting setup
+with key softbox camera-right, rim strip light camera-left, and
+subtle fill from below, specular highlights along the metal
+edges, 5500K daylight balance, ultra-high-resolution commercial
+product rendering style.
+
+17. Beverage advertising photograph of a craft beer in a frosted
+glass with condensation droplets and a dramatic dark background,
+shot on Canon EOS R5 with RF 100mm f/2.8L Macro IS USM at f/4.0,
+backlit with a warm amber gel to illuminate the golden liquid,
+single stripbox rim light on the glass edge, glycerin-enhanced
+condensation detail, dark wooden bar surface, rich warm color
+grading with deep shadows, moody premium beverage advertising
+photography, ISO 100.
+
+18. Fashion accessories product shot of designer sunglasses on
+sand with ocean blurred in the background, shot on Sony A7 IV
+with FE 50mm f/1.2 GM at f/2.0, natural golden hour sunlight
+as key light with warm 3800K temperature, foreground sand grains
+in focus transitioning to creamy bokeh ocean blue, rim light
+catching the lens edges, aspirational summer lifestyle luxury
+product photography.
+
+19. Packaging mockup photograph of a premium coffee bag standing
+upright on a dark slate surface with scattered coffee beans,
+shot on Nikon Z9 with Nikkor Z 50mm f/1.8 S at f/5.6, single
+large softbox at 45 degrees camera-left with subtle warm fill
+from the right, rich earth-toned color grading, crisp label
+detail with readable typography, shallow depth of field on
+scattered beans, artisanal premium packaging photography for
+e-commerce listing.
+
+20. Editorial product photograph of a designer perfume bottle
+with light prismatic refractions and a clean white background,
+shot on Hasselblad X2D 100C with XCD 120mm f/3.5 Macro at f/8,
+light tent diffusion setup providing seamless wraparound
+illumination, secondary spot light behind the bottle to create
+internal liquid glow and glass caustics, high-key lighting with
+pure white infinity curve, color-accurate 5500K balance, ultra-
+sharp medium format clarity, luxury fragrance print advertising.
+
+
+============================================================
+  LANDSCAPE & ARCHITECTURE (10 Prompts)
+============================================================
+
+21. Golden hour landscape of rolling Tuscan hills with cypress
+tree rows and a distant villa, shot on Nikon Z9 with Nikkor Z
+24-120mm f/4 S at 70mm f/8, tripod-mounted for maximum
+sharpness, warm directional side light at 3200K creating long
+shadows across the hillside, polarizing filter for saturated
+sky, hyperfocal distance focus for front-to-back sharpness,
+ISO 64, rich warm earth tones, classic fine art travel landscape
+photography.
+
+22. Moody nighttime cityscape of a rain-slicked downtown street
+with neon reflections, shot on Sony A7S III with FE 24mm f/1.4
+GM at f/2.0, handheld at ISO 6400, mixed artificial lighting
+from neon signs and sodium vapor streetlights creating a cyan
+and magenta color palette, rain reflections doubling the light
+sources in puddles, shallow depth of field with foreground
+bokeh, cinematic cyberpunk urban atmosphere, Blade Runner
+inspired color grading.
+
+23. Architectural detail photograph of a spiral staircase viewed
+from directly above, shot on Canon EOS R5 with RF 15-35mm f/2.8L
+IS USM at 15mm f/5.6, natural skylight illumination from the top
+creating soft gradual fall-off down the spiral, geometric leading
+lines drawing the eye to center, desaturated cool color palette
+with concrete gray and oxidized metal tones, ISO 200, minimalist
+abstract architectural photography.
+
+24. Interior design photograph of a modern Scandinavian living
+room with floor-to-ceiling windows, shot on Sony A7R V with
+FE 16-35mm f/2.8 GM II at 24mm f/8, multiple exposures blended
+for HDR tonal range capturing both the bright window view and
+interior details, natural daylight flooding from the left, warm
+wood tones contrasting with white walls, 5200K neutral balance,
+clean compositional lines, aspirational residential interior
+design editorial.
+
+25. Aerial drone photograph of a winding river cutting through
+autumn forest with peak fall foliage, shot on DJI Mavic 3 Pro
+with Hasselblad L2D-20c at f/2.8, altitude 120 meters providing
+a near-top-down perspective, rich saturated oranges and reds
+contrasting with the deep blue river, morning mist lingering in
+valleys, golden hour sidelight raking across the canopy, ISO 100,
+vibrant National Geographic-style aerial landscape photography.
+
+26. Long exposure seascape of waves crashing over coastal rocks
+at sunset, shot on Nikon Z8 with Nikkor Z 14-24mm f/2.8 S at
+18mm f/11, tripod-mounted with 30-second exposure using a 10-stop
+ND filter, silky smooth milky water effect wrapping around sharp
+foreground rocks, dramatic pink and orange sunset sky with
+streaked clouds, hyperfocal focus for total depth of field,
+ISO 64 base, ethereal fine art seascape photography.
+
+27. Epic mountain vista of snow-capped peaks reflected in a
+perfectly still alpine lake, shot on Canon EOS R5 with RF 24-
+105mm f/4L IS USM at 35mm f/11, tripod-mounted at dawn during
+alpenglow, warm pink light on the peaks with cool blue shadows
+in the valleys, mirror-perfect reflection in glassy water,
+graduated neutral density filter balancing sky and foreground,
+ISO 100, panoramic composition, majestic wilderness landscape
+photography.
+
+28. Urban night photograph of a busy intersection with light
+trails from passing vehicles, shot on Sony A7 IV with FE 20mm
+f/1.8 G at f/8, tripod-mounted with 15-second exposure, vehicle
+headlight and taillight trails creating red and white streaks
+through the frame, illuminated buildings with warm interior glow,
+blue-hour sky gradient from deep navy to amber at the horizon,
+ISO 100, long exposure urban photography.
+
+29. Minimalist architecture photograph of a white concrete museum
+facade with a single person for scale, shot on Fujifilm GFX 100S
+with GF 32-64mm f/4 R LM WR at 50mm f/8, overcast sky providing
+perfectly even diffused illumination with no hard shadows, high-
+key exposure emphasizing the white geometric forms, desaturated
+near-monochrome palette, strong leading lines and negative space,
+ISO 100, contemporary fine art architectural photography.
+
+30. Seasonal winter landscape of a lone tree in a snow-covered
+field under dramatic storm clouds, shot on Nikon Z9 with Nikkor
+Z 70-200mm f/2.8 VR S at 135mm f/5.6, compressed perspective
+isolating the tree against the vast white expanse, cool blue
+color temperature at 7500K emphasizing the cold atmosphere,
+subtle warm break in the clouds providing directional light on
+the tree, high contrast between dark sky and bright snow,
+ISO 100, dramatic fine art winter landscape.
+
+
+============================================================
+  CREATIVE & ARTISTIC (10 Prompts)
+============================================================
+
+31. Double exposure portrait merging a woman's profile silhouette
+with a dense forest of birch trees, shot on Canon EOS R6 Mark II
+with RF 85mm f/1.2L USM, in-camera multiple exposure mode,
+the face silhouette filled with intricate tree branch patterns,
+soft ethereal quality with lifted shadows and muted green earth
+tones, slight overexposure for a dreamy faded look, 5000K
+neutral balance, fine art conceptual double exposure photography.
+
+32. Extreme macro photograph of a honeybee on a lavender flower
+showing individual pollen grains on its legs, shot on Nikon Z8
+with Nikkor Z MC 105mm f/2.8 VR S at f/5.6 with extension tube,
+focus-stacked from 40 frames for complete depth of field, twin
+LED macro lights providing even illumination, natural garden
+background rendered as smooth pastel bokeh, vivid color
+saturation, ultra-high detail scientific macro photography at
+greater than 1:1 magnification.
+
+33. Portrait with stunning bokeh background created by distant
+city lights at night, shot on Sony A7 IV with FE 85mm f/1.4 GM
+at f/1.4 wide open, subject illuminated by a single warm LED
+panel at arm's length camera-right, hundreds of circular bokeh
+orbs in orange and blue from out-of-focus urban lights, creamy
+smooth optical rendering with no onion ring artifacts, warm
+skin tones against cool background, dreamy romantic night
+portrait photography.
+
+34. Light painting photograph of glowing orbs and spiral trails
+in an abandoned warehouse, shot on Canon EOS R5 with RF 14-35mm
+f/4L IS USM at 14mm f/8, tripod-mounted with 30-second exposure
+at ISO 100, steel wool spinning creating orange spark trails,
+LED wand creating blue and green geometric patterns, complete
+darkness as base exposure allowing only the light trails to
+register, long exposure light painting creative photography.
+
+35. Reflection photography of a lone person with an umbrella
+mirrored in a rain puddle on an empty parking lot, shot on
+Fujifilm X-T5 with XF 23mm f/1.4 R LM WR at f/2.8, camera
+positioned at ground level inches above the puddle surface,
+overcast moody lighting with desaturated teal and orange color
+grading, symmetrical composition with the reflection as
+prominent as the subject, cinematic melancholy mood, artistic
+street photography.
+
+36. Portrait with flowing smoke and fog effects swirling around
+the subject against a black background, shot on Nikon Z8 with
+Nikkor Z 85mm f/1.2 S at f/2.0, two bare flash heads at low
+power from behind the subject to backlight the smoke trails,
+single beauty dish at front for face illumination, smoke machine
+creating ethereal wisps, high contrast with deep blacks, cool
+blue toning on the smoke with warm skin tones, dramatic dark
+art portrait photography.
+
+37. Silhouette photography of a lone surfer carrying a board
+along the shoreline at sunset, shot on Canon EOS R3 with RF
+100-500mm f/4.5-7.1L IS USM at 200mm f/7.1, subject rendered
+as a pure black silhouette against a vivid gradient sky of
+orange, magenta, and deep purple, telephoto compression stacking
+the sun large behind the figure, wet sand reflections mirroring
+the sky colors, slightly underexposed for saturated sky tones,
+epic golden hour silhouette photography.
+
+38. High-speed freeze-frame photograph of a water balloon
+exploding on impact with visible splash crown formation, shot
+on Sony A9 III with FE 70-200mm f/2.8 GM OSS II at 100mm f/5.6,
+flash-frozen at 1/250000 second global shutter, three flash heads
+at full power with colored gels for red-blue-green splash
+illumination, black background, individual water droplets
+suspended and tack-sharp, high-speed scientific action
+photography.
+
+39. Tilt-shift miniature effect photograph of a busy harbor with
+colorful boats and buildings, shot on Canon EOS R5 with TS-E
+90mm f/2.8L Macro tilt-shift lens, extreme tilt applied to
+create a razor-thin plane of focus through the center of the
+scene, selective blur at top and bottom creating the illusion
+of a tiny diorama model, oversaturated toylike colors, bright
+midday lighting, elevated shooting angle, tilt-shift miniature
+faux photography.
+
+40. Infrared photography style landscape of a park with white
+foliage trees against a deep navy sky, shot on Sony A7R V
+converted for full-spectrum with Kolari 720nm infrared filter
+and FE 24-70mm f/2.8 GM II at 35mm f/8, chlorophyll in leaves
+rendered as bright glowing white, sky and water rendered as deep
+near-black, surreal otherworldly color palette with false-color
+processing in magenta and cyan, dreamy ethereal infrared fine
+art landscape photography.
+
+
+============================================================
+  DSLR TECHNICAL STYLES (10 Prompts)
+============================================================
+
+41. Ultra-shallow depth of field portrait of a child blowing
+dandelion seeds, shot on Canon EOS R5 with RF 50mm f/1.2L USM
+wide open at f/1.2, single point AF locked on the nearest eye,
+foreground dandelion seeds rendered as soft luminous orbs drifting
+through the frame, background dissolved into a creamy wash of
+green and gold, natural late-afternoon side light, warm 4000K
+color temperature, buttery smooth bokeh with no distracting
+elements, maximum aperture shallow DOF portrait photography.
+
+42. High dynamic range photograph of a cathedral interior with
+stained glass windows and dark wooden pews, shot on Nikon Z8
+with Nikkor Z 14-24mm f/2.8 S at 16mm f/8, five-bracket HDR
+exposure fusion capturing full detail in both the brilliant
+stained glass highlights and deep shadow recesses of the nave,
+natural ambient light only, cool stone tones with warm colored
+light streaming through the glass, zero blown highlights and
+zero crushed blacks, architectural HDR photography.
+
+43. Analog film look portrait with visible grain and vintage
+color shift, shot on Canon EOS R6 Mark II with RF 35mm f/1.4L
+VCM at f/2.0 processed to emulate Kodak Portra 400 film stock,
+lifted blacks with milky shadow tones, slightly desaturated warm
+color palette with green shift in midtones and warm highlights,
+visible organic film grain texture, soft contrast curve, natural
+overcast daylight, authentic 35mm analog film photography
+aesthetic.
+
+44. Telephoto compression landscape of a field of sunflowers
+with a distant farmhouse appearing close behind them, shot on
+Sony A7R V with FE 200-600mm f/5.6-6.3 G OSS at 400mm f/8,
+extreme background compression stacking the farmhouse directly
+behind the flower field making it appear immediately adjacent,
+moderate depth of field keeping both flowers and structure in
+acceptable focus, warm golden hour sidelight, saturated yellows
+and rustic red barn tones, telephoto compression landscape.
+
+45. Wide-angle environmental portrait with dramatic foreground
+distortion, street musician playing guitar under a bridge with
+graffiti-covered walls stretching away, shot on Nikon Z8 with
+Nikkor Z 20mm f/1.8 S at f/4.0, barrel distortion curving the
+bridge columns, guitar neck exaggerated toward camera, three-
+dimensional depth emphasized by the ultra-wide perspective,
+available mixed ambient light with warm tungsten and cool
+daylight, gritty urban documentary photography style.
+
+46. Studio fashion photograph with precise three-point strobe
+lighting, model in a red gown against a charcoal gray backdrop,
+shot on Hasselblad X2D 100C with XCD 80mm f/1.9 at f/5.6,
+Profoto D2 key light in a 5-foot octabox at 45 degrees, strip
+box rim light camera-left, white reflector fill camera-right,
+perfectly exposed skin tones at 5500K, controlled specular
+highlights on the fabric, zero color cast, medium format
+resolution, precision studio fashion photography.
+
+47. Natural window light portrait of a woman reading in a bay
+window seat, shot on Fujifilm X-H2S with XF 56mm f/1.2 R WR
+at f/1.8, single large window as the only light source creating
+soft directional illumination with a gentle fall-off, warm
+afternoon light at 4500K filtered through sheer curtains, soft
+shadows under the chin and along the far side of the face,
+muted film-like color palette, cozy intimate atmosphere,
+available natural light portrait photography.
+
+48. Backlit and rim-lit portrait of a dancer mid-leap with hair
+and fabric frozen in motion, shot on Canon EOS R3 with RF 70-
+200mm f/2.8L IS USM at 135mm f/3.5, two bare flash heads at
+full power behind the subject at 45-degree angles creating a
+bright double rim light outlining the entire body and floating
+fabric, minimal frontal fill keeping the face slightly shadowed,
+dark studio background, dramatic edge-lit separation, 1/8000s
+flash sync freezing all motion, dynamic backlit dance
+photography.
+
+49. Cinematic color-graded portrait with teal-and-orange split
+toning, a man in a leather jacket leaning against a brick wall
+at dusk, shot on Sony A7S III with FE 50mm f/1.2 GM at f/1.4,
+mixed ambient lighting with warm practical tungsten from a
+nearby window and cool blue ambient dusk sky, color graded with
+teal shadows and warm orange highlights, lifted blacks with a
+slight fade, anamorphic-style horizontal lens flare from a
+street light, shallow depth of field, cinematic Hollywood color
+grade photography.
+
+50. High-key studio portrait of a baby on a white blanket with
+soft luminous lighting and zero shadows, shot on Nikon Z9 with
+Nikkor Z 105mm f/2.8 VR S Macro at f/4.0, two large overhead
+softboxes with additional white V-flats on every side creating
+completely even wraparound illumination, pure white background
+blown 1.5 stops over, delicate skin tone preservation with
+slight warm shift to 5800K, zero harsh shadows anywhere in the
+frame, gentle soft-focus quality, clean high-key newborn studio
+photography.
+
+
+============================================================
+  Thanks for your purchase!
+  Visit atlasux.cloud for AI-powered business tools.
+
+  Pro tip: Combine these prompts with negative prompts
+  ("no blur, no distortion, no artifacts") for even better
+  results. You can also swap camera models and lens specs
+  to subtly change the rendering style — e.g., replace
+  "Canon EOS R5" with "Hasselblad X2D" for a medium-format
+  look, or change "85mm f/1.2" to "35mm f/1.4" for a wider
+  environmental feel.
+
+  (c) 2026 Atlas UX — A product of DEAD APP CORP
+============================================================

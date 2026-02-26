@@ -1,0 +1,1134 @@
+============================================================
+  ChatGPT Prompts for Marketing
+  50 AI Copywriting Prompts
+  Email · Ad · Landing Page Copy Templates
+  by Atlas UX · atlasux.cloud — $1.99
+============================================================
+
+Thank you for purchasing this prompt pack! Inside you
+will find 50 carefully crafted, copy-paste-ready prompts
+designed for real marketing and copywriting workflows.
+Each prompt includes placeholder brackets so you can
+quickly customize them for any brand, product, or
+audience. Use these with ChatGPT, Claude, or any LLM
+to generate high-converting copy in minutes.
+
+Tip: Replace every [PLACEHOLDER] with your own details
+before sending the prompt to your AI tool of choice.
+The more specific you are, the better the output.
+
+
+============================================================
+  SECTION 1: EMAIL COPY TEMPLATES (10 Prompts)
+============================================================
+
+1. Sales Email — Cold Outreach Introduction
+
+Write a cold outreach email from [YOUR COMPANY NAME] to a
+[TARGET ROLE, e.g., VP of Marketing] at a [TARGET COMPANY
+TYPE, e.g., mid-size SaaS company]. The email should open
+with a specific, researched observation about their business
+or industry — not a generic compliment. Introduce
+[YOUR PRODUCT/SERVICE] by connecting it directly to a pain
+point common in their role, such as [SPECIFIC PAIN POINT,
+e.g., low email open rates or slow lead response times].
+End with a soft, low-friction CTA like booking a 15-minute
+call or replying with a single word. Keep the tone
+conversational and peer-to-peer, not salesy. The entire
+email should be under 150 words.
+
+------------------------------------------------------------
+
+2. Sales Email — Warm Follow-Up After No Reply
+
+Write a follow-up email to send 3 days after the initial
+cold email received no reply. Reference the original email
+briefly without guilt-tripping the recipient. Add one new
+piece of value — either a relevant case study about how
+[YOUR PRODUCT/SERVICE] helped a [SIMILAR COMPANY TYPE]
+achieve [SPECIFIC RESULT, e.g., 40% increase in demo
+bookings], a short industry stat, or a link to a useful
+resource. Keep the tone helpful and human. The CTA should
+be even softer than the first email — for example, "Would
+it make sense to chat, or should I check back next quarter?"
+Limit the email to 100 words maximum.
+
+------------------------------------------------------------
+
+3. Cart Abandonment Recovery Email
+
+Write a cart abandonment email for [YOUR BRAND NAME] that
+goes out [TIME DELAY, e.g., 2 hours] after a customer
+leaves [PRODUCT NAME] in their cart. Open with a friendly,
+non-pushy subject line option (provide 3 subject line
+variations). The body should remind them what they left
+behind, emphasize one key benefit of the product such as
+[KEY BENEFIT, e.g., "rated 4.9 stars by 2,000+ customers"],
+and address the most common purchase hesitation for this
+product category, which is [COMMON OBJECTION, e.g., "not
+sure about sizing" or "waiting for a sale"]. Include a
+clear CTA button text and optionally a small incentive
+like [INCENTIVE, e.g., free shipping or 10% off]. Tone
+should feel like a helpful nudge, not a desperate plea.
+
+------------------------------------------------------------
+
+4. Product Launch Announcement Email
+
+Write a product launch email announcing [NEW PRODUCT NAME]
+from [YOUR BRAND]. The target audience is [AUDIENCE
+DESCRIPTION, e.g., existing customers who purchased in the
+last 6 months]. Structure the email as: (1) a bold opening
+line that creates excitement or curiosity, (2) a 2-3
+sentence explanation of what the product is and the core
+problem it solves, (3) three bullet points highlighting
+the top features or differentiators versus [COMPETITOR OR
+PREVIOUS VERSION], (4) social proof if available such as
+[EARLY REVIEW, BETA TESTER QUOTE, OR WAITLIST SIZE], and
+(5) a primary CTA to [DESIRED ACTION, e.g., "Shop Now,"
+"Join the Waitlist," or "Watch the Demo"]. Include a
+subject line and preview text. Tone: [TONE, e.g.,
+energetic, premium, playful].
+
+------------------------------------------------------------
+
+5. Re-Engagement Email for Inactive Subscribers
+
+Write a re-engagement email for subscribers of [YOUR BRAND]
+who have not opened an email in [TIME PERIOD, e.g., 90
+days]. The subject line should create curiosity or a sense
+of "we miss you" without being cliche. Acknowledge that
+their inbox is crowded and you respect their time. Briefly
+remind them why they signed up — what value [YOUR BRAND]
+provides, such as [VALUE PROPOSITION, e.g., weekly
+marketing tips, exclusive deals, or early access to new
+products]. Offer one compelling reason to stay, like
+[RE-ENGAGEMENT OFFER, e.g., a free resource, a discount
+code, or access to a new feature]. End with two clear
+options: a CTA to stay subscribed and a polite, guilt-free
+unsubscribe link. Keep the email warm, honest, and under
+120 words.
+
+------------------------------------------------------------
+
+6. Upsell Email — Post-Purchase Recommendation
+
+Write a post-purchase upsell email to send [TIME DELAY,
+e.g., 5 days] after a customer buys [ORIGINAL PRODUCT].
+Open by thanking them for their purchase and asking a brief
+check-in question like "How are you liking [PRODUCT]?"
+Then introduce [UPSELL PRODUCT] as the natural next step
+or perfect complement. Explain specifically why these two
+products work well together — for example, "[UPSELL
+PRODUCT] pairs with [ORIGINAL PRODUCT] because [REASON,
+e.g., it extends battery life, adds advanced features, or
+completes the set]." Include a customer quote or review
+snippet if available. Offer a [DISCOUNT OR BUNDLE DEAL,
+e.g., 15% off when purchased within 7 days]. Tone should
+feel like a helpful recommendation from a friend, not a
+hard sell.
+
+------------------------------------------------------------
+
+7. Newsletter Hook — Weekly Content Roundup
+
+Write the opening section (first 3-4 paragraphs) of a
+weekly newsletter for [YOUR BRAND/PUBLICATION NAME] that
+covers [INDUSTRY OR TOPIC, e.g., digital marketing, AI
+tools, ecommerce trends]. This week's theme is [THEME,
+e.g., "Why your Q2 strategy needs a total rewrite"]. The
+opening hook should be a bold, slightly provocative
+statement or a surprising stat that makes the reader want
+to keep scrolling. Transition into a brief overview of
+what is covered in this issue — mention 3 topics:
+[TOPIC 1], [TOPIC 2], and [TOPIC 3]. The tone should be
+[TONE, e.g., witty and irreverent, authoritative but
+approachable, or data-driven and concise]. End the intro
+section with a teaser line that creates a curiosity gap
+about the best piece of content below the fold.
+
+------------------------------------------------------------
+
+8. Seasonal Campaign Email — Holiday/Event Promotion
+
+Write a seasonal promotion email for [YOUR BRAND] tied to
+[HOLIDAY OR EVENT, e.g., Black Friday, Valentine's Day,
+Back to School, New Year]. The offer is [OFFER DETAILS,
+e.g., 30% off sitewide, buy-one-get-one, or free gift
+with purchase over $50]. Open with a seasonal hook that
+feels timely but not generic — avoid overused phrases like
+"'Tis the season." Connect the holiday to your audience's
+real life, such as [AUDIENCE CONTEXT, e.g., "You're
+already juggling holiday shopping — let us handle the gift
+ideas"]. Highlight [NUMBER] top products or categories
+with one-line descriptions. Create urgency with a clear
+deadline: [END DATE/TIME]. Provide 3 subject line options.
+Include a primary CTA and a secondary CTA for customers
+who want to browse more. Tone: [TONE, e.g., festive but
+not cheesy, urgent but not desperate].
+
+------------------------------------------------------------
+
+9. Win-Back Sequence — Email 1 of 3
+
+Write the first email in a 3-email win-back sequence for
+[YOUR BRAND] targeting customers who purchased [PRODUCT
+CATEGORY] [TIME PERIOD, e.g., 6-12 months ago] but have
+not returned. This first email should NOT lead with a
+discount. Instead, open with a genuine "here's what you
+missed" angle — highlight [NUMBER] new products, features,
+or improvements since their last purchase, such as
+[NEW ADDITION 1], [NEW ADDITION 2], and [NEW ADDITION 3].
+Frame the brand as having evolved based on customer
+feedback. Use a conversational tone as if writing to
+someone you have not seen in a while. The CTA should
+invite them to explore what is new — not to buy
+immediately. Mention that a special offer is coming in
+a future email to create anticipation. Keep it under
+150 words.
+
+------------------------------------------------------------
+
+10. Referral Request Email
+
+Write a referral request email from [YOUR BRAND] to
+customers who have been active for [TIME PERIOD, e.g., 3+
+months] or have made [NUMBER] purchases. Open by
+celebrating their loyalty — reference a specific milestone
+if possible, such as "You've been with us since [MONTH]"
+or "You're one of our top [PERCENTAGE]% of customers."
+Explain the referral program simply: when they share
+[REFERRAL MECHANISM, e.g., a unique link or code] with
+a friend, both the referrer and the friend receive
+[REWARD, e.g., $10 off, a free month, or bonus points].
+Make sharing easy by providing pre-written text they can
+copy and send. Address the implicit awkwardness of asking
+someone to refer — frame it as sharing something they
+already love, not doing you a favor. Tone: appreciative,
+casual, and confident.
+
+
+============================================================
+  SECTION 2: AD COPY & HEADLINES (10 Prompts)
+============================================================
+
+11. Facebook/Instagram Ad — Primary Text + Headline
+
+Write Facebook and Instagram ad copy for [YOUR PRODUCT/
+SERVICE] targeting [TARGET AUDIENCE, e.g., small business
+owners aged 25-45 who struggle with social media
+scheduling]. The ad objective is [OBJECTIVE, e.g.,
+conversions, lead generation, or traffic]. Provide: (1)
+three variations of primary text (the main body copy above
+the image) — one short (1-2 sentences), one medium (3-4
+sentences with a hook + benefit + CTA), and one long (5-6
+sentences with storytelling or social proof), (2) three
+headline options (under 40 characters each), and (3) two
+description line options. Each variation should test a
+different angle: [ANGLE 1, e.g., pain point agitation],
+[ANGLE 2, e.g., aspirational outcome], and [ANGLE 3,
+e.g., social proof or authority]. Include a clear CTA in
+every variation.
+
+------------------------------------------------------------
+
+12. Google Ads — Responsive Search Ad Copy
+
+Write Google Responsive Search Ad copy for the keyword
+theme [PRIMARY KEYWORD, e.g., "project management
+software"]. The product is [YOUR PRODUCT] and the unique
+selling points are [USP 1], [USP 2], and [USP 3]. Provide:
+(1) 15 headline options (each under 30 characters) that
+mix keyword-rich headlines, benefit-driven headlines,
+urgency headlines, and brand-name headlines, and (2) 4
+description options (each under 90 characters) that
+expand on the value proposition, include a CTA, and
+mention any offers such as [OFFER, e.g., free trial, no
+credit card required, or 30-day guarantee]. Ensure at
+least 3 headlines can work in any combination without
+reading awkwardly. Avoid trademarked competitor names.
+Include at least 2 headlines with numbers or specific
+data points.
+
+------------------------------------------------------------
+
+13. TikTok Ad Script — Short-Form Video (15-30 Seconds)
+
+Write a TikTok ad script for [YOUR PRODUCT/SERVICE]
+targeting [TARGET AUDIENCE, e.g., Gen Z college students
+interested in budgeting]. Format the script with
+timestamps and on-screen text directions. Structure:
+[0-3s] — Hook that stops the scroll (use a bold claim,
+a question, or a pattern interrupt related to [HOOK TOPIC,
+e.g., "I saved $400 last month doing this one thing"]).
+[3-12s] — Demonstrate or explain the product's core value
+in a native, non-ad-like way. Show [SPECIFIC USE CASE].
+[12-20s] — Address a common objection like [OBJECTION,
+e.g., "it's too complicated" or "I don't have time"].
+[20-30s] — CTA with urgency, such as [CTA, e.g., "Link
+in bio — free for the first 1,000 users"]. Include notes
+on recommended tone of voice (e.g., casual, creator-
+style, faceless with text overlay). Provide 3 hook
+variations to A/B test.
+
+------------------------------------------------------------
+
+14. Retargeting Ad Copy — Website Visitors Who Did Not Convert
+
+Write retargeting ad copy for [YOUR PRODUCT/SERVICE]
+targeting people who visited [SPECIFIC PAGE, e.g., the
+pricing page, a product page, or the checkout page] but
+did not convert. The ad should acknowledge their previous
+interest without being creepy — do NOT say "We noticed
+you visited our site." Instead, lead with a new angle
+they may not have considered, such as [NEW ANGLE, e.g.,
+a customer success story, a recently added feature, or a
+limited-time offer]. Provide 3 versions: (1) social-
+proof-led — featuring a stat or testimonial like [PROOF
+POINT], (2) objection-handling — addressing the #1 reason
+people do not buy, which is [MAIN OBJECTION], and (3)
+urgency/scarcity — tied to [SCARCITY ELEMENT, e.g., "Only
+50 spots left" or "Price increases Friday"]. Each version
+should have a headline, primary text, and CTA button text.
+
+------------------------------------------------------------
+
+15. A/B Test Variations — Split-Test Ad Copy Framework
+
+Generate A/B test ad copy variations for [YOUR PRODUCT/
+SERVICE]. The control version (Version A) uses this
+messaging: "[EXISTING AD COPY OR ANGLE]." Create 4
+challenger versions (B, C, D, E), each testing ONE
+specific variable while keeping everything else constant.
+Version B: Test a different emotional trigger — change
+from [CURRENT EMOTION, e.g., fear of missing out] to
+[NEW EMOTION, e.g., aspiration or curiosity]. Version C:
+Test a different opening hook — lead with [NEW HOOK TYPE,
+e.g., a question, a statistic, or a bold claim]. Version
+D: Test a different CTA — change from [CURRENT CTA] to
+[NEW CTA STYLE, e.g., soft ask, urgency-based, or value-
+first]. Version E: Test a different proof element —
+replace [CURRENT PROOF] with [NEW PROOF TYPE, e.g.,
+specific numbers, a testimonial, or an authority
+endorsement]. For each version, explain the hypothesis
+being tested and what metric to watch.
+
+------------------------------------------------------------
+
+16. Urgency-Driven Ad — Flash Sale or Limited Offer
+
+Write ad copy for a [DURATION, e.g., 48-hour] flash sale
+on [YOUR PRODUCT/SERVICE] for [YOUR BRAND]. The discount
+is [OFFER, e.g., 40% off, $50 off, or buy 2 get 1 free].
+The copy must create genuine urgency without being
+manipulative or using false scarcity. Lead with the time
+constraint front and center. Emphasize what the audience
+stands to lose by waiting rather than what they gain by
+buying — frame the savings as disappearing, not appearing.
+Include: (1) a Facebook/Instagram version with primary
+text + headline, (2) a Google Ads headline + description,
+and (3) an email subject line + preview text. Each format
+should feature a countdown element or specific end date/
+time: [END DATE]. Reference [SOCIAL PROOF, e.g., "Join
+12,000+ customers" or "Rated #1 by G2"] to reinforce that
+the product is worth buying even at full price.
+
+------------------------------------------------------------
+
+17. Story-Based Ad — Narrative-Driven Copy
+
+Write a story-based ad for [YOUR PRODUCT/SERVICE] that
+follows a mini narrative arc. The protagonist is [CUSTOMER
+PERSONA, e.g., a freelance designer named Sarah who was
+losing clients because her invoicing was a mess]. Structure
+the story as: (1) The "Before" — paint a vivid, relatable
+picture of life with the problem [PROBLEM DESCRIPTION],
+using specific sensory or emotional details, (2) The
+"Discovery" — how they found [YOUR PRODUCT] (keep this
+brief and natural, not a hard sell), (3) The "After" —
+concrete, specific results they achieved, such as
+[SPECIFIC RESULT, e.g., "tripled her client retention in
+2 months"], and (4) The "Invitation" — a CTA that invites
+the reader into the same transformation. Write this in
+first person as if the customer is telling the story.
+Keep the entire ad under 200 words. Provide versions for
+Facebook (long-form) and Instagram Stories (3-slide
+text overlay).
+
+------------------------------------------------------------
+
+18. Benefit-Focused Ad — Feature-to-Benefit Translation
+
+Write benefit-focused ad copy for [YOUR PRODUCT/SERVICE].
+Here are the top [NUMBER] features: [FEATURE 1], [FEATURE
+2], [FEATURE 3], [FEATURE 4], [FEATURE 5]. For each
+feature, translate it into a customer-facing benefit using
+the "So that..." framework — what does each feature allow
+the customer to DO, FEEL, or AVOID? Then write 3 ad
+versions: (1) a single-benefit-focused ad that goes deep
+on the most compelling benefit with proof and a CTA, (2)
+a multi-benefit listicle ad that stacks 3-4 benefits in
+rapid-fire bullet format for skimmers, and (3) a "what
+if" ad that opens with a hypothetical scenario — "What if
+you could [TOP BENEFIT] without [MAIN SACRIFICE]?" Each
+version should work as both a Facebook ad and a LinkedIn
+sponsored post. Include headline and CTA for each.
+
+------------------------------------------------------------
+
+19. Social Proof Ad — Testimonial and Data-Driven
+
+Write a social-proof-driven ad for [YOUR PRODUCT/SERVICE]
+using the following proof elements: [TESTIMONIAL OR QUOTE
+FROM CUSTOMER], [KEY METRIC, e.g., "Used by 10,000+
+teams"], and [THIRD-PARTY VALIDATION, e.g., "Featured in
+TechCrunch" or "G2 Leader, Winter 2026"]. Create 3 ad
+variations: (1) Testimonial-led — open with the customer
+quote, then briefly explain the product and CTA, (2) Stat-
+led — open with the most impressive number, create
+curiosity about how it was achieved, then reveal the
+product, and (3) Authority-led — open with the third-party
+validation or award, use it as a credibility anchor, then
+pitch. For each version, provide Facebook primary text,
+headline, and description. The tone should feel authentic
+and confident — avoid hype words like "revolutionary,"
+"game-changing," or "best ever." Let the proof speak for
+itself.
+
+------------------------------------------------------------
+
+20. Video Ad Script — 30-60 Second Explainer
+
+Write a 30-60 second video ad script for [YOUR PRODUCT/
+SERVICE] targeting [TARGET AUDIENCE]. Format with
+timestamps, voiceover text, and visual direction on
+separate lines. Structure: [0-5s] HOOK — Open with a
+visually striking moment and a provocative voiceover line
+related to [CORE PROBLEM]. [5-15s] PROBLEM — Expand on
+the problem with relatable scenarios your audience faces
+daily, such as [SCENARIO 1] and [SCENARIO 2]. [15-30s]
+SOLUTION — Introduce [YOUR PRODUCT] with a clear, jargon-
+free explanation of what it does. Show [KEY SCREEN OR
+PRODUCT SHOT]. [30-45s] PROOF — Include [SOCIAL PROOF
+ELEMENT] and demonstrate a specific result like [RESULT].
+[45-55s] CTA — Clear call to action: [CTA, e.g., "Start
+your free trial at [URL]"]. [55-60s] LOGO + TAGLINE.
+Provide 2 hook variations and note any b-roll or stock
+footage suggestions for each scene.
+
+
+============================================================
+  SECTION 3: LANDING PAGE COPY (10 Prompts)
+============================================================
+
+21. Hero Section — Headline + Sub-Headline + CTA
+
+Write the hero section copy for a landing page promoting
+[YOUR PRODUCT/SERVICE]. The target audience is [AUDIENCE
+DESCRIPTION] and the primary goal is [GOAL, e.g., free
+trial signups, demo requests, or purchases]. Provide 5
+headline options using different frameworks: (1) outcome-
+focused ("Get [RESULT] without [PAIN]"), (2) curiosity-
+driven (create an information gap), (3) social-proof-
+anchored ("Join [NUMBER] [AUDIENCE] who..."), (4) direct
+and clear (state exactly what the product does), and (5)
+contrarian or myth-busting ("Stop [COMMON BAD ADVICE].
+Do this instead."). For each headline, write a matching
+sub-headline (1-2 sentences) that expands on the promise
+and reduces anxiety. Also provide 3 CTA button text
+options — one action-oriented, one benefit-oriented, and
+one low-commitment. Specify what should appear below the
+CTA: [TRUST ELEMENT, e.g., "No credit card required"
+or "Trusted by 5,000+ companies"].
+
+------------------------------------------------------------
+
+22. Sub-Headline & Supporting Copy — Below the Fold
+
+Write the "below the fold" supporting copy section for a
+landing page about [YOUR PRODUCT/SERVICE]. This section
+appears directly after the hero and should answer the
+visitor's immediate question: "What is this, and why
+should I care?" Write a concise section (4-6 sentences)
+that: (1) restates the core value proposition in different
+words than the hero headline, (2) identifies the specific
+audience — "Built for [AUDIENCE] who [SITUATION, e.g.,
+are tired of juggling 5 different tools]," (3) names the
+top 3 outcomes: [OUTCOME 1], [OUTCOME 2], [OUTCOME 3],
+and (4) transitions smoothly into the feature section
+below. The tone should be confident but not arrogant —
+let the product's value do the heavy lifting. Avoid
+filler phrases like "In today's fast-paced world." Every
+sentence should earn its place on the page.
+
+------------------------------------------------------------
+
+23. Feature Section — Benefits Grid with Descriptions
+
+Write copy for a feature/benefits section on a landing
+page for [YOUR PRODUCT/SERVICE]. The section should
+showcase [NUMBER, e.g., 6] key features in a grid layout.
+For each feature, provide: (1) a short, punchy feature
+title (3-5 words), (2) a one-sentence benefit description
+that focuses on what the user gains (not what the product
+does), and (3) an optional icon suggestion (emoji or
+icon name). The features to cover are: [FEATURE 1],
+[FEATURE 2], [FEATURE 3], [FEATURE 4], [FEATURE 5],
+[FEATURE 6]. Write a section headline that ties all
+features together under one theme, such as "Everything
+you need to [CORE OUTCOME]." Ensure the descriptions
+avoid jargon — a non-technical person should immediately
+understand the benefit. Vary the sentence structures
+so the grid does not feel repetitive.
+
+------------------------------------------------------------
+
+24. Testimonial Section — Customer Quotes with Context
+
+Write the testimonial section for a landing page about
+[YOUR PRODUCT/SERVICE]. Create a section headline that
+frames the testimonials (e.g., "Don't take our word for
+it" or "Here's what [AUDIENCE TYPE] are saying"). Then
+write [NUMBER, e.g., 3] realistic, detailed testimonial
+quotes from fictional customers. Each testimonial should:
+(1) mention a specific result or outcome (not just "Great
+product!"), (2) reference the customer's role and company
+type — [PERSONA 1: ROLE at COMPANY TYPE], [PERSONA 2],
+[PERSONA 3], (3) address a different benefit or use case
+of the product, and (4) feel natural and human — include
+casual language, a mild imperfection, or a "before and
+after" comparison. Below the testimonials, suggest what
+additional trust elements to include, such as company
+logos, star ratings, or a link to a reviews page. If
+real testimonials exist, note where to replace the
+fictional ones.
+
+------------------------------------------------------------
+
+25. FAQ Section — Objection-Busting Q&A
+
+Write an FAQ section for a landing page about [YOUR
+PRODUCT/SERVICE] with [NUMBER, e.g., 8] questions and
+answers. The questions should target the real objections
+and hesitations your [TARGET AUDIENCE] has before buying,
+not generic questions nobody actually asks. Organize
+them by priority — put the deal-breaker objections first.
+Must-include questions: "How is this different from
+[MAIN COMPETITOR OR ALTERNATIVE]?", "What if [COMMON
+FEAR, e.g., it does not work for my industry, I am not
+technical, I need to cancel]?", "Is there a [FREE TRIAL/
+MONEY-BACK GUARANTEE]?", and "How quickly will I see
+results?" Each answer should be 2-4 sentences: direct,
+honest, and confidence-building. Do not be defensive.
+If there is a legitimate limitation, acknowledge it and
+reframe it. End the FAQ section with a closing line like
+"Still have questions? [CTA, e.g., Chat with us or email
+support@domain.com]."
+
+------------------------------------------------------------
+
+26. Pricing Page Copy — Plan Descriptions and CTAs
+
+Write copy for a pricing page for [YOUR PRODUCT/SERVICE]
+with [NUMBER, e.g., 3] pricing tiers: [TIER 1 NAME +
+PRICE], [TIER 2 NAME + PRICE], [TIER 3 NAME + PRICE].
+For each tier, provide: (1) a one-line positioning
+statement (e.g., "Perfect for freelancers just starting
+out"), (2) a bullet list of [NUMBER] included features
+written as benefits (not just feature names), (3) a CTA
+button text that matches the tier's commitment level
+(e.g., "Start Free" vs. "Go Pro" vs. "Contact Sales"),
+and (4) a "best for" description. Highlight the
+recommended tier with a "Most Popular" badge and explain
+why it is the best value. Write a pricing page headline
+and a brief paragraph below it that frames pricing as
+an investment, not a cost. Include a money-back guarantee
+statement if applicable: [GUARANTEE DETAILS]. Add a
+note about annual vs. monthly billing if relevant.
+
+------------------------------------------------------------
+
+27. Comparison Page — Your Product vs. Competitors
+
+Write copy for a comparison page that positions [YOUR
+PRODUCT] against [COMPETITOR 1] and [COMPETITOR 2]. The
+page should feel fair and informative, not like a hit
+piece. Structure: (1) Headline — frame the comparison as
+helpful, e.g., "[YOUR PRODUCT] vs. [COMPETITOR]: Which
+is right for you?" (2) Brief intro paragraph (3
+sentences) acknowledging that all three are good products
+but serve different needs. (3) A comparison table with
+[NUMBER, e.g., 8] criteria: [CRITERIA LIST, e.g., pricing,
+ease of use, integrations, customer support, scalability,
+customization, mobile experience, onboarding time]. For
+each row, write short descriptions (not just checkmarks)
+that explain the nuance. (4) A "Choose [YOUR PRODUCT]
+if..." summary section with 3-4 bullet points identifying
+the ideal customer. (5) A "Choose [COMPETITOR] if..."
+section for each competitor (be genuinely helpful). End
+with a CTA to try your product with a low-risk offer.
+
+------------------------------------------------------------
+
+28. About Page Copy — Brand Story and Mission
+
+Write the About page copy for [YOUR BRAND/COMPANY NAME].
+The founders are [FOUNDER NAME(S) AND BRIEF BACKGROUND].
+The company was started because [ORIGIN STORY, e.g., they
+experienced the problem firsthand, they noticed a gap in
+the market, or they were frustrated with existing
+solutions]. Structure the page as: (1) Opening paragraph
+— a compelling, human story about why the company exists
+(not corporate speak), (2) Mission statement — one clear
+sentence starting with "We believe..." or "Our mission
+is...", (3) "What we do" section — 2-3 sentences
+explaining the product in plain English, (4) Values or
+principles — [NUMBER, e.g., 3] core values with a one-
+sentence explanation each, and (5) Team section intro —
+a brief paragraph about the team culture and what drives
+the people behind the product. The tone should be
+[TONE, e.g., authentic and scrappy, polished and
+professional, or warm and community-driven]. Avoid
+buzzwords like "synergy," "disrupt," and "leverage."
+
+------------------------------------------------------------
+
+29. CTA Sections — Multiple Conversion Points
+
+Write copy for [NUMBER, e.g., 4] different CTA sections
+to be placed throughout a landing page for [YOUR PRODUCT/
+SERVICE]. Each CTA section should work independently
+(visitors may scroll to any of them). Create: (1) Top-of-
+page CTA (after hero) — high-energy, rides the momentum
+of the headline. Headline + 1-line description + button
+text. (2) Mid-page CTA (after features section) — more
+rational, references what the visitor just learned.
+Headline + 2-line description + button text. (3) Social-
+proof CTA (after testimonials) — leverages the trust just
+built. Headline + 1-line description + button text +
+trust element below the button. (4) Bottom-of-page CTA
+(final section) — creates a sense of "now or never"
+without being pushy. Headline + 2-line description +
+primary button text + secondary link text for visitors
+who are not ready yet (e.g., "Not ready? Download our
+free [RESOURCE] instead."). Vary the language across all
+four so the page does not feel repetitive.
+
+------------------------------------------------------------
+
+30. Trust-Building Section — Logos, Badges, and Proof
+
+Write copy for a trust-building section on a landing page
+for [YOUR PRODUCT/SERVICE]. This section should eliminate
+risk and build credibility for skeptical visitors who have
+scrolled past the features and testimonials but are still
+not convinced. Include: (1) A section headline like "You
+are in good company" or "Trusted by teams at..." with
+placeholder spots for [NUMBER] company logos. (2) A
+"by the numbers" mini-section with [NUMBER, e.g., 3-4]
+impressive stats formatted as large numbers with labels,
+such as [STAT 1, e.g., "10,000+ active users"], [STAT 2,
+e.g., "99.9% uptime"], [STAT 3, e.g., "$2M+ saved by
+customers"]. (3) Security and compliance badges —
+reference any certifications like [CERTIFICATIONS, e.g.,
+SOC 2, GDPR, HIPAA, SSL]. (4) Guarantee statement —
+write a 2-sentence risk-reversal statement about [YOUR
+GUARANTEE, e.g., 30-day money-back, free cancellation].
+(5) A brief "As seen in" row if applicable with media
+publication names. The tone should convey stability
+and reliability.
+
+
+============================================================
+  SECTION 4: SOCIAL MEDIA COPY (10 Prompts)
+============================================================
+
+31. Carousel Post — Multi-Slide Educational Content
+
+Write copy for a [NUMBER, e.g., 10]-slide Instagram or
+LinkedIn carousel post about [TOPIC, e.g., "5 email
+subject line formulas that actually work"]. For each
+slide, provide: (1) the slide headline (large text, under
+8 words), (2) the supporting body text (1-3 short
+sentences), and (3) a design direction note (background
+color, any icons or visuals to include). Slide 1 should
+be the cover — a bold, curiosity-driving title that makes
+people swipe. Slides 2 through [N-1] should each cover
+one key point with an actionable tip or example. The
+final slide should be a CTA — [CTA, e.g., "Follow for
+more marketing tips," "Save this for later," or "DM us
+'GUIDE' for the full playbook"]. Also write the caption
+that accompanies the carousel: a hook (first line visible
+before "...more"), a brief expansion, and 3-5 relevant
+hashtags. The caption should complement, not repeat, the
+carousel content.
+
+------------------------------------------------------------
+
+32. Twitter/X Thread — Hook + Value + CTA
+
+Write a Twitter/X thread with [NUMBER, e.g., 8-10] tweets
+about [TOPIC, e.g., "How I grew my newsletter from 0 to
+10,000 subscribers in 6 months"]. Tweet 1 (the hook)
+should stop the scroll — use a bold claim, a surprising
+result, or a contrarian take. Tweets 2 through [N-1]
+should each deliver one distinct insight, tip, or lesson.
+Use short paragraphs, line breaks for readability, and
+specific examples or numbers wherever possible. Avoid
+generic advice — each tweet should pass the "so what?"
+test. Include at least one tweet with a personal story or
+mistake learned from. The second-to-last tweet should
+summarize the key takeaway in one powerful sentence. The
+final tweet should include a CTA: [CTA, e.g., "Follow me
+for more threads like this," "RT the first tweet if this
+was helpful," or "Grab my free [RESOURCE] at [LINK]"].
+Write an alt-text suggestion for any tweet that would
+benefit from an image.
+
+------------------------------------------------------------
+
+33. LinkedIn Post — Thought Leadership
+
+Write a LinkedIn post from [YOUR NAME/ROLE] about [TOPIC,
+e.g., a leadership lesson, industry trend, or career
+insight]. The post should position the author as a
+thoughtful expert without being preachy or self-
+promotional. Structure: (1) Hook — the first 1-2 lines
+(visible before "...see more") must be compelling enough
+to earn the click. Use a surprising statement, a
+counterintuitive insight, or a vulnerable admission.
+(2) Body — 6-10 short paragraphs (1-2 sentences each)
+that tell a story or build an argument. Use line breaks
+heavily — LinkedIn rewards white space. Include a specific
+example from [YOUR EXPERIENCE OR INDUSTRY]. (3) Takeaway
+— one clear, actionable lesson the reader can apply today.
+(4) Engagement driver — end with a question that invites
+comments, such as [QUESTION, e.g., "What is the most
+counterintuitive lesson you have learned in your
+career?"]. Avoid hashtag spam — use 3 targeted hashtags
+maximum. Do not use corporate buzzwords.
+
+------------------------------------------------------------
+
+34. Instagram Caption — Product Showcase
+
+Write an Instagram caption for a post showcasing [PRODUCT
+NAME] from [YOUR BRAND]. The image/video shows [IMAGE
+DESCRIPTION, e.g., flat-lay product photography, a
+customer using the product, or a before-and-after]. The
+caption should: (1) open with a hook that is NOT about
+the product — start with the customer's problem, desire,
+or emotion, such as [HOOK ANGLE, e.g., "That feeling when
+your skincare finally just... works"]. (2) Transition into
+the product naturally — explain what it is and why it
+matters in 2-3 sentences. Highlight [KEY BENEFIT] and
+[UNIQUE FEATURE]. (3) Include social proof if available:
+[SOCIAL PROOF, e.g., "5,000+ five-star reviews" or "Sold
+out twice — back in stock now"]. (4) End with a CTA:
+[CTA, e.g., "Tap the link in bio to shop," "Drop a [EMOJI]
+if you need this," or "Tag someone who needs to try
+this"]. Write 2 caption versions — one short (under 100
+words for feed scrollers) and one long (200+ words for
+the explore page algorithm). Include 15-20 hashtag
+suggestions grouped by type: branded, product, niche,
+community.
+
+------------------------------------------------------------
+
+35. Pinterest Pin Description — SEO-Optimized
+
+Write a Pinterest pin description for [CONTENT TYPE, e.g.,
+a blog post, product listing, recipe, or infographic]
+about [TOPIC]. The pin image shows [IMAGE DESCRIPTION].
+Pinterest descriptions function as both user-facing copy
+and SEO — they must be keyword-rich while still reading
+naturally. Structure: (1) Opening line — a benefit-driven
+statement that tells the pinner exactly what they will get,
+such as "Learn [OUTCOME] with this step-by-step [CONTENT
+TYPE]." (2) Middle — 2-3 sentences expanding on the value,
+including keywords: [KEYWORD 1], [KEYWORD 2], [KEYWORD 3],
+[KEYWORD 4]. Mention specific details that make this pin
+worth saving: [SPECIFIC DETAIL, e.g., "includes printable
+template," "with before-and-after photos," or "real
+budget numbers included"]. (3) CTA — invite the click,
+such as "Click through for the full guide" or "Save this
+pin for later!" Keep the total description between 100-200
+words. Also provide: a pin title (under 100 characters)
+and 3 board name suggestions where this pin would perform
+well.
+
+------------------------------------------------------------
+
+36. TikTok Caption — Short, Punchy, Algorithm-Friendly
+
+Write a TikTok caption and on-screen text overlay copy for
+a video about [TOPIC/CONTENT, e.g., "3 ChatGPT prompts
+for writing emails faster"]. The video style is [STYLE,
+e.g., talking head, screen recording, trending audio with
+text overlay, or green screen]. Provide: (1) The caption
+(under 150 characters) — it should be a hook, a bold
+claim, or a question that creates a "wait, what?" reaction.
+Include 3-5 relevant hashtags and one trending hashtag if
+applicable. (2) On-screen text for each section of the
+video: [SECTION 1: HOOK TEXT, 3-5 words], [SECTION 2:
+MAIN POINT, 5-8 words], [SECTION 3: PAYOFF OR CTA, 3-5
+words]. (3) A pinned comment suggestion that drives
+engagement, such as a question, a hot take, or "Comment
+[WORD] and I will send you the [FREE RESOURCE]." (4) 3
+alternative caption variations for reposting or A/B
+testing. The tone should match TikTok's native voice:
+casual, direct, slightly chaotic, and authentic.
+
+------------------------------------------------------------
+
+37. Community Engagement Post — Spark Discussion
+
+Write a social media post for [PLATFORM, e.g., Facebook
+Group, Reddit, Discord, or LinkedIn] designed to spark
+genuine discussion among [YOUR COMMUNITY/AUDIENCE, e.g.,
+freelance designers, startup founders, or fitness coaches].
+The topic is [TOPIC, e.g., pricing strategies, favorite
+tools, unpopular opinions, or lessons learned]. The post
+should NOT feel like a brand posting — it should feel
+like a peer starting a conversation. Structure: (1) A
+personal or vulnerable opening statement that establishes
+credibility and relatability, such as [OPENING, e.g., "I
+have been freelancing for 5 years and I still second-guess
+my pricing every time"]. (2) A clear, specific question
+that is easy to answer — not "What do you think about
+X?" but rather "What is the ONE tool you could not run
+your business without, and why?" (3) Your own answer to
+the question (leading by example encourages responses).
+(4) A closing line that encourages diverse perspectives:
+"No wrong answers — curious what everyone's experience
+has been." Keep the post under 150 words.
+
+------------------------------------------------------------
+
+38. Launch Announcement Post — New Product or Feature
+
+Write a social media launch announcement post for [NEW
+PRODUCT/FEATURE NAME] by [YOUR BRAND]. The post will go
+on [PLATFORM, e.g., Instagram, LinkedIn, Twitter/X, or
+all three]. Provide platform-specific versions. The
+product/feature is [DESCRIPTION — what it does and who
+it is for]. The key messaging points are: [POINT 1],
+[POINT 2], [POINT 3]. Structure each version as: (1)
+An exciting but not over-the-top opening — avoid "We are
+thrilled to announce..." and instead lead with what this
+means for the user: "You asked for [THING]. We built it."
+(2) A 2-3 sentence description of what is new and why it
+matters. (3) One specific example of how it works or what
+it enables. (4) A CTA tailored to the platform — [CTA,
+e.g., "Link in bio," "Comment for early access," or "Try
+it free at [URL]"]. For Twitter/X, keep it under 280
+characters. For LinkedIn, write 4-6 short paragraphs. For
+Instagram, write both a short and long caption option.
+Include relevant hashtags for each platform.
+
+------------------------------------------------------------
+
+39. Behind-the-Scenes Post — Build Authenticity
+
+Write a behind-the-scenes social media post for [YOUR
+BRAND/COMPANY] that gives followers a peek into [BTS
+TOPIC, e.g., how a product is made, a day in the founder's
+life, the office/workspace, a team meeting, or the process
+behind a recent decision]. The post should build
+authenticity and human connection without feeling staged.
+Provide versions for [PLATFORM(S)]. Structure: (1) A
+casual, "real" opening — think "messy desk, real talk"
+energy, not "Here is an exclusive behind-the-scenes look
+at our innovative process." Example opening: "This is
+what [TIME, e.g., 6 AM on launch day] actually looks like
+for us." (2) Share [NUMBER, e.g., 2-3] specific, honest
+details about what is shown — the good and the imperfect.
+(3) Connect it to the brand's mission or values without
+being preachy: "This is why we [VALUE, e.g., obsess over
+quality, keep our team small, or test everything 10
+times]." (4) A question or invitation for followers to
+share their own BTS: [ENGAGEMENT QUESTION]. Keep the tone
+genuine, slightly informal, and human.
+
+------------------------------------------------------------
+
+40. User-Generated Content Prompt — Encourage Customer Posts
+
+Write a social media post from [YOUR BRAND] that
+encourages customers to create and share their own content
+featuring [YOUR PRODUCT/SERVICE]. The post should make
+customers WANT to participate — not feel like they are
+doing free marketing for you. Structure: (1) Lead with the
+community — "We love seeing how you [USE CASE, e.g., style
+our pieces, use our tools, transform your spaces]." Share
+or reference 1-2 examples of great UGC that has already
+been posted (or describe hypothetical examples). (2)
+Explain the prompt or challenge clearly: [UGC PROMPT,
+e.g., "Show us your workspace setup featuring [PRODUCT],"
+"Share your before-and-after using [PRODUCT]," or "Tell us
+your [PRODUCT] story in 3 sentences"]. (3) Include the
+specific hashtag to use: [BRANDED HASHTAG]. (4) Mention
+the incentive: [INCENTIVE, e.g., "We'll feature our
+favorites on our page," "Win a $100 gift card — winner
+chosen Friday," or "Every post earns you loyalty points"].
+(5) Provide an example post that customers can use as a
+template. Make sharing feel fun and low-pressure. Include
+a reminder of any terms or rules.
+
+
+============================================================
+  SECTION 5: SALES & CONVERSION COPY (10 Prompts)
+============================================================
+
+41. Long-Form Sales Page — Full Structure
+
+Write a long-form sales page for [YOUR PRODUCT/SERVICE]
+priced at [PRICE] targeting [TARGET AUDIENCE]. Follow
+this proven sales page structure: (1) Pre-headline — a
+one-line qualifier: "For [AUDIENCE] who [SITUATION]."
+(2) Headline — a bold promise of transformation. (3)
+Opening story or hook (3-4 paragraphs) — paint the
+"before" picture vividly. Describe the pain of [CORE
+PROBLEM] using specific, sensory details your audience
+will recognize. (4) Agitate — expand on the consequences
+of not solving the problem: [CONSEQUENCE 1], [CONSEQUENCE
+2]. (5) Introduce the solution — present [YOUR PRODUCT]
+as the bridge from pain to promise. (6) Features and
+benefits section — list [NUMBER] features, each with a
+"which means..." benefit translation. (7) Social proof
+block — testimonials, stats, media mentions. (8) Objection
+handling — address [TOP 3 OBJECTIONS]. (9) Guarantee —
+[GUARANTEE TYPE AND DURATION]. (10) Price anchoring —
+compare the price to [COMPARISON, e.g., the cost of not
+solving the problem, or the price of alternatives]. (11)
+Final CTA with urgency. Write the complete copy for each
+section — this should be a full, publishable sales page.
+
+------------------------------------------------------------
+
+42. Objection-Handling Copy — Overcome Buyer Resistance
+
+Write objection-handling copy for [YOUR PRODUCT/SERVICE]
+that addresses the [NUMBER, e.g., 5] most common reasons
+prospects do not buy. The objections are: [OBJECTION 1,
+e.g., "It's too expensive"], [OBJECTION 2, e.g., "I don't
+have time to learn a new tool"], [OBJECTION 3, e.g., "I'm
+not sure it will work for my industry"], [OBJECTION 4,
+e.g., "I need to get approval from my team"], [OBJECTION
+5, e.g., "I've been burned by similar products before"].
+For each objection, write: (1) an empathetic
+acknowledgment that validates the concern (never dismiss
+it), (2) a reframe that shifts perspective — e.g., "The
+question isn't whether you can afford it — it's whether
+you can afford to keep [LOSING/WASTING] [SPECIFIC COST]
+every month," (3) a proof point — a testimonial snippet,
+stat, or case study that directly counters the objection,
+and (4) a micro-CTA that lowers the barrier — e.g., "Try
+it free for 14 days and decide with real data, not
+guesswork." These can be used on sales pages, in email
+sequences, or as sales enablement content.
+
+------------------------------------------------------------
+
+43. Scarcity & Urgency Framework — Ethical FOMO
+
+Write conversion copy using ethical scarcity and urgency
+for [YOUR PRODUCT/SERVICE/OFFER]. The offer is [OFFER
+DETAILS, e.g., a limited-time bundle, early-bird pricing,
+a cohort-based course with limited seats, or a seasonal
+promotion]. The scarcity element is [SCARCITY TYPE, e.g.,
+"Only 50 spots available," "Price increases to [FULL
+PRICE] on [DATE]," or "Bonus [ITEM] included only for
+the first 100 buyers"]. Write copy for: (1) A sales page
+urgency bar or banner (one impactful sentence + countdown
+reference), (2) An email subject line + opening paragraph
+that creates urgency without being manipulative — explain
+WHY the scarcity exists (e.g., limited capacity, seasonal
+pricing, exclusive batch), (3) A social media post
+announcing the deadline, and (4) A "last chance" email
+sent [TIME, e.g., 24 hours] before the deadline closes.
+Important guidelines: never use fake scarcity, never imply
+false deadlines, and never create panic — instead, help
+the prospect make a confident, informed decision faster.
+Frame urgency as a service: "We want you to have the
+information you need to decide before [DEADLINE]."
+
+------------------------------------------------------------
+
+44. Storytelling Sales Copy — Narrative Conversion
+
+Write sales copy for [YOUR PRODUCT/SERVICE] using a
+storytelling approach. The story should follow [STORY
+TYPE, e.g., "the founder's journey," "a customer
+transformation," or "the origin of the product"]. The
+protagonist is [PROTAGONIST, e.g., the founder, a
+specific customer persona, or the product itself as a
+character]. Map the story to a classic narrative arc:
+(1) The Ordinary World — what life was like before,
+including [SPECIFIC RELATABLE DETAIL]. (2) The Inciting
+Incident — the moment that made the protagonist realize
+something had to change: [INCIDENT]. (3) The Struggle —
+failed attempts, wasted money, frustration with [FAILED
+ALTERNATIVES]. (4) The Discovery — how [YOUR PRODUCT]
+entered the picture (keep this natural, not infomercial-
+like). (5) The Transformation — specific, measurable
+results: [RESULT 1], [RESULT 2], [RESULT 3]. (6) The
+Invitation — transition from story to reader, inviting
+them into the same transformation. Write this as a
+complete, flowing narrative (800-1200 words) that can
+live on a sales page, long-form ad, or email sequence.
+
+------------------------------------------------------------
+
+45. Guarantee Copy — Risk Reversal Statement
+
+Write guarantee and risk-reversal copy for [YOUR PRODUCT/
+SERVICE]. The guarantee type is [GUARANTEE, e.g., 30-day
+money-back guarantee, 90-day satisfaction guarantee,
+lifetime warranty, or results-based guarantee]. Create:
+(1) A guarantee section headline that feels bold and
+confident, such as "Try It Risk-Free" or "Our [TIME]
+'Love It or Leave It' Guarantee." (2) A 3-4 sentence
+guarantee description that explains the terms clearly
+and simply — no fine print language. Be specific about
+what the customer should do if they want a refund: [REFUND
+PROCESS, e.g., "Email us at [EMAIL]. No hoops. No
+questions asked. Full refund within 48 hours."]. (3) A
+paragraph explaining WHY you offer this guarantee — what
+it says about your confidence in the product. Frame it as:
+"We can offer this because [REASON, e.g., 97% of our
+customers stay, our product works, we believe in earning
+your business every month]." (4) An optional "anti-
+guarantee" line for products where overuse of the
+guarantee might attract bad-faith users — a gentle,
+honest framing of who this product is (and is not) for.
+
+------------------------------------------------------------
+
+46. Product Comparison Copy — Your Product vs. Status Quo
+
+Write sales copy that compares [YOUR PRODUCT/SERVICE] to
+the status quo — the way your [TARGET AUDIENCE] is
+currently solving the problem without your product. This
+is NOT a competitor comparison; it is [YOUR PRODUCT] vs.
+doing nothing, using spreadsheets, hiring manually, or
+cobbling together free tools. Structure as a two-column
+comparison: "Without [YOUR PRODUCT]" vs. "With [YOUR
+PRODUCT]." Include [NUMBER, e.g., 6] comparison points
+covering: time spent, cost, frustration level, quality
+of results, scalability, and [CUSTOM COMPARISON POINT].
+For each row, the "without" column should be specific
+and painfully relatable (not strawman arguments), and
+the "with" column should be concrete and provable.
+Below the comparison, write a 2-3 sentence paragraph
+that summarizes the total impact — e.g., "That is
+[NUMBER] hours saved per week, [DOLLAR AMOUNT] in
+reduced costs, and significantly less [PAIN POINT]. All
+for [PRICE/MONTH]." End with a CTA.
+
+------------------------------------------------------------
+
+47. Bundle Offer Copy — Package Multiple Products
+
+Write sales copy for a bundle offer from [YOUR BRAND]
+that packages [NUMBER] products/services together:
+[PRODUCT 1 + INDIVIDUAL PRICE], [PRODUCT 2 + INDIVIDUAL
+PRICE], [PRODUCT 3 + INDIVIDUAL PRICE]. The bundle price
+is [BUNDLE PRICE] (a savings of [SAVINGS AMOUNT OR
+PERCENTAGE]). Structure the copy as: (1) Bundle headline
+— frame it as a curated package, not a clearance dump.
+Example: "The Complete [OUTCOME] Kit" or "Everything you
+need to [ACHIEVE GOAL] — in one package." (2) For each
+product in the bundle, write a 2-3 sentence description
+focused on what it contributes to the overall outcome.
+Connect them: "Product A does [X], Product B handles [Y],
+and Product C covers [Z] — together, they give you
+[COMPLETE OUTCOME]." (3) Price anchoring — show the
+individual prices stacked up, then reveal the bundle
+price. (4) A "Who is this for?" section — describe the
+ideal buyer in 2-3 sentences. (5) A CTA with urgency
+if the bundle is time-limited: [DEADLINE OR AVAILABILITY].
+
+------------------------------------------------------------
+
+48. Limited-Time Offer Copy — Seasonal or Flash Promotion
+
+Write complete sales copy for a limited-time offer on
+[YOUR PRODUCT/SERVICE]. The offer is [OFFER DETAILS, e.g.,
+40% off for 72 hours, free bonus with purchase this week,
+or early-bird pricing before [DATE]]. The reason for the
+promotion is [REASON, e.g., anniversary sale, seasonal
+clearance, product launch celebration, or holiday event].
+Create copy for the following touchpoints: (1) Sales page
+banner — one punchy sentence + deadline. (2) Dedicated
+offer page — headline, 3-paragraph body covering what the
+offer is, why it exists, and what happens when it expires,
+plus CTA. (3) Announcement email — subject line (3
+options), preview text, and full email body. (4) Reminder
+email (sent [TIME] before deadline) — shorter, more urgent
+tone, addressing procrastinators directly. (5) Social
+media post — [PLATFORM] version. All copy should maintain
+a consistent voice and reference the same deadline:
+[EXPIRATION DATE/TIME + TIMEZONE]. Ensure the "why" behind
+the offer is clear — customers are skeptical of discounts
+without a reason.
+
+------------------------------------------------------------
+
+49. Webinar/Event Registration Copy — Drive Signups
+
+Write registration page and promotional copy for a
+[EVENT TYPE, e.g., live webinar, virtual workshop,
+masterclass, or AMA session] titled "[EVENT TITLE]"
+hosted by [HOST NAME + CREDENTIALS]. The event covers
+[TOPIC] and is designed for [TARGET AUDIENCE]. The date
+and time is [DATE + TIME + TIMEZONE]. Create: (1)
+Registration page copy — headline (promise-driven, not
+just the event title), sub-headline, a "What you'll
+learn" section with [NUMBER, e.g., 3-5] specific bullet
+points (each should be a desirable outcome, not a vague
+topic), a "Who this is for" section, host bio (2-3
+sentences positioned as credibility), and a registration
+CTA button + what they get after registering (e.g.,
+calendar invite, prep materials, replay access). (2)
+Promotional email — to be sent [TIME] before the event.
+Subject line, body that sells the event's value, and a
+strong CTA. (3) Social media announcement — [PLATFORM]
+version with key details and registration link reference.
+(4) Day-of reminder email — short, excited tone, includes
+join link and one compelling reason to show up live.
+
+------------------------------------------------------------
+
+50. Order Confirmation Upsell Copy — Post-Purchase
+
+Write order confirmation email copy for [YOUR BRAND] that
+confirms the purchase of [PRODUCT NAME] and includes a
+strategic upsell. Structure: (1) Order confirmation
+section — warm thank-you message, order summary with
+[PRODUCT], [PRICE], and [ORDER NUMBER PLACEHOLDER], and
+estimated delivery or access details. Keep this section
+clean and functional — the customer needs to see their
+order info first. (2) Transition to upsell — after the
+order details, add a clear visual separator and a section
+like "One more thing..." or "Customers who bought
+[PRODUCT] also love..." (3) Upsell product section —
+introduce [UPSELL PRODUCT] with a 2-3 sentence pitch
+focused on how it complements the original purchase.
+Include [UPSELL PRICE] and a [SPECIAL OFFER, e.g.,
+"Add this to your order in the next 30 minutes and save
+20%"]. (4) Social sharing invitation — "Excited about
+your purchase? Share it: [PRE-WRITTEN TWEET/POST
+TEMPLATE]." (5) Support footer — "Questions about your
+order? Reply to this email or contact [SUPPORT CHANNEL]."
+The upsell should feel like a helpful recommendation, not
+a cash grab. Test tone: read it aloud and ask, "Would I
+be annoyed to receive this right after buying?"
+
+
+============================================================
+  Thanks for your purchase!
+  Visit atlasux.cloud for AI-powered business tools.
+
+  © 2026 Atlas UX — A product of DEAD APP CORP
+============================================================

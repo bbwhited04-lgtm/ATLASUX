@@ -1,0 +1,140 @@
+============================================================
+  50 ChatGPT Prompt Pack — FREE Edition
+  by Atlas UX · atlasux.cloud
+============================================================
+
+Thank you for downloading! These 50 prompts are ready to
+copy-paste into ChatGPT. Each one is tested and optimized
+for the best possible output.
+
+============================================================
+  CONTENT CREATION (10 Prompts)
+============================================================
+
+1. Write a 300-word blog post about [TOPIC] that hooks the reader in the first sentence, includes 3 actionable takeaways, and ends with a call to action. Use a conversational tone.
+
+2. Create 10 engaging social media captions for [PRODUCT/SERVICE]. Each caption should be under 150 characters, include an emoji, and have a clear call to action. Vary the tone between playful, urgent, and inspirational.
+
+3. Write a YouTube video script (5 minutes) about [TOPIC]. Structure it with a pattern-interrupt hook (first 5 seconds), the main value section, and a strong outro with subscribe CTA. Include suggested B-roll notes.
+
+4. Generate 20 headline variations for an article about [TOPIC]. Mix curiosity-driven, how-to, listicle, and contrarian angles. Rank them by predicted click-through rate.
+
+5. Write a compelling product description for [PRODUCT] that addresses the customer's pain point, explains the solution, lists 5 key benefits (not features), and includes a money-back guarantee mention. Keep it under 200 words.
+
+6. Create a 30-day content calendar for [NICHE] on Instagram. For each day, provide the content type (Reel, Carousel, Story, Static), a topic, a caption hook, and 5 relevant hashtags.
+
+7. Write a newsletter welcome email sequence (3 emails over 5 days) for [BUSINESS]. Email 1: warm introduction + freebie delivery. Email 2: your story + credibility. Email 3: soft pitch + testimonial.
+
+8. Rewrite this text to be more engaging and persuasive while keeping the same meaning: "[PASTE YOUR TEXT]". Add power words, shorten sentences, and improve the flow.
+
+9. Create a Twitter/X thread (10 tweets) teaching [TOPIC]. Start with a bold claim that makes people stop scrolling. Each tweet should be self-contained but flow into the next. End with a recap + CTA.
+
+10. Write 5 different email subject lines for a promotional email about [OFFER]. Include one with a number, one with urgency, one with curiosity, one personalized (using [FIRST NAME]), and one contrarian.
+
+============================================================
+  BUSINESS & STRATEGY (10 Prompts)
+============================================================
+
+11. Act as a business consultant. I'm starting a [TYPE OF BUSINESS] with a budget of [AMOUNT]. Create a lean launch plan covering: target customer profile, minimum viable product, first 90-day milestones, marketing channels to prioritize, and key metrics to track.
+
+12. Analyze my business idea: [DESCRIBE IDEA]. Give me an honest SWOT analysis (Strengths, Weaknesses, Opportunities, Threats). Be specific, not generic. Include 3 competitors I should study.
+
+13. Create a pricing strategy for my [PRODUCT/SERVICE]. My costs are [AMOUNT], my target market is [AUDIENCE], and competitors charge [RANGE]. Recommend 3 pricing models with pros/cons of each.
+
+14. Write a 60-second elevator pitch for [BUSINESS/IDEA] that covers: the problem, the solution, why now, why us, and the ask. Make it natural, not robotic.
+
+15. I need to negotiate [SITUATION]. Give me a preparation framework: my BATNA (best alternative), their likely interests, 3 anchoring points, concession strategy, and 5 specific phrases to use during the negotiation.
+
+16. Create a customer avatar for [BUSINESS]. Include demographics, psychographics, daily routine, biggest frustrations, where they spend time online, what they've already tried, and what would make them say "shut up and take my money."
+
+17. Design an onboarding flow for new customers of [PRODUCT/SERVICE]. Map out the first 7 days: welcome message, quick-win tutorial, feature discovery sequence, feedback request, and upsell opportunity.
+
+18. I run a [TYPE OF BUSINESS]. Write a quarterly business review template that I can fill in each quarter. Include sections for revenue analysis, customer metrics, marketing performance, operational efficiency, and next-quarter priorities.
+
+19. Act as a financial advisor. I have $[AMOUNT] in revenue and $[AMOUNT] in expenses. My biggest cost categories are [LIST]. Identify 3 areas where I can cut costs without hurting quality, and 3 ways to increase revenue in the next 90 days.
+
+20. Create a partnership pitch email I can send to [TYPE OF COMPANY] to propose a [TYPE OF PARTNERSHIP]. Include what I bring to the table, what's in it for them, a specific proposal, and a low-commitment next step.
+
+============================================================
+  MARKETING & GROWTH (10 Prompts)
+============================================================
+
+21. Build a full marketing funnel for [PRODUCT/SERVICE]. Define the awareness, consideration, and decision stages. For each stage, recommend the content type, platform, call to action, and metric to track.
+
+22. Write 5 Facebook/Meta ad copy variations for [PRODUCT] targeting [AUDIENCE]. Each ad should have a different hook style: question, bold statement, story opener, statistic, and testimonial format. Include primary text, headline, and description.
+
+23. Create an SEO content brief for the keyword "[TARGET KEYWORD]." Include: search intent analysis, recommended title tag, meta description, H2 subheadings (at least 6), related keywords to include, word count target, and internal linking opportunities.
+
+24. Design a referral program for [BUSINESS]. Include the incentive structure (for referrer and referee), messaging templates, tracking method, terms and conditions, and launch email announcement.
+
+25. I want to grow my email list from [CURRENT SIZE] to [GOAL] in 90 days. My niche is [NICHE]. Give me 10 specific lead magnet ideas, 5 traffic sources to prioritize, and a weekly action plan.
+
+26. Write a case study about how [CLIENT/CUSTOMER] achieved [RESULT] using [PRODUCT/SERVICE]. Structure it as: Challenge → Solution → Implementation → Results (with specific numbers) → Testimonial quote → CTA.
+
+27. Create a competitive analysis for [MY BUSINESS] vs [COMPETITOR 1], [COMPETITOR 2], and [COMPETITOR 3]. Compare: pricing, features, target audience, brand positioning, marketing channels, and customer reviews sentiment.
+
+28. Generate 30 blog post ideas for [NICHE] that target long-tail keywords. For each idea, include the target keyword, estimated search intent (informational/transactional/navigational), and suggested content format.
+
+29. Write a launch announcement for [NEW PRODUCT/FEATURE]. Create versions for: email blast, Instagram post, Twitter/X thread, LinkedIn post, and press release summary. Each should match the platform's tone and format.
+
+30. Design an A/B testing plan for my [LANDING PAGE / EMAIL / AD]. Identify the 5 highest-impact elements to test, write hypothesis statements for each test, define success metrics, and recommend minimum sample size.
+
+============================================================
+  PRODUCTIVITY & PERSONAL (10 Prompts)
+============================================================
+
+31. Act as my executive assistant. I have these tasks to complete this week: [LIST TASKS]. Prioritize them using the Eisenhower Matrix (urgent/important), estimate time for each, and create a day-by-day schedule. Block 2 hours of deep work each morning.
+
+32. I need to learn [SKILL/TOPIC] in 30 days. Create a structured learning plan: break it into weekly themes, recommend free resources for each week, include daily practice exercises (15-30 min), and define milestones to measure progress.
+
+33. Write a professional but firm email declining [REQUEST/INVITATION] without burning the bridge. Acknowledge their effort, give a brief honest reason, suggest an alternative if possible, and leave the door open for future opportunities.
+
+34. I'm preparing for a job interview for a [JOB TITLE] position at a [TYPE OF COMPANY]. Give me: 10 likely interview questions, a STAR method answer framework for behavioral questions, 5 smart questions to ask them, and 3 common mistakes to avoid.
+
+35. Create a morning routine optimized for productivity. I wake up at [TIME], need to leave by [TIME], and my priorities are [LIST]. Include time blocks, habit stacking suggestions, and what to eliminate. Keep it realistic, not Instagram-influencer fantasy.
+
+36. I'm feeling overwhelmed by [SITUATION]. Act as a therapist and help me break this down: identify what I can control vs what I can't, give me 3 immediate actions I can take today, and help me reframe the situation in a more empowering way.
+
+37. Write a self-performance review for my role as [JOB TITLE]. Include sections for: key accomplishments with metrics, areas of growth, challenges overcome, skills developed, and goals for next review period. Use confident but not arrogant language.
+
+38. Help me make a decision between [OPTION A] and [OPTION B]. Create a weighted decision matrix with these criteria: [LIST CRITERIA]. Score each option 1-10 on each criterion. Then give me your recommendation with reasoning.
+
+39. I want to build a habit of [HABIT]. Using the framework from Atomic Habits, help me: make it obvious (cue), make it attractive (craving), make it easy (response), and make it satisfying (reward). Include specific implementation intentions.
+
+40. Create a meal prep plan for the week. My dietary preferences are [PREFERENCES], budget is $[AMOUNT], and I have [TIME AVAILABLE] to cook on Sunday. Include a grocery list organized by store section, and prep instructions in order of efficiency.
+
+============================================================
+  LEARNING & RESEARCH (10 Prompts)
+============================================================
+
+41. Explain [COMPLEX TOPIC] to me like I'm 10 years old. Then explain it like I'm a college student. Then explain it like I'm an expert in a related field. Highlight what changes at each level of understanding.
+
+42. I just read about [TOPIC/CONCEPT]. Ask me 10 increasingly difficult questions to test my understanding. After I answer each one, tell me if I'm right, correct any misconceptions, and explain why.
+
+43. Compare and contrast [CONCEPT A] vs [CONCEPT B]. Use a structured format: definition of each, key similarities, key differences, when to use each, common misconceptions, and a real-world analogy that makes the distinction clear.
+
+44. Act as a Socratic tutor for [SUBJECT]. Don't give me answers directly — ask me guiding questions that lead me to discover the answer myself. Start with the fundamentals and progressively get more advanced. Correct me gently when I'm wrong.
+
+45. Summarize the key ideas from [BOOK TITLE] by [AUTHOR]. Include: the central thesis, 5 most important concepts, 3 actionable takeaways I can implement today, legitimate criticisms of the book, and other books that complement it.
+
+46. I'm writing a research paper on [TOPIC]. Help me create an outline with: thesis statement, 5 main arguments, supporting evidence types needed for each argument, potential counterarguments I should address, and a conclusion framework.
+
+47. Create a vocabulary list of 20 essential terms for [FIELD/INDUSTRY]. For each term, provide: the definition, an example of how it's used in context, a common mistake people make with it, and a memory trick to remember it.
+
+48. Design a 5-question quiz about [TOPIC] that tests understanding at different levels of Bloom's Taxonomy: remembering, understanding, applying, analyzing, and evaluating. Include answer key with explanations.
+
+49. I'm trying to understand [CURRENT EVENT/TREND]. Give me the full context: what happened, why it matters, who the key players are, what different perspectives exist, what's likely to happen next, and what most people get wrong about it.
+
+50. Create a mental model toolkit for [FIELD/DECISION TYPE]. Give me 5 mental models that apply, explain each one in plain English, provide an example of using it, and tell me when each model fails or misleads.
+
+============================================================
+
+  Thanks for downloading!
+  Visit atlasux.cloud for more AI-powered tools.
+
+  Check out our premium packs:
+  • 100 ChatGPT & AI Tools Prompt Pack — $0.99
+  • 200 E-commerce & POD Prompt Pack — $1.99
+
+  © 2026 Atlas UX — A product of DEAD APP CORP
+============================================================

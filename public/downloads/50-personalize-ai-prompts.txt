@@ -1,0 +1,723 @@
+============================================================
+  50 Prompts to Personalize AI
+  Instant Download Guide
+  by Atlas UX · atlasux.cloud — $0.99
+============================================================
+
+Why does personalizing AI matter? Because out-of-the-box AI
+gives you generic results. The prompts in this guide teach
+you how to train AI tools to sound like YOU, think like YOU,
+and work the way YOU work. When AI understands your voice,
+your goals, and your daily rhythm, it stops being a novelty
+and becomes an indispensable partner. These 50 prompts will
+help you build that partnership — from calibrating your
+writing style, to constructing custom assistants, to turning
+AI into your personal thinking partner.
+
+Copy any prompt below, replace the [BRACKETED PLACEHOLDERS]
+with your own details, and paste it into ChatGPT, Claude,
+or any AI chat tool.
+
+
+============================================================
+  TEACHING AI YOUR VOICE & TONE (10 Prompts)
+============================================================
+
+1. VOICE TRAINING — SAMPLE ANALYSIS
+
+I want you to learn my writing style. Below are three
+samples of my writing. Analyze them for tone (formal vs.
+casual), sentence length patterns, vocabulary level,
+recurring phrases, and any stylistic quirks you notice.
+Then summarize my voice profile in a short paragraph I can
+reuse in future conversations.
+
+Sample 1: [PASTE A BLOG POST, EMAIL, OR SOCIAL CAPTION]
+Sample 2: [PASTE A DIFFERENT PIECE OF YOUR WRITING]
+Sample 3: [PASTE A THIRD EXAMPLE, IDEALLY A DIFFERENT FORMAT]
+
+
+2. BRAND VOICE CALIBRATION DOCUMENT
+
+Help me create a Brand Voice Calibration Document. My brand
+name is [BRAND NAME]. Our audience is [TARGET AUDIENCE]. We
+want to sound [ADJECTIVE 1], [ADJECTIVE 2], and [ADJECTIVE 3]
+— but never [ADJECTIVE TO AVOID] or [ANOTHER ADJECTIVE TO
+AVOID]. Generate a one-page reference sheet that includes:
+voice pillars, do/don't word lists, example sentences for
+each pillar, and a quick-check rubric I can score any draft
+against.
+
+
+3. TONE MATCHING — BEFORE & AFTER
+
+Here is a paragraph I wrote: [PASTE YOUR PARAGRAPH]. Now
+rewrite the same content in each of these tones so I can
+compare: (a) corporate-formal, (b) friendly-conversational,
+(c) punchy-startup, (d) academic. After all four rewrites,
+tell me which version is closest to my original tone and
+what micro-adjustments would make the AI default to that
+tone in the future.
+
+
+4. PERSONA CREATION FROM SCRATCH
+
+I need you to create a detailed writing persona based on
+my background. I am a [JOB TITLE] in the [INDUSTRY] space.
+I have [NUMBER] years of experience. My audience respects
+me for [KEY EXPERTISE]. I tend to write with [SHORT/LONG]
+sentences, use [FORMAL/INFORMAL] language, and often
+include [ANALOGIES/DATA/STORIES]. Build a reusable persona
+prompt I can paste at the start of any new chat so the AI
+immediately writes in my voice.
+
+
+5. VOICE CONSISTENCY CHECKER
+
+I am going to paste two pieces of content I wrote on
+different days. Compare them and flag any inconsistencies
+in voice, tone, or style. Specifically look for shifts in
+formality level, changes in sentence complexity, conflicting
+vocabulary choices, and any places where the personality
+feels different. Then recommend a set of "voice rules" I
+should follow to stay consistent.
+
+Piece A: [PASTE CONTENT A]
+Piece B: [PASTE CONTENT B]
+
+
+6. EMAIL VOICE TEMPLATE GENERATOR
+
+Analyze my email writing style from these three sent emails:
+[PASTE EMAIL 1], [PASTE EMAIL 2], [PASTE EMAIL 3]. Then
+create five reusable email templates that match my voice
+for these scenarios: (a) introducing myself to a new
+contact, (b) following up after a meeting, (c) declining a
+request politely, (d) sharing good news with my team, and
+(e) requesting urgent action. Each template should have
+[PLACEHOLDER] spots for details but the surrounding
+language should sound like me.
+
+
+7. VOCABULARY FINGERPRINT
+
+Read through the writing samples I provide below and
+extract my "vocabulary fingerprint" — the words and phrases
+I reach for most often, the jargon I use naturally, the
+filler words I lean on, and any signature expressions that
+make my writing recognizably mine. Organize the results
+into categories: power words, transition phrases, jargon,
+colloquialisms, and words I overuse (with suggested
+alternatives).
+
+My writing samples: [PASTE 2-4 SAMPLES OF YOUR WRITING]
+
+
+8. AUDIENCE-ADAPTIVE TONE GUIDE
+
+I write for multiple audiences: [AUDIENCE 1, e.g., C-suite
+executives], [AUDIENCE 2, e.g., junior developers], and
+[AUDIENCE 3, e.g., general consumers]. My core voice stays
+the same, but I need to shift tone for each group. Using
+the writing samples I have shared previously (or these new
+ones: [PASTE SAMPLES]), create a Tone Adaptation Guide
+that shows exactly which dials to turn — formality, jargon
+density, sentence length, humor level — for each audience
+while keeping my voice recognizable.
+
+
+9. REWRITE IN MY VOICE
+
+Here is a piece of generic AI-generated content:
+[PASTE AI-GENERATED TEXT]. And here is a sample of my own
+writing for reference: [PASTE YOUR WRITING SAMPLE]. Rewrite
+the AI-generated content so it matches my voice exactly.
+After the rewrite, list the five specific changes you made
+so I can learn to spot "not my voice" faster in the future
+and give better instructions.
+
+
+10. VOICE EVOLUTION TRACKER
+
+I want to track how my writing voice evolves over time.
+Here is something I wrote one year ago: [PASTE OLDER
+WRITING]. Here is something I wrote this month: [PASTE
+RECENT WRITING]. Compare the two and describe how my voice
+has changed — has it become more confident, more concise,
+more technical, more casual? Then suggest whether my
+current trajectory is strengthening or diluting my brand
+voice, and recommend adjustments if needed.
+
+
+============================================================
+  CUSTOM AI ASSISTANTS (10 Prompts)
+============================================================
+
+11. PERSONAL ASSISTANT PERSONA BUILDER
+
+I want to build a custom AI assistant persona for my daily
+use. My name is [YOUR NAME], I work as a [JOB TITLE] at
+[COMPANY/INDUSTRY], and the tasks I most need help with are
+[TASK 1], [TASK 2], and [TASK 3]. I prefer responses that
+are [CONCISE/DETAILED], formatted as [BULLETS/PARAGRAPHS/
+TABLES], and I want the assistant to proactively [SUGGEST
+NEXT STEPS / ASK CLARIFYING QUESTIONS / STAY BRIEF]. Write
+a complete system-level instruction set I can paste into
+ChatGPT's Custom Instructions or any AI tool's system
+prompt field.
+
+
+12. CUSTOM INSTRUCTIONS OPTIMIZER
+
+Here are the Custom Instructions I currently use in
+ChatGPT: [PASTE YOUR CURRENT CUSTOM INSTRUCTIONS]. Review
+them for clarity, completeness, and efficiency. Are there
+contradictions? Missing context? Wasted character count?
+Rewrite them to be tighter and more effective, and explain
+each change you made. Keep the total under [CHARACTER
+LIMIT, e.g., 1500 characters] so it fits in the field.
+
+
+13. ROLE-BASED SYSTEM PROMPT — STRATEGIST
+
+Create a system prompt that turns the AI into my personal
+[ROLE, e.g., Marketing Strategist / Financial Advisor /
+Technical Architect]. It should have deep knowledge of
+[DOMAIN], default to [FRAMEWORK OR METHODOLOGY, e.g.,
+Jobs-to-Be-Done, First Principles, OKRs], always consider
+[CONSTRAINT, e.g., budget limits, regulatory compliance,
+brand guidelines], and push back when my ideas have obvious
+gaps. The tone should be [TONE, e.g., direct but
+supportive]. Write the full prompt I can reuse.
+
+
+14. TASK-SPECIFIC AI CONFIGURATION — WRITING EDITOR
+
+Configure the AI to act as my dedicated writing editor.
+I primarily write [CONTENT TYPE, e.g., blog posts,
+marketing emails, technical docs]. My biggest weaknesses
+are [WEAKNESS 1, e.g., run-on sentences] and [WEAKNESS 2,
+e.g., passive voice]. I want the editor to fix those
+issues, flag unclear logic, suggest stronger openings and
+closings, and maintain my voice (described here: [BRIEF
+VOICE DESCRIPTION]). Output edits in a tracked-changes
+style: show the original, the change, and a one-line
+reason for each edit.
+
+
+15. MEMORY MANAGEMENT — CONTEXT LOADER
+
+I am starting a new AI chat session but I need continuity
+from previous work. Here is my Context Package — please
+absorb it and confirm you understand before we proceed:
+
+Name: [YOUR NAME]
+Role: [YOUR ROLE]
+Current projects: [PROJECT 1], [PROJECT 2]
+Key decisions already made: [DECISION 1], [DECISION 2]
+Open questions: [QUESTION 1], [QUESTION 2]
+My preferences: [RESPONSE FORMAT, TONE, LENGTH]
+Important constraints: [BUDGET, DEADLINE, STAKEHOLDERS]
+
+Summarize what you now know about me in two sentences, then
+ask me what I want to work on today.
+
+
+16. MULTI-MODE ASSISTANT
+
+I need one AI prompt that lets me switch between modes by
+typing a keyword. Define these modes for me: (a) COACH —
+ask me questions instead of giving answers, help me think
+through problems, (b) EXECUTOR — just do what I ask with
+minimal discussion, (c) CRITIC — poke holes in my ideas
+and play devil's advocate, (d) TEACHER — explain concepts
+to me like I am a [SKILL LEVEL, e.g., smart beginner].
+My default mode should be [DEFAULT MODE]. Write the full
+system prompt including the mode-switching instructions.
+
+
+17. MEETING ASSISTANT CONFIGURATION
+
+Build me a Meeting Assistant prompt I can use before,
+during, and after meetings. Before: I paste the agenda and
+attendee list and it generates talking points, potential
+objections, and questions I should ask. During: I paste
+raw notes and it organizes them into structured minutes in
+real time. After: it drafts follow-up emails to [ATTENDEE
+ROLES, e.g., my manager, the client, the dev team] in my
+voice and creates a task list with owners and deadlines.
+My meetings are usually about [MEETING TOPICS].
+
+
+18. PERSONAL CRM ASSISTANT
+
+Create an AI prompt that acts as my personal CRM. When I
+paste details about a person — like [NAME], [COMPANY],
+[HOW WE MET], [LAST INTERACTION], [KEY INTERESTS] — it
+should store (in the conversation context) and organize
+that information. When I later say "brief me on [NAME],"
+it should recall everything and suggest talking points for
+my next interaction. Also include prompts for: adding
+follow-up reminders, tagging contacts by relationship
+tier, and generating personalized outreach messages.
+
+
+19. CODE REVIEW PARTNER
+
+Configure the AI to be my code review partner. I write
+primarily in [LANGUAGE/FRAMEWORK, e.g., TypeScript/React].
+My coding style follows [STYLE GUIDE OR CONVENTIONS, e.g.,
+Airbnb style, functional components, named exports]. When
+I paste code, the AI should: (a) check for bugs and edge
+cases, (b) flag performance concerns, (c) suggest cleaner
+patterns, (d) verify naming conventions match my style,
+and (e) rate the code on a 1-5 scale with justification.
+It should NOT rewrite the entire file — only suggest
+targeted improvements with explanations.
+
+
+20. WEEKLY RESET ASSISTANT
+
+Build me a Weekly Reset Assistant prompt. Every Sunday
+evening I want to paste my brain dump — a messy list of
+everything on my mind — and have the AI organize it into:
+(a) this week's top 3 priorities, (b) tasks sorted by
+project ([PROJECT 1], [PROJECT 2], [PROJECT 3]), (c) items
+to delegate with suggested assignees from my team
+([TEAM MEMBER NAMES]), (d) items to defer to next week,
+and (e) a Monday morning message to my team summarizing
+the week's plan. My planning style is [DETAILED/HIGH-LEVEL]
+and my team communicates via [SLACK/EMAIL/TEAMS].
+
+
+============================================================
+  AI FOR YOUR DAILY WORKFLOW (8 Prompts)
+============================================================
+
+21. MORNING BRIEFING GENERATOR
+
+Act as my Chief of Staff. Every morning I will paste three
+inputs: (a) my calendar for today: [PASTE CALENDAR OR
+LIST OF MEETINGS], (b) my unfinished tasks from yesterday:
+[PASTE TASK LIST], and (c) any overnight messages or news:
+[PASTE SUMMARY OR "none"]. Generate a concise Morning
+Briefing that includes: today's schedule with prep notes
+for each meeting, my top 3 priorities ranked by impact, any
+fires to address first, and one proactive suggestion I
+would not have thought of. Keep it under 300 words.
+
+
+22. MEETING PREP IN 5 MINUTES
+
+I have a meeting in [TIME, e.g., 30 minutes] with
+[PERSON/GROUP] about [TOPIC]. Here is the background:
+[PASTE ANY CONTEXT — PREVIOUS EMAILS, PROJECT STATUS,
+THEIR LINKEDIN PROFILE]. In five bullet points, give me:
+(a) the one thing I must accomplish in this meeting, (b)
+two smart questions to ask that show I have done my
+homework, (c) the likely objection or concern they will
+raise and how to address it, and (d) a strong closing line
+that advances the relationship or project.
+
+
+23. DECISION FRAMEWORK — FAST CHOICES
+
+I need to decide between [OPTION A] and [OPTION B] by
+[DEADLINE]. The context is: [DESCRIBE THE SITUATION IN 2-3
+SENTENCES]. My key priorities are [PRIORITY 1], [PRIORITY 2],
+and [PRIORITY 3]. Apply a weighted pros/cons analysis using
+my priorities as weights, then give me a clear
+recommendation with your confidence level (low/medium/high)
+and the one question I should answer before committing.
+Do not hedge — give me a direct answer.
+
+
+24. PRIORITY STACK RANKER
+
+Here is my current task list: [PASTE ALL TASKS]. I have
+[NUMBER] hours of productive time today. My energy is
+highest in the [MORNING/AFTERNOON]. My boss cares most
+about [KEY DELIVERABLE]. Rank these tasks using an
+Eisenhower Matrix (urgent/important), then give me a
+time-blocked schedule that puts deep work in my high-energy
+window and batches small tasks together. Flag anything that
+should be delegated or dropped entirely, and explain why.
+
+
+25. END-OF-DAY REVIEW
+
+It is the end of my workday. Here is what I planned to do
+today: [PASTE MORNING PLAN OR TASK LIST]. Here is what I
+actually accomplished: [PASTE WHAT GOT DONE]. Compare the
+two lists and give me: (a) a completion percentage, (b)
+what derailed me (based on patterns — if this is not the
+first time, look for recurring blockers), (c) the top
+carry-over item for tomorrow, and (d) one sentence of
+genuine encouragement that is specific to what I did
+accomplish, not generic praise.
+
+
+26. EMAIL TRIAGE SYSTEM
+
+I am going to paste [NUMBER] email subject lines and
+senders from my inbox this morning. Categorize each one
+as: (A) RESPOND NOW — needs a reply within the hour,
+(B) RESPOND TODAY — important but not time-sensitive,
+(C) DELEGATE — someone else should handle this, suggest
+who from my team: [TEAM MEMBER 1, TEAM MEMBER 2],
+(D) ARCHIVE — informational only, no action needed, or
+(E) UNSUBSCRIBE — this is noise. Then draft two-sentence
+replies for all the category-A emails in my voice.
+
+Emails: [PASTE SUBJECT LINES AND SENDERS]
+
+
+27. WEEKLY PLANNING SESSION
+
+It is [DAY, e.g., Sunday evening] and I am planning my
+week. Here are my inputs: (a) my goals for this quarter:
+[PASTE QUARTERLY GOALS], (b) my commitments this week
+(meetings, deadlines): [PASTE SCHEDULE], (c) open loops
+from last week: [PASTE CARRYOVERS]. Create a weekly plan
+that maps at least one task per day to my quarterly goals,
+protects at least [NUMBER] hours for deep work, and
+identifies my single highest-leverage task for the whole
+week. Format it as a Monday-through-Friday grid.
+
+
+28. CONTEXT-SWITCHING MINIMIZER
+
+I struggle with context switching. Here are the [NUMBER]
+projects I am juggling right now: [LIST PROJECTS WITH
+ONE-LINE DESCRIPTIONS]. For each one, write me a
+"Re-Entry Prompt" — a 3-sentence summary I can read to
+instantly reload context when I switch back to that project.
+Include: where I left off, the next concrete action, and
+any blockers. I will update these summaries at the end of
+each work session, so also give me a template for quickly
+updating them in under 30 seconds.
+
+
+============================================================
+  PERSONAL KNOWLEDGE MANAGEMENT (7 Prompts)
+============================================================
+
+29. SECOND BRAIN BUILDER
+
+I want to build a "Second Brain" system using AI. My
+primary note-taking tool is [TOOL, e.g., Notion, Obsidian,
+Apple Notes]. I consume content from [SOURCES, e.g.,
+podcasts, books, articles, meetings]. Design a complete
+capture-organize-distill-express workflow for me. Include:
+(a) a tagging taxonomy with no more than 10 top-level tags,
+(b) a template for capturing highlights with my commentary,
+(c) a weekly review prompt that surfaces connections between
+notes, and (d) a monthly synthesis prompt that turns my
+scattered notes into one actionable insight.
+
+
+30. NOTE SUMMARIZER & CONNECTOR
+
+Here are raw notes from [SOURCE, e.g., a book I just read,
+a conference I attended, a brainstorm session]:
+[PASTE RAW NOTES]. Summarize the key ideas into a
+structured note with: (a) a one-sentence thesis, (b) the
+top 5 takeaways, (c) direct quotes worth saving (if any),
+(d) action items for me, and (e) connections to other
+topics I care about: [LIST YOUR INTEREST AREAS]. Format it
+so I can paste it directly into my [NOTE-TAKING TOOL].
+
+
+31. PERSONALIZED STUDY PLAN
+
+I want to learn [TOPIC] over the next [TIMEFRAME, e.g.,
+4 weeks]. My current skill level is [BEGINNER/INTERMEDIATE/
+ADVANCED]. I can dedicate [HOURS] hours per week. My
+learning style is [VISUAL/READING/HANDS-ON/AUDITORY]. I
+learn best through [EXAMPLES/PROJECTS/THEORY-FIRST]. Create
+a week-by-week study plan with specific resources (books,
+courses, videos, exercises), daily milestones, and a way to
+test my understanding at the end of each week. Prioritize
+free resources but include paid ones if they are clearly
+the best option.
+
+
+32. RESEARCH ORGANIZER
+
+I am researching [TOPIC] for [PURPOSE, e.g., a report, a
+business decision, a blog series]. So far I have gathered
+these sources: [PASTE LINKS OR TITLES OF SOURCES]. For each
+source, extract the central argument, the strongest piece
+of evidence, and any bias or limitation. Then create a
+synthesis matrix that maps all sources against my key
+research questions: [QUESTION 1], [QUESTION 2],
+[QUESTION 3]. Highlight where sources agree, disagree, and
+where gaps remain.
+
+
+33. IDEA CONNECTOR — CROSS-DOMAIN INSIGHTS
+
+I have been thinking about two seemingly unrelated topics:
+[TOPIC A, e.g., behavioral economics] and [TOPIC B, e.g.,
+game design]. Find the non-obvious connections between
+them. Specifically: (a) shared underlying principles, (b)
+frameworks from Topic A that could solve problems in Topic
+B and vice versa, (c) real-world examples where someone
+has already bridged these two fields, and (d) one original
+idea I could explore that sits at their intersection. Push
+beyond surface-level analogies — I want genuinely
+surprising connections.
+
+
+34. BOOK-TO-ACTION CONVERTER
+
+I just finished reading [BOOK TITLE] by [AUTHOR]. Here
+are my highlights and margin notes: [PASTE HIGHLIGHTS].
+Do not just summarize the book — I already read it.
+Instead, create a Personal Action Plan: (a) the 3 ideas
+most relevant to my work as a [YOUR ROLE], (b) one habit
+change I could implement starting tomorrow, (c) one
+conversation I should have with [COLLEAGUE/TEAM] based on
+a specific insight, and (d) a follow-up reading list of
+2-3 books that go deeper on the ideas I highlighted most.
+
+
+35. WEEKLY KNOWLEDGE REVIEW
+
+Here are all the articles, podcasts, and notes I consumed
+this week: [PASTE TITLES, LINKS, OR BRIEF DESCRIPTIONS].
+Play the role of my personal knowledge curator. (a)
+Identify the common theme connecting at least three of
+these, even if I did not notice it. (b) Surface the single
+most important idea I should remember a year from now and
+explain why. (c) Suggest one action I should take based on
+this week's inputs. (d) Draft a short "what I learned this
+week" paragraph I could share with my network on [PLATFORM,
+e.g., LinkedIn, a team Slack channel].
+
+
+============================================================
+  AI-POWERED PERSONAL BRAND (8 Prompts)
+============================================================
+
+36. LINKEDIN POST IN MY VOICE
+
+Write a LinkedIn post about [TOPIC] in my voice. My voice
+is [BRIEF DESCRIPTION, e.g., direct, slightly irreverent,
+uses short punchy sentences, avoids buzzwords, often starts
+with a bold statement]. The post should be [LENGTH, e.g.,
+150-200 words], use line breaks for readability (LinkedIn
+style), include a hook in the first line that stops the
+scroll, end with a question or call to action, and avoid
+these words/phrases I never use: [LIST BANNED WORDS, e.g.,
+"synergy," "leverage," "game-changer"]. My audience is
+[TARGET AUDIENCE].
+
+
+37. PERSONAL WEBSITE COPY — ABOUT PAGE
+
+Write the About page for my personal website. Here is my
+background: [PASTE YOUR BIO, RESUME HIGHLIGHTS, OR KEY
+FACTS]. My website's purpose is [PURPOSE, e.g., attract
+consulting clients, showcase my portfolio, build thought
+leadership]. The tone should be [TONE] and the page should
+answer three questions visitors have: "Who is this person?",
+"Why should I trust them?", and "What should I do next?"
+Include a clear call to action at the end: [CTA, e.g.,
+book a call, subscribe to my newsletter, view my work].
+Keep it under [WORD COUNT] words.
+
+
+38. BIO VARIATIONS — MULTIPLE LENGTHS
+
+Generate five versions of my professional bio at different
+lengths, all in my voice. Use this raw material: [PASTE
+YOUR FULL BIO, RESUME, OR KEY ACCOMPLISHMENTS]. The five
+versions are: (a) Twitter/X — 160 characters max, (b)
+conference speaker intro — 50 words, (c) LinkedIn summary
+— 150 words, (d) keynote introduction — 250 words read
+aloud by someone else, (e) full press bio — 400 words.
+Each version should emphasize [KEY THEME, e.g., my
+expertise in AI, my track record of scaling teams] and feel
+authentically me, not like a template.
+
+
+39. SPEAKING ABSTRACT GENERATOR
+
+I want to pitch a talk to [CONFERENCE/EVENT NAME]. The
+topic is [TOPIC]. My unique angle is [WHAT MAKES YOUR
+PERSPECTIVE DIFFERENT]. The audience is [AUDIENCE TYPE, e.g.,
+senior product managers, early-stage founders, developers].
+Write a compelling talk abstract (200 words max) that
+clearly states the problem, teases the insight without
+giving it all away, includes 3-4 bullet-point takeaways
+attendees will walk away with, and positions me as
+credible by referencing my experience: [RELEVANT
+EXPERIENCE]. Also suggest three punchy title options.
+
+
+40. THOUGHT LEADERSHIP THREAD
+
+I want to share my perspective on [INDUSTRY TREND OR
+CONTROVERSIAL TOPIC]. My take is: [YOUR OPINION IN 1-2
+SENTENCES]. Create a 7-part Twitter/X thread that: (a)
+opens with a bold, slightly provocative hook, (b) builds
+the argument with evidence and examples, (c) acknowledges
+the strongest counterargument, (d) brings it home with a
+clear conclusion, and (e) ends with a thread-closer that
+encourages replies. My voice: [VOICE DESCRIPTION]. Do not
+use hashtags or emojis unless I specifically say to.
+
+
+41. NEWSLETTER INTRO PERSONALIZER
+
+I write a weekly newsletter called [NEWSLETTER NAME] for
+[AUDIENCE]. This week's main topic is [TOPIC]. Write the
+opening 150 words that hook the reader. My newsletter style
+is [STYLE DESCRIPTION, e.g., I always start with a
+personal anecdote, I use "you" a lot, I write like I am
+talking to a friend over coffee]. Reference a current event
+or cultural moment: [RECENT EVENT] and tie it naturally
+into the topic. End the intro with a transition sentence
+that pulls the reader into the main content.
+
+
+42. CASE STUDY IN MY BRAND VOICE
+
+Turn this raw project information into a polished case
+study in my brand voice: Client: [CLIENT NAME OR INDUSTRY].
+Problem: [WHAT THEY WERE STRUGGLING WITH]. What I did:
+[YOUR APPROACH AND ACTIONS]. Results: [METRICS, OUTCOMES,
+QUOTES]. My brand voice is [VOICE DESCRIPTION]. Structure
+it as: Hook headline, 2-sentence overview, The Challenge,
+The Approach, The Results, Key Takeaway. Keep it under
+[WORD COUNT] words. This will live on my [WEBSITE/LINKEDIN/
+PORTFOLIO].
+
+
+43. CONTENT PILLAR STRATEGY
+
+I want to build a personal brand around [NICHE/EXPERTISE].
+My goal is [GOAL, e.g., attract clients, get speaking gigs,
+build an audience]. I can realistically create content
+[FREQUENCY, e.g., 3x/week]. My strongest content format is
+[FORMAT, e.g., writing, video, audio]. Define 4-5 content
+pillars for me — recurring themes I should post about
+consistently. For each pillar, give me: a one-sentence
+description, 5 specific post ideas, the best platform for
+that pillar, and how it ties back to my business goal.
+Make sure the pillars cover both expertise-signaling and
+personality-revealing content.
+
+
+============================================================
+  CREATIVE & THINKING PARTNER (7 Prompts)
+============================================================
+
+44. BRAINSTORMING FRAMEWORK — 10X IDEAS
+
+I need to brainstorm ideas for [PROJECT OR PROBLEM]. The
+constraint is [KEY CONSTRAINT, e.g., $500 budget, 2-week
+timeline, must work for a non-technical audience]. Run me
+through this process: (a) generate 10 conventional ideas,
+(b) pick the 3 strongest and push each one 10x further —
+what would this look like if it had unlimited budget? if it
+had to work in 24 hours? if it was for a completely
+different audience? (c) combine elements from the extreme
+versions to create 3 hybrid ideas that are ambitious but
+feasible within my constraint. Rank the final 3 and
+explain your ranking.
+
+
+45. DEVIL'S ADVOCATE — STRESS-TEST MY IDEA
+
+I am planning to [DESCRIBE YOUR PLAN OR IDEA IN 2-3
+SENTENCES]. I am excited about it, which means I am
+probably overlooking risks. Be my devil's advocate. Attack
+this idea from every angle: (a) what could go wrong in
+execution? (b) what assumption am I making that might be
+false? (c) who would oppose this and what would they say?
+(d) what is the most likely reason this fails in 6 months?
+(e) is there a simpler alternative I am ignoring because I
+am in love with this version? Do not soften your critique.
+After the attack, tell me the one thing about the idea
+that IS genuinely strong so I know what to protect.
+
+
+46. SCENARIO PLANNING — THREE FUTURES
+
+I am facing [SITUATION OR DECISION]. Help me scenario plan.
+Create three detailed future scenarios: (a) Best Case —
+everything goes right, describe what happens step by step
+and what conditions need to be true, (b) Worst Case —
+everything goes wrong, describe the cascade of failures and
+the bottom, (c) Most Likely Case — a realistic middle path
+with specific probabilities you would assign to key events.
+For each scenario, give me: the first signal I would see
+that tells me I am in that scenario, and one action I
+should take now to prepare for it.
+
+
+47. CREATIVE WRITING — IN MY STYLE
+
+Here is a sample of my creative writing: [PASTE A SAMPLE —
+A SHORT STORY EXCERPT, PERSONAL ESSAY, POEM, ETC.]. I want
+to write a new piece about [TOPIC OR THEME]. Do NOT write
+it for me. Instead, give me: (a) three possible opening
+lines in my style, (b) a structural outline that matches
+the way I typically build a narrative (based on my sample),
+(c) five vivid details or images related to the topic that
+fit my aesthetic, and (d) the emotional arc I should aim
+for. Let me write it — just set me up with the scaffolding.
+
+
+48. IDEA VALIDATION — QUICK GUT CHECK
+
+I have a new idea: [DESCRIBE IDEA IN 2-3 SENTENCES]. Before
+I invest time, run a quick validation. (a) Does this
+already exist? If so, name the closest competitors and what
+they are missing. (b) Who is the ideal first customer or
+user, and what is their #1 pain point this solves? (c)
+What is the cheapest, fastest experiment I could run this
+week to test demand? (d) On a scale of 1-10, rate this
+idea on originality, feasibility, and market timing, and
+explain each score. (e) Give me a one-sentence elevator
+pitch I can test on five people today.
+
+
+49. REFRAME THE PROBLEM
+
+I am stuck on this problem: [DESCRIBE THE PROBLEM]. I have
+been approaching it as [YOUR CURRENT FRAMING, e.g., "how
+do I get more customers" or "how do I find more time"].
+Give me five radically different ways to reframe this
+problem. For example, flip the subject, change the scale,
+question the premise, or borrow a frame from a completely
+different field like [FIELD, e.g., biology, architecture,
+game theory]. For each reframe, explain what new solutions
+become visible that were invisible under my original
+framing. Then recommend which reframe I should explore
+first and why.
+
+
+50. CONTRARIAN TAKE GENERATOR
+
+The mainstream opinion on [TOPIC] is [DESCRIBE THE
+CONSENSUS VIEW]. I suspect there is a smarter way to think
+about this. Generate three well-reasoned contrarian takes
+that challenge the consensus. For each one: (a) state the
+contrarian position clearly in one sentence, (b) provide
+2-3 pieces of evidence or logic that support it, (c)
+acknowledge the strongest objection to the contrarian view,
+and (d) rate how confident you are in the take (high /
+medium / speculative). I am not looking for contrarianism
+for its own sake — I want perspectives that are genuinely
+under-considered and could be right.
+
+
+============================================================
+  Thanks for your purchase!
+  Visit atlasux.cloud for AI-powered business tools.
+
+  © 2026 Atlas UX — A product of DEAD APP CORP
+============================================================

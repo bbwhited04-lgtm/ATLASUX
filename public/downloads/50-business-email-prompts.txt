@@ -1,0 +1,1045 @@
+============================================================
+  50 ChatGPT Prompts for Writing Business Emails
+  Professional Email Templates for Every Situation
+  by Atlas UX · atlasux.cloud — $0.99
+============================================================
+
+Thank you for purchasing this prompt pack! Inside you'll
+find 50 carefully crafted ChatGPT prompts that cover every
+major business email scenario — from cold outreach and sales
+negotiations to internal memos, client management, HR
+communications, and difficult conversations. Each prompt is
+designed to produce a polished, professional, send-ready
+email. Simply copy-paste a prompt into ChatGPT, replace the
+[PLACEHOLDER] brackets with your details, and you'll have a
+high-quality email draft in seconds. No more staring at a
+blank compose window.
+
+
+============================================================
+  COLD OUTREACH & PROSPECTING (8 Prompts)
+============================================================
+
+1. Initial Cold Email
+
+Write a concise, professional cold email from [YOUR NAME] at
+[YOUR COMPANY] to [RECIPIENT NAME], [RECIPIENT TITLE] at
+[RECIPIENT COMPANY]. The email should open with a specific,
+researched observation about [RECIPIENT COMPANY]'s recent
+[ACHIEVEMENT / NEWS / CHALLENGE] to show genuine familiarity
+with their business. Introduce [YOUR PRODUCT/SERVICE] by
+connecting it directly to a pain point or goal they likely
+have, citing one concrete result such as "[SPECIFIC METRIC OR
+OUTCOME]" achieved for a similar company. Close with a single,
+low-friction call to action — suggest a [15/20/30]-minute call
+on [DATE OPTIONS] — and keep the entire email under 150 words.
+Tone should be confident but respectful, never pushy.
+
+------------------------------------------------------------
+
+2. Follow-Up After No Reply
+
+Write a polite follow-up email from [YOUR NAME] at [YOUR
+COMPANY] to [RECIPIENT NAME] at [RECIPIENT COMPANY],
+referencing your initial outreach sent on [DATE OF FIRST
+EMAIL]. Acknowledge that they are busy without being passive-
+aggressive, and add one new piece of value they did not see in
+the first email — such as a relevant case study, a brief
+insight about [THEIR INDUSTRY], or a link to a useful resource.
+Restate the core benefit of [YOUR PRODUCT/SERVICE] in a single
+sentence. End with an easy opt-out line like "If now isn't the
+right time, no worries — just let me know" alongside a
+refreshed call to action proposing [SPECIFIC NEXT STEP]. Keep
+the tone warm, human, and under 120 words.
+
+------------------------------------------------------------
+
+3. Warm Introduction Request
+
+Write a professional email from [YOUR NAME] to [MUTUAL
+CONNECTION NAME] asking for an introduction to [TARGET
+CONTACT NAME] at [TARGET COMPANY]. Open by referencing your
+relationship with [MUTUAL CONNECTION NAME] and a recent
+positive interaction or shared experience. Explain in two
+sentences why you'd like to connect with [TARGET CONTACT NAME],
+focusing on the mutual value — what you can offer them, not
+just what you want. Include a brief, forwardable blurb (2-3
+sentences) about yourself and [YOUR COMPANY] that [MUTUAL
+CONNECTION NAME] can paste directly into an intro email. Close
+by making it easy to say no: "If it doesn't feel like the
+right fit, I completely understand." Tone: gracious, specific,
+and respectful of everyone's time.
+
+------------------------------------------------------------
+
+4. LinkedIn-to-Email Bridge
+
+Write a short, professional email from [YOUR NAME] at [YOUR
+COMPANY] to [RECIPIENT NAME] at [RECIPIENT COMPANY],
+referencing a recent LinkedIn interaction — such as [THEIR
+POST YOU COMMENTED ON / A MESSAGE EXCHANGE / A SHARED GROUP
+DISCUSSION]. Explain that you wanted to continue the
+conversation off-platform because [SPECIFIC REASON — e.g., you
+have a resource to share, you see a collaboration opportunity,
+or you'd like to explore working together]. Keep it casual but
+professional, mirroring the tone of LinkedIn without being
+overly formal. Include one specific value proposition tied to
+[THEIR STATED INTEREST OR CHALLENGE]. End with a clear but
+low-pressure next step: "Would a quick [10/15]-minute chat on
+[DATE OPTIONS] make sense?" Keep it under 100 words.
+
+------------------------------------------------------------
+
+5. Value-First Outreach
+
+Write a cold email from [YOUR NAME] at [YOUR COMPANY] to
+[RECIPIENT NAME] at [RECIPIENT COMPANY] that leads entirely
+with value before making any ask. Open by sharing a genuinely
+useful, free resource — such as [A BRIEF INDUSTRY INSIGHT, A
+RELEVANT BENCHMARK STATISTIC, A SHORT CHECKLIST, OR A LINK TO
+A HELPFUL GUIDE] — that relates to [THEIR INDUSTRY / ROLE /
+KNOWN CHALLENGE]. Frame it as: "I put this together for
+[INDUSTRY] leaders and thought you'd find it useful." Only
+after delivering the value, briefly mention that [YOUR
+COMPANY] helps companies like [RECIPIENT COMPANY] with
+[ONE-SENTENCE DESCRIPTION OF YOUR SERVICE]. Close with: "Happy
+to share more context if it's relevant — otherwise, hope the
+[RESOURCE] is helpful either way." Tone: generous, zero
+pressure, genuinely helpful.
+
+------------------------------------------------------------
+
+6. Partnership Proposal
+
+Write a professional partnership proposal email from [YOUR
+NAME], [YOUR TITLE] at [YOUR COMPANY], to [RECIPIENT NAME],
+[RECIPIENT TITLE] at [RECIPIENT COMPANY]. Open by explaining
+why [RECIPIENT COMPANY] is a strong fit for collaboration,
+referencing [SPECIFIC OVERLAP IN AUDIENCE, PRODUCT, VALUES, OR
+MARKET]. Outline the proposed partnership structure in 3-4
+bullet points covering: what each party contributes, the
+target audience or market, the expected mutual benefits, and a
+suggested timeline or pilot scope. Include one concrete example
+of a similar partnership that yielded [SPECIFIC RESULTS]. Close
+by proposing an exploratory call on [DATE OPTIONS] and attach
+or reference a brief one-pager for further details. Tone:
+strategic, enthusiastic, and professional.
+
+------------------------------------------------------------
+
+7. Vendor Introduction
+
+Write a professional introductory email from [YOUR NAME],
+[YOUR TITLE] at [YOUR COMPANY], to [RECIPIENT NAME],
+[RECIPIENT TITLE] at [RECIPIENT COMPANY], positioning [YOUR
+COMPANY] as a potential vendor or supplier. Begin by
+demonstrating understanding of [RECIPIENT COMPANY]'s needs in
+[SPECIFIC AREA — e.g., supply chain, software, marketing
+services]. Highlight 2-3 key differentiators of [YOUR
+COMPANY], such as [DIFFERENTIATOR 1], [DIFFERENTIATOR 2], and
+[DIFFERENTIATOR 3], with brief supporting proof points (client
+names, metrics, or certifications). Mention that you currently
+serve [NUMBER] companies in [THEIR INDUSTRY] including
+[NOTABLE CLIENT IF APPLICABLE]. Propose a [15/20]-minute
+introductory call or a short capabilities presentation. Tone:
+confident, solution-oriented, and respectful.
+
+------------------------------------------------------------
+
+8. Conference Follow-Up
+
+Write a follow-up email from [YOUR NAME] at [YOUR COMPANY] to
+[RECIPIENT NAME] at [RECIPIENT COMPANY], referencing your
+conversation at [CONFERENCE/EVENT NAME] on [DATE]. Open with a
+specific detail from your interaction — such as [A TOPIC YOU
+DISCUSSED, A QUESTION THEY ASKED, OR AN IDEA YOU BONDED OVER]
+— to instantly trigger their memory. Deliver on any promise
+you made during the conversation, such as "Here's the
+[ARTICLE / CASE STUDY / CONTACT / RESOURCE] I mentioned."
+Briefly reinforce the connection between [YOUR PRODUCT/SERVICE]
+and [THEIR STATED NEED OR INTEREST]. Close by suggesting a
+follow-up meeting: "I'd love to continue our conversation —
+are you available for a [15/20]-minute call on [DATE OPTIONS]?"
+Keep the email personal and specific, not generic.
+
+
+============================================================
+  SALES & NEGOTIATION EMAILS (8 Prompts)
+============================================================
+
+9. Proposal Follow-Up
+
+Write a professional follow-up email from [YOUR NAME] at [YOUR
+COMPANY] to [RECIPIENT NAME] at [RECIPIENT COMPANY], checking
+in on the proposal you sent on [DATE] for [PROJECT/SERVICE
+DESCRIPTION]. Acknowledge that reviewing proposals takes time,
+then add incremental value by sharing a relevant update — such
+as a new case study, an updated ROI projection, or a recently
+launched feature that strengthens the proposal. Address one
+likely objection or concern preemptively (e.g., "I know
+[COMMON CONCERN] is often top of mind — here's how we handle
+that..."). Offer to walk through any section of the proposal
+in more detail and suggest specific availability: "I have time
+on [DATE OPTIONS] if a quick walkthrough would help." Tone:
+helpful and patient, never desperate.
+
+------------------------------------------------------------
+
+10. Pricing Negotiation
+
+Write a professional email from [YOUR NAME] at [YOUR COMPANY]
+to [RECIPIENT NAME] at [RECIPIENT COMPANY] responding to their
+request for a lower price on [PRODUCT/SERVICE]. Acknowledge
+their budget considerations respectfully, then reframe the
+conversation around value rather than cost by highlighting
+[2-3 SPECIFIC BENEFITS, ROI METRICS, OR FEATURES] that justify
+the pricing. Offer a creative compromise without simply
+dropping the price — such as adjusting the scope, offering
+phased implementation, extending payment terms, or including
+bonus value like [SPECIFIC ADD-ON]. Make it clear you want to
+find a structure that works for both sides. Close by suggesting
+a call to discuss: "Can we hop on a quick call on [DATE] to
+find the right fit?" Tone: firm but flexible, never defensive.
+
+------------------------------------------------------------
+
+11. Discount Request Response
+
+Write a professional email from [YOUR NAME] at [YOUR COMPANY]
+to [RECIPIENT NAME] at [RECIPIENT COMPANY] responding to their
+request for a discount on [PRODUCT/SERVICE]. If you CAN offer a
+discount, frame it as a special accommodation tied to a
+specific condition — such as an annual commitment, prepayment,
+a case study agreement, or a multi-seat purchase — rather than
+simply caving to the ask. State the discounted terms clearly:
+"We can offer [DISCOUNT AMOUNT/PERCENTAGE] if [CONDITION]."
+If you CANNOT offer a discount, explain why the pricing
+reflects the value delivered, reference [SPECIFIC ROI OR
+OUTCOME] other clients have achieved, and offer an alternative
+form of value (extended trial, additional support, bonus
+features). Close warmly with next steps. Tone: appreciative,
+transparent, and confident in your pricing.
+
+------------------------------------------------------------
+
+12. Upsell / Cross-Sell
+
+Write a professional email from [YOUR NAME] at [YOUR COMPANY]
+to [RECIPIENT NAME], an existing client at [RECIPIENT
+COMPANY], introducing [NEW PRODUCT / ADDITIONAL SERVICE /
+UPGRADED TIER]. Open by referencing a specific success they've
+had with their current plan — such as "[SPECIFIC METRIC OR
+MILESTONE THEY ACHIEVED]" — to establish credibility and
+goodwill. Introduce the new offering by connecting it directly
+to a logical next step or challenge they likely face now:
+"Now that you've [ACHIEVED X], many of our clients find that
+[NEW OFFERING] helps them [NEXT-LEVEL OUTCOME]." Include 2-3
+specific benefits with brief proof points. Offer a low-risk
+way to explore it — a demo, a trial period, or a pilot scope.
+Tone: consultative and genuinely helpful, not salesy.
+
+------------------------------------------------------------
+
+13. Contract Renewal
+
+Write a professional contract renewal email from [YOUR NAME]
+at [YOUR COMPANY] to [RECIPIENT NAME] at [RECIPIENT COMPANY],
+noting that their current [CONTRACT/SUBSCRIPTION/AGREEMENT]
+for [PRODUCT/SERVICE] expires on [EXPIRATION DATE]. Open by
+summarizing the value delivered during the current term —
+reference [2-3 SPECIFIC ACHIEVEMENTS, METRICS, OR MILESTONES]
+they accomplished using your product/service. Present the
+renewal terms clearly, noting any changes from the previous
+contract (pricing, features, scope). If applicable, highlight
+what's new or improved: "Since you signed, we've added
+[NEW FEATURE 1] and [NEW FEATURE 2]." Offer an incentive for
+early renewal, such as [DISCOUNT / LOCKED RATE / BONUS
+FEATURE]. Provide clear next steps: "To renew, simply
+[ACTION]. I'm also happy to discuss any adjustments on a call."
+Tone: appreciative, transparent, forward-looking.
+
+------------------------------------------------------------
+
+14. Win-Back Lost Client
+
+Write a professional re-engagement email from [YOUR NAME] at
+[YOUR COMPANY] to [RECIPIENT NAME] at [RECIPIENT COMPANY], who
+previously used [YOUR PRODUCT/SERVICE] but discontinued on
+[APPROXIMATE DATE]. Acknowledge the gap without awkwardness:
+"It's been a while since we worked together, and I wanted to
+reach out because [SPECIFIC REASON — e.g., we've made major
+improvements, their situation may have changed, you saw
+relevant news about their company]." Highlight 2-3 meaningful
+changes or improvements you've made since they left, focusing
+on things that address [THEIR LIKELY REASON FOR LEAVING, IF
+KNOWN]. Offer a concrete, low-friction way to re-engage — a
+complimentary strategy session, a trial of new features, or a
+special returning-client offer. Tone: humble, optimistic, and
+genuinely interested in whether there's a fit now.
+
+------------------------------------------------------------
+
+15. Referral Request
+
+Write a professional referral request email from [YOUR NAME]
+at [YOUR COMPANY] to [RECIPIENT NAME], a satisfied client at
+[RECIPIENT COMPANY]. Open by thanking them for the positive
+experience working together and reference a specific result:
+"I'm thrilled that [SPECIFIC OUTCOME THEY ACHIEVED]." Explain
+that you're growing through trusted introductions and ask if
+they know [1-2 SPECIFIC TYPES OF PEOPLE/COMPANIES] who might
+benefit from [YOUR PRODUCT/SERVICE] in a similar way. Make it
+easy by offering to draft a short intro blurb they can forward.
+If you have a referral incentive program, mention it naturally:
+"We also offer [INCENTIVE] as a thank-you for referrals."
+Close with: "No pressure at all — if anyone comes to mind,
+I'd be grateful for the connection." Tone: warm, grateful,
+and zero pressure.
+
+------------------------------------------------------------
+
+16. Deal Closing Email
+
+Write a professional closing email from [YOUR NAME] at [YOUR
+COMPANY] to [RECIPIENT NAME] at [RECIPIENT COMPANY],
+summarizing everything discussed and moving toward a signed
+agreement for [PRODUCT/SERVICE]. Recap the key terms in clear
+bullet points: scope, pricing ([PRICE]), timeline ([START
+DATE]), and any special conditions agreed upon. Address any
+final open items or concerns from previous conversations.
+Attach or link the final [CONTRACT / AGREEMENT / ORDER FORM]
+and provide clear signing instructions. Create appropriate
+urgency without pressure — reference a deadline, an
+implementation timeline, or a rate lock: "To hit our target
+launch date of [DATE], we'd ideally have signatures by
+[DEADLINE]." Offer to jump on a quick call if any last
+questions remain. Tone: confident, organized, and decisive.
+
+
+============================================================
+  INTERNAL COMMUNICATION (8 Prompts)
+============================================================
+
+17. Project Update to Leadership
+
+Write a concise project update email from [YOUR NAME] to
+[LEADERSHIP RECIPIENT(S)] regarding [PROJECT NAME]. Structure
+it with clear sections: (1) Executive Summary — one paragraph
+on overall status using a traffic-light indicator (Green /
+Yellow / Red) with a one-line explanation, (2) Key
+Accomplishments This Period — 3-4 bullet points of what was
+completed, (3) Upcoming Milestones — next 2-3 deliverables
+with target dates, (4) Risks & Blockers — any items needing
+leadership attention or decisions, with recommended actions.
+Keep the total email under 250 words. Include a link to the
+detailed project tracker if applicable: "[PROJECT TRACKER
+LINK]". Tone: factual, confident, and action-oriented. No
+fluff.
+
+------------------------------------------------------------
+
+18. Meeting Recap with Action Items
+
+Write a clear meeting recap email from [YOUR NAME] to
+[ATTENDEE LIST] summarizing the [MEETING NAME] held on [DATE].
+Include: (1) Key Decisions Made — bullet each decision with
+brief context, (2) Action Items — formatted as a table or
+clear list with columns for Task, Owner, and Due Date,
+covering [ACTION ITEM 1 — OWNER — DUE DATE], [ACTION ITEM 2 —
+OWNER — DUE DATE], [ACTION ITEM 3 — OWNER — DUE DATE], and
+(3) Next Meeting — date, time, and any pre-work required.
+If any topics were tabled for future discussion, list them
+under "Parking Lot." Close with: "Please reply by [DATE] if
+anything above needs correction." Tone: clear, organized, and
+neutral — this is a record, not an opinion piece.
+
+------------------------------------------------------------
+
+19. Team Announcement
+
+Write a team announcement email from [YOUR NAME / LEADERSHIP
+NAME] to [TEAM / DEPARTMENT / ALL STAFF] regarding
+[ANNOUNCEMENT — e.g., new hire, team restructure, new tool
+rollout, office policy change, milestone celebration]. Open
+with the headline news in the first sentence — don't bury it.
+Provide necessary context: the "why" behind the change, who
+is affected, what changes for them practically, and the
+timeline. If action is required, state it clearly: "Here's
+what you need to do by [DATE]: [SPECIFIC ACTIONS]." If no
+action is needed: "No action needed on your end — just wanted
+to keep everyone in the loop." Include a point of contact for
+questions: "[CONTACT NAME] at [EMAIL]." Tone: positive,
+direct, and inclusive.
+
+------------------------------------------------------------
+
+20. Requesting Resources or Budget
+
+Write a professional email from [YOUR NAME] to [MANAGER /
+FINANCE LEAD / DECISION MAKER] requesting [SPECIFIC RESOURCE
+— e.g., additional headcount, budget increase, new software
+tool, contractor support] for [PROJECT / INITIATIVE]. Frame
+the request around business impact: explain the current
+situation, the gap or constraint you're facing, and the
+expected outcome if the resource is approved. Include specific
+numbers: "[AMOUNT REQUESTED]" for "[TIME PERIOD]" to achieve
+"[PROJECTED RESULT — e.g., reduce delivery time by X%,
+increase capacity by Y units, unblock Z milestone]." Propose
+alternatives if possible: "If the full ask isn't feasible,
+[ALTERNATIVE OPTION] would still move us forward." Attach or
+reference any supporting data. Close by requesting a
+[15/20]-minute discussion. Tone: respectful, data-driven,
+and solution-oriented.
+
+------------------------------------------------------------
+
+21. Status Report
+
+Write a weekly/[FREQUENCY] status report email from [YOUR
+NAME] to [RECIPIENTS] for the week of [DATE RANGE]. Structure
+it as: (1) Summary — 2-3 sentence overview of the week,
+(2) Completed — bulleted list of tasks finished this period,
+(3) In Progress — bulleted list of active tasks with percent
+complete or expected completion dates, (4) Planned Next — what
+you'll focus on in the coming period, (5) Blockers / Needs —
+anything stalled and what you need to unblock it. Keep each
+bullet to one line where possible. If applicable, include key
+metrics: [METRIC 1: VALUE], [METRIC 2: VALUE]. Close with:
+"Happy to discuss any of the above — just grab time on my
+calendar." Tone: factual, efficient, scannable.
+
+------------------------------------------------------------
+
+22. Cross-Department Collaboration Request
+
+Write a professional email from [YOUR NAME] in [YOUR
+DEPARTMENT] to [RECIPIENT NAME] in [THEIR DEPARTMENT]
+requesting collaboration on [PROJECT / INITIATIVE /
+DELIVERABLE]. Open by acknowledging their expertise or recent
+work: "Your team's work on [SPECIFIC PROJECT] was impressive."
+Clearly state what you need: [SPECIFIC ASK — e.g., data,
+review, joint deliverable, shared resource, co-presentation].
+Explain the business context and why their involvement
+matters: "[PROJECT] impacts [SHARED GOAL / COMPANY OBJECTIVE],
+and your team's [SPECIFIC EXPERTISE] would strengthen
+[SPECIFIC ASPECT]." Propose a concrete starting point — a
+kickoff meeting, a shared document, or a specific deliverable
+— with a suggested timeline. Make it easy to say yes by
+keeping the initial commitment small. Tone: collaborative,
+respectful, and clear on mutual benefit.
+
+------------------------------------------------------------
+
+23. Performance Feedback (Peer or Direct Report)
+
+Write a constructive performance feedback email from [YOUR
+NAME] to [RECIPIENT NAME] regarding their work on [SPECIFIC
+PROJECT / TIME PERIOD / SKILL AREA]. Open with genuine,
+specific praise: "Your [SPECIFIC CONTRIBUTION] on [PROJECT]
+was excellent — particularly [CONCRETE EXAMPLE OF WHAT THEY
+DID WELL]." Then provide developmental feedback using the
+Situation-Behavior-Impact (SBI) framework: describe the
+[SITUATION], the [SPECIFIC BEHAVIOR] observed, and the
+[IMPACT] it had on the team or outcome. Offer a clear,
+actionable suggestion for improvement: "Going forward, I'd
+recommend [SPECIFIC SUGGESTION]." Close by expressing
+confidence in their growth: "I'm impressed with [POSITIVE
+TRAIT] and excited to see you build on it." Offer to discuss
+in person. Tone: supportive, specific, and forward-looking.
+
+------------------------------------------------------------
+
+24. Process Change Announcement
+
+Write a clear process change announcement email from [YOUR
+NAME / DEPARTMENT NAME] to [AFFECTED TEAM(S) / ALL STAFF]
+regarding changes to [PROCESS NAME — e.g., expense reporting,
+code review, PTO requests, client onboarding]. State the
+change upfront: "Effective [DATE], [OLD PROCESS] is being
+replaced by [NEW PROCESS]." Explain the rationale: "We're
+making this change because [REASON — e.g., reduce turnaround
+time, improve accuracy, comply with new policy]." Provide a
+clear "What Changes for You" section with bullet points
+detailing exactly what people need to do differently. Include
+links to updated documentation, training resources, or guides:
+"[LINK TO UPDATED GUIDE]." Specify a transition period if
+applicable: "The old process will remain available until
+[CUTOFF DATE]." Provide a contact for questions and offer a
+Q&A session if needed. Tone: clear, practical, supportive.
+
+
+============================================================
+  CLIENT MANAGEMENT (8 Prompts)
+============================================================
+
+25. Onboarding Welcome Email
+
+Write a warm, professional onboarding welcome email from [YOUR
+NAME], [YOUR TITLE] at [YOUR COMPANY], to [CLIENT NAME] at
+[CLIENT COMPANY], who just signed up for [PRODUCT/SERVICE].
+Express genuine enthusiasm about the partnership. Set clear
+expectations for the onboarding process: outline the key steps
+(e.g., "1. Kickoff call, 2. Account configuration, 3. Team
+training, 4. Go-live") with approximate timelines. Introduce
+their primary point(s) of contact: "[ACCOUNT MANAGER NAME]
+([EMAIL]) will be your day-to-day contact, and I'm always
+available at [YOUR EMAIL]." Share any immediate next steps or
+resources — a welcome guide, login credentials, or a
+scheduling link for the kickoff call: "[SCHEDULING LINK]."
+Close with: "We're excited to help [CLIENT COMPANY] achieve
+[THEIR STATED GOAL]." Tone: enthusiastic, organized, and
+reassuring.
+
+------------------------------------------------------------
+
+26. Project Kickoff Email
+
+Write a project kickoff email from [YOUR NAME] at [YOUR
+COMPANY] to [CLIENT CONTACT(S)] at [CLIENT COMPANY] for
+[PROJECT NAME]. Include: (1) Project Overview — one paragraph
+on scope and objectives, (2) Key Milestones — a timeline with
+[3-5 MILESTONES AND TARGET DATES], (3) Team Introductions —
+who's involved on both sides with their roles, (4) Immediate
+Next Steps — what needs to happen in the first [1-2 WEEKS],
+including any materials or access you need from the client,
+(5) Communication Plan — how often you'll meet ([WEEKLY /
+BIWEEKLY]), preferred channel ([EMAIL / SLACK / TEAMS]), and
+who to contact for urgent issues. Attach or link the project
+brief / SOW. Close with a scheduling link or proposed time
+for the first working session. Tone: professional, organized,
+and energizing.
+
+------------------------------------------------------------
+
+27. Scope Change Notification
+
+Write a professional scope change notification email from
+[YOUR NAME] at [YOUR COMPANY] to [CLIENT CONTACT] at [CLIENT
+COMPANY] regarding [PROJECT NAME]. Clearly describe the
+proposed change: "Based on [TRIGGER — e.g., our recent
+discovery session, updated requirements from your team, a
+technical finding], we're recommending the following adjustment
+to the project scope: [DESCRIPTION OF CHANGE]." Explain the
+impact on three dimensions: timeline (new estimated completion:
+[DATE]), budget (additional cost: [AMOUNT], or "no budget
+impact"), and deliverables (what's added, removed, or
+modified). Provide a clear rationale for why this change serves
+the client's best interests. Request formal approval: "Please
+confirm your approval by [DATE] so we can adjust the project
+plan accordingly." Attach an updated SOW or change order if
+applicable. Tone: transparent, solution-oriented, and
+respectful.
+
+------------------------------------------------------------
+
+28. Milestone Delivery Email
+
+Write a professional milestone delivery email from [YOUR NAME]
+at [YOUR COMPANY] to [CLIENT CONTACT] at [CLIENT COMPANY]
+announcing the completion of [MILESTONE NAME] for [PROJECT
+NAME]. Summarize what was delivered in 2-3 sentences, then
+provide a bulleted list of specific deliverables or outcomes:
+[DELIVERABLE 1], [DELIVERABLE 2], [DELIVERABLE 3]. Include
+links or attachments to the actual deliverables: "[LINK /
+ATTACHMENT]." If the milestone was delivered on or ahead of
+schedule, note it. If it was delayed, briefly explain why
+without over-apologizing. Outline the next phase: "Up next is
+[NEXT MILESTONE], which we'll kick off on [DATE]." Request any
+feedback or approvals needed: "Please review by [DATE] and let
+us know if any revisions are needed." Tone: professional,
+confident, and forward-moving.
+
+------------------------------------------------------------
+
+29. Bad News / Delay Delivery
+
+Write a professional email from [YOUR NAME] at [YOUR COMPANY]
+to [CLIENT CONTACT] at [CLIENT COMPANY] communicating a
+[DELAY / SETBACK / ISSUE] on [PROJECT NAME]. Do not bury the
+bad news — state it clearly in the first two sentences: "I
+want to let you know that [SPECIFIC ISSUE] has impacted
+[PROJECT NAME], and [DELIVERABLE / MILESTONE] will be delayed
+until [NEW DATE]." Take ownership without excessive
+apologizing. Explain the cause concisely: "[ROOT CAUSE]."
+Present your remediation plan with specific actions already
+underway: "Here's what we're doing to get back on track:
+[ACTION 1], [ACTION 2], [ACTION 3]." Quantify the impact on
+the overall project timeline and budget. Offer a call to
+discuss: "I'd like to walk you through our updated plan — are
+you available on [DATE OPTIONS]?" Tone: honest, accountable,
+proactive, and calm.
+
+------------------------------------------------------------
+
+30. Quarterly Business Review Invite
+
+Write a professional email from [YOUR NAME] at [YOUR COMPANY]
+to [CLIENT CONTACT(S)] at [CLIENT COMPANY] inviting them to a
+Quarterly Business Review (QBR) for [Q1/Q2/Q3/Q4 YEAR].
+Propose a date and time: "[DATE] at [TIME] ([DURATION])."
+Preview the agenda: (1) Review of key metrics and KPIs from
+the past quarter, (2) Progress against [CLIENT'S STATED
+GOALS], (3) Highlights and wins — including [1-2 SPECIFIC
+WINS TO TEASE], (4) Areas for improvement and recommended
+optimizations, (5) Roadmap and priorities for next quarter.
+Ask the client to come prepared with: "Any feedback,
+questions, or priorities you'd like us to address." Include a
+calendar invite link or ask them to confirm the time. If
+relevant, note who from your team will attend. Tone:
+consultative, value-driven, and organized.
+
+------------------------------------------------------------
+
+31. Renewal / Retention Email
+
+Write a professional renewal email from [YOUR NAME] at [YOUR
+COMPANY] to [CLIENT CONTACT] at [CLIENT COMPANY], whose
+[CONTRACT / SUBSCRIPTION / AGREEMENT] for [PRODUCT/SERVICE]
+is approaching its renewal date of [RENEWAL DATE]. Open by
+expressing appreciation for the partnership and highlighting
+specific value delivered: "Over the past [TIME PERIOD], we've
+helped [CLIENT COMPANY] achieve [SPECIFIC RESULTS — e.g.,
+increased X by Y%, reduced Z by W hours]." Outline renewal
+options clearly — including any new tiers, pricing changes, or
+added features available for the next term. If there's an
+early renewal incentive, present it: "Renew by [DATE] to lock
+in [INCENTIVE]." Address potential concerns proactively:
+"If there's anything about the current arrangement you'd like
+to adjust, I'm happy to discuss." Propose a call to finalize.
+Tone: appreciative, transparent, forward-looking.
+
+------------------------------------------------------------
+
+32. Testimonial / Case Study Request
+
+Write a professional email from [YOUR NAME] at [YOUR COMPANY]
+to [CLIENT CONTACT] at [CLIENT COMPANY] requesting a
+testimonial or participation in a case study. Open by
+acknowledging their success: "The results [CLIENT COMPANY] has
+achieved with [YOUR PRODUCT/SERVICE] have been outstanding —
+[SPECIFIC RESULT]." Explain why you're asking: "We'd love to
+share your story to help other [INDUSTRY] companies see what's
+possible." Make it easy by offering options: a short written
+testimonial (2-3 sentences), a brief [15]-minute recorded
+interview, or a co-written case study where you do most of the
+work. Specify what's in it for them: "[EXPOSURE — e.g.,
+featured on our website, shared with our [NUMBER] subscribers,
+co-promoted on social media, backlink to their site]." Include
+a clear opt-in: "If you're open to it, just reply and I'll
+handle all the logistics." Tone: flattering, easy, and
+mutually beneficial.
+
+
+============================================================
+  HR & RECRUITING (6 Prompts)
+============================================================
+
+33. Job Offer Letter Email
+
+Write a professional and enthusiastic job offer email from
+[YOUR NAME / HR CONTACT], [TITLE] at [COMPANY], to [CANDIDATE
+NAME] for the [JOB TITLE] position. Open with genuine
+excitement: "We're thrilled to extend an offer..." Summarize
+the key terms: position title, department ([DEPARTMENT]),
+reporting to ([MANAGER NAME]), start date ([START DATE]),
+compensation ([SALARY / HOURLY RATE]), and key benefits
+highlights ([2-3 TOP BENEFITS — e.g., health insurance, PTO
+days, equity, remote flexibility]). Note that a formal offer
+letter is attached with complete details. Specify the
+acceptance deadline: "Please confirm your acceptance by
+[DEADLINE DATE]." Provide a contact for questions: "[HR
+CONTACT NAME] at [EMAIL] or [PHONE]." Close by reinforcing
+why you're excited about them joining: "Your [SPECIFIC SKILL
+OR EXPERIENCE] will be a tremendous asset to [TEAM/COMPANY]."
+Tone: warm, professional, and celebratory.
+
+------------------------------------------------------------
+
+34. Candidate Rejection (Keeping the Door Open)
+
+Write a respectful rejection email from [YOUR NAME / HR
+CONTACT] at [COMPANY] to [CANDIDATE NAME] regarding the [JOB
+TITLE] position. Thank them genuinely for their time and
+effort throughout the process: "We truly appreciated the
+[SPECIFIC POSITIVE — e.g., thoughtfulness in your presentation,
+depth of your experience, quality of your portfolio]." Deliver
+the decision clearly but kindly: "After careful consideration,
+we've decided to move forward with another candidate whose
+experience more closely aligns with [SPECIFIC REASON — e.g.,
+a particular technical skill, domain expertise]." Keep the door
+open: "We were genuinely impressed by [SPECIFIC STRENGTH] and
+would love to keep you in mind for future [ROLE TYPE]
+opportunities." Offer to stay connected: "Would you be open to
+us reaching out if a relevant role opens up?" Tone: respectful,
+specific, honest, and warm.
+
+------------------------------------------------------------
+
+35. Interview Scheduling
+
+Write a professional interview scheduling email from [YOUR
+NAME / RECRUITING COORDINATOR] at [COMPANY] to [CANDIDATE
+NAME] for the [ROUND — e.g., phone screen, technical
+interview, panel interview, final round] for the [JOB TITLE]
+position. Express enthusiasm about moving forward. Provide
+logistics clearly: [2-3 DATE/TIME OPTIONS] (include timezone),
+expected duration ([DURATION]), format ([VIDEO / IN-PERSON /
+PHONE]), and platform or location details ([ZOOM LINK /
+OFFICE ADDRESS]). List who they'll be meeting with:
+"[INTERVIEWER NAME(S)], [TITLE(S)]." Share any preparation
+guidance: "The interview will focus on [TOPICS]. You may want
+to [PREPARATION TIP — e.g., prepare a portfolio, review X,
+think about Y]." Ask them to confirm their preferred slot and
+provide a scheduling link if available: "[CALENDLY / BOOKING
+LINK]." Tone: organized, friendly, and helpful.
+
+------------------------------------------------------------
+
+36. Employee Recognition Email
+
+Write an employee recognition email from [YOUR NAME /
+MANAGER NAME] to [EMPLOYEE NAME] (cc: [THEIR MANAGER, IF
+DIFFERENT], [TEAM / LEADERSHIP]) celebrating their outstanding
+[ACHIEVEMENT / CONTRIBUTION]. Open with a clear statement of
+recognition: "I want to publicly recognize [EMPLOYEE NAME]
+for [SPECIFIC ACHIEVEMENT]." Provide specific context: what
+they did, why it mattered, and the measurable impact — such as
+"[METRIC IMPROVED], [PROJECT DELIVERED AHEAD OF SCHEDULE],
+[PROBLEM SOLVED], or [CLIENT FEEDBACK RECEIVED]." Connect
+their contribution to a broader team or company goal: "This
+directly supports our [COMPANY GOAL / VALUE]." Close with
+genuine appreciation: "Thank you, [EMPLOYEE NAME] — your
+[SPECIFIC QUALITY — e.g., dedication, creativity, leadership]
+makes our team stronger." If applicable, mention any formal
+reward: "[BONUS / GIFT CARD / EXTRA PTO / AWARD]." Tone:
+sincere, specific, and celebratory.
+
+------------------------------------------------------------
+
+37. Policy Update Announcement
+
+Write a clear, professional policy update email from [HR
+CONTACT / LEADERSHIP NAME] to [ALL STAFF / AFFECTED GROUP]
+announcing changes to [POLICY NAME — e.g., remote work policy,
+expense reimbursement, PTO policy, code of conduct,
+IT security requirements]. State the change immediately:
+"Effective [DATE], [POLICY NAME] has been updated as follows."
+Use a "What's Changing" section with bullet points detailing
+each modification: [CHANGE 1], [CHANGE 2], [CHANGE 3].
+Explain the rationale: "These updates reflect [REASON — e.g.,
+employee feedback, regulatory requirements, business growth,
+industry best practices]." Specify what employees need to do:
+"Please [ACTION — e.g., review the updated policy, complete
+the acknowledgment form, update your settings] by [DEADLINE]."
+Link to the full updated policy document: "[POLICY LINK]."
+Designate a Q&A contact and optionally schedule an info
+session. Tone: clear, supportive, and authoritative.
+
+------------------------------------------------------------
+
+38. Exit Interview Request
+
+Write a professional email from [HR CONTACT NAME] at
+[COMPANY] to [DEPARTING EMPLOYEE NAME] requesting their
+participation in an exit interview before their last day on
+[LAST DAY DATE]. Express appreciation for their tenure: "As
+you wrap up your time with [COMPANY], we want to thank you for
+your contributions over the past [DURATION], especially
+[SPECIFIC CONTRIBUTION IF KNOWN]." Explain the purpose: "We
+conduct exit interviews to learn from departing team members
+and continuously improve our workplace — your candid feedback
+is invaluable." Reassure confidentiality: "Your responses will
+be kept confidential and used only in aggregate to identify
+improvement areas." Propose [2-3 DATE/TIME OPTIONS] for a
+[30]-minute conversation, or offer an anonymous written survey
+as an alternative: "[SURVEY LINK]." Specify who will conduct
+the interview: "[HR REPRESENTATIVE NAME]." Tone: warm,
+genuine, and non-pressuring.
+
+
+============================================================
+  DIFFICULT SITUATIONS (6 Prompts)
+============================================================
+
+39. Complaint Response
+
+Write a professional response email from [YOUR NAME /
+CUSTOMER SERVICE], [TITLE] at [YOUR COMPANY], to [CUSTOMER
+NAME] at [CUSTOMER COMPANY] addressing their complaint about
+[SPECIFIC ISSUE — e.g., product defect, service failure, billing
+error, missed deadline]. Open by acknowledging their
+frustration and thanking them for bringing it to your
+attention: "Thank you for letting us know about [ISSUE] — I
+understand how [frustrating / inconvenient / concerning] this
+must be." Take responsibility without deflecting: "This fell
+below the standard we hold ourselves to." Describe specific
+steps you're taking to resolve it: "[ACTION 1], [ACTION 2]"
+with a timeline: "You can expect [RESOLUTION] by [DATE]."
+Offer appropriate compensation if applicable: "[CREDIT /
+REFUND / REPLACEMENT / SERVICE RECOVERY OFFER]." Provide a
+direct line for follow-up: "[YOUR DIRECT EMAIL / PHONE]."
+Tone: empathetic, accountable, and solution-focused.
+
+------------------------------------------------------------
+
+40. Apology for a Mistake
+
+Write a professional apology email from [YOUR NAME], [TITLE]
+at [YOUR COMPANY], to [RECIPIENT NAME] at [RECIPIENT COMPANY]
+regarding [SPECIFIC MISTAKE — e.g., incorrect invoice, wrong
+deliverable, missed meeting, data error, miscommunication].
+Lead with a clear, direct apology: "I want to sincerely
+apologize for [SPECIFIC MISTAKE]." Take full ownership — no
+passive language, no "mistakes were made": "This was our error,
+and I take full responsibility." Explain briefly what happened
+(not as an excuse, but for transparency): "[BRIEF ROOT CAUSE]."
+Detail exactly how you've corrected it: "[CORRECTIVE ACTION
+TAKEN]." Explain what you're doing to prevent recurrence:
+"We've implemented [PREVENTIVE MEASURE] to ensure this doesn't
+happen again." If applicable, offer goodwill compensation:
+"[CREDIT / DISCOUNT / ADDITIONAL SERVICE]." Close by reaffirming
+your commitment to the relationship. Tone: genuine, humble,
+specific, and forward-looking.
+
+------------------------------------------------------------
+
+41. Payment Reminder (Friendly, Firm, and Final)
+
+Write three versions of a payment reminder email from [YOUR
+NAME / ACCOUNTS RECEIVABLE] at [YOUR COMPANY] to [RECIPIENT
+NAME] at [RECIPIENT COMPANY] for Invoice #[INVOICE NUMBER],
+totaling [AMOUNT], originally due on [DUE DATE]:
+
+FRIENDLY (first reminder): "I wanted to send a quick reminder
+that Invoice #[INVOICE NUMBER] for [AMOUNT] was due on [DUE
+DATE]. These things can easily slip through the cracks — just
+wanted to make sure it's on your radar. Payment can be sent
+via [PAYMENT METHODS]. Let me know if you have any questions
+or if there's an issue with the invoice."
+
+FIRM (second reminder): "This is a follow-up regarding Invoice
+#[INVOICE NUMBER] for [AMOUNT], which is now [NUMBER] days
+past due. We value our relationship with [RECIPIENT COMPANY]
+and want to resolve this quickly. Please arrange payment by
+[NEW DEADLINE] or contact me to discuss an alternative
+arrangement. I've reattached the invoice for your convenience."
+
+FINAL (final notice): "Despite our previous reminders, Invoice
+#[INVOICE NUMBER] for [AMOUNT] remains unpaid, now [NUMBER]
+days overdue. Per our [CONTRACT / TERMS OF SERVICE], accounts
+over [THRESHOLD] days past due are subject to [CONSEQUENCE —
+e.g., late fees, service suspension, referral to collections].
+To avoid this, please remit payment by [FINAL DEADLINE]. If
+there is a dispute or hardship, please contact me immediately
+at [PHONE / EMAIL] so we can find a resolution." Each version
+should be standalone and ready to send.
+
+------------------------------------------------------------
+
+42. Deadline Extension Request
+
+Write a professional email from [YOUR NAME] at [YOUR COMPANY]
+to [RECIPIENT NAME] at [RECIPIENT COMPANY / YOUR MANAGER]
+requesting an extension on [DELIVERABLE / PROJECT / DEADLINE
+NAME], currently due [ORIGINAL DEADLINE]. Be direct in the
+first sentence: "I'm writing to request an extension on
+[DELIVERABLE] from [ORIGINAL DATE] to [PROPOSED NEW DATE]."
+Explain the reason honestly and concisely — not as an excuse,
+but as context: "[REASON — e.g., unexpected complexity,
+dependency delay, resource constraint, scope expansion]."
+Demonstrate that you've already taken steps to minimize the
+impact: "I've [MITIGATION ACTIONS TAKEN — e.g., reprioritized
+other work, brought in additional help, completed X% already]."
+Explain what you'll deliver by the new date and confirm no
+further delays are expected. Offer a compromise if possible:
+"I can deliver [PARTIAL DELIVERABLE] by the original date and
+the complete [DELIVERABLE] by [NEW DATE]." Tone: professional,
+accountable, and solution-oriented.
+
+------------------------------------------------------------
+
+43. Contract Termination
+
+Write a professional contract termination email from [YOUR
+NAME], [TITLE] at [YOUR COMPANY], to [RECIPIENT NAME] at
+[RECIPIENT COMPANY] formally terminating [CONTRACT /
+AGREEMENT / SERVICE] effective [TERMINATION DATE]. Reference
+the specific contract: "Per Section [SECTION NUMBER] of our
+[CONTRACT NAME] dated [CONTRACT DATE], this email serves as
+formal notice of termination with [NOTICE PERIOD] notice."
+State the reason if appropriate and contractually required:
+"[REASON — e.g., end of project scope, strategic shift,
+performance concerns, mutual agreement]." If the reason is
+sensitive, keep it neutral: "We've decided to take a different
+direction." Outline the transition plan: final deliverables,
+data transfer, outstanding payments, return of materials, and
+key dates. Specify any post-termination obligations (NDA,
+non-compete, final invoicing). Express gratitude for the
+working relationship where genuine. Provide a contact for
+transition logistics. Tone: professional, clear, and
+respectful — even if the circumstances are difficult.
+
+------------------------------------------------------------
+
+44. Constructive Feedback Delivery
+
+Write a professional email from [YOUR NAME] to [RECIPIENT
+NAME] delivering constructive feedback about [SPECIFIC
+SITUATION — e.g., a presentation, a deliverable, a behavior
+pattern, a client interaction]. Open by framing the
+conversation positively: "I wanted to share some thoughts on
+[TOPIC] because I value our working relationship and believe
+this feedback will help [POSITIVE OUTCOME — e.g., strengthen
+future presentations, improve client satisfaction]." Use the
+SBI (Situation-Behavior-Impact) model: "During [SITUATION],
+I noticed [SPECIFIC BEHAVIOR — be factual, not judgmental],
+which resulted in [IMPACT — on the team, project, client, or
+outcome]." Provide a specific, actionable recommendation:
+"For next time, I'd suggest [SPECIFIC ALTERNATIVE APPROACH],
+which would [EXPECTED POSITIVE RESULT]." Offer support: "I'm
+happy to [OFFER — e.g., review a draft, role-play the
+conversation, pair on the next one] if that would be helpful."
+Close by expressing confidence in them. Tone: respectful,
+specific, supportive, and private.
+
+
+============================================================
+  NETWORKING & RELATIONSHIP (6 Prompts)
+============================================================
+
+45. Introduction Email
+
+Write a professional introduction email from [YOUR NAME]
+introducing [PERSON A — NAME, TITLE, COMPANY] to [PERSON B —
+NAME, TITLE, COMPANY]. Briefly explain who each person is and
+why you're connecting them: "[PERSON A] is [1-SENTENCE
+DESCRIPTION OF WHAT THEY DO/EXPERTISE], and [PERSON B] is
+[1-SENTENCE DESCRIPTION]. I'm connecting you because
+[SPECIFIC REASON — e.g., you're both working on X, Person A
+has expertise Person B is looking for, there's a collaboration
+opportunity in Y]." Give each person a concrete starting point
+for conversation: "I think you'd find it valuable to discuss
+[SPECIFIC TOPIC]." Step aside gracefully: "I'll let you two
+take it from here — moving myself to BCC." Keep it under 100
+words. Tone: warm, specific, and efficient — your job is to
+make both people feel good about the connection.
+
+------------------------------------------------------------
+
+46. Thank You After Meeting
+
+Write a thoughtful thank-you email from [YOUR NAME] to
+[RECIPIENT NAME] following your [MEETING TYPE — e.g., coffee
+chat, lunch meeting, video call, networking event conversation]
+on [DATE]. Reference a specific insight, idea, or moment from
+the conversation that resonated with you: "I especially
+appreciated your perspective on [SPECIFIC TOPIC] — the point
+about [SPECIFIC INSIGHT] really stuck with me." Deliver on
+any commitments made: "As promised, here's [RESOURCE / LINK /
+INTRO / INFORMATION YOU SAID YOU'D SEND]." Suggest a concrete
+next step to maintain the relationship: "I'd love to continue
+this conversation — [SPECIFIC SUGGESTION: e.g., grab coffee
+again next month, share updates on X, collaborate on Y, attend
+Z event together]." Keep it concise — under 100 words — and
+send within 24 hours. Tone: genuine, specific, and
+forward-looking.
+
+------------------------------------------------------------
+
+47. Congratulations on Achievement
+
+Write a professional congratulations email from [YOUR NAME]
+to [RECIPIENT NAME] at [RECIPIENT COMPANY] celebrating their
+recent [ACHIEVEMENT — e.g., promotion, company milestone,
+award, product launch, funding round, publication, keynote
+speaking engagement]. Be specific about what you're
+congratulating them on — don't just say "congrats": "I saw
+that [SPECIFIC ACHIEVEMENT] and wanted to reach out —
+[GENUINE REACTION, e.g., that's a tremendous accomplishment,
+well-deserved recognition, a really exciting milestone]."
+Connect it to something you know about their journey: "I
+remember when [PERSONAL DETAIL — e.g., you first told me
+about this goal, you were just getting started on X, we
+discussed Y]." If appropriate, connect it to a future
+opportunity to work together or reconnect: "[NATURAL BRIDGE]."
+Keep it brief and genuine — no ask, no sales pitch, just
+pure congratulations. Tone: authentic, specific, and
+celebratory.
+
+------------------------------------------------------------
+
+48. Asking for Advice or Mentorship
+
+Write a professional email from [YOUR NAME] to [RECIPIENT
+NAME], [RECIPIENT TITLE/CONTEXT — e.g., industry leader,
+former professor, admired executive, author of X] requesting
+[SPECIFIC TYPE OF ADVICE — e.g., career guidance, feedback on
+a business plan, mentorship on a skill, industry insight].
+Open by establishing context for why you're reaching out to
+THEM specifically: "I've followed your work on [SPECIFIC WORK]
+and was particularly struck by [SPECIFIC THING THEY SAID OR
+DID]." Be specific about what you're asking — don't say "pick
+your brain": "I'm currently [YOUR SITUATION] and would value
+your perspective on [1-2 SPECIFIC QUESTIONS]." Make the time
+commitment clear and small: "Would you have [15-20] minutes
+for a [COFFEE / VIDEO CALL] sometime in the next few weeks?"
+Show you've done your homework and won't waste their time.
+Close with a genuine, zero-pressure out: "I completely
+understand if your schedule doesn't allow — either way, your
+[WORK / BOOK / TALK] has been incredibly helpful." Tone:
+humble, specific, prepared, and respectful of their time.
+
+------------------------------------------------------------
+
+49. Reconnecting After a Long Gap
+
+Write a professional but warm email from [YOUR NAME] to
+[RECIPIENT NAME] reconnecting after [TIME PERIOD — e.g., a few
+years, a long while, since we worked together at COMPANY].
+Acknowledge the gap naturally without over-apologizing: "It's
+been a while since [LAST INTERACTION — e.g., we worked
+together at X, we met at Y conference, we caught up over
+coffee] — I hope you've been well." Reference what you know
+about what they've been up to: "I saw that [SOMETHING THEY'VE
+DONE RECENTLY — e.g., new role, company launch, LinkedIn post,
+mutual connection mentioned them] — [GENUINE REACTION]." Share
+a brief, relevant update about yourself: "On my end, [1-2
+SENTENCES ABOUT WHAT YOU'RE DOING NOW]." Give a clear reason
+for reaching out beyond "just catching up": "[SPECIFIC REASON
+— e.g., working on something they'd find interesting, wanting
+to collaborate, value their input on X, attending an event in
+their city]." Propose a concrete next step: "[COFFEE / CALL /
+LUNCH] when your schedule allows?" Tone: warm, genuine, not
+transactional.
+
+------------------------------------------------------------
+
+50. Event Invitation
+
+Write a professional and engaging email from [YOUR NAME /
+COMPANY NAME] to [RECIPIENT NAME] inviting them to [EVENT
+NAME] on [DATE] at [TIME] at [LOCATION / VIRTUAL PLATFORM].
+Open with a compelling hook about the event: "We're hosting
+[EVENT NAME], a [TYPE — e.g., workshop, panel discussion,
+networking mixer, product launch, webinar] focused on [TOPIC /
+THEME]." Explain why they'd want to attend — highlight [2-3
+KEY DRAWS: speakers, topics, networking opportunities, hands-on
+activities, exclusive access]. Make it personal: "Given your
+[INTEREST / ROLE / EXPERTISE IN X], I thought this would be
+right up your alley." Include all essential details: date,
+time (with timezone), location or link, dress code (if
+applicable), agenda highlights, and RSVP instructions.
+If there's a cost: "[PRICE] — but I have a [DISCOUNT CODE /
+COMPLIMENTARY TICKET] for you: [CODE / LINK]." Create
+appropriate urgency: "Space is limited to [NUMBER] attendees"
+or "Early registration closes [DATE]." Close with a direct
+ask: "Can I count you in?" Tone: enthusiastic, informative,
+and personally relevant.
+
+
+============================================================
+  Thanks for your purchase!
+  Visit atlasux.cloud for AI-powered business tools.
+
+  © 2026 Atlas UX — A product of DEAD APP CORP
+============================================================
