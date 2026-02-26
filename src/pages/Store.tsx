@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Zap,
@@ -27,7 +27,6 @@ import {
   Workflow,
   ImageIcon,
   MessageSquare,
-  ExternalLink,
 } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -583,51 +582,12 @@ export default function Store() {
             <h2 className="text-xl font-semibold">Customer Reviews</h2>
           </div>
           <p className="mt-2 text-sm text-slate-400">
-            Verified purchase reviews from Trustpilot and Google.
+            Verified purchase reviews from Trustpilot.
           </p>
 
-          <div className="mt-6 flex flex-wrap gap-4">
-            <a
-              href="https://www.trustpilot.com/review/atlasux.cloud"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/20 px-6 py-4 hover:border-cyan-500/40 transition-colors"
-            >
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-white">
-                  Trustpilot
-                </span>
-                <span className="text-xs text-slate-400">
-                  Leave a review
-                </span>
-              </div>
-              <ExternalLink className="h-4 w-4 text-slate-400" />
-            </a>
-
-            <a
-              href="https://g.page/r/atlasux/review"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/20 px-6 py-4 hover:border-cyan-500/40 transition-colors"
-            >
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-white">
-                  Google Reviews
-                </span>
-                <span className="text-xs text-slate-400">
-                  Leave a review
-                </span>
-              </div>
-              <ExternalLink className="h-4 w-4 text-slate-400" />
-            </a>
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/20 p-6">
-            <p className="text-sm text-slate-400 italic">
-              Reviews from verified purchases will appear here. After
-              completing a purchase, you&rsquo;ll receive a link to leave a
-              review on Trustpilot or Google.
-            </p>
+          {/* TrustBox widget — Review Collector */}
+          <div className="mt-6">
+            <TrustpilotWidget />
           </div>
         </section>
 
@@ -955,5 +915,51 @@ function PlanCard({
         </div>
       </div>
     </Card>
+  );
+}
+
+/* ─── Trustpilot Widget ───────────────────────────────────────────────────── */
+
+function TrustpilotWidget() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Load the Trustpilot bootstrap script if not already present
+    if (!document.getElementById("trustpilot-bootstrap")) {
+      const script = document.createElement("script");
+      script.id = "trustpilot-bootstrap";
+      script.src =
+        "//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js";
+      script.async = true;
+      script.onload = () => {
+        if (ref.current && (window as any).Trustpilot) {
+          (window as any).Trustpilot.loadFromElement(ref.current, true);
+        }
+      };
+      document.head.appendChild(script);
+    } else if (ref.current && (window as any).Trustpilot) {
+      (window as any).Trustpilot.loadFromElement(ref.current, true);
+    }
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="trustpilot-widget"
+      data-locale="en-US"
+      data-template-id="56278e9abfbbba0bdcd568bc"
+      data-businessunit-id="69a0ab09ba0e39c0949a765b"
+      data-style-height="52px"
+      data-style-width="100%"
+      data-token="79fff290-9c3f-4fcc-aace-438dc0ad1ba3"
+    >
+      <a
+        href="https://www.trustpilot.com/review/atlasux.cloud"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Trustpilot
+      </a>
+    </div>
   );
 }
