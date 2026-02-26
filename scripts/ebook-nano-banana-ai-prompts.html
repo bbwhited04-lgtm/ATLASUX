@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nano Banana AI Prompts Guide — 500+ Prompts for Midjourney, DALL-E &amp; Stable Diffusion</title>
+<style>
+  @page { size: letter; margin: 0.6in; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; line-height: 1.6; font-size: 10pt; }
+  .cover { page-break-after: always; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); color: white; text-align: center; padding: 2in 1in; }
+  .cover h1 { font-size: 34pt; font-weight: 800; background: linear-gradient(135deg, #fbbf24, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.2in; line-height: 1.2; }
+  .cover h2 { font-size: 15pt; font-weight: 400; color: #94a3b8; margin-bottom: 0.4in; }
+  .cover .author { font-size: 11pt; color: #64748b; margin-top: 0.4in; }
+  .cover .brand { font-size: 9pt; color: #475569; margin-top: 0.15in; }
+  .chapter { page-break-before: always; }
+  .chapter h2 { font-size: 18pt; font-weight: 700; color: #0f172a; border-bottom: 3px solid #06b6d4; padding-bottom: 6px; margin-bottom: 14px; }
+  .chapter h3 { font-size: 13pt; font-weight: 600; color: #1e293b; margin: 16px 0 8px; }
+  .chapter h4 { font-size: 11pt; font-weight: 600; color: #334155; margin: 12px 0 6px; }
+  .chapter p { margin-bottom: 10px; text-align: justify; }
+  .chapter ul, .chapter ol { margin: 8px 0 12px 20px; }
+  .chapter li { margin-bottom: 4px; }
+  .toc { page-break-after: always; padding-top: 0.8in; }
+  .toc h2 { font-size: 20pt; color: #0f172a; border-bottom: 3px solid #06b6d4; padding-bottom: 6px; margin-bottom: 20px; }
+  .toc-entry { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #cbd5e1; font-size: 10pt; }
+  .prompt-block { background: #1e293b; color: #e2e8f0; padding: 10px 14px; border-radius: 6px; margin: 8px 0; font-family: 'Consolas', monospace; font-size: 9pt; white-space: pre-wrap; line-height: 1.4; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 8pt; font-weight: 600; margin-left: 6px; }
+  .badge-mj { background: #7c3aed; color: white; }
+  .badge-dalle { background: #16a34a; color: white; }
+  .badge-sd { background: #ea580c; color: white; }
+  .badge-all { background: #06b6d4; color: white; }
+  .tip { background: #ecfeff; border-left: 4px solid #06b6d4; padding: 10px 14px; margin: 12px 0; border-radius: 0 6px 6px 0; font-size: 9.5pt; }
+  .tip strong { color: #0e7490; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 9pt; }
+  th { background: #0f172a; color: white; padding: 6px 10px; text-align: left; }
+  td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; }
+  tr:nth-child(even) { background: #f8fafc; }
+  .prompt-num { color: #fbbf24; font-weight: 700; margin-right: 4px; }
+  .page-footer { text-align: center; font-size: 7pt; color: #94a3b8; margin-top: 30px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>Nano Banana AI Prompts Guide</h1>
+  <h2>500+ Prompts for Midjourney, DALL-E &amp; Stable Diffusion</h2>
+  <p style="color:#94a3b8; font-size:12pt; max-width:5in;">Photorealistic Portraits &bull; Landscapes &bull; Product Photography &bull; Fantasy Art &bull; Architecture &bull; Food &bull; Abstract &bull; Business &bull; Fashion &bull; Advanced Techniques</p>
+  <div class="author">by Atlas UX &middot; atlasux.cloud</div>
+  <div class="brand">&copy; 2026 Atlas UX &mdash; A product of DEAD APP CORP</div>
+</div>
+
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <div class="toc-entry"><span>Introduction: How to Use This Guide</span><span>3</span></div>
+  <div class="toc-entry"><span>Chapter 1: Photorealistic Portraits (50 prompts)</span><span>4</span></div>
+  <div class="toc-entry"><span>Chapter 2: Landscapes &amp; Nature (50 prompts)</span><span>6</span></div>
+  <div class="toc-entry"><span>Chapter 3: Product Photography (50 prompts)</span><span>8</span></div>
+  <div class="toc-entry"><span>Chapter 4: Fantasy &amp; Sci-Fi Art (50 prompts)</span><span>10</span></div>
+  <div class="toc-entry"><span>Chapter 5: Architecture &amp; Interior Design (50 prompts)</span><span>12</span></div>
+  <div class="toc-entry"><span>Chapter 6: Food &amp; Beverage (50 prompts)</span><span>14</span></div>
+  <div class="toc-entry"><span>Chapter 7: Abstract &amp; Artistic (50 prompts)</span><span>16</span></div>
+  <div class="toc-entry"><span>Chapter 8: Business &amp; Marketing (50 prompts)</span><span>17</span></div>
+  <div class="toc-entry"><span>Chapter 9: Fashion &amp; Style (50 prompts)</span><span>19</span></div>
+  <div class="toc-entry"><span>Chapter 10: Advanced Techniques (60+ prompts)</span><span>20</span></div>
+</div>
+
+<!-- INTRO -->
+<div class="chapter">
+  <h2>Introduction: How to Use This Guide</h2>
+  <p>This guide contains 500+ copy-paste ready prompts for the three most popular AI image generation platforms: Midjourney, DALL-E 3, and Stable Diffusion. Each prompt has been crafted and tested to produce high-quality results.</p>
+
+  <h3>Platform Differences</h3>
+  <table>
+    <tr><th>Feature</th><th>Midjourney</th><th>DALL-E 3</th><th>Stable Diffusion</th></tr>
+    <tr><td>Access</td><td>Discord / Web</td><td>ChatGPT / API</td><td>Local / ComfyUI</td></tr>
+    <tr><td>Strength</td><td>Artistic, cinematic</td><td>Accurate to prompt</td><td>Customizable, models</td></tr>
+    <tr><td>Parameters</td><td>--ar, --v, --stylize, --chaos</td><td>size, quality, style</td><td>CFG, steps, sampler</td></tr>
+    <tr><td>Best For</td><td>Art, concepts, mood</td><td>Precise descriptions</td><td>Full control, NSFW</td></tr>
+    <tr><td>Cost</td><td>$10-$60/mo</td><td>Included in ChatGPT Plus</td><td>Free (local GPU)</td></tr>
+  </table>
+
+  <h3>Platform Badges</h3>
+  <p><span class="badge badge-mj">MJ</span> = Best on Midjourney &nbsp; <span class="badge badge-dalle">DALL-E</span> = Best on DALL-E 3 &nbsp; <span class="badge badge-sd">SD</span> = Best on Stable Diffusion &nbsp; <span class="badge badge-all">ALL</span> = Works on all platforms</p>
+
+  <h3>Prompt Structure Tips</h3>
+  <ul>
+    <li><strong>Subject first:</strong> Start with what you want to see</li>
+    <li><strong>Style modifiers:</strong> Add artistic style, lighting, mood</li>
+    <li><strong>Technical details:</strong> Camera angle, lens, resolution</li>
+    <li><strong>Negative prompts (SD):</strong> Specify what to avoid</li>
+    <li><strong>Aspect ratio (MJ):</strong> --ar 16:9, --ar 3:4, --ar 1:1</li>
+  </ul>
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 3</div>
+</div>
+
+<!-- CHAPTER 1: PORTRAITS -->
+<div class="chapter">
+  <h2>Chapter 1: Photorealistic Portraits</h2>
+
+  <p><span class="prompt-num">1.</span> <span class="badge badge-mj">MJ</span></p>
+  <div class="prompt-block">Portrait of a 30-year-old woman with freckles and auburn hair, golden hour sunlight streaming through a window, shallow depth of field, shot on Canon EOS R5 with 85mm f/1.4 lens, warm tones, editorial magazine quality --ar 3:4 --v 6 --stylize 200</div>
+
+  <p><span class="prompt-num">2.</span> <span class="badge badge-dalle">DALL-E</span></p>
+  <div class="prompt-block">Cinematic close-up portrait of an elderly Japanese craftsman in his workshop, weathered hands holding a woodworking tool, dramatic side lighting from a single window, dust particles visible in the light beam, hyperrealistic, 8K detail</div>
+
+  <p><span class="prompt-num">3.</span> <span class="badge badge-all">ALL</span></p>
+  <div class="prompt-block">Professional headshot of a confident business executive, navy suit, neutral gray background, studio lighting with key light at 45 degrees, fill light at half power, catchlight in eyes, corporate photography style, sharp focus on eyes</div>
+
+  <p><span class="prompt-num">4.</span> <span class="badge badge-mj">MJ</span></p>
+  <div class="prompt-block">Environmental portrait of a street musician playing violin in the rain, cobblestone street in Prague, neon signs reflecting in puddles, bokeh city lights background, Nikon Z9 35mm f/1.8, moody cinematic color grading --ar 2:3 --v 6</div>
+
+  <p><span class="prompt-num">5.</span> <span class="badge badge-sd">SD</span></p>
+  <div class="prompt-block">Fashion editorial portrait, young model with bold geometric makeup, high-contrast studio lighting, white seamless background, shot from slightly below, Hasselblad medium format look, skin texture visible, magazine cover quality. Negative prompt: cartoon, illustration, painting, blurry, low quality</div>
+
+  <p><span class="prompt-num">6.</span> <span class="badge badge-all">ALL</span></p>
+  <div class="prompt-block">Candid portrait of a chef in a busy restaurant kitchen, steam rising from pots, warm tungsten lighting, motion blur on hands while face is sharp, documentary photography style, gritty and authentic, shot on Leica Q2</div>
+
+  <p><span class="prompt-num">7.</span> <span class="badge badge-mj">MJ</span></p>
+  <div class="prompt-block">Double exposure portrait, woman's face merged with a forest landscape, autumn colors, misty atmosphere, ethereal and dreamlike, fine art photography, high contrast black and white base with color overlay --ar 4:5 --stylize 400</div>
+
+  <p><span class="prompt-num">8.</span> <span class="badge badge-dalle">DALL-E</span></p>
+  <div class="prompt-block">Intimate portrait of a grandmother reading to a small child, soft window light, cozy living room with books in background, warm color palette, genuine emotion and connection, lifestyle photography, medium shot, natural and unposed</div>
+
+  <p><span class="prompt-num">9.</span> <span class="badge badge-mj">MJ</span></p>
+  <div class="prompt-block">Dramatic portrait of a firefighter, soot on face, helmet removed and held at side, fire truck lights creating red and blue rim lighting, smoke in background, heroic composition, shot with Sony A7IV 70-200mm f/2.8 --ar 3:4 --v 6</div>
+
+  <p><span class="prompt-num">10.</span> <span class="badge badge-all">ALL</span></p>
+  <div class="prompt-block">Natural light portrait of a yoga instructor in a sunlit studio, white linen clothing, minimalist background, backlit with sun flare, peaceful expression, Canon EOS R6 50mm f/1.2, ethereal and serene mood, soft warm tones</div>
+
+  <p><span class="prompt-num">11.</span> <span class="badge badge-mj">MJ</span></p>
+  <div class="prompt-block">Cyberpunk portrait, woman with neon-lit cybernetic implants, rain-soaked face, holographic HUD reflected in eyes, dark alley background with Chinese signage, blade runner aesthetic, teal and magenta color palette --ar 2:3 --stylize 300</div>
+
+  <p><span class="prompt-num">12.</span> <span class="badge badge-dalle">DALL-E</span></p>
+  <div class="prompt-block">Studio portrait of identical twins in contrasting outfits, one in all black one in all white, symmetrical composition, clean white background, fashion photography, both looking directly at camera with neutral expressions, high-end retouching</div>
+
+  <p><span class="prompt-num">13.</span> <span class="badge badge-sd">SD</span></p>
+  <div class="prompt-block">Rembrandt-style portrait lighting, bearded man in period clothing, dark moody background, single light source from upper left, rich oil painting texture, golden ratio composition, museum quality. Negative: modern clothing, bright colors, cartoon</div>
+
+  <p><span class="prompt-num">14.</span> <span class="badge badge-all">ALL</span></p>
+  <div class="prompt-block">Black and white street portrait, elderly man sitting on a park bench, pigeons around him, morning fog, strong contrast, grain texture like Tri-X 400 film, Henri Cartier-Bresson inspired decisive moment, wide angle 28mm perspective</div>
+
+  <p><span class="prompt-num">15.</span> <span class="badge badge-mj">MJ</span></p>
+  <div class="prompt-block">Underwater portrait of a swimmer, bubbles surrounding face, light rays penetrating the surface above, turquoise water, eyes open and serene, shot with underwater housing, ethereal and weightless feeling --ar 4:5 --v 6</div>
+
+  <p><span class="prompt-num">16-20.</span> <span class="badge badge-all">ALL</span> More Portrait Styles:</p>
+  <div class="prompt-block">16. Silhouette portrait at sunset, person standing on cliff edge, dramatic orange and purple sky, wide angle, landscape orientation, inspired by National Geographic
+
+17. Senior portrait in autumn park, fallen leaves, warm golden light filtering through trees, shallow DOF, Canon 135mm f/2, nostalgic warm film look
+
+18. Newborn baby sleeping in a woven basket, soft white blankets, overhead flat lay angle, diffused natural window light, pure white background, tender and delicate
+
+19. Athlete portrait mid-action, basketball player dunking, frozen motion with slight motion blur on ball, arena lighting, wide angle from below, dramatic and powerful, sports magazine cover
+
+20. Self-portrait style, person holding vintage camera up to face, reflection visible in lens, creative composition, Fujifilm X-T5 color science, retro film aesthetic</div>
+
+  <p><span class="prompt-num">21-30.</span> <span class="badge badge-mj">MJ</span> Environmental &amp; Creative Portraits:</p>
+  <div class="prompt-block">21. Beekeeper portrait surrounded by honeybees, protective suit partially removed, golden honey dripping, warm afternoon light, rural farm background --ar 3:4
+
+22. Tattoo artist portrait, close-up of hands working, tattoo gun buzzing, colorful ink bottles in foreground bokeh, moody shop lighting
+
+23. Astronaut portrait, helmet visor reflecting Earth, dramatic rim lighting, stars visible, photorealistic, NASA photography style --ar 1:1
+
+24. Dancer mid-leap, flour explosion creating white cloud around body, black background, high speed flash photography, 1/8000s freeze, Martha Graham inspired
+
+25. Portrait through rain-covered glass window, face slightly distorted, warm interior light vs cold blue exterior, melancholic mood, shallow DOF on water droplets
+
+26. Split lighting portrait, exactly half face illuminated half in shadow, dramatic chiaroscuro, studio beauty dish with grid, model looking straight into camera
+
+27. Grandparent and grandchild hands clasped together, extreme close-up showing age contrast, wrinkled vs smooth skin, warm side light, emotional storytelling
+
+28. Musician portrait with instrument, saxophone player in smoky jazz club, warm spotlight from above, rim light separating from dark background, New Orleans vibe
+
+29. Freckled child portrait, curious expression, butterfly landed on nose, garden background with wildflowers, magical realism, soft diffused light
+
+30. Portrait reflected in broken mirror shards, multiple fragmented reflections, dark artistic mood, conceptual self-portrait, experimental photography</div>
+
+  <p><span class="prompt-num">31-40.</span> <span class="badge badge-dalle">DALL-E</span> Professional &amp; Editorial:</p>
+  <div class="prompt-block">31. Tech CEO portrait in modern glass office, city skyline behind, confident pose leaning on standing desk, natural light from floor-to-ceiling windows, LinkedIn professional quality
+
+32. Doctor in white coat, stethoscope around neck, warm smile, hospital hallway background slightly blurred, trustworthy and approachable, healthcare marketing
+
+33. Portrait of a painter in their studio, paint-splattered apron, canvas visible behind, creative chaos, warm ambient lighting, authentic artist lifestyle
+
+34. Construction worker portrait, hard hat and safety vest, building framework behind, golden hour on construction site, respect for labor photography
+
+35. Teacher in classroom, surrounded by student artwork on walls, chalk dust in air, warm overhead fluorescent mixed with window light, genuine caring expression
+
+36. Portrait of a barista, latte art in progress, steam rising, warm cafe interior, overhead angle showing coffee cup and skilled hands, artisan coffee culture
+
+37. Scientist portrait in laboratory, safety goggles pushed up on forehead, colored liquid in beakers, dramatic blue lab lighting, discovery and innovation
+
+38. Farmer portrait in wheat field at harvest, straw hat, sun-weathered face, endless golden field to horizon, American heartland, documentary style
+
+39. Portrait of a florist arranging bouquet, surrounded by colorful flowers, natural light from shop window, soft pastel color palette, romantic and beautiful
+
+40. Librarian portrait in grand old library, towering bookshelves, warm reading lamp, spectacles, scholarly atmosphere, rich wood tones</div>
+
+  <p><span class="prompt-num">41-50.</span> <span class="badge badge-sd">SD</span> Stylized Portraits:</p>
+  <div class="prompt-block">41. Oil painting style portrait, Renaissance era clothing, dark Caravaggio-inspired lighting, rich textures, masterpiece quality, art museum worthy. Negative: photo, modern, bright
+
+42. Watercolor portrait, soft edges bleeding into white paper, limited palette of blues and earth tones, artistic interpretation, visible brushstrokes
+
+43. Pop art portrait Andy Warhol style, bold primary colors, halftone dot pattern, four panel grid, high contrast, iconic and graphic
+
+44. Pencil sketch portrait, hyperrealistic graphite drawing, extreme detail in hair and eyes, white paper background, photorealistic drawing style
+
+45. Art Nouveau portrait, woman surrounded by organic flowing patterns, Alphonse Mucha inspired, decorative border, muted jewel tones, poster design
+
+46. Glitch art portrait, digital distortion effects, RGB color separation, scanlines, corrupted data aesthetic, vaporwave colors, experimental digital art
+
+47. Low-poly geometric portrait, triangulated face, gradient color fills, modern digital art style, clean edges, minimalist background
+
+48. Stained glass window portrait, medieval saint style, rich jewel colors, lead came lines, backlit glowing effect, cathedral window
+
+49. Comic book portrait, bold ink outlines, Ben-Day dots, dynamic pose, speech bubble empty, Marvel/DC art style, vivid colors
+
+50. Infrared photography portrait, white foliage, dark sky, surreal color swap, otherworldly atmosphere, shot with modified camera, dreamlike</div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 5</div>
+</div>
+
+<!-- CHAPTER 2: LANDSCAPES -->
+<div class="chapter">
+  <h2>Chapter 2: Landscapes &amp; Nature</h2>
+
+  <p><span class="prompt-num">51-60.</span> <span class="badge badge-mj">MJ</span> Epic Landscapes:</p>
+  <div class="prompt-block">51. Massive ancient redwood forest, morning fog weaving between trunks, sun rays piercing through canopy, mossy forest floor, wide angle 14mm, Pacific Northwest, epic scale --ar 16:9 --v 6
+
+52. Iceland black sand beach at sunset, Reynisfjara sea stacks, long exposure smooth water, dramatic orange sky reflecting in wet sand, Nikon Z7 14-24mm --ar 21:9
+
+53. Swiss Alps panorama, snow-capped peaks above cloud layer, golden hour glow, mountain lake reflection in foreground, Matterhorn visible, landscape calendar quality --ar 16:9
+
+54. Japanese cherry blossom tunnel, petals falling like pink snow, stone path leading through, soft diffused overcast light, dreamy and romantic --ar 3:4
+
+55. Grand Canyon sunrise, layers of red and orange rock formations, morning mist in valleys, dramatic clouds catching first light, wide panoramic composition --ar 21:9
+
+56. Bioluminescent bay at night, glowing blue water, starry sky with Milky Way, silhouette of kayak, long exposure, Puerto Rico Mosquito Bay style --ar 16:9
+
+57. Norwegian fjord in autumn, mirror-still water reflecting mountains, tiny red cabin on shore, aerial drone perspective, saturated fall colors --ar 16:9
+
+58. Death Valley sand dunes at blue hour, S-curve ridge lines, wind-rippled textures, minimal composition, single set of footprints, desolate beauty --ar 3:2
+
+59. Patagonia Torres del Paine, turquoise lake in foreground, massive granite peaks, wind-blown clouds, morning golden light, backpacking adventure --ar 16:9
+
+60. Scottish Highlands, lone tree on misty hillside, moody overcast sky, sheep grazing in distance, heather in bloom, atmospheric and brooding --ar 3:2</div>
+
+  <p><span class="prompt-num">61-70.</span> <span class="badge badge-dalle">DALL-E</span> Seasonal &amp; Weather:</p>
+  <div class="prompt-block">61. First snowfall in a New England village, white church steeple, covered bridge, smoke rising from chimneys, warm lights in windows, Norman Rockwell feeling
+
+62. Thunderstorm over Kansas wheat field, dramatic supercell cloud formation, lightning bolt striking in distance, golden wheat foreground, storm chaser perspective
+
+63. Autumn country road lined with maple trees, leaves in peak fall color, red orange yellow gradient, covered in fallen leaves, Vermont countryside
+
+64. Spring wildflower meadow, endless field of bluebonnets and Indian paintbrush, rolling hills, puffy white clouds, Texas Hill Country, wide angle
+
+65. Frozen waterfall in winter, massive icicle formations, snow-covered rocks, person standing at base for scale, blue ice tones, dramatic perspective
+
+66. Desert monsoon, rain shaft visible against red rock mesa, dramatic lighting, double rainbow, flash flood water in arroyo, Arizona landscape
+
+67. Tropical beach at golden hour, palm trees silhouetted, gentle waves, tide pools reflecting sky colors, pristine white sand, paradise vacation
+
+68. Dense bamboo forest in rain, water droplets on leaves, misty atmosphere, narrow path disappearing into green, Kyoto Arashiyama style
+
+69. Aurora borealis over frozen lake, green and purple curtains of light, snow-covered pine trees, perfect reflection, Lapland Finland, long exposure
+
+70. Tornado forming over Great Plains, dramatic rotating mesocyclone, green-tinted sky, isolated farmhouse, ominous power of nature, photojournalism</div>
+
+  <p><span class="prompt-num">71-80.</span> <span class="badge badge-all">ALL</span> Macro &amp; Aerial:</p>
+  <div class="prompt-block">71. Macro dew drops on spider web, each droplet refracting the garden behind it, shallow DOF, early morning backlight, jewel-like quality, 100mm macro lens
+
+72. Aerial view of river delta, abstract natural patterns, turquoise water meeting brown sediment, bird's eye perspective, earth art, satellite imagery style
+
+73. Macro frost crystals on window glass, intricate ice patterns, backlit by cold blue morning light, extreme close-up revealing crystal structure
+
+74. Aerial autumn forest, top-down drone shot, patchwork of red orange yellow green canopy, winding river through middle, abstract pattern
+
+75. Macro mushroom forest floor, tiny fungi growing on mossy log, dramatic low angle, shallow DOF, fairy tale atmosphere, damp woodland
+
+76. Aerial coral reef from above, crystal clear water, coral patterns visible, schools of fish creating patterns, tropical island edge visible, drone photography
+
+77. Macro butterfly wing extreme close-up, individual scales visible, iridescent blue morpho, abstract color patterns, scientific photography style
+
+78. Aerial tulip fields Netherlands, geometric rows of color, red yellow purple pink white stripes, flat landscape, spring season, graphic quality
+
+79. Macro water droplet collision, crown splash formation, high-speed photography 1/10000s, colored liquid, studio lighting, physics made visible
+
+80. Aerial volcanic landscape Iceland, black lava fields, steam vents, turquoise geothermal pools, alien terrain, helicopter perspective</div>
+
+  <p><span class="prompt-num">81-100.</span> <span class="badge badge-mj">MJ</span> Nature Close-ups &amp; Dramatic:</p>
+  <div class="prompt-block">81. Ocean wave breaking, shot from inside the barrel, surfer perspective, crystal clear turquoise water, Hawaiian pipeline --ar 16:9
+
+82. Lightning striking a lone tree on hilltop, long exposure multiple bolts, dramatic purple sky, silhouette foreground --ar 3:2
+
+83. Sunflower field at golden hour, single sunflower in sharp focus foreground, endless field behind in soft bokeh --ar 3:4
+
+84. Cave interior with light shaft from above, illuminating underground river, stalactites and stalagmites, ethereal atmosphere --ar 2:3
+
+85. Massive baobab tree at sunset, Madagascar, wide trunk with person for scale, orange sky, African savanna --ar 16:9
+
+86. Foggy dock at dawn, wooden pier disappearing into mist, calm lake, minimalist composition, zen peaceful --ar 3:2
+
+87. Volcanic eruption at night, lava flowing into ocean, steam cloud, orange glow reflecting on water, dramatic power --ar 16:9
+
+88. Bamboo grove after rain, light filtering through, water droplets everywhere, green monochrome, meditation peace --ar 2:3
+
+89. Slot canyon walls, swirling sandstone patterns, light beam from above, orange and purple rock layers, Antelope Canyon --ar 2:3
+
+90. Crashing waves on rocky coast, long exposure milky water, dramatic sky, lighthouse in background, moody seascape --ar 16:9
+
+91. Field of lavender at sunset, Provence France, purple rows to horizon, warm golden backlight, romantic and dreamy --ar 16:9
+
+92. Redwood forest floor covered in sword ferns, tiny stream running through, dappled light, fairy tale atmosphere --ar 3:4
+
+93. Salt flats with thin water layer, perfect mirror reflection of clouds, person standing creating silhouette, Salar de Uyuni --ar 16:9
+
+94. Cherry blossom branch over still pond, petals floating on water, koi fish visible below, Japanese garden, tranquil --ar 4:5
+
+95. Massive wave from below, underwater split shot half above half below surface, coral reef below dramatic sky above --ar 1:1
+
+96. Mountain meadow wildflowers, lupine and Indian paintbrush, snow-capped peak behind, crystal clear stream, alpine paradise --ar 16:9
+
+97. Old growth moss-covered forest, Pacific Northwest temperate rainforest, nurse log with new growth, ancient ecosystem --ar 3:4
+
+98. Desert night sky, Milky Way arch over Monument Valley buttes, light painting on mesa, astrophotography, 30s exposure --ar 16:9
+
+99. Waterfall behind viewing point, curtain of water foreground, tropical jungle visible through water, green and white contrast --ar 2:3
+
+100. Single dandelion seed floating, macro backlit, sun creating starburst through seed, infinite bokeh background, fleeting beauty --ar 1:1</div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 7</div>
+</div>
+
+<!-- CHAPTER 3: PRODUCT PHOTOGRAPHY -->
+<div class="chapter">
+  <h2>Chapter 3: Product Photography</h2>
+
+  <p><span class="prompt-num">101-120.</span> <span class="badge badge-dalle">DALL-E</span> E-Commerce &amp; Lifestyle:</p>
+  <div class="prompt-block">101. Premium skincare bottle on marble surface, water droplets, botanical ingredients scattered around, soft diffused studio lighting, luxury beauty brand, white background, clean and minimal
+
+102. Wireless headphones floating mid-air, dynamic angle, colorful gradient background, light reflections showing premium materials, tech product hero shot, Apple-style photography
+
+103. Artisan coffee bag on rustic wooden table, scattered coffee beans, morning light from left, burlap texture, linen napkin, lifestyle product photography
+
+104. Running shoes on wet pavement, action splash, city lights reflecting, evening urban setting, Nike/Adidas campaign style, dynamic angle from ground level
+
+105. Luxury watch on dark slate surface, dramatic single light source, metal reflections, visible craftsmanship details, Rolex-level product photography, 100mm macro
+
+106. Perfume bottle with floral arrangement, roses and peonies, soft pink background, crystal clear glass refracting light, feminine and elegant, beauty campaign
+
+107. Laptop on minimalist desk setup, succulent plant, coffee cup, clean white desk, large window natural light, productivity lifestyle, tech blog header
+
+108. Handmade candle in ceramic holder, warm glow, dried flowers surrounding, wooden surface, hygge aesthetic, Etsy product listing photo
+
+109. Sunglasses flat lay on sandy beach, waves in background, shell and starfish props, overhead angle, summer lifestyle, fashion accessory photography
+
+110. Craft beer bottle with condensation drops, amber liquid, rustic bar setting, warm backlight creating glow through glass, brewery marketing
+
+111. Smartphone floating above hand, holographic UI elements, futuristic tech visualization, dark background, product launch announcement style
+
+112. Leather messenger bag on vintage bicycle, European cobblestone street, warm afternoon light, artisan craftsmanship visible, heritage brand lifestyle
+
+113. Fresh juice bottles lineup, rainbow of colors, ice and fruit garnishes, white marble surface, health and wellness brand, clean eating aesthetic
+
+114. Ceramic vase with dried pampas grass, neutral earth tones, textured linen background, minimalist home decor, Scandinavian design aesthetic
+
+115. Gaming mouse with RGB lighting trails, dark background, long exposure light painting, aggressive angles, esports product photography
+
+116. Stack of artisan chocolate bars, broken pieces showing texture, cocoa powder dusting, dark moody lighting, food photography meets product
+
+117. Yoga mat rolled with accessories, water bottle and towel, bright airy studio, morning light, wellness lifestyle, fitness brand marketing
+
+118. Vintage camera on old map with compass, adventure travel flat lay, leather journal, passport stamps, wanderlust aesthetic
+
+119. Essential oil bottles arranged with fresh herbs, rosemary lavender eucalyptus, natural light, holistic wellness, aromatherapy brand photography
+
+120. Smart home speaker on bedside table, warm evening room light, book and reading glasses nearby, ambient lifestyle, tech lifestyle photography</div>
+
+  <p><span class="prompt-num">121-140.</span> <span class="badge badge-mj">MJ</span> Creative Product Shots:</p>
+  <div class="prompt-block">121. Sneaker exploded view, shoe deconstructed showing all layers and materials, floating components, clean studio background, Nike-style technical product visualization --ar 16:9
+
+122. Lipstick melting into pool of color, macro close-up, vibrant red against white, liquid texture, beauty product art direction --ar 1:1
+
+123. Champagne bottle with dramatic pop, cork flying, fizz exploding, celebration moment frozen in time, dark background, high speed flash --ar 2:3
+
+124. Protein powder scoop with powder explosion, chocolate flavor, dynamic movement, gym equipment blurred background, fitness supplement marketing --ar 1:1
+
+125. Jewelry on ice cubes, diamond ring refracting rainbow light, cold blue studio lighting, luxury and purity concept --ar 1:1
+
+126. Sunscreen bottle half-submerged in pool water, underwater split shot, tropical resort visible above water, summer vibes --ar 4:5
+
+127. Plant-based food product surrounded by raw ingredients, vegetables and grains arranged artistically, earth tones, sustainable brand --ar 1:1
+
+128. Speaker with sound wave visualization, bass vibrating water on top, dynamic lighting, tech product meets art --ar 16:9
+
+129. Pen writing on premium paper, ink flowing, extreme macro, calligraphy in progress, luxury stationery brand --ar 3:4
+
+130. Backpack in mountain setting, summit with panoramic view, adventure gear laid out, flat lay overhead, outdoor brand lifestyle --ar 1:1
+
+131-140. [Packaging mockups]: Wine label on bottle in vineyard | Tea packaging with loose leaves | Cookie box with ingredients | Soap bar with lather bubbles | Book cover on reading nook shelf | Supplement bottle with fruit composition | Candle brand lineup three scents | Pet food bag with happy dog | Baby product with soft toys | Gift box unwrapping moment</div>
+
+  <p><span class="prompt-num">141-150.</span> <span class="badge badge-sd">SD</span> Studio Setups:</p>
+  <div class="prompt-block">141. Product photography white infinity curve studio setup, three-point lighting, softbox reflections visible in metallic product surface, professional commercial
+
+142. Glass product on mirror surface, perfect reflection, gradient background from dark to light, minimalist elegance, cosmetics brand
+
+143. Floating product arrangement, multiple items defying gravity, connected by liquid splash, dynamic commercial composition, high-end advertising
+
+144. Textured surface product photography, concrete slab with product, dried botanicals, warm directional light, wabi-sabi aesthetic
+
+145. Neon-lit product showcase, product on pedestal, colored gel lighting pink and blue, futuristic retail display concept
+
+146. Vintage product styling, antique props, sepia-toned mood, old paper and dried flowers, heritage brand nostalgia
+
+147. Product in water splash frozen moment, high speed photography, crystal clear water droplets, clean energy feeling
+
+148. Monochrome product photography, everything in shades of one color, product in contrasting accent color, graphic design quality
+
+149. Product with geometric shadow play, venetian blind shadows creating stripe pattern across scene, afternoon sun, artistic
+
+150. Seasonal product flat lay, autumn leaves and pumpkins surrounding product, overhead angle, warm harvest tones, fall marketing campaign</div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 9</div>
+</div>
+
+<!-- CHAPTER 4: FANTASY & SCI-FI -->
+<div class="chapter">
+  <h2>Chapter 4: Fantasy &amp; Sci-Fi Art</h2>
+
+  <p><span class="prompt-num">151-175.</span> <span class="badge badge-mj">MJ</span> Fantasy Worlds:</p>
+  <div class="prompt-block">151. Ancient dragon perched atop a crumbling castle tower, massive wings spread, fire breath illuminating storm clouds, medieval army below, epic fantasy battle scene --ar 16:9 --v 6
+
+152. Enchanted forest with massive bioluminescent mushrooms, fairy village built into tree roots, fireflies everywhere, soft magical glow, Studio Ghibli meets photorealism --ar 16:9
+
+153. Floating island city in the clouds, waterfalls cascading off edges into void, crystal towers, airships docking, steampunk fantasy civilization --ar 16:9
+
+154. Underwater elven kingdom, coral architecture, schools of colorful fish, light filtering from surface above, mermaid silhouettes in distance --ar 3:4
+
+155. Dark wizard's library, infinite bookshelves reaching into darkness, floating candles, ancient tomes with glowing runes, magical artifacts on desk --ar 2:3
+
+156. Phoenix rising from ashes, massive firebird, wings of living flame, night sky with stars, embers floating upward, rebirth and power --ar 2:3
+
+157. Dwarven forge inside a mountain, rivers of molten metal, massive mechanical hammers, bearded smiths working, steam and sparks --ar 16:9
+
+158. Fairy queen in moonlit glade, translucent gossamer wings, crown of living flowers, deer and woodland creatures gathered, ethereal beauty --ar 3:4
+
+159. Ancient tree of life, massive world tree connecting earth to sky, roots going deep underground showing underground civilizations --ar 9:16
+
+160. Samurai warrior facing a massive eastern dragon in cherry blossom storm, ink wash painting meets photorealism --ar 16:9
+
+161-175. [More Fantasy]: Pirate ghost ship in supernatural storm, glowing green sails | Crystal cave dragon hoard, gold coins and gemstones | Witch's cottage in autumn woods, smoke from chimney, black cat | Celestial being with galaxy wings, space nebula body | Knight and pegasus above cloud castle | Necromancer raising undead army, purple lightning | Elven archer in treetop city, interconnected platforms | Giant turtle carrying a village on its back, ocean journey | Portal between two different worlds, one lush one barren | Ice queen's palace, frozen throne, aurora borealis | Alchemist's workshop, potions bubbling, ingredients everywhere | Centaur warrior in ancient Greek ruins | Treant awakening, ancient forest guardian, moss and bark | Goblin market underground, lanterns and strange wares | Time wizard's tower, clocks everywhere, temporal distortions</div>
+
+  <p><span class="prompt-num">176-200.</span> <span class="badge badge-all">ALL</span> Sci-Fi Concepts:</p>
+  <div class="prompt-block">176. Massive generation ship approaching new star system, planets visible through viewport, interior city with parks and skyscrapers, hard sci-fi concept art
+
+177. Cyberpunk street market, holographic advertisements, rain, neon signs in Japanese and English, diverse crowd with augmentations, Blade Runner atmosphere
+
+178. Space station orbiting gas giant, rings visible, modular architecture, solar panels and docking bays, NASA concept art style, scientifically accurate
+
+179. Terraforming Mars, domed cities on red landscape, green vegetation spreading from biodomes, robotic workers, near-future realistic
+
+180. Mech pilot in cockpit, holographic HUD displays, neural interface helmet, giant robot hand visible through canopy, anime-inspired realism
+
+181. Alien marketplace on desert planet, multiple alien species trading, exotic goods and architecture, two suns in sky, Star Wars cantina meets photorealism
+
+182. Quantum computer room, glowing qubits suspended in vacuum chambers, scientists in cleanroom suits, blue ultraviolet lighting, near-future tech
+
+183. Abandoned space colony overgrown with alien vegetation, broken windows, nature reclaiming technology, post-apocalyptic beauty
+
+184. AI consciousness visualization, neural network made physical, glowing nodes and connections, data flowing as light, abstract tech art
+
+185. Zero gravity sports arena, athletes floating mid-game, transparent walls showing Earth below, futuristic athletics
+
+186-200. [More Sci-Fi]: Colony ship interior park with artificial sun | Wormhole opening in asteroid belt | Android discovering emotions, tear on metallic face | Alien ocean world, submarine exploring bioluminescent depths | Time traveler in Victorian London with future tech | Dyson sphere under construction around star | Nano-swarm forming structures in real-time | First contact moment, massive alien vessel over city | Post-human evolution, transcendent being of light | Robot archaeologist uncovering human civilization | Lunar mining operation, earth rise on horizon | Bioship, living organic spacecraft, veins and membranes | VR addiction ward, people in pods, digital paradise visible | Solar sail racing, ships of light between planets | Galactic senate, thousands of alien species, enormous chamber</div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 11</div>
+</div>
+
+<!-- CHAPTER 5: ARCHITECTURE -->
+<div class="chapter">
+  <h2>Chapter 5: Architecture &amp; Interior Design</h2>
+
+  <p><span class="prompt-num">201-225.</span> <span class="badge badge-dalle">DALL-E</span> Modern &amp; Futuristic:</p>
+  <div class="prompt-block">201. Minimalist concrete house cantilevered over cliff, floor-to-ceiling glass, ocean view, Tadao Ando inspired, dramatic clouds, architectural photography
+
+202. Futuristic vertical farm skyscraper, green terraces spiraling upward, glass and steel, sustainable architecture, city skyline background
+
+203. Luxury penthouse living room, double-height ceilings, grand piano, city skyline through massive windows at night, warm interior lighting
+
+204. Japanese zen garden courtyard inside modern house, raked gravel, single tree, sliding glass walls open to interior, harmony of inside and outside
+
+205. Brutalist concrete building with dramatic shadows, geometric patterns, golden hour side lighting, architectural photography, Le Corbusier inspired
+
+206. Cozy cabin interior, A-frame ceiling, floor-to-ceiling stone fireplace, snow visible through windows, warm wool blankets, hygge perfection
+
+207. Art deco hotel lobby, geometric patterns, gold leaf details, marble floors, grand chandelier, 1920s glamour meets modern restoration
+
+208. Floating house on still lake, wooden structure, reflection in water, mountains behind, Scandinavian minimalism, peaceful solitude
+
+209. Underground library carved into rock, barrel-vaulted ceiling, warm reading nooks, thousands of books, hidden gem architecture
+
+210. Greenhouse restaurant, lush tropical plants, hanging gardens, natural light streaming through glass roof, botanical dining experience
+
+211-225. [More Architecture]: Spiral staircase from above, geometric pattern, black and white | Desert modernism, Palm Springs house, pool, mountains | Treehouse hotel suite, luxury among branches | Museum interior, dramatic concrete curves, skylight | Kitchen with live herb wall, copper fixtures | Bathroom with floor-to-ceiling marble, freestanding tub, forest view | Converted industrial loft, exposed brick, steel beams | Rooftop infinity pool at sunset, city below | Secret garden courtyard, hidden behind old door | Children's room with built-in treehouse bed | Home office with library wall, window seat | Wine cellar, stone arches, hundreds of bottles | Traditional Moroccan riad, tiled courtyard, fountain | Glass house in forest, transparent walls, nature immersion | Capsule hotel futuristic design, pod sleeping quarters</div>
+
+  <p><span class="prompt-num">226-250.</span> <span class="badge badge-mj">MJ</span> Interiors &amp; Spaces:</p>
+  <div class="prompt-block">226. Mid-century modern living room, Eames chair, walnut credenza, abstract art on wall, warm afternoon light, architectural digest quality --ar 16:9
+
+227. Wabi-sabi interior, imperfect plaster walls, handmade ceramics, natural materials, single ikebana arrangement, peaceful imperfection --ar 3:4
+
+228. Industrial coffee shop interior, exposed ductwork, concrete floors, vintage Edison bulbs, reclaimed wood bar, community gathering space --ar 16:9
+
+229. Maximalist bohemian bedroom, layered textiles, collected art everywhere, plants in every corner, warm jewel tones, eclectic personality --ar 3:4
+
+230. White Scandinavian kitchen, handleless cabinets, light wood countertops, single statement pendant light, minimal and functional beauty --ar 16:9
+
+231. Gothic cathedral interior, soaring ribbed vaults, stained glass casting colored light patterns on stone floor, awe-inspiring scale --ar 2:3
+
+232. Luxury yacht interior, teak and white leather, panoramic ocean views through sleek windows, sunset light, nautical elegance --ar 16:9
+
+233. Recording studio, acoustic panels, mixing console with hundreds of knobs, warm dim lighting, creative workspace, music industry --ar 16:9
+
+234. Converted church into modern home, original stained glass windows preserved, open plan living, dramatic height --ar 3:4
+
+235-250. [More Interiors]: Spa bathroom, natural stone, rainfall shower, bamboo | Art gallery, white walls, single painting spotlit | Restaurant with dramatic ceiling installation | Tiny house interior, clever storage solutions | Palace ballroom, crystal chandeliers, gold leaf | Modern farmhouse kitchen, shiplap, farm sink | Meditation room, minimal, natural light, cushion | Retail store design, flagship concept | Hotel suite with private plunge pool | Coworking space, plants, natural light | Private cinema room, velvet seats | Nursery, soft colors, mobile, natural wood | Bakery interior, display cases, warm bread | Penthouse terrace, outdoor furniture, city views | Library reading room, green banker's lamps, leather chairs</div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 13</div>
+</div>
+
+<!-- CHAPTER 6: FOOD -->
+<div class="chapter">
+  <h2>Chapter 6: Food &amp; Beverage</h2>
+
+  <p><span class="prompt-num">251-300.</span> <span class="badge badge-all">ALL</span></p>
+  <div class="prompt-block">251. Steaming ramen bowl, soft-boiled egg, chashu pork, nori, chopsticks lifting noodles, steam rising, overhead angle, Japanese restaurant, food magazine
+
+252. Artisan sourdough bread, cross-section showing open crumb structure, flour dusted crust, rustic wooden board, morning light, bakery
+
+253. Chocolate lava cake being cut open, molten center flowing out, powdered sugar, fresh raspberries, dark plate, dramatic spot lighting
+
+254. Overhead flat lay of Mediterranean mezze spread, hummus, falafel, tabbouleh, pita, colorful arrangement, marble surface
+
+255. Cocktail being poured through strainer, ice and garnish visible in glass, bar setting, moody ambient lighting, craft cocktail culture
+
+256. Sushi platter close-up, glistening fresh fish, perfectly formed nigiri and rolls, wasabi and ginger, bamboo board, Japanese precision
+
+257. Stack of fluffy pancakes with butter melting and syrup dripping, fresh berries on top, breakfast scene, morning light streaming in
+
+258. Wood-fired pizza being pulled from oven, stretchy mozzarella, charred crust, basil leaves, traditional Neapolitan, brick oven visible
+
+259. Ice cream sundae construction, layers of ice cream, hot fudge dripping, whipped cream peak, cherry on top, retro diner style
+
+260. Fresh pasta being made by hand, flour-dusted surface, pasta machine, egg yolks, Italian grandmother's kitchen, rustic warmth
+
+261-275. [More Food]: Fresh oysters on ice with lemon and mignonette | Burger cross-section showing all layers, dripping sauce | Colorful macaron tower, pastel colors, elegant display | Pho bowl with herb plate, lime, bean sprouts, Vietnamese | Charcuterie board, artisan cheeses, cured meats, dried fruit | Coffee pour-over in progress, kettle and Chemex | Fresh market produce arrangement, rainbow of vegetables | BBQ brisket being sliced, smoke ring visible, bark texture | Acai bowl with artistic toppings arrangement, overhead | Wedding cake four tiers, sugar flowers, elegant | Fish tacos with mango salsa, lime, street food style | French pastry display case, croissants and eclairs | Thanksgiving table spread, turkey centerpiece, all sides | Matcha latte art being poured, green and white swirl | Lobster dinner, whole lobster, butter, corn, potatoes
+
+276-300. [Beverages & More]: Wine being poured into glass, vineyard backdrop | Espresso machine pulling shot, crema forming | Fresh juice bar lineup, colorful health drinks | Craft beer flight, four glasses, different colors | Afternoon tea service, tiered stand, fine china | Smoothie bowl with geometric topping arrangement | Hot chocolate with marshmallows melting, cozy | Bubble tea close-up, tapioca pearls, colorful | Champagne toast, two glasses clinking, celebration | Cold brew coffee dripping, ice cubes, condensation | Herbal tea ceremony, loose leaves, ceramic pot | Milkshake with over-the-top toppings, cotton candy | Whiskey on rocks, amber liquid, crystal glass | Fresh coconut water, beach setting, tropical | Kombucha brewing, SCOBY visible, glass jar | Latte art rosetta, overhead angle, cafe | Fresh pressed olive oil, green gold, bread dipping | Maple syrup production, tapping trees, boiling sap | Honey harvest, honeycomb dripping, golden | Artisan chocolate truffles being hand-rolled | Farmers market cheese wheel being cut | Street food vendor wok with flames, night market | Cinnamon rolls fresh from oven, cream cheese frosting | Birthday cake with lit candles, celebration | Giant seafood platter, restaurant presentation</div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 15</div>
+</div>
+
+<!-- CHAPTER 7: ABSTRACT -->
+<div class="chapter">
+  <h2>Chapter 7: Abstract &amp; Artistic</h2>
+
+  <p><span class="prompt-num">301-350.</span> <span class="badge badge-mj">MJ</span></p>
+  <div class="prompt-block">301. Liquid marble texture, swirling gold and deep navy blue, metallic ink in water, macro photography, luxury abstract background --ar 1:1 --stylize 500
+
+302. Geometric color field painting, bold blocks of saturated color, hard edges, Mark Rothko inspired, emotional depth through pure color --ar 3:4
+
+303. Shattered glass frozen mid-explosion, rainbow light refracting through fragments, black background, high-speed photography aesthetic --ar 1:1
+
+304. Fluid dynamics visualization, colorful ink drops in water, tentacle-like formations, scientific beauty, macro photography --ar 1:1
+
+305. Impossible architecture, MC Escher inspired, infinite staircases, paradoxical geometry, pencil drawing style --ar 1:1
+
+306. Neural network visualization, brain synapses firing, electric blue pulses traveling between nodes, dark background, scientific art --ar 16:9
+
+307. Macro paint mixing, thick impasto texture, complementary colors colliding, palette knife marks visible, artist's palette close-up --ar 1:1
+
+308. Fibonacci spiral in nature, composite showing spiral in shell, sunflower, galaxy, hurricane, mathematical beauty --ar 1:1
+
+309. Sound waves made visible, cymatics pattern, fine sand on vibrating metal plate, geometric mandala forming, physics art --ar 1:1
+
+310. Smoke art, colored smoke forming a human face in profile, dark background, ethereal and temporary, fine art photography --ar 3:4
+
+311-350. [More Abstract]: Oil slick rainbow on wet asphalt, macro iridescence | Crystal geode interior, amethyst purple, natural geometry | Bokeh light circles overlapping, shallow DOF city lights | Paper art layered cutouts, depth and shadow, white on white | Generative art, algorithm-created patterns, processing/p5.js aesthetic | Rust texture extreme close-up, oxidation patterns, industrial beauty | Microscopic view of snowflake crystal, ice structure | Dripping paint Jackson Pollock style, action painting | Cracked earth texture, drought pattern, aerial view | Soap bubble macro, rainbow thin film interference | Feather macro, barb structure, iridescent colors | Sand patterns from receding tide, aerial view | Tree ring cross-section, age visible, warm wood tones | Kaleidoscope pattern, symmetric reflections, vibrant | Lightning Lichtenberg figures in wood, fractal burns | Murmuration of starlings, flowing shape against sunset | Ripple interference pattern, two stones dropped in water | Satellite view of crop circles, geometric agriculture | Peeling paint on old wall, layered history, texture | Ice crystal formation time-lapse, delicate structures | Topographic map rendered in 3D, terrain elevation | DNA double helix visualization, molecular art | Galaxy collision simulation, gravitational interaction | Interference pattern, double slit experiment visualization | Microscopic view of leaf cells, chloroplasts visible | Circuit board macro, electronic cityscape, tech art | Erosion patterns in sandstone, water carved curves | Magnetic field lines visualization, iron filings | Spider silk with dew drops, strength and delicacy | Brain scan visualization, colorful activity regions | Coral growth patterns, fractal branching structure | Bismuth crystal, metallic rainbow, geometric growth | Tidal pool abstract, rocks and water from above | Prismatic light dispersion, rainbow spectrum, physics | Cymbal crash frozen in time, metal vibration visible | Volcanic glass obsidian, reflection and depth | Dandelion seed head, geometric perfection, backlit | Ocean foam patterns on sand, ephemeral abstract | Music visualization, synesthesia, sound as color | Crystallization under microscope, minerals forming</div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 16</div>
+</div>
+
+<!-- CHAPTER 8: BUSINESS -->
+<div class="chapter">
+  <h2>Chapter 8: Business &amp; Marketing</h2>
+
+  <p><span class="prompt-num">351-400.</span> <span class="badge badge-dalle">DALL-E</span></p>
+  <div class="prompt-block">351. Professional team meeting in modern conference room, diverse group collaborating around whiteboard, glass walls, natural light, corporate lifestyle photography
+
+352. Startup office overhead view, open floor plan, standing desks, monitors showing code and analytics, plants, collaborative energy
+
+353. Social media content grid, 9 squares arranged Instagram-style, cohesive brand aesthetic, mix of product and lifestyle shots, feed planning visualization
+
+354. Minimalist logo mockup on business card, embossed on premium paper, clean typography, brand identity presentation
+
+355. Email newsletter template visualization, clean layout, hero image, CTA buttons, mobile and desktop side by side, email marketing
+
+356. Infographic about business growth, charts and icons, clean modern design, data visualization, blue and white color scheme
+
+357. Podcast studio setup, professional microphones, acoustic panels, dual monitors, branded backdrop, content creator workspace
+
+358. E-commerce website on laptop screen, product grid visible, modern clean design, lifestyle imagery, conversion-optimized layout
+
+359. Brand mood board flat lay, color swatches, typography samples, texture references, inspiration images, design process
+
+360. Trade show booth rendering, modern minimal design, product displays, branded graphics, interactive screens, event marketing
+
+361-380. [Business Scenes]: Webinar in progress, speaker with slides, virtual audience grid | Product launch event, dramatic unveiling, audience | Warehouse fulfillment center, organized shelving, workers | Restaurant interior design concept, floor plan on table | Real estate listing photo, staged living room, bright | Coworking space, diverse professionals, laptop, coffee | Retail store window display, seasonal, eye-catching | Food truck at festival, queue of customers, vibrant | Salon interior, modern stations, mirrors, products | Gym facility, modern equipment, motivational | Hotel lobby, check-in area, luggage, welcoming | Dental office, modern clean, patient comfort | Auto detailing, before/after, showroom shine | Construction project progress, crane and steel | Wedding venue setup, flowers, chairs, arch
+
+381-400. [Marketing Assets]: YouTube thumbnail template, bold text, expressive face | Pinterest pin vertical format, text overlay, lifestyle | Facebook ad carousel mockup, multiple products | Billboard mockup on highway, massive scale | App store screenshots, phone mockups, UI visible | Book cover design, bold typography, eye-catching | Podcast cover art, square format, branded | Business presentation slide, clean chart, data | Annual report cover, corporate, professional | Product packaging lineup, brand family | Vehicle wrap design, company branding, van | Storefront signage mockup, illuminated | Magazine spread layout, editorial design | Menu design, restaurant branding, appetizing | Email signature mockup, professional, contact info | Loyalty card design, stamp system, branded | Sticker sheet design, die-cut shapes, branded | Tote bag mockup with brand logo, lifestyle | Brochure tri-fold, opened, interior visible | Event invitation design, elegant, RSVP details</div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 18</div>
+</div>
+
+<!-- CHAPTER 9: FASHION -->
+<div class="chapter">
+  <h2>Chapter 9: Fashion &amp; Style</h2>
+
+  <p><span class="prompt-num">401-450.</span> <span class="badge badge-mj">MJ</span></p>
+  <div class="prompt-block">401. High fashion editorial, model in avant-garde geometric dress, architectural museum background, dramatic lighting, Vogue Italia style --ar 2:3
+
+402. Street style photography Tokyo Harajuku, colorful layered outfit, platform shoes, anime-inspired accessories, urban background --ar 3:4
+
+403. Vintage 1970s fashion shoot, bell bottoms, platform shoes, retro sunglasses, roller disco, film grain, Kodachrome colors --ar 2:3
+
+404. Haute couture gown detail, intricate beadwork and embroidery, macro texture shot, atelier craftsmanship, hand-sewn sequins --ar 1:1
+
+405. Minimalist fashion, all-white outfit against white background, shadow play, clean lines, Scandinavian design aesthetic --ar 2:3
+
+406. Leather jacket detail shot, worn patina, brass hardware, character and age, motorcycle culture, close-up texture --ar 1:1
+
+407. Athletic wear in motion, yoga pose, fabric stretching, sweat visible, studio lighting, Nike/Lululemon campaign style --ar 2:3
+
+408. Luxury handbag on marble pedestal, dramatic spot lighting, dark background, leather texture visible, brand campaign --ar 1:1
+
+409. Sustainable fashion flat lay, organic cotton and linen pieces, earth tones, dried botanicals, eco-conscious branding --ar 1:1
+
+410. Runway show finale, models walking in formation, dramatic lighting, fashion week atmosphere, editorial photography --ar 16:9
+
+411-430. [Fashion Styles]: Bridal gown in cathedral, dramatic train, veil, stained glass light | Denim jacket back patch detail, embroidered art | Sneaker culture, rare kicks on display shelf, collection | Watch and cufflinks detail, suited wrist, boardroom | Eyewear campaign, bold frames, split lighting | Swimwear on tropical beach, editorial pose, golden hour | Winter layering, puffer jacket, scarf, beanie, snow | Jewelry flat lay, gold chains and rings, velvet surface | Streetwear brand lookbook, urban graffiti backdrop | Silk scarf artistically draped, pattern visible | Children's fashion, playful outfits, joyful movement | Menswear tailoring, bespoke suit fitting, measuring tape | Bohemian festival fashion, flower crown, flowing fabrics | Punk rock style, leather and studs, mohawk | Lingerie editorial, elegant, empowering, natural body | Workwear fashion, functional meets stylish | Evening gown, old Hollywood glamour, black and white | Accessories close-up, belt buckle, craftsmanship | Traditional kimono, obi details, Japanese garden | Footwear still life, designer heels, artistic angle
+
+431-450. [Textile & Detail]: Denim weave macro, indigo threads, selvedge edge | Cashmere knit texture, soft fibers, luxury hand feel | Silk charmeuse drape, liquid fabric flow, light play | Tweed fabric close-up, Harris tweed texture, heritage | Lace detail, intricate floral pattern, vintage | Velvet crush texture, light and shadow, rich color | Canvas and leather contrast, workwear meets luxury | Embroidery thread detail, needle mid-stitch, artisan | Plaid pattern, tartan wool, Scottish heritage | Sequin fabric, light reflection, glamour | Cotton weave, organic texture, sustainable | Fur texture (faux), ethical luxury, softness | Printed fabric, bold botanical pattern, design | Mesh fabric see-through texture, athletic modern | Pearl button detail on shirt, mother of pearl | Zipper teeth macro, metal precision, industrial | Suede texture close-up, brushed nap, luxury | Tie-dye process, swirling colors, handmade | Woven basket weave leather, craftsmanship | Fringe detail, movement and texture, western style</div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 19</div>
+</div>
+
+<!-- CHAPTER 10: ADVANCED -->
+<div class="chapter">
+  <h2>Chapter 10: Advanced Techniques</h2>
+
+  <h3>Negative Prompts (Stable Diffusion)</h3>
+  <div class="prompt-block">Universal negative prompt template:
+"worst quality, low quality, blurry, deformed, disfigured, mutated, bad anatomy, bad hands, extra fingers, missing fingers, extra limbs, fused fingers, long neck, cropped, watermark, signature, text, logo, jpeg artifacts, lowres"
+
+For photorealism add: "cartoon, anime, illustration, painting, drawing, 3d render, CGI"
+For art add: "photo, photograph, realistic, 3d, render"</div>
+
+  <p><span class="prompt-num">451-470.</span> <span class="badge badge-mj">MJ</span> Style Mixing:</p>
+  <div class="prompt-block">451. Portrait in the style of Van Gogh Starry Night, swirling brushstrokes but photorealistic face, oil painting texture, mixed media --stylize 750
+
+452. Japanese ukiyo-e woodblock print of a modern city, traditional technique depicting contemporary subjects, flat perspective, bold outlines --niji 6
+
+453. Art Deco poster style photograph, geometric patterns overlaid, gold and black, 1920s glamour meets modern subject --stylize 500
+
+454. Photograph rendered as stained glass, every element as colored glass pieces with lead came lines, cathedral light --stylize 600
+
+455. Renaissance painting composition with cyberpunk subjects, Caravaggio lighting on chrome and neon, classical meets future --stylize 400
+
+456-470. [More Style Mix]: Impressionist landscape of a space scene, Monet-style brushwork on cosmic subjects | Bauhaus poster of a nature scene, geometric simplification | Anime style real cityscape, Studio Ghibli Tokyo | Pixel art version of a Renaissance painting | Watercolor effect on architectural photography | Comic book panel of a real news event | Blueprint technical drawing of a fantasy creature | Vintage travel poster of alien planet | Chinese ink wash painting of circuit board | Surrealist Salvador Dali perspective on modern office | Gustav Klimt gold leaf pattern on modern portrait | Banksy street art style corporate satire | Dutch Golden Age still life with modern objects | Ancient Egyptian hieroglyphic style infographic | Mondrian color block composition applied to landscape</div>
+
+  <h3>Aspect Ratio Guide (Midjourney)</h3>
+  <table>
+    <tr><th>Ratio</th><th>Use Case</th><th>Command</th></tr>
+    <tr><td>1:1</td><td>Instagram, profile pictures, icons</td><td>--ar 1:1</td></tr>
+    <tr><td>4:5</td><td>Instagram portrait, Pinterest</td><td>--ar 4:5</td></tr>
+    <tr><td>3:4</td><td>Portraits, book covers</td><td>--ar 3:4</td></tr>
+    <tr><td>2:3</td><td>Posters, phone wallpapers</td><td>--ar 2:3</td></tr>
+    <tr><td>16:9</td><td>YouTube thumbnails, presentations</td><td>--ar 16:9</td></tr>
+    <tr><td>21:9</td><td>Ultrawide, cinematic</td><td>--ar 21:9</td></tr>
+    <tr><td>9:16</td><td>TikTok, Instagram Stories, Reels</td><td>--ar 9:16</td></tr>
+  </table>
+
+  <p><span class="prompt-num">471-500.</span> <span class="badge badge-all">ALL</span> Advanced Parameters:</p>
+  <div class="prompt-block">471. [Upscaling] Take your best generation and upscale: MJ --upbeta or --upanime, SD use Real-ESRGAN or Topaz Gigapixel AI for 4x resolution increase
+
+472. [Img2Img] Upload a sketch and transform: "Transform this rough sketch into a photorealistic rendering, maintaining the composition and subject placement, add dramatic lighting and realistic textures" (SD img2img strength 0.6-0.8)
+
+473. [Inpainting] Fix specific areas: Generate base image, mask the area to fix, regenerate with specific prompt for that area only. Perfect for fixing hands, faces, or adding details.
+
+474. [ControlNet] Use pose reference: Upload a pose photo, apply OpenPose ControlNet, generate new image maintaining exact body position but changing everything else
+
+475. [Seed consistency] For character consistency: Find a seed you like with --seed [number] in MJ. Use same seed + similar prompt to maintain face/style across multiple images.
+
+476-480. [Composition Control]:
+--no [element] removes unwanted elements in MJ
+Weighted prompts: "portrait::2 background::1" emphasizes portrait
+Multi-prompt: "portrait of a woman :: in a forest :: golden hour" treats each section independently
+Regional prompting (SD): define different prompts for different areas of the image
+
+481-490. [Lighting Techniques]:
+"Rembrandt lighting" — triangle of light on shadow side cheek
+"Butterfly lighting" — overhead, shadow under nose
+"Split lighting" — exactly half lit, half shadow
+"Rim lighting" — backlit outline, dark face
+"Golden hour" — warm, directional, long shadows
+"Blue hour" — cool, even, moody
+"Neon lighting" — colorful, urban, artificial
+"Candlelight" — warm, flickering, intimate
+"Studio three-point" — key, fill, back, professional
+"Natural window light" — soft, directional, flattering
+
+491-500. [Camera Simulation]:
+"Shot on Fujifilm X-T5" — warm, desaturated, film-like
+"Shot on Hasselblad" — medium format, incredible detail, shallow DOF
+"Shot on iPhone 15 Pro" — computational photography, smart HDR
+"Shot on Canon 5D Mark IV" — reliable, neutral, workhorse
+"Kodak Portra 400 film" — soft colors, beautiful skin tones, grain
+"Cinestill 800T" — tungsten film, halation around lights, cinematic
+"Polaroid" — square format, faded colors, white border, nostalgic
+"Lomography" — light leaks, vignetting, oversaturated, experimental
+"Infrared film" — white foliage, dark sky, surreal
+"Tilt-shift lens" — miniature effect, selective focus plane"</div>
+
+  <div class="tip">
+    <strong>Final Tip:</strong> The best AI image creators don't just copy prompts — they understand why each element works. Experiment with these prompts, modify them, combine techniques from different chapters, and develop your own signature style. The prompts in this guide are starting points — your creativity makes them exceptional.
+  </div>
+
+  <p style="text-align:center; margin-top:30px; font-size:13pt; font-weight:600;">Thank you for reading!</p>
+  <p style="text-align:center; color:#64748b;">Visit <strong>atlasux.cloud</strong> for more AI-powered tools and guides.</p>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 20</div>
+</div>
+
+</body>
+</html>

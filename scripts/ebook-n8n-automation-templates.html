@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>100+ n8n Automation Templates — AI Agents &amp; OpenAI Workflows</title>
+<style>
+  @page { size: letter; margin: 0.65in; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; line-height: 1.6; font-size: 10pt; }
+  .cover { page-break-after: always; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); color: white; text-align: center; padding: 2in 1in; }
+  .cover h1 { font-size: 32pt; font-weight: 800; background: linear-gradient(135deg, #ff6d5a, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.2in; line-height: 1.2; }
+  .cover h2 { font-size: 14pt; font-weight: 400; color: #94a3b8; margin-bottom: 0.4in; }
+  .cover .author { font-size: 11pt; color: #64748b; margin-top: 0.4in; }
+  .cover .brand { font-size: 9pt; color: #475569; margin-top: 0.15in; }
+  .chapter { page-break-before: always; }
+  .chapter h2 { font-size: 17pt; font-weight: 700; color: #0f172a; border-bottom: 3px solid #ff6d5a; padding-bottom: 6px; margin-bottom: 14px; }
+  .chapter h3 { font-size: 12pt; font-weight: 600; color: #1e293b; margin: 14px 0 6px; }
+  .chapter p { margin-bottom: 8px; text-align: justify; }
+  .chapter ul, .chapter ol { margin: 6px 0 10px 20px; }
+  .chapter li { margin-bottom: 3px; }
+  .toc { page-break-after: always; padding-top: 0.8in; }
+  .toc h2 { font-size: 20pt; border-bottom: 3px solid #ff6d5a; padding-bottom: 6px; margin-bottom: 18px; }
+  .toc-entry { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #cbd5e1; font-size: 10pt; }
+  .template { background: #f8fafc; border-left: 4px solid #ff6d5a; padding: 10px 14px; margin: 10px 0; border-radius: 0 6px 6px 0; }
+  .template .tname { font-weight: 700; font-size: 10.5pt; color: #0f172a; }
+  .template .flow { font-family: 'Consolas', monospace; font-size: 9pt; color: #475569; margin: 4px 0; }
+  .badge-b { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 7.5pt; font-weight: 600; }
+  .bg { background: #dcfce7; color: #166534; }
+  .bi { background: #fef3c7; color: #92400e; }
+  .ba { background: #fecaca; color: #991b1b; }
+  .tip { background: #ecfeff; border-left: 4px solid #06b6d4; padding: 8px 12px; margin: 10px 0; border-radius: 0 6px 6px 0; font-size: 9pt; }
+  .tip strong { color: #0e7490; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9pt; }
+  th { background: #0f172a; color: white; padding: 5px 8px; text-align: left; }
+  td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; }
+  tr:nth-child(even) { background: #f8fafc; }
+  .page-footer { text-align: center; font-size: 7pt; color: #94a3b8; margin-top: 24px; padding-top: 6px; border-top: 1px solid #e2e8f0; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>100+ n8n Automation Templates</h1>
+  <h2>AI Agents &amp; OpenAI Workflows &bull; No-Code Business Toolkit</h2>
+  <p style="color:#94a3b8; font-size:11pt; max-width:5in;">Lead Generation &bull; Content Creation &bull; Email &bull; Social Media &bull; Customer Support &bull; E-commerce &bull; AI Agents &bull; DevOps</p>
+  <div class="author">by Atlas UX &middot; atlasux.cloud</div>
+  <div class="brand">&copy; 2026 Atlas UX &mdash; A product of DEAD APP CORP</div>
+</div>
+
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <div class="toc-entry"><span>Introduction: Getting Started with n8n</span><span>3</span></div>
+  <div class="toc-entry"><span>Chapter 1: Lead Generation &amp; CRM (15 templates)</span><span>4</span></div>
+  <div class="toc-entry"><span>Chapter 2: Content Creation &amp; Publishing (15 templates)</span><span>6</span></div>
+  <div class="toc-entry"><span>Chapter 3: Email Automation (15 templates)</span><span>8</span></div>
+  <div class="toc-entry"><span>Chapter 4: Social Media Management (15 templates)</span><span>10</span></div>
+  <div class="toc-entry"><span>Chapter 5: Customer Support (10 templates)</span><span>12</span></div>
+  <div class="toc-entry"><span>Chapter 6: Data Processing &amp; Analytics (10 templates)</span><span>14</span></div>
+  <div class="toc-entry"><span>Chapter 7: E-commerce Operations (10 templates)</span><span>15</span></div>
+  <div class="toc-entry"><span>Chapter 8: AI Agent Workflows (15 templates)</span><span>17</span></div>
+  <div class="toc-entry"><span>Chapter 9: DevOps &amp; IT (10 templates)</span><span>19</span></div>
+  <div class="toc-entry"><span>Chapter 10: Advanced Patterns</span><span>20</span></div>
+</div>
+
+<!-- INTRO -->
+<div class="chapter">
+  <h2>Introduction: Getting Started with n8n</h2>
+  <p><strong>n8n</strong> (pronounced "n-eight-n") is an open-source workflow automation platform that lets you connect apps, APIs, and AI models without writing code. Think of it as Zapier or Make, but self-hostable, more powerful, and with a generous free tier.</p>
+
+  <h3>Self-Hosted vs. Cloud</h3>
+  <table>
+    <tr><th>Feature</th><th>Self-Hosted (Free)</th><th>n8n Cloud (from $20/mo)</th></tr>
+    <tr><td>Cost</td><td>Free (hosting costs only)</td><td>$20-$100+/month</td></tr>
+    <tr><td>Setup</td><td>Docker or npm install</td><td>Sign up and go</td></tr>
+    <tr><td>Executions</td><td>Unlimited</td><td>Plan-limited</td></tr>
+    <tr><td>Best for</td><td>Developers, high volume</td><td>Non-technical users</td></tr>
+  </table>
+
+  <h3>Key Concepts</h3>
+  <ul>
+    <li><strong>Nodes:</strong> Individual steps in a workflow (trigger, action, logic)</li>
+    <li><strong>Triggers:</strong> What starts the workflow (webhook, schedule, event)</li>
+    <li><strong>Credentials:</strong> API keys and OAuth tokens for connected services</li>
+    <li><strong>Expressions:</strong> Dynamic values using <code>{{ $json.field }}</code> syntax</li>
+    <li><strong>Executions:</strong> Each time a workflow runs from start to finish</li>
+  </ul>
+
+  <h3>Connecting to OpenAI</h3>
+  <p>Most AI templates in this guide use the OpenAI node. To set it up: add OpenAI credentials in n8n with your API key, then use the "OpenAI" or "HTTP Request" node to call GPT-4, DALL-E, or Whisper endpoints. You can also use the "AI Agent" node for more complex multi-step reasoning.</p>
+
+  <h3>Template Format</h3>
+  <p>Each template includes: name, description, trigger type, node flow, key configuration notes, use case, and difficulty level.</p>
+  <p><span class="badge-b bg">Beginner</span> = Ready in 15 min &nbsp; <span class="badge-b bi">Intermediate</span> = 30-60 min &nbsp; <span class="badge-b ba">Advanced</span> = 1-2 hours</p>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 3</div>
+</div>
+
+<!-- CH1: LEAD GEN -->
+<div class="chapter">
+  <h2>Chapter 1: Lead Generation &amp; CRM (15 Templates)</h2>
+
+  <div class="template">
+    <div class="tname">1. Website Form to CRM Auto-Entry <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Webhook] &rarr; [Set Fields] &rarr; [HubSpot: Create Contact] &rarr; [Slack: Notify Sales]</div>
+    <p>Captures form submissions via webhook, normalizes the data, creates a CRM contact, and pings your sales channel. Trigger: Webhook (POST from your website form).</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">2. Lead Enrichment with Clearbit <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[CRM: New Contact Trigger] &rarr; [HTTP: Clearbit Enrichment API] &rarr; [IF: Has Company Data] &rarr; [CRM: Update Contact] &rarr; [Slack: Rich Lead Alert]</div>
+    <p>When a new lead enters your CRM, automatically enriches with company data (size, industry, revenue, social profiles) via Clearbit. Updates the CRM record and alerts sales with the full profile.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">3. AI Lead Scoring <span class="badge-b ba">Advanced</span></div>
+    <div class="flow">[Schedule: Daily 6AM] &rarr; [CRM: Get New Leads] &rarr; [OpenAI: Score Each Lead] &rarr; [CRM: Update Score Field] &rarr; [IF: Score > 80] &rarr; [Email: Hot Lead Alert]</div>
+    <p>GPT-4 analyzes each lead's profile data (title, company size, engagement history) and assigns a 0-100 quality score. Hot leads (80+) trigger instant alerts to sales. Run daily to keep scores fresh.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">4. LinkedIn Profile Scraper to CRM <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Webhook: New LinkedIn Connection] &rarr; [HTTP: Get Profile Data] &rarr; [OpenAI: Extract Key Info] &rarr; [CRM: Create/Update Contact] &rarr; [Google Sheets: Log]</div>
+    <p>When you connect with someone on LinkedIn (via webhook integration), auto-extracts their profile data and creates a CRM entry with company, title, and notes. Requires LinkedIn API access or browser automation tool.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">5. Automated Follow-Up Sequences <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Schedule: Daily] &rarr; [CRM: Get Leads Without Response 3+ Days] &rarr; [OpenAI: Generate Personalized Follow-Up] &rarr; [Gmail: Send Email] &rarr; [CRM: Log Activity]</div>
+    <p>Finds leads who haven't responded in 3+ days, generates a personalized follow-up email using GPT-4 based on their profile and previous conversation context, and sends automatically.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">6. Meeting Scheduler + Prep Notes <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Calendly: New Booking] &rarr; [CRM: Lookup Contact] &rarr; [OpenAI: Generate Prep Notes] &rarr; [Slack: DM to Sales Rep] &rarr; [Google Docs: Create Meeting Doc]</div>
+    <p>When someone books a meeting via Calendly, auto-looks up their CRM history and generates a prep brief with key talking points, past interactions, and potential objections.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">7. Facebook Lead Ads to CRM + Welcome Email <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Facebook: New Lead Ad Submission] &rarr; [CRM: Create Contact] &rarr; [Mailchimp: Add to Welcome Sequence] &rarr; [Slack: New Lead Alert]</div>
+    <p>Captures Facebook Lead Ad form submissions instantly, creates CRM entry, adds to email nurture sequence, and notifies your team. No more manual CSV exports from Facebook.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">8. Website Visitor Intent Tracker <span class="badge-b ba">Advanced</span></div>
+    <div class="flow">[Webhook: Page Visit Event] &rarr; [IF: Visited Pricing Page] &rarr; [CRM: Update Lead Stage] &rarr; [OpenAI: Assess Intent] &rarr; [Slack: Hot Prospect Alert]</div>
+    <p>Tracks high-intent pages (pricing, demo, checkout) and updates lead stage in CRM. GPT analyzes visit patterns to assess buying readiness. Requires website tracking integration (Segment, PostHog).</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">9. Competitor Mention Monitor <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Schedule: Every 4 Hours] &rarr; [HTTP: Google Alerts/SERP API] &rarr; [OpenAI: Classify Mention Sentiment] &rarr; [Airtable: Log Mention] &rarr; [Slack: Competitive Intel Channel]</div>
+    <p>Monitors web mentions of your competitors. AI classifies each mention by sentiment and relevance, then posts a summary to your competitive intel channel. Great for finding unhappy competitor customers.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">10. Referral Program Tracker <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Webhook: Referral Signup] &rarr; [CRM: Create Contact + Tag Referrer] &rarr; [Email: Thank Referrer] &rarr; [Google Sheets: Update Referral Leaderboard]</div>
+    <p>Tracks referral signups, credits the referrer in CRM, sends a thank-you email, and updates a running leaderboard. Pair with your referral link system.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">11. Dead Lead Reactivation <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Schedule: Weekly Monday] &rarr; [CRM: Get Leads Inactive 30+ Days] &rarr; [OpenAI: Write Re-engagement Email] &rarr; [Gmail: Send] &rarr; [CRM: Update Status]</div>
+    <p>Resurrects cold leads with AI-personalized re-engagement emails based on their original interest. Tracks opens and replies to identify which leads are worth pursuing again.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">12. Business Card Scanner to CRM <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Webhook: Photo Upload] &rarr; [OpenAI Vision: Extract Contact Info] &rarr; [CRM: Create Contact] &rarr; [Email: Send "Nice Meeting You"]</div>
+    <p>Snap a photo of a business card, upload via webhook. GPT-4 Vision extracts name, email, phone, company, title. Creates CRM entry and sends a personalized follow-up email within minutes of meeting someone.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">13. Webinar Attendee Pipeline <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Zoom: Webinar Ended] &rarr; [Get Attendee List] &rarr; [CRM: Create/Update Each] &rarr; [Mailchimp: Add to Post-Webinar Sequence] &rarr; [Google Sheets: Attendance Log]</div>
+    <p>After each webinar, automatically processes all attendees into your CRM and email nurture sequence. Tags by attendance duration (full vs. partial vs. no-show).</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">14. Product Demo Request Auto-Qualifier <span class="badge-b ba">Advanced</span></div>
+    <div class="flow">[Typeform: Demo Request] &rarr; [OpenAI: Qualify Based on Answers] &rarr; [IF: Qualified] &rarr; [Calendly: Create Booking Link] &rarr; [Email: Send Link] / [ELSE] &rarr; [Email: Self-Serve Resources]</div>
+    <p>AI analyzes demo request form answers to qualify leads. Qualified leads get instant meeting booking links. Others receive helpful self-serve resources. Saves sales team from unqualified calls.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">15. Multi-Channel Lead Attribution <span class="badge-b ba">Advanced</span></div>
+    <div class="flow">[Webhook: New Lead] &rarr; [HTTP: Get UTM/Source Data] &rarr; [Google Sheets: Attribution Log] &rarr; [Aggregate: Weekly Summary] &rarr; [Slack: Channel ROI Report]</div>
+    <p>Captures source/medium/campaign for every lead, logs to spreadsheet, and generates a weekly ROI report showing which channels produce the highest-quality leads. Essential for marketing budget allocation.</p>
+  </div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 5</div>
+</div>
+
+<!-- CH2: CONTENT -->
+<div class="chapter">
+  <h2>Chapter 2: Content Creation &amp; Publishing (15 Templates)</h2>
+
+  <div class="template">
+    <div class="tname">16. Blog Post Generator <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Schedule: Weekly Monday] &rarr; [Airtable: Get Topic Queue] &rarr; [OpenAI: Write 1500-Word Post] &rarr; [OpenAI: Generate Meta Description] &rarr; [WordPress: Create Draft] &rarr; [Slack: Review Request]</div>
+    <p>Pulls the next topic from your content queue, generates a full SEO-optimized blog post with meta description, publishes as a WordPress draft, and notifies your editor for review.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">17. Content Repurposing Pipeline <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[WordPress: New Post Published] &rarr; [OpenAI: Create Twitter Thread] &rarr; [OpenAI: Create LinkedIn Post] &rarr; [OpenAI: Create Email Summary] &rarr; [Buffer: Schedule All] &rarr; [Mailchimp: Queue Newsletter]</div>
+    <p>Every published blog post automatically becomes a Twitter thread, LinkedIn article summary, and email newsletter. Posts are scheduled across platforms with platform-specific formatting.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">18. AI Image Generation for Blog Posts <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[WordPress: New Draft] &rarr; [OpenAI: Generate Image Prompt from Title] &rarr; [DALL-E 3: Generate Image] &rarr; [WordPress: Set Featured Image]</div>
+    <p>Automatically generates a relevant DALL-E 3 header image for every new blog post based on the title and first paragraph. No more stock photo hunting.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">19. SEO Content Brief Generator <span class="badge-b ba">Advanced</span></div>
+    <div class="flow">[Airtable: New Keyword Entry] &rarr; [HTTP: SERP API Top 10 Results] &rarr; [OpenAI: Analyze Competitors] &rarr; [OpenAI: Generate Content Brief] &rarr; [Google Docs: Create Brief] &rarr; [Slack: Notify Writer]</div>
+    <p>Enter a target keyword; n8n scrapes the top 10 SERP results, feeds them to GPT-4 for competitive analysis, then generates a comprehensive content brief with recommended headings, word count, keywords, and angle.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">20. YouTube Video to Blog Post <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[YouTube: New Video Published] &rarr; [HTTP: Get Transcript via API] &rarr; [OpenAI: Convert Transcript to Blog Post] &rarr; [WordPress: Create Draft] &rarr; [Buffer: Promote]</div>
+    <p>Automatically transcribes your new YouTube videos and converts them into well-structured blog posts. Maximizes your content investment across platforms.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">21. Podcast Show Notes Generator <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Webhook: New Episode Audio] &rarr; [OpenAI Whisper: Transcribe] &rarr; [OpenAI: Generate Show Notes + Timestamps] &rarr; [WordPress: Create Post] &rarr; [Email: Send to Guest]</div>
+    <p>Upload a podcast episode, get automatic transcription, timestamped show notes, key takeaways, and guest bio. Published to your website and emailed to the guest for sharing.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">22. Content Calendar Auto-Planner <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Schedule: Monthly 1st] &rarr; [Google Analytics: Get Top Performing Content] &rarr; [OpenAI: Plan Next Month] &rarr; [Airtable: Create 30 Content Cards] &rarr; [Slack: Monthly Plan Ready]</div>
+    <p>Analyzes your top-performing content from the past month, identifies patterns, and generates next month's content calendar with topics, formats, and target keywords. Auto-populates your planning board.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">23. Headline A/B Test Generator <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Webhook: Blog Post URL] &rarr; [HTTP: Scrape Title] &rarr; [OpenAI: Generate 5 Headline Variants] &rarr; [Google Sheets: Log Variants] &rarr; [Email: Send Options to Editor]</div>
+    <p>For any blog post, generates 5 headline variations using different psychological triggers (curiosity, urgency, numbers, how-to, contrarian). Editor picks the winner for publishing.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">24. AI Newsletter Writer <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Schedule: Weekly Friday] &rarr; [RSS: Get Week's Posts] &rarr; [HTTP: Get Industry News] &rarr; [OpenAI: Write Newsletter] &rarr; [Mailchimp: Create Campaign] &rarr; [Slack: Preview Link]</div>
+    <p>Compiles your week's content plus industry news into a polished newsletter draft. GPT writes the commentary and transitions. Creates the campaign in your email tool ready for final review and send.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">25. Grammar &amp; Style Checker <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Webhook: Submit Text] &rarr; [OpenAI: Check Grammar + Brand Voice] &rarr; [Return: Corrected Text + Suggestions]</div>
+    <p>Custom API endpoint that checks any text against your brand voice guidelines. Returns corrected text plus specific suggestions. Embed in your CMS or use as a standalone tool for your team.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">26-30. More Content Templates:</div>
+    <p><strong>26.</strong> <span class="badge-b bg">Beginner</span> Product description generator from product images (Vision API + GPT-4)</p>
+    <p><strong>27.</strong> <span class="badge-b bi">Intermediate</span> FAQ page auto-generator from support tickets and chat logs</p>
+    <p><strong>28.</strong> <span class="badge-b bi">Intermediate</span> Case study template filler: input client name + metrics, get formatted case study</p>
+    <p><strong>29.</strong> <span class="badge-b ba">Advanced</span> Multi-language content translator with cultural adaptation (not just literal translation)</p>
+    <p><strong>30.</strong> <span class="badge-b bi">Intermediate</span> Content performance weekly digest: top posts, engagement trends, keyword rankings</p>
+  </div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 7</div>
+</div>
+
+<!-- CH3: EMAIL -->
+<div class="chapter">
+  <h2>Chapter 3: Email Automation (15 Templates)</h2>
+
+  <div class="template">
+    <div class="tname">31. Welcome Email Sequence <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Mailchimp: New Subscriber] &rarr; [Wait 0min] &rarr; [Email: Welcome + Lead Magnet] &rarr; [Wait 2 days] &rarr; [Email: Your Story] &rarr; [Wait 3 days] &rarr; [Email: Soft Pitch]</div>
+    <p>Classic 3-email welcome sequence triggered on new subscriber. Email 1: immediate welcome + lead magnet delivery. Email 2: your story + credibility builders. Email 3: your product with social proof.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">32. AI Email Responder <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[IMAP: New Email] &rarr; [OpenAI: Classify Intent] &rarr; [Switch: Route by Intent] &rarr; [OpenAI: Draft Reply] &rarr; [Gmail: Save as Draft] &rarr; [Slack: Human Review Alert]</div>
+    <p>Reads incoming emails, classifies by intent (support, sales, partnership, spam), drafts an appropriate response using GPT, and saves as draft for human review. Handles 80% of inbox automatically.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">33. Abandoned Cart Recovery <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Webhook: Cart Abandoned] &rarr; [Wait 1 hour] &rarr; [IF: Not Purchased] &rarr; [OpenAI: Personalized Recovery Email] &rarr; [Email: Send] &rarr; [Wait 24h] &rarr; [IF: Still Not Purchased] &rarr; [Email: Discount Offer]</div>
+    <p>Multi-step cart recovery with AI-personalized messaging. First email is a helpful reminder. Second email (24h later) includes a discount code. Tracks conversion at each step.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">34. Newsletter Auto-Generator <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Schedule: Weekly] &rarr; [RSS: Industry Feeds] &rarr; [OpenAI: Curate + Summarize Top 5] &rarr; [OpenAI: Write Commentary] &rarr; [Mailchimp: Create + Schedule Campaign]</div>
+    <p>Curates top industry news, summarizes each article, adds your brand voice commentary, and assembles a ready-to-send newsletter. Review and hit send.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">35. Email Subject Line Optimizer <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Webhook: Campaign Draft Ready] &rarr; [OpenAI: Generate 10 Subject Lines] &rarr; [OpenAI: Score Each by Open Rate Prediction] &rarr; [Return: Ranked List]</div>
+    <p>Input your email body and get 10 subject line options ranked by predicted open rate. Uses GPT trained on email marketing best practices. Includes A/B test recommendations.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">36. Customer Feedback Request <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Shopify: Order Delivered] &rarr; [Wait 3 Days] &rarr; [OpenAI: Personalize Review Request] &rarr; [Email: Send Review Request] &rarr; [Google Sheets: Track Responses]</div>
+    <p>3 days after delivery, sends a personalized review request email mentioning the specific products ordered. Includes direct links to Google Reviews or Trustpilot.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">37. Win-Back Campaign <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Schedule: Monthly] &rarr; [CRM: Customers Inactive 90+ Days] &rarr; [OpenAI: Personalized Win-Back Based on Purchase History] &rarr; [Email: Send with Special Offer] &rarr; [CRM: Update Status]</div>
+    <p>Identifies churned customers, references their specific past purchases, and crafts a personalized win-back offer. Tracks reactivation rate per campaign.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">38-45. More Email Templates:</div>
+    <p><strong>38.</strong> <span class="badge-b bg">Beginner</span> Birthday/anniversary auto-emailer with discount code generation</p>
+    <p><strong>39.</strong> <span class="badge-b bi">Intermediate</span> Transactional email template filler (order confirm, shipping, delivery)</p>
+    <p><strong>40.</strong> <span class="badge-b ba">Advanced</span> Email list cleaning: detect inactive subscribers, re-engage or remove</p>
+    <p><strong>41.</strong> <span class="badge-b bi">Intermediate</span> Weekly sales recap email to team with charts and AI commentary</p>
+    <p><strong>42.</strong> <span class="badge-b bg">Beginner</span> New employee onboarding email sequence (day 1, week 1, month 1)</p>
+    <p><strong>43.</strong> <span class="badge-b bi">Intermediate</span> Event RSVP confirmation + pre-event info drip sequence</p>
+    <p><strong>44.</strong> <span class="badge-b ba">Advanced</span> Dynamic email content based on subscriber behavior and preferences</p>
+    <p><strong>45.</strong> <span class="badge-b bi">Intermediate</span> Post-purchase upsell email with AI product recommendations based on order</p>
+  </div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 9</div>
+</div>
+
+<!-- CH4: SOCIAL MEDIA -->
+<div class="chapter">
+  <h2>Chapter 4: Social Media Management (15 Templates)</h2>
+
+  <div class="template">
+    <div class="tname">46. Cross-Platform Post Scheduler <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Airtable: Post Approved] &rarr; [OpenAI: Adapt for Each Platform] &rarr; [Twitter: Post Thread] &rarr; [LinkedIn: Post Article] &rarr; [Facebook: Post] &rarr; [Airtable: Update Status]</div>
+    <p>One content entry creates platform-optimized versions for Twitter (thread), LinkedIn (professional tone), Facebook (engaging), and schedules each at the optimal time for that platform.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">47. Social Listening + Engagement Bot <span class="badge-b ba">Advanced</span></div>
+    <div class="flow">[Schedule: Every 30 min] &rarr; [Twitter API: Search Brand Mentions] &rarr; [OpenAI: Classify Sentiment] &rarr; [IF: Negative] &rarr; [Slack: Urgent Alert] / [IF: Positive] &rarr; [Twitter: Like + Queue Reply]</div>
+    <p>Monitors brand mentions in real-time. Positive mentions get auto-liked and a friendly reply queued. Negative mentions trigger immediate alerts to your support team. Neutral mentions logged for review.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">48. Trending Topic Content Creator <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Schedule: Daily 8AM] &rarr; [HTTP: Twitter Trends API] &rarr; [OpenAI: Find Relevant Trends] &rarr; [OpenAI: Create Timely Posts] &rarr; [Buffer: Schedule] &rarr; [Slack: Preview]</div>
+    <p>Scans daily trending topics, identifies those relevant to your niche, and generates timely social media posts that ride the trend while staying on-brand. Posts within hours of trends breaking.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">49. Instagram Carousel Generator <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Webhook: Blog Post URL] &rarr; [HTTP: Scrape Content] &rarr; [OpenAI: Create 10-Slide Carousel Script] &rarr; [DALL-E: Generate Cover Image] &rarr; [Google Slides: Create Carousel] &rarr; [Slack: Ready for Review]</div>
+    <p>Transforms any blog post into an Instagram carousel with hook slide, value slides, and CTA slide. Generates the cover image and creates slides in Google Slides for easy export.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">50. Hashtag Research + Strategy <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Webhook: Niche/Topic Input] &rarr; [HTTP: Instagram/TikTok API] &rarr; [OpenAI: Categorize by Size] &rarr; [Return: Hashtag Strategy (small/medium/large mix)]</div>
+    <p>Input your niche; get a categorized hashtag strategy with a mix of small (under 100K), medium (100K-1M), and large (1M+) hashtags. Updated with current volumes.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">51. UGC (User-Generated Content) Collector <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Schedule: Hourly] &rarr; [Instagram: Search Branded Hashtag] &rarr; [IF: Quality Check (min likes)] &rarr; [Airtable: Save Post Details] &rarr; [Email: Permission Request to Creator]</div>
+    <p>Monitors your branded hashtag, identifies high-quality UGC posts, saves them to a content library, and auto-sends permission request emails to creators for reposting.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">52. DM Auto-Response <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Instagram: New DM] &rarr; [OpenAI: Classify Intent] &rarr; [Switch: FAQ / Price Inquiry / Support / Other] &rarr; [OpenAI: Draft Response] &rarr; [Instagram: Reply] &rarr; [CRM: Log Interaction]</div>
+    <p>Handles Instagram DMs automatically. Common questions (pricing, hours, shipping) get instant AI-generated responses. Complex queries are escalated to a human with context provided.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">53-60. More Social Templates:</div>
+    <p><strong>53.</strong> <span class="badge-b bg">Beginner</span> Auto-repost top-performing content from 30+ days ago (evergreen recycler)</p>
+    <p><strong>54.</strong> <span class="badge-b bi">Intermediate</span> Competitor content tracker: monitor competitor posts, engagement, frequency</p>
+    <p><strong>55.</strong> <span class="badge-b ba">Advanced</span> TikTok trend analyzer: identify trending sounds/effects relevant to your brand</p>
+    <p><strong>56.</strong> <span class="badge-b bg">Beginner</span> Social media analytics weekly report: compile metrics into formatted summary</p>
+    <p><strong>57.</strong> <span class="badge-b bi">Intermediate</span> Pinterest pin auto-creator from blog posts with keyword-rich descriptions</p>
+    <p><strong>58.</strong> <span class="badge-b bi">Intermediate</span> Reddit comment monitor: track niche subreddits for relevant discussions</p>
+    <p><strong>59.</strong> <span class="badge-b ba">Advanced</span> Social proof aggregator: collect reviews from all platforms into one dashboard</p>
+    <p><strong>60.</strong> <span class="badge-b bg">Beginner</span> Auto-thank new followers with personalized DM (use sparingly)</p>
+  </div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 11</div>
+</div>
+
+<!-- CH5: SUPPORT -->
+<div class="chapter">
+  <h2>Chapter 5: Customer Support (10 Templates)</h2>
+
+  <div class="template">
+    <div class="tname">61. AI Ticket Classifier + Auto-Router <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Zendesk: New Ticket] &rarr; [OpenAI: Classify Category + Priority + Sentiment] &rarr; [Zendesk: Set Tags + Priority] &rarr; [IF: Urgent] &rarr; [Slack: Alert On-Call] / [ELSE] &rarr; [Zendesk: Route to Team]</div>
+    <p>AI reads every incoming ticket, classifies by category (billing, technical, feature request), priority (P1-P4), and sentiment (angry, neutral, happy). Routes to the right team with context.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">62. FAQ Auto-Responder <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Zendesk: New Ticket] &rarr; [OpenAI: Match Against FAQ Database] &rarr; [IF: High Confidence Match] &rarr; [Zendesk: Reply with Answer] &rarr; [ELSE] &rarr; [Route to Human]</div>
+    <p>Checks if incoming tickets match known FAQs. High-confidence matches get instant automated responses. Others go to humans. Can handle 40-60% of common questions automatically.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">63. Customer Satisfaction Survey + Analysis <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Zendesk: Ticket Closed] &rarr; [Wait 24h] &rarr; [Email: CSAT Survey] &rarr; [Webhook: Survey Response] &rarr; [OpenAI: Analyze Feedback] &rarr; [Google Sheets: Log] &rarr; [IF: Negative] &rarr; [Slack: Manager Alert]</div>
+    <p>After ticket resolution, sends a satisfaction survey. AI analyzes open-text feedback for themes and sentiment. Negative feedback triggers immediate manager notification for follow-up.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">64-70. More Support Templates:</div>
+    <p><strong>64.</strong> <span class="badge-b ba">Advanced</span> Knowledge base article auto-generator from resolved ticket patterns</p>
+    <p><strong>65.</strong> <span class="badge-b bi">Intermediate</span> Escalation detector: AI identifies tickets that need manager attention before they escalate</p>
+    <p><strong>66.</strong> <span class="badge-b bg">Beginner</span> SLA breach warning: alert when tickets approach response time limits</p>
+    <p><strong>67.</strong> <span class="badge-b bi">Intermediate</span> Multilingual support: auto-detect language and translate ticket + reply</p>
+    <p><strong>68.</strong> <span class="badge-b ba">Advanced</span> Bug report aggregator: group similar bug reports, create Jira issue with count</p>
+    <p><strong>69.</strong> <span class="badge-b bg">Beginner</span> Out-of-hours auto-responder with estimated response time</p>
+    <p><strong>70.</strong> <span class="badge-b bi">Intermediate</span> Agent performance dashboard: response times, resolution rates, CSAT scores per agent</p>
+  </div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 13</div>
+</div>
+
+<!-- CH6: DATA -->
+<div class="chapter">
+  <h2>Chapter 6: Data Processing &amp; Analytics (10 Templates)</h2>
+
+  <div class="template">
+    <div class="tname">71. Spreadsheet Data Cleaner <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Google Sheets: Trigger on New Row] &rarr; [OpenAI: Normalize Data] &rarr; [Set: Standardize Formats] &rarr; [Google Sheets: Update Clean Version]</div>
+    <p>Normalizes messy spreadsheet data: standardizes phone numbers, capitalizes names, formats addresses, deduplicates entries, fills missing fields where possible using AI inference.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">72. Weekly Business Report Generator <span class="badge-b ba">Advanced</span></div>
+    <div class="flow">[Schedule: Monday 7AM] &rarr; [Stripe: Get Revenue] &rarr; [Google Analytics: Get Traffic] &rarr; [CRM: Get Pipeline] &rarr; [OpenAI: Write Executive Summary] &rarr; [Google Docs: Create Report] &rarr; [Email: Send to Team]</div>
+    <p>Pulls data from all business tools, compiles into a professional weekly report with AI-written executive summary, trends analysis, and recommended actions.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">73-80. More Data Templates:</div>
+    <p><strong>73.</strong> <span class="badge-b bg">Beginner</span> CSV file processor: auto-import, clean, and distribute uploaded data files</p>
+    <p><strong>74.</strong> <span class="badge-b bi">Intermediate</span> Price monitoring: track competitor prices daily, alert on changes, log history</p>
+    <p><strong>75.</strong> <span class="badge-b ba">Advanced</span> Financial reconciliation: match transactions between bank and accounting software</p>
+    <p><strong>76.</strong> <span class="badge-b bi">Intermediate</span> Survey response analyzer: collect Google Form responses, AI-summarize themes</p>
+    <p><strong>77.</strong> <span class="badge-b bg">Beginner</span> Dashboard data refresher: update Google Sheets data sources on schedule</p>
+    <p><strong>78.</strong> <span class="badge-b bi">Intermediate</span> Invoice data extractor: PDF invoices → structured data in spreadsheet</p>
+    <p><strong>79.</strong> <span class="badge-b ba">Advanced</span> Anomaly detector: flag unusual metrics in daily data (traffic drops, revenue spikes)</p>
+    <p><strong>80.</strong> <span class="badge-b bi">Intermediate</span> API data aggregator: combine data from multiple APIs into unified report</p>
+  </div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 14</div>
+</div>
+
+<!-- CH7: ECOMMERCE -->
+<div class="chapter">
+  <h2>Chapter 7: E-commerce Operations (10 Templates)</h2>
+
+  <div class="template">
+    <div class="tname">81. Order Processing Pipeline <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Shopify: New Order] &rarr; [Google Sheets: Log Order] &rarr; [Slack: Notify Fulfillment] &rarr; [Email: Order Confirmation to Customer] &rarr; [IF: High Value] &rarr; [CRM: Flag VIP]</div>
+    <p>Every new order is logged, fulfillment team notified, customer gets branded confirmation email. High-value orders ($100+) automatically flagged as VIP in CRM for priority treatment.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">82. Inventory Low Stock Alert <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Schedule: Daily 6AM] &rarr; [Shopify: Get All Products] &rarr; [IF: Stock < Threshold] &rarr; [Email: Low Stock Report] &rarr; [Slack: Alert Purchasing] &rarr; [Airtable: Reorder Queue]</div>
+    <p>Daily inventory check flags products below reorder threshold. Sends formatted report to purchasing team and adds to reorder queue. Never sell out unexpectedly again.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">83. Review Monitoring + Response <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Schedule: Every 4h] &rarr; [HTTP: Get New Reviews (Google/Trustpilot)] &rarr; [OpenAI: Analyze Sentiment] &rarr; [IF: Negative] &rarr; [OpenAI: Draft Empathetic Response] &rarr; [Slack: Urgent + Draft] / [IF: Positive] &rarr; [OpenAI: Thank You Response]</div>
+    <p>Monitors reviews across platforms. Positive reviews get thank-you responses. Negative reviews trigger alerts with AI-drafted empathetic responses for your team to customize and post.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">84-90. More E-commerce Templates:</div>
+    <p><strong>84.</strong> <span class="badge-b bi">Intermediate</span> Product description generator: specs + images → compelling listing copy for each platform</p>
+    <p><strong>85.</strong> <span class="badge-b ba">Advanced</span> Dynamic pricing: monitor competitors, suggest price adjustments, track elasticity</p>
+    <p><strong>86.</strong> <span class="badge-b bg">Beginner</span> Shipping notification: track packages, update customers at each milestone</p>
+    <p><strong>87.</strong> <span class="badge-b bi">Intermediate</span> Return/refund processor: classify reason, route to appropriate handler, update inventory</p>
+    <p><strong>88.</strong> <span class="badge-b bi">Intermediate</span> Product recommendation email: AI analyzes purchase history, suggests complementary items</p>
+    <p><strong>89.</strong> <span class="badge-b ba">Advanced</span> Supplier communication: auto-generate POs when inventory hits reorder point</p>
+    <p><strong>90.</strong> <span class="badge-b bg">Beginner</span> Sales flash report: daily revenue, top sellers, conversion rate → Slack summary</p>
+  </div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 16</div>
+</div>
+
+<!-- CH8: AI AGENTS -->
+<div class="chapter">
+  <h2>Chapter 8: AI Agent Workflows (15 Templates)</h2>
+
+  <div class="template">
+    <div class="tname">91. Multi-Step Research Agent <span class="badge-b ba">Advanced</span></div>
+    <div class="flow">[Webhook: Research Query] &rarr; [AI Agent: Plan Research Steps] &rarr; [Loop: Execute Each Step] &rarr; [HTTP: Search APIs] &rarr; [AI Agent: Synthesize Findings] &rarr; [Google Docs: Write Report] &rarr; [Email: Deliver]</div>
+    <p>A true AI agent that breaks down a research question into sub-tasks, executes each (web search, API calls, data analysis), synthesizes findings, and delivers a structured report. Uses the n8n AI Agent node with tool-calling.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">92. RAG (Retrieval-Augmented Generation) Pipeline <span class="badge-b ba">Advanced</span></div>
+    <div class="flow">[Webhook: User Question] &rarr; [Pinecone: Semantic Search] &rarr; [Get Top 5 Relevant Docs] &rarr; [OpenAI: Answer with Context] &rarr; [Return: Answer + Sources]</div>
+    <p>Build a custom knowledge base chatbot. User asks a question, relevant documents are retrieved from vector database (Pinecone/Qdrant), and GPT answers using only your data. Perfect for internal wikis, product docs, or customer FAQs.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">93. Conversational Sales Agent <span class="badge-b ba">Advanced</span></div>
+    <div class="flow">[Webhook: Chat Message] &rarr; [Memory: Load Conversation] &rarr; [AI Agent: Process with Product Catalog + Pricing] &rarr; [IF: Ready to Buy] &rarr; [Generate Checkout Link] &rarr; [Memory: Save Turn] &rarr; [Return: Response]</div>
+    <p>An AI sales agent that understands your product catalog, answers questions, handles objections, and generates checkout links when the customer is ready. Maintains conversation context across messages.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">94. Content Strategy Agent <span class="badge-b ba">Advanced</span></div>
+    <div class="flow">[Schedule: Weekly] &rarr; [AI Agent: Analyze Performance Data] &rarr; [Tool: Google Analytics API] &rarr; [Tool: Social Media APIs] &rarr; [AI Agent: Generate Strategy] &rarr; [Airtable: Create Tasks] &rarr; [Slack: Strategy Brief]</div>
+    <p>An autonomous agent that reviews your content performance across all channels, identifies trends, and generates a strategic plan with specific content tasks. Thinks like a content marketing manager.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">95. Document Processing Agent <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Webhook: Upload Document] &rarr; [AI Agent: Classify Document Type] &rarr; [Switch: Invoice/Contract/Receipt/Other] &rarr; [OpenAI: Extract Structured Data] &rarr; [Airtable: Store] &rarr; [Return: Extracted Data]</div>
+    <p>Upload any business document (invoice, contract, receipt). AI classifies it, extracts all relevant fields (amounts, dates, parties, terms), and stores structured data. Handles PDFs, images, and text files.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">96. Meeting Notes Agent <span class="badge-b bi">Intermediate</span></div>
+    <div class="flow">[Webhook: Audio File Upload] &rarr; [Whisper: Transcribe] &rarr; [OpenAI: Extract Action Items + Decisions + Key Points] &rarr; [Notion: Create Meeting Notes Page] &rarr; [Email: Send Summary to Attendees] &rarr; [Asana: Create Tasks from Action Items]</div>
+    <p>Upload meeting audio or connect to Zoom recording. Gets transcribed, then AI extracts action items, key decisions, and discussion points. Creates formatted notes and auto-generates task items.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">97-105. More AI Agent Templates:</div>
+    <p><strong>97.</strong> <span class="badge-b ba">Advanced</span> Code review agent: GitHub PR → AI reviews code, suggests improvements, checks for bugs</p>
+    <p><strong>98.</strong> <span class="badge-b bi">Intermediate</span> Sentiment analysis dashboard: aggregate customer sentiment from all channels daily</p>
+    <p><strong>99.</strong> <span class="badge-b ba">Advanced</span> Data analyst agent: natural language questions → SQL queries → chart generation → insights</p>
+    <p><strong>100.</strong> <span class="badge-b bi">Intermediate</span> Email summarizer: daily digest of all emails with AI-written 1-sentence summaries</p>
+    <p><strong>101.</strong> <span class="badge-b ba">Advanced</span> Multi-agent debate: two AI agents argue pros/cons of a business decision, produce balanced report</p>
+    <p><strong>102.</strong> <span class="badge-b bi">Intermediate</span> Competitive intel agent: weekly automated competitor analysis with market positioning insights</p>
+    <p><strong>103.</strong> <span class="badge-b ba">Advanced</span> Autonomous task delegator: AI breaks project into tasks and assigns to team based on skills/availability</p>
+    <p><strong>104.</strong> <span class="badge-b bi">Intermediate</span> Brand voice checker: AI reviews any content against your brand guidelines before publishing</p>
+    <p><strong>105.</strong> <span class="badge-b ba">Advanced</span> Full autonomous content pipeline: research → write → edit → image → publish → promote (minimal human oversight)</p>
+  </div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 18</div>
+</div>
+
+<!-- CH9: DEVOPS -->
+<div class="chapter">
+  <h2>Chapter 9: DevOps &amp; IT (10 Templates)</h2>
+
+  <div class="template">
+    <div class="tname">106. Server Health Monitor <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[Schedule: Every 5 min] &rarr; [HTTP: Ping Endpoints] &rarr; [IF: Status != 200] &rarr; [Slack: Alert #incidents] &rarr; [PagerDuty: Create Incident] &rarr; [Google Sheets: Log Downtime]</div>
+    <p>Monitors your web endpoints every 5 minutes. Any non-200 response triggers immediate alerts via Slack and PagerDuty. Logs all incidents for uptime reporting.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">107. Deployment Notification Pipeline <span class="badge-b bg">Beginner</span></div>
+    <div class="flow">[GitHub: Push to Main] &rarr; [HTTP: Get Commit Details] &rarr; [OpenAI: Summarize Changes] &rarr; [Slack: Deploy Notification] &rarr; [Notion: Update Changelog]</div>
+    <p>Every push to main branch generates a human-readable summary of changes (using AI to interpret commit messages), posts to Slack, and updates your changelog.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">108. Log Analysis + Alert <span class="badge-b ba">Advanced</span></div>
+    <div class="flow">[Schedule: Every 15 min] &rarr; [HTTP: Get Recent Logs] &rarr; [OpenAI: Analyze for Anomalies] &rarr; [IF: Critical Pattern Detected] &rarr; [Slack: Alert with Context] &rarr; [Jira: Create Bug Ticket]</div>
+    <p>AI analyzes application logs for error patterns, unusual frequencies, and potential security issues. Critical findings auto-create bug tickets with full context and suggested fixes.</p>
+  </div>
+
+  <div class="template">
+    <div class="tname">109-115. More DevOps Templates:</div>
+    <p><strong>109.</strong> <span class="badge-b bi">Intermediate</span> SSL certificate expiry checker: weekly scan, 30/14/7 day warnings</p>
+    <p><strong>110.</strong> <span class="badge-b bg">Beginner</span> Database backup verifier: check backup completed, test restore, alert on failure</p>
+    <p><strong>111.</strong> <span class="badge-b bi">Intermediate</span> Security vulnerability scanner: check dependencies against CVE database weekly</p>
+    <p><strong>112.</strong> <span class="badge-b ba">Advanced</span> Cost optimization: analyze cloud spending, identify idle resources, suggest savings</p>
+    <p><strong>113.</strong> <span class="badge-b bg">Beginner</span> Domain/DNS monitor: track DNS changes, alert on unexpected modifications</p>
+    <p><strong>114.</strong> <span class="badge-b bi">Intermediate</span> CI/CD pipeline status dashboard: aggregate build statuses across repos</p>
+    <p><strong>115.</strong> <span class="badge-b bi">Intermediate</span> Automated staging environment provisioning on PR creation</p>
+  </div>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 19</div>
+</div>
+
+<!-- CH10: ADVANCED -->
+<div class="chapter">
+  <h2>Chapter 10: Advanced Patterns</h2>
+
+  <h3>Error Handling</h3>
+  <p>Every production workflow needs error handling. Use the "Error Trigger" node to catch failures, the "IF" node to check for expected data, and the "Stop and Error" node when you need to halt execution gracefully. Always add a Slack/email notification on the error path so you know when something breaks.</p>
+
+  <div class="tip">
+    <strong>Best Practice:</strong> Wrap API calls in try/catch patterns using the "Error Trigger" workflow. Create a dedicated error-handling workflow that logs all failures to a Google Sheet with timestamp, workflow name, error message, and input data.
+  </div>
+
+  <h3>Retry Logic</h3>
+  <p>External APIs fail. Set retry options on HTTP Request nodes: 3 retries with exponential backoff (1s, 2s, 4s). For critical workflows, add a "Wait" node before retry and a fallback path for permanent failures.</p>
+
+  <h3>Webhook Security</h3>
+  <ul>
+    <li>Always use HTTPS webhook URLs</li>
+    <li>Validate incoming webhook signatures (e.g., Stripe signature verification)</li>
+    <li>Add IP allowlisting where possible</li>
+    <li>Use authentication headers for webhook endpoints</li>
+    <li>Rate-limit webhook processing to prevent abuse</li>
+  </ul>
+
+  <h3>Rate Limiting</h3>
+  <p>Most APIs have rate limits. Use the "Wait" node between API calls (e.g., wait 1 second between each API call in a loop). For batch processing, split items into chunks and process with delays. The "Split In Batches" node is your friend here.</p>
+
+  <h3>Credential Management</h3>
+  <ul>
+    <li>Never hardcode API keys in workflows — always use n8n's credential system</li>
+    <li>Rotate keys regularly (set calendar reminders)</li>
+    <li>Use environment variables for sensitive config on self-hosted instances</li>
+    <li>Create separate credentials for dev and production</li>
+  </ul>
+
+  <h3>Scaling Tips</h3>
+  <ul>
+    <li><strong>Queue mode:</strong> For high-volume workflows, use n8n's queue mode with Redis + multiple workers</li>
+    <li><strong>Execution data pruning:</strong> Auto-delete old execution data to keep the database lean</li>
+    <li><strong>Sub-workflows:</strong> Break complex workflows into smaller, reusable sub-workflows</li>
+    <li><strong>Deduplication:</strong> Use unique IDs and check for existing records before creating duplicates</li>
+    <li><strong>Monitoring:</strong> Set up execution count alerts — sudden drops or spikes indicate problems</li>
+  </ul>
+
+  <h3>Testing Workflows</h3>
+  <p>Always test with sample data before enabling triggers. Use the "Manual Trigger" node for testing, then switch to the real trigger. Test edge cases: empty data, missing fields, API errors, and rate limits. Document your workflows with "Sticky Note" nodes explaining the logic.</p>
+
+  <div class="tip">
+    <strong>Final Tip:</strong> Start simple. Your first workflow should be one trigger and one action. As you get comfortable, chain more nodes together. The templates in this guide are your blueprints — customize them for your specific tools and processes. The n8n community forum is incredibly helpful for troubleshooting.
+  </div>
+
+  <p style="text-align:center; margin-top:30px; font-size:13pt; font-weight:600;">Thank you for reading!</p>
+  <p style="text-align:center; color:#64748b;">Visit <strong>atlasux.cloud</strong> for more AI-powered automation tools.</p>
+
+  <div class="page-footer">&copy; 2026 Atlas UX &mdash; atlasux.cloud &mdash; Page 20</div>
+</div>
+
+</body>
+</html>

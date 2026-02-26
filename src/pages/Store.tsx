@@ -25,6 +25,9 @@ import {
   Cpu,
   Palette,
   Workflow,
+  ImageIcon,
+  MessageSquare,
+  ExternalLink,
 } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -356,6 +359,27 @@ const digitalProducts: DigitalProduct[] = [
     paymentLink: "https://buy.stripe.com/14A6oI8Xf45Faii1B18IU0l",
     downloadUrl: "/downloads/n8n-automation-templates-guide.pdf",
   },
+  {
+    id: "nano-banana-monetize-ai",
+    name: "Nano Banana: Monetize AI Images",
+    description:
+      "20-page PDF guide to making money with AI image editing. Covers Midjourney, DALL-E, Stable Diffusion business ideas — print-on-demand, stock photos, social media agency, custom art, and children's books.",
+    price: 0.99,
+    priceLabel: "$0.99",
+    promptCount: 12,
+    icon: ImageIcon,
+    color: "from-yellow-400 to-amber-500",
+    badge: "Ebook",
+    highlights: [
+      "5 proven AI image business ideas",
+      "Income projections per model",
+      "Prompt engineering for images",
+      "Editing & upscaling techniques",
+      "30-day monetization plan",
+    ],
+    paymentLink: "https://buy.stripe.com/28E5kE4GZdGf622djJ8IU09",
+    downloadUrl: "/downloads/nano-banana-monetize-ai-guide.pdf",
+  },
 ];
 
 /* ─── Subscription Plans ───────────────────────────────────────────────────── */
@@ -549,6 +573,61 @@ export default function Store() {
             {digitalProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
+          </div>
+        </section>
+
+        {/* ── Reviews ──────────────────────────────────────────────────── */}
+        <section className="mt-14">
+          <div className="flex items-center gap-3">
+            <MessageSquare className="h-5 w-5 text-cyan-400" />
+            <h2 className="text-xl font-semibold">Customer Reviews</h2>
+          </div>
+          <p className="mt-2 text-sm text-slate-400">
+            Verified purchase reviews from Trustpilot and Google.
+          </p>
+
+          <div className="mt-6 flex flex-wrap gap-4">
+            <a
+              href="https://www.trustpilot.com/review/atlasux.cloud"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/20 px-6 py-4 hover:border-cyan-500/40 transition-colors"
+            >
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-white">
+                  Trustpilot
+                </span>
+                <span className="text-xs text-slate-400">
+                  Leave a review
+                </span>
+              </div>
+              <ExternalLink className="h-4 w-4 text-slate-400" />
+            </a>
+
+            <a
+              href="https://g.page/r/atlasux/review"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/20 px-6 py-4 hover:border-cyan-500/40 transition-colors"
+            >
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-white">
+                  Google Reviews
+                </span>
+                <span className="text-xs text-slate-400">
+                  Leave a review
+                </span>
+              </div>
+              <ExternalLink className="h-4 w-4 text-slate-400" />
+            </a>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/20 p-6">
+            <p className="text-sm text-slate-400 italic">
+              Reviews from verified purchases will appear here. After
+              completing a purchase, you&rsquo;ll receive a link to leave a
+              review on Trustpilot or Google.
+            </p>
           </div>
         </section>
 
