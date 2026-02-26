@@ -70,8 +70,8 @@ jobs:
             Desktop builds for Atlas UX ${{ github.ref_name }}
 
             **Downloads:**
-            - **Windows:** `.msi` installer
+            - **Windows:** `.exe` NSIS installer + `.msi` installer
             - **macOS:** `.dmg` disk image
-            - **Linux:** `.deb` package + `.AppImage` portable
+            - **Linux:** `.deb` package + `.AppImage` portable + `.rpm`
           releaseDraft: true
           prerelease: false

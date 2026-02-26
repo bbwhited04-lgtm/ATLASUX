@@ -52,6 +52,11 @@
       "minimumSystemVersion": "10.15"
     },
     "windows": {
+      "nsis": {
+        "displayLanguageSelector": false,
+        "installMode": "both",
+        "languages": ["English"]
+      },
       "wix": {
         "language": "en-US"
       }
