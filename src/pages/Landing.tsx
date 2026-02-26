@@ -122,7 +122,7 @@ export default function Landing() {
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Feb 25, 2026</span>
+            <span className="text-sm text-white/60">Last updated: Feb 26, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
             <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
@@ -201,6 +201,7 @@ export default function Landing() {
             <li>DB migration sprint — added tenant_id to publish_events, all atlas_ip_* tables, and atlas_suggestions (multi-tenancy compliance); DecisionMemo now has optional FK to source Job and Intent for audit traceability; fixed job queue race conditions across 3 workers with optimistic locking (prevents double-execution); KB chunks endpoint now paginated (offset/limit, max 500 per page); per-tenant file upload quotas (500 files, 500 MB default, configurable via env)</li>
             <li>Fix Telegram/Teams "tenant id required" — MessagingHub now sends x-tenant-id header on all API calls (was missing from /me, /updates, /send, and all Teams endpoints); selecting a business now propagates tenant context to every messaging tab</li>
             <li>Full x-tenant-id header audit — added missing header to 14 components: ChatInterface, DecisionEnginesHub, WorkflowsHub, TaskAutomation, AgentDeploymentHub, Dashboard, RootLayout, Settings, FileManagement, Integrations, Analytics, SocialMonitoring, business-manager, MobileIntegration; every API call now carries tenant context</li>
+            <li>Business Manager operations suite — selected business now has 5 sub-views (Assets, Ledger, Integrations, Jobs, Audit Log) with toggle navigation; accounting summary backend now computes real totals from ledger entries instead of hardcoded zeros; integrations show connected status with connect/disconnect buttons; jobs table shows type, status, and timestamps; audit log shows actions, levels, and entity types; all data loads in parallel when selecting a business</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

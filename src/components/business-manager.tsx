@@ -89,10 +89,13 @@ export function BusinessManager() {
     setSelectedBusiness(tenantId);
     setActiveTenantId(tenantId);
     setWarning(null); // clear stale warning from previous state
-    await loadAssetsForTenant(tenantId).catch((err) => {
-      setWarning(err instanceof Error ? err.message : String(err));
-    });
-    await loadLedgerForTenant(tenantId).catch(() => null);
+    await Promise.all([
+      loadAssetsForTenant(tenantId).catch((err) => {
+        setWarning(err instanceof Error ? err.message : String(err));
+      }),
+      loadLedgerForTenant(tenantId).catch(() => null),
+      refreshAll().catch(() => null),
+    ]);
   }
 
   // If a tenant was selected elsewhere (or persisted), adopt it.
@@ -266,7 +269,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
     | 'email-client'
   >('hub');
 
-  const [assetSubView, setAssetSubView] = useState<"assets" | "accounting">("assets");
+  const [assetSubView, setAssetSubView] = useState<"assets" | "accounting" | "integrations" | "jobs" | "audit">("assets");
 
   const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
   const [ledgerLoading, setLedgerLoading] = useState(false);
@@ -733,8 +736,32 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                       </button>
                     </div>
 
-                    
-{assetSubView === "assets" ? (
+                    {/* Sub-view navigation */}
+                    <div className="flex items-center gap-1 mb-4 p-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                      {([
+                        { key: "assets", label: "Assets", icon: Database },
+                        { key: "accounting", label: "Ledger", icon: DollarSign },
+                        { key: "integrations", label: "Integrations", icon: Zap },
+                        { key: "jobs", label: "Jobs", icon: Activity },
+                        { key: "audit", label: "Audit Log", icon: Shield },
+                      ] as const).map(({ key, label, icon: Icon }) => (
+                        <button
+                          key={key}
+                          onClick={() => setAssetSubView(key)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                            assetSubView === key
+                              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                              : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 border border-transparent"
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
+{/* ---- Assets sub-view ---- */}
+{assetSubView === "assets" && (
                       <div className="space-y-3">
                       {selectedBusinessData.assets.map((asset) => {
                         const AssetIcon = getAssetIcon(asset.type);
@@ -797,8 +824,36 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                           </div>
                         );
                       })}
-                    </div>                    ) : (
+                      {selectedBusinessData.assets.length === 0 && (
+                        <div className="text-sm text-slate-400 py-6 text-center">No assets yet. Click "Add Asset" to get started.</div>
+                      )}
+                    </div>
+)}
+
+{/* ---- Ledger / Accounting sub-view ---- */}
+{assetSubView === "accounting" && (
                       <div className="space-y-4">
+                        {accounting?.summary && (
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                            <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
+                              <div className="text-xs text-slate-400">Revenue (credits)</div>
+                              <div className="text-lg font-bold text-green-400">${(Number(accounting.summary.revenue ?? 0) / 100).toFixed(2)}</div>
+                            </div>
+                            <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
+                              <div className="text-xs text-slate-400">Expenses (debits)</div>
+                              <div className="text-lg font-bold text-red-400">${(Number(accounting.summary.expenses ?? 0) / 100).toFixed(2)}</div>
+                            </div>
+                            <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
+                              <div className="text-xs text-slate-400">Net</div>
+                              <div className="text-lg font-bold text-white">${(Number(accounting.summary.net ?? 0) / 100).toFixed(2)}</div>
+                            </div>
+                            <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
+                              <div className="text-xs text-slate-400">Pending approvals</div>
+                              <div className="text-lg font-bold text-amber-400">{accounting.summary.approvalsPending ?? 0}</div>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="text-sm text-slate-400">Month debits</div>
@@ -843,7 +898,150 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                           )}
                         </div>
                       </div>
-                    )}
+)}
+
+{/* ---- Integrations sub-view ---- */}
+{assetSubView === "integrations" && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-sm text-slate-400">{integrations.length} provider{integrations.length !== 1 ? "s" : ""}</div>
+                          <button
+                            onClick={refreshAll}
+                            className="px-3 py-1.5 rounded-lg text-xs bg-slate-900/60 border border-cyan-500/20 text-slate-200 hover:bg-slate-900"
+                          >
+                            {loading ? "Refreshing…" : "Refresh"}
+                          </button>
+                        </div>
+
+                        {integrations.length === 0 ? (
+                          <div className="text-sm text-slate-400 py-6 text-center">
+                            No integrations connected. Use Settings → Integrations to connect providers.
+                          </div>
+                        ) : (
+                          integrations.map((ig, i) => (
+                            <div key={ig.provider ?? i} className="bg-slate-800/50 border border-cyan-500/10 rounded-lg p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center">
+                                  <Zap className="w-5 h-5 text-cyan-400" />
+                                </div>
+                                <div>
+                                  <div className="text-white font-medium capitalize">{ig.provider}</div>
+                                  <div className={`text-xs ${ig.connected ? "text-green-400" : "text-slate-500"}`}>
+                                    {ig.connected ? "Connected" : "Disconnected"}
+                                  </div>
+                                </div>
+                              </div>
+                              {ig.connected ? (
+                                <button
+                                  onClick={() => disconnect(ig.provider as any)}
+                                  className="px-3 py-1.5 rounded-lg text-xs bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30"
+                                >
+                                  Disconnect
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => connect(ig.provider as any)}
+                                  className="px-3 py-1.5 rounded-lg text-xs bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/30"
+                                >
+                                  Connect
+                                </button>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+)}
+
+{/* ---- Jobs sub-view ---- */}
+{assetSubView === "jobs" && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-sm text-slate-400">{jobs.length} job{jobs.length !== 1 ? "s" : ""}</div>
+                          <button
+                            onClick={refreshAll}
+                            className="px-3 py-1.5 rounded-lg text-xs bg-slate-900/60 border border-cyan-500/20 text-slate-200 hover:bg-slate-900"
+                          >
+                            {loading ? "Refreshing…" : "Refresh"}
+                          </button>
+                        </div>
+
+                        {jobs.length === 0 ? (
+                          <div className="text-sm text-slate-400 py-6 text-center">No jobs found for this tenant.</div>
+                        ) : (
+                          <div className="bg-slate-800/30 border border-slate-700 rounded-xl overflow-hidden">
+                            <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-700 text-xs text-slate-400">
+                              <div className="col-span-3">Type</div>
+                              <div className="col-span-2">Status</div>
+                              <div className="col-span-3">Created</div>
+                              <div className="col-span-4">ID</div>
+                            </div>
+                            {jobs.slice(0, 50).map((j: any) => (
+                              <div key={j.id} className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-700/50 text-sm">
+                                <div className="col-span-3 text-white truncate" title={j.type ?? j.jobType}>{j.type ?? j.jobType ?? "—"}</div>
+                                <div className="col-span-2">
+                                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                                    j.status === "completed" ? "bg-green-500/20 text-green-300" :
+                                    j.status === "running" ? "bg-blue-500/20 text-blue-300" :
+                                    j.status === "failed" ? "bg-red-500/20 text-red-300" :
+                                    "bg-slate-700/50 text-slate-300"
+                                  }`}>
+                                    {j.status}
+                                  </span>
+                                </div>
+                                <div className="col-span-3 text-slate-300 text-xs">{j.createdAt ? new Date(j.createdAt).toLocaleString() : "—"}</div>
+                                <div className="col-span-4 text-slate-500 font-mono text-xs truncate" title={j.id}>{j.id}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+)}
+
+{/* ---- Audit Log sub-view ---- */}
+{assetSubView === "audit" && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-sm text-slate-400">{auditRows.length} entries (latest 50)</div>
+                          <button
+                            onClick={refreshAll}
+                            className="px-3 py-1.5 rounded-lg text-xs bg-slate-900/60 border border-cyan-500/20 text-slate-200 hover:bg-slate-900"
+                          >
+                            {loading ? "Refreshing…" : "Refresh"}
+                          </button>
+                        </div>
+
+                        {auditRows.length === 0 ? (
+                          <div className="text-sm text-slate-400 py-6 text-center">No audit entries found for this tenant.</div>
+                        ) : (
+                          <div className="bg-slate-800/30 border border-slate-700 rounded-xl overflow-hidden">
+                            <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-700 text-xs text-slate-400">
+                              <div className="col-span-3">Action</div>
+                              <div className="col-span-2">Level</div>
+                              <div className="col-span-2">Entity</div>
+                              <div className="col-span-3">Message</div>
+                              <div className="col-span-2">Time</div>
+                            </div>
+                            {auditRows.slice(0, 50).map((a: any, i: number) => (
+                              <div key={a.id ?? i} className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-700/50 text-sm">
+                                <div className="col-span-3 text-white truncate" title={a.action}>{a.action ?? "—"}</div>
+                                <div className="col-span-2">
+                                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                                    a.level === "error" ? "bg-red-500/20 text-red-300" :
+                                    a.level === "warn" ? "bg-amber-500/20 text-amber-300" :
+                                    "bg-slate-700/50 text-slate-300"
+                                  }`}>
+                                    {a.level ?? "info"}
+                                  </span>
+                                </div>
+                                <div className="col-span-2 text-slate-300 text-xs truncate" title={a.entityType}>{a.entityType ?? "—"}</div>
+                                <div className="col-span-3 text-slate-200 text-xs truncate" title={a.message}>{a.message ?? "—"}</div>
+                                <div className="col-span-2 text-slate-500 text-xs">{a.timestamp ? new Date(a.timestamp).toLocaleString() : "—"}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+)}
                   </div>
                 ) : (
                   <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-12">
