@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import type { BlogPost } from "../../lib/blog/types";
+import { isDefaultCover, categoryGradient, categoryInitial } from "../../lib/blog/categoryGradient";
 
 export default function BlogCard({
   post,
@@ -19,12 +20,21 @@ export default function BlogCard({
       <Link to={`/blog/${post.slug}`} className={base}>
         <div className="flex gap-4 p-4">
           <div className="h-20 w-28 flex-none overflow-hidden rounded-xl bg-slate-100">
-            <img
-              src={fm.coverImage}
-              alt=""
-              className="h-full w-full object-cover"
-              loading="lazy"
-            />
+            {isDefaultCover(fm.coverImage) ? (
+              <div
+                className="flex h-full w-full items-center justify-center text-2xl font-bold text-white/80"
+                style={{ background: categoryGradient(fm.category) }}
+              >
+                {categoryInitial(fm.category)}
+              </div>
+            ) : (
+              <img
+                src={fm.coverImage}
+                alt=""
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            )}
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -51,12 +61,21 @@ export default function BlogCard({
   return (
     <Link to={`/blog/${post.slug}`} className={base}>
       <div className="aspect-[16/10] w-full overflow-hidden bg-slate-100">
-        <img
-          src={fm.coverImage}
-          alt=""
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
+        {isDefaultCover(fm.coverImage) ? (
+          <div
+            className="flex h-full w-full items-center justify-center text-5xl font-bold text-white/80"
+            style={{ background: categoryGradient(fm.category) }}
+          >
+            {categoryInitial(fm.category)}
+          </div>
+        ) : (
+          <img
+            src={fm.coverImage}
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        )}
       </div>
       <div className="p-4">
         <div className="flex flex-wrap items-center gap-2 text-sm">

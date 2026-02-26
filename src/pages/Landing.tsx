@@ -122,7 +122,7 @@ export default function Landing() {
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Feb 28, 2026</span>
+            <span className="text-sm text-white/60">Last updated: Feb 26, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
             <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
@@ -228,6 +228,11 @@ export default function Landing() {
             <li>Per-user identity (Phase 1) — new global "users" table cross-tenant, auto-provisioned on first Supabase auth; TenantMember now carries seat_type (free_beta, starter, pro, enterprise); /v1/user/me returns user profile + all tenant memberships + current seat tier</li>
             <li>Usage metering (Phase 2) — every API call, LLM chat, job creation, and file upload now tracked per user/tenant/month in usage_meters table; /v1/user/me/usage returns current month stats + tier limits; /v1/user/me/usage/history returns last 6 months</li>
             <li>Billing &amp; seats (Phase 3) — subscriptions table with Stripe fields ready; seat tier limits enforced: free_beta (50K tokens/day, 500MB, 5 agents), starter $19/mo (200K tokens, 5GB, 15 agents), pro $49/mo (1M tokens, 25GB, all agents), enterprise custom; admin can view/change seats via /v1/user/tenants/:id/seats; public pricing endpoint at /v1/user/pricing</li>
+            <li>Seat limit enforcement — chat, file upload, and job creation routes now enforce real quotas before processing; token budget check blocks LLM calls when daily limit exceeded, storage limit check blocks uploads past tier cap, job limit check blocks queueing past daily max; all fail-open if metering DB is unreachable</li>
+            <li>Auto-derive companies from CRM imports — CSV/vCard contact imports now automatically create CRM Company records from unique company/organization names; case-insensitive dedup prevents duplicate entries; import response includes companiesCreated count</li>
+            <li>Per-category blog placeholders — posts without a featured image now show a category-colored gradient with the category initial instead of the generic Atlas logo; 12 category-specific color schemes (AI, Marketing, Security, Strategy, etc.); applies to blog cards, list view, and full post hero</li>
+            <li>Fixed seedAiKb.ts import path — script was referencing wrong Prisma path (../prisma.js → ../db/prisma.js); now runnable on Render to seed 62 AI/tech KB documents</li>
+            <li>Job metering — job creation now tracked in usage_meters table per user/tenant/month (was unmetered before)</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

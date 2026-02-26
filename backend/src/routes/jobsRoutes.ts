@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
+import { enforceJobLimit } from "../lib/seatEnforcement.js";
+import { meterJobCreated } from "../lib/usageMeter.js";
 
 function isUUID(s: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
@@ -78,6 +80,15 @@ export const jobsRoutes: FastifyPluginAsync = async (app) => {
     const jobType = String(body?.jobType ?? body?.job_type ?? "").trim();
     if (!jobType) return reply.code(400).send({ ok: false, error: "missing_jobType" });
 
+    // Seat limit enforcement
+    const userId = (req as any).auth?.userId as string | undefined;
+    if (userId) {
+      const limit = await enforceJobLimit(userId, tenantId);
+      if (!limit.allowed) {
+        return reply.code(429).send({ ok: false, error: limit.reason });
+      }
+    }
+
     const job = await prisma.job.create({
       data: {
         tenantId,
@@ -87,6 +98,8 @@ export const jobsRoutes: FastifyPluginAsync = async (app) => {
         status: "queued",
       },
     });
+
+    if (userId) meterJobCreated(userId, tenantId);
 
     return reply.send({ ok: true, id: job.id, status: job.status });
   });

@@ -14,6 +14,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { createClient } from "@supabase/supabase-js";
 import multipart from "@fastify/multipart";
 import { meterStorage } from "../lib/usageMeter.js";
+import { enforceStorageLimit } from "../lib/seatEnforcement.js";
 import { Readable } from "stream";
 import { prisma } from "../db/prisma.js";
 
@@ -77,6 +78,8 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     try {
+      const userId = (req as any).auth?.userId as string | undefined;
+
       // Per-tenant quota check
       const storage = makeStorage();
       const prefix = tenantPrefix(tenantId);
@@ -92,6 +95,14 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
 
       const buf = await streamToBuffer(data.file as unknown as Readable);
 
+      // Seat-level storage enforcement
+      if (userId && tenantId) {
+        const storageCheck = await enforceStorageLimit(userId, tenantId, buf.length);
+        if (!storageCheck.allowed) {
+          return reply.code(429).send({ ok: false, error: storageCheck.reason });
+        }
+      }
+
       if (totalBytes + buf.length > MAX_STORAGE_BYTES_PER_TENANT) {
         return reply.code(429).send({ ok: false, error: `Storage quota exceeded (${process.env.MAX_STORAGE_MB_PER_TENANT ?? 500} MB per tenant)` });
       }
@@ -106,8 +117,7 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
 
       if (error) return reply.code(500).send({ ok: false, error: error.message });
 
-      // Phase 2: meter storage usage
-      const userId = (req as any).auth?.userId;
+      // Meter storage usage
       if (userId && tenantId) meterStorage(userId, tenantId, buf.length);
 
       return reply.code(201).send({

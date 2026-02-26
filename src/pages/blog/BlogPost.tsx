@@ -7,6 +7,7 @@ import BlogSidebar from "../../components/blog/BlogSidebar";
 import RelatedPosts from "../../components/blog/RelatedPosts";
 import { getCategories, getPostBySlug, getApiPostBySlug, loadAllBlogPosts, loadApiPosts } from "../../lib/blog/loadPosts";
 import type { BlogPost as BlogPostType } from "../../lib/blog/types";
+import { isDefaultCover, categoryGradient, categoryInitial } from "../../lib/blog/categoryGradient";
 
 export default function BlogPost() {
   const { slug } = useParams();
@@ -71,7 +72,16 @@ export default function BlogPost() {
 
         <section className="mt-4 overflow-hidden rounded-3xl border border-cyan-500/20 bg-slate-900/50 shadow-sm">
           <div className="aspect-[21/9] w-full bg-slate-800">
-            <img src={fm.coverImage} alt="" className="h-full w-full object-cover" />
+            {isDefaultCover(fm.coverImage) ? (
+              <div
+                className="flex h-full w-full items-center justify-center text-8xl font-bold text-white/60"
+                style={{ background: categoryGradient(fm.category) }}
+              >
+                {categoryInitial(fm.category)}
+              </div>
+            ) : (
+              <img src={fm.coverImage} alt="" className="h-full w-full object-cover" />
+            )}
           </div>
           <div className="p-6 md:p-8">
             <div className="flex flex-wrap items-center gap-2 text-sm">

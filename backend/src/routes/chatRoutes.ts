@@ -9,6 +9,7 @@ import { classifyQuery } from "../core/kb/queryClassifier.js";
 import { resolveAgentTools } from "../core/agent/agentTools.js";
 import { agentRegistry } from "../agents/registry.js";
 import { meterTokens } from "../lib/usageMeter.js";
+import { enforceTokenBudget } from "../lib/seatEnforcement.js";
 import { runDeepAgent } from "../core/agent/deepAgentPipeline.js";
 
 // Load all SKILL.md files into memory at module init (runs once at server boot).
@@ -42,6 +43,14 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId as string;
     const userId   = (req as any).auth?.userId as string;
     const body     = req.body as any;
+
+    // ── Seat limit enforcement ──────────────────────────────────────────────
+    if (userId && tenantId) {
+      const budget = await enforceTokenBudget(userId, tenantId);
+      if (!budget.allowed) {
+        return reply.code(429).send({ ok: false, error: budget.reason });
+      }
+    }
 
     // ── SGL gate ──────────────────────────────────────────────────────────────
     const intent = {

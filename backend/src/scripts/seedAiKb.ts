@@ -5,7 +5,7 @@
  * Run: npx tsx src/scripts/seedAiKb.ts
  */
 
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 
 const TENANT_ID = process.env.TENANT_ID?.trim() || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
 const SEED_CREATED_BY = process.env.SEED_CREATED_BY?.trim() || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";

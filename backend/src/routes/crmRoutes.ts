@@ -462,6 +462,27 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
+    // ── Auto-derive companies from imported contacts ──────────────────────
+    const companyNames = new Set<string>();
+    for (const row of rows) {
+      const name = s(row.company ?? row.Company ?? row["Organization"] ?? row["Company Name"]);
+      if (name) companyNames.add(name);
+    }
+    let companiesCreated = 0;
+    for (const name of companyNames) {
+      try {
+        const existing = await prisma.crmCompany.findFirst({
+          where: { tenantId, name: { equals: name, mode: "insensitive" } },
+        });
+        if (!existing) {
+          await prisma.crmCompany.create({ data: { tenantId, name } });
+          companiesCreated++;
+        }
+      } catch {
+        // Non-fatal — company creation is best-effort
+      }
+    }
+
     await prisma.auditLog.create({
       data: {
         tenantId,
@@ -472,13 +493,13 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
         action: "CRM_CONTACTS_IMPORTED",
         entityType: "crm_contact",
         entityId: null,
-        message: `${importSource.toUpperCase()} import: ${created} created, ${skipped} skipped`,
-        meta: { source: importSource, created, skipped, totalRows: rows.length, errorCount: errors.length },
+        message: `${importSource.toUpperCase()} import: ${created} created, ${skipped} skipped, ${companiesCreated} companies derived`,
+        meta: { source: importSource, created, skipped, totalRows: rows.length, errorCount: errors.length, companiesCreated },
         timestamp: new Date(),
       },
     } as any).catch(() => null);
 
-    return reply.send({ ok: true, created, skipped, errors: errors.slice(0, 10) });
+    return reply.send({ ok: true, created, skipped, companiesCreated, errors: errors.slice(0, 10) });
   });
 
   // ── Deduplication ──────────────────────────────────────────────────────────
