@@ -62,17 +62,44 @@ const activeAgent = new Map<string, string>();
 // ── Resolve tenant from Telegram chat_id ────────────────────────────────────
 async function resolveTenantByChatId(chatId: string): Promise<string | null> {
   try {
-    // Look for an Integration row where config contains this chat_id
-    const integrations = await prisma.integration.findMany({
+    // Try string match first (chat_id stored as "123456789")
+    let row = await prisma.integration.findFirst({
+      where: {
+        provider: "telegram",
+        connected: true,
+        config: { path: ["chat_id"], equals: chatId },
+      },
+      select: { tenantId: true },
+    });
+    if (row) return row.tenantId;
+
+    // Fallback: chat_id might have been stored as a number in JSON
+    const numericId = Number(chatId);
+    if (!isNaN(numericId)) {
+      row = await prisma.integration.findFirst({
+        where: {
+          provider: "telegram",
+          connected: true,
+          config: { path: ["chat_id"], equals: numericId },
+        },
+        select: { tenantId: true },
+      });
+      if (row) return row.tenantId;
+    }
+
+    // Last resort: fetch all telegram integrations and compare loosely
+    const all = await prisma.integration.findMany({
       where: { provider: "telegram", connected: true },
       select: { tenantId: true, config: true },
     });
-    for (const row of integrations) {
-      const cfg = (row.config ?? {}) as Record<string, any>;
-      if (String(cfg.chat_id ?? "") === chatId) return row.tenantId;
+    for (const r of all) {
+      const cfg = (r.config ?? {}) as Record<string, any>;
+      if (String(cfg.chat_id ?? "") === chatId) return r.tenantId;
     }
+
     return null;
-  } catch {
+  } catch (err) {
+    console.error("[resolveTenantByChatId] lookup failed:", err);
     return null;
   }
 }

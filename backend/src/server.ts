@@ -51,6 +51,7 @@ import { filesRoutes } from "./routes/filesRoutes.js";
 import { userRoutes } from "./routes/userRoutes.js";
 import { metaRoutes } from "./routes/metaRoutes.js";
 import { googleRoutes } from "./routes/googleRoutes.js";
+import { billingWebhookRoutes } from "./routes/billingWebhookRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -227,6 +228,9 @@ await app.register(metaRoutes, { prefix: "/v1/meta" });
 
 // Google — data deletion callback (OAuth verification compliance)
 await app.register(googleRoutes, { prefix: "/v1/google" });
+
+// Stripe billing webhook (scoped raw body parser for signature verification)
+await app.register(billingWebhookRoutes, { prefix: "/v1/billing" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
