@@ -18,6 +18,8 @@ import { prisma } from "../db/prisma.js";
 
 const BUCKET = process.env.KB_UPLOAD_BUCKET ?? "kb_uploads";
 const SIGNED_URL_TTL = 3600; // 1 hour
+const MAX_FILES_PER_TENANT = Number(process.env.MAX_FILES_PER_TENANT ?? 500);
+const MAX_STORAGE_BYTES_PER_TENANT = Number(process.env.MAX_STORAGE_MB_PER_TENANT ?? 500) * 1024 * 1024;
 
 function makeStorage() {
   const url = process.env.SUPABASE_URL;
@@ -74,14 +76,28 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     try {
+      // Per-tenant quota check
+      const storage = makeStorage();
+      const prefix = tenantPrefix(tenantId);
+      const { data: existing } = await storage.from(BUCKET).list(prefix, { limit: MAX_FILES_PER_TENANT + 1 });
+      const fileCount = existing?.length ?? 0;
+      if (fileCount >= MAX_FILES_PER_TENANT) {
+        return reply.code(429).send({ ok: false, error: `File limit reached (${MAX_FILES_PER_TENANT} files per tenant)` });
+      }
+      const totalBytes = (existing ?? []).reduce((sum, f) => sum + (f.metadata?.size ?? 0), 0);
+
       const data = await req.file();
       if (!data) return reply.code(400).send({ ok: false, error: "No file in request" });
 
       const buf = await streamToBuffer(data.file as unknown as Readable);
+
+      if (totalBytes + buf.length > MAX_STORAGE_BYTES_PER_TENANT) {
+        return reply.code(429).send({ ok: false, error: `Storage quota exceeded (${process.env.MAX_STORAGE_MB_PER_TENANT ?? 500} MB per tenant)` });
+      }
+
       const safeName = data.filename.replace(/[^a-zA-Z0-9._\- ]/g, "_");
       const path = `${tenantPrefix(tenantId)}${Date.now()}_${safeName}`;
 
-      const storage = makeStorage();
       const { error } = await storage.from(BUCKET).upload(path, buf, {
         contentType: data.mimetype,
         upsert: false,

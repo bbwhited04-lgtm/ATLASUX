@@ -176,6 +176,8 @@ model Job {
   updatedAt            DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   tenant               Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  decisionMemos DecisionMemo[]
+
   @@index([createdAt(sort: Desc)], map: "jobs_created_idx")
   @@index([tenantId, status], map: "jobs_tenant_status_idx")
   @@index([status, nextRetryAt], map: "jobs_retry_idx")
@@ -329,6 +331,8 @@ model Intent {
   status     String?   @default("DRAFT")
   createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
 
+  decisionMemos DecisionMemo[]
+
   @@index([status, createdAt])
   @@map("intents")
 }
@@ -348,12 +352,18 @@ model DecisionMemo {
   requiresApproval Boolean         @default(false) @map("requires_approval")
   status           String          @default("PROPOSED")
   payload          Json            @default("{}")
+  jobId            String?         @map("job_id") @db.Uuid
+  intentId         String?         @map("intent_id") @db.Uuid
   createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
   tenants          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sourceJob        Job?            @relation(fields: [jobId], references: [id], onUpdate: NoAction)
+  sourceIntent     Intent?         @relation(fields: [intentId], references: [id], onUpdate: NoAction)
   growth_loop_runs GrowthLoopRun[]
 
   @@index([tenantId, createdAt(sort: Desc)], map: "decision_memos_tenant_time_idx")
+  @@index([jobId], map: "decision_memos_job_idx")
+  @@index([intentId], map: "decision_memos_intent_idx")
   @@map("decision_memos")
 }
 
@@ -452,6 +462,7 @@ model GrowthLoopRun {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model publish_events {
   id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  tenant_id       String?   @db.Uuid
   action          String    @default("publish")
   platform        String
   destination     String?
@@ -472,6 +483,7 @@ model publish_events {
   created_at      DateTime  @default(now()) @db.Timestamptz(6)
   completed_at    DateTime? @db.Timestamptz(6)
 
+  @@index([tenant_id], map: "idx_publish_events_tenant")
   @@index([campaign], map: "idx_publish_events_campaign")
   @@index([created_at(sort: Desc)], map: "idx_publish_events_created_at")
   @@index([platform], map: "idx_publish_events_platform")
@@ -522,6 +534,7 @@ model atlas_agents {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model atlas_ip_approvals {
   approval_id       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String?            @db.Uuid
   request_id        String?            @db.Uuid
   token             String             @unique
   status            String?            @default("pending")
@@ -531,11 +544,13 @@ model atlas_ip_approvals {
   created_at        DateTime?          @default(now()) @db.Timestamptz(6)
   atlas_ip_requests atlas_ip_requests? @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([tenant_id], map: "idx_ip_approvals_tenant")
   @@index([status, expires_at], map: "idx_ip_approvals_status_expires")
 }
 
 model atlas_ip_artifacts {
   artifact_id       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String?            @db.Uuid
   request_id        String?            @db.Uuid
   source_url        String?
   canonical_url     String?
@@ -547,11 +562,13 @@ model atlas_ip_artifacts {
   created_at        DateTime?          @default(now()) @db.Timestamptz(6)
   atlas_ip_requests atlas_ip_requests? @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([tenant_id], map: "idx_ip_artifacts_tenant")
   @@index([request_id], map: "idx_ip_artifacts_request")
 }
 
 model atlas_ip_messages {
   message_id        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String?            @db.Uuid
   request_id        String?            @db.Uuid
   message_type      String
   payload           Json?              @default("{}")
@@ -559,11 +576,13 @@ model atlas_ip_messages {
   received_at       DateTime?          @default(now()) @db.Timestamptz(6)
   atlas_ip_requests atlas_ip_requests? @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([tenant_id], map: "idx_ip_messages_tenant")
   @@index([request_id], map: "idx_ip_messages_request")
 }
 
 model atlas_ip_reports {
   report_id         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String?            @db.Uuid
   request_id        String?            @db.Uuid
   summary           String?
   risk_level        String?
@@ -576,12 +595,14 @@ model atlas_ip_reports {
   created_at        DateTime?          @default(now()) @db.Timestamptz(6)
   atlas_ip_requests atlas_ip_requests? @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([tenant_id], map: "idx_ip_reports_tenant")
   @@index([request_id], map: "idx_ip_reports_request")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model atlas_ip_requests {
   request_id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id              String?              @db.Uuid
   raw_payload            Json
   company                String?
   asset_type             String
@@ -605,6 +626,7 @@ model atlas_ip_requests {
   atlas_ip_messages      atlas_ip_messages[]
   atlas_ip_reports       atlas_ip_reports[]
 
+  @@index([tenant_id], map: "idx_ip_requests_tenant")
   @@index([status], map: "idx_ip_requests_status")
 }
 
@@ -624,6 +646,7 @@ model atlas_suggestion_messages {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model atlas_suggestions {
   suggestion_id             String                      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  tenant_id                 String?                     @db.Uuid
   ticket_id                 String?
   ticket_subject            String?
   ticket_body               String?
@@ -643,6 +666,7 @@ model atlas_suggestions {
   decision_message_id       String?
   atlas_suggestion_messages atlas_suggestion_messages[]
 
+  @@index([tenant_id], map: "idx_suggestions_tenant")
   @@index([status, expires_at], map: "idx_suggestions_status_expires")
 }
 

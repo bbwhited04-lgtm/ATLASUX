@@ -67,7 +67,12 @@ async function processListeningJobs() {
   });
 
   for (const job of jobs) {
-    await prisma.job.update({ where: { id: job.id }, data: { status: "running", startedAt: new Date() } });
+    // Optimistic lock: only claim if still queued (prevents double-execution)
+    const claimed = await prisma.job.updateMany({
+      where: { id: job.id, status: "queued" },
+      data: { status: "running", startedAt: new Date() },
+    });
+    if (claimed.count !== 1) continue; // Another worker claimed it
 
     const input = job.input as any;
     const plan: any[] = Array.isArray(input?.plan) ? input.plan : [];

@@ -165,16 +165,27 @@ return reply.send({
     });
   });
 
-// Get chunks for a document (read-only)
+// Get chunks for a document (read-only, paginated)
 app.get("/documents/:id/chunks", async (req, reply) => {
   const tenantId = (req as any).tenantId as string;
   const id = String((req.params as any)?.id ?? "").trim();
+  const q = (req.query ?? {}) as any;
+  const limit = Math.min(Math.max(Number(q.limit) || 100, 1), 500);
+  const offset = Math.max(Number(q.offset) || 0, 0);
 
   const doc = await prisma.kbDocument.findFirst({
     where: { id, tenantId },
     select: { id: true, updatedAt: true },
   });
   if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
+
+  const totalRows = (await prisma.$queryRaw`
+    select count(*)::int as count
+    from kb_chunks
+    where tenant_id = ${tenantId}::uuid
+      and document_id = ${id}::uuid
+  `) as any[];
+  const total = totalRows?.[0]?.count ?? 0;
 
   const chunks = ((await prisma.$queryRaw`
     select idx,
@@ -186,13 +197,17 @@ app.get("/documents/:id/chunks", async (req, reply) => {
     where tenant_id = ${tenantId}::uuid
       and document_id = ${id}::uuid
     order by idx asc
-    limit 2000
+    limit ${limit}
+    offset ${offset}
   `) as any[]);
 
   return reply.send({
     ok: true,
     documentId: id,
     sourceUpdatedAt: chunks[0]?.sourceUpdatedAt ?? null,
+    total,
+    limit,
+    offset,
     chunks,
   });
 });
