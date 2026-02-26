@@ -1,466 +1,349 @@
-import { useState } from 'react';
-import { queuePremiumJob } from "@/lib/premiumActions";
-import {  
-  Film, 
-  Image, 
-  FileText, 
-  Scissors, 
-  Wand2, 
-  Upload, 
-  Download, 
-  Layers, 
-  Type, 
+import { useEffect, useRef, useState } from 'react';
+import { useActiveTenant } from '@/lib/activeTenant';
+import { API_BASE } from '@/lib/api';
+import { toast } from 'sonner';
+import {
+  Film,
+  Image,
+  FileText,
+  Type,
+  Upload,
+  Download,
+  Trash2,
+  RefreshCw,
+  Eye,
+  Layers,
+  Scissors,
   Sparkles,
-  Play, 
-  Pause, 
-  CheckCircle, 
-  Clock, 
-  Zap,
+  Wand2,
 } from "lucide-react";
 
+type FileEntry = {
+  name: string;
+  path: string;
+  size: number | null;
+  contentType: string | null;
+  updatedAt: string | null;
+};
+
+function categorizeFile(ct: string | null): "video" | "image" | "pdf" | "document" | "other" {
+  if (!ct) return "other";
+  if (ct.startsWith("video/")) return "video";
+  if (ct.startsWith("image/")) return "image";
+  if (ct === "application/pdf") return "pdf";
+  if (ct.includes("document") || ct.includes("text/")) return "document";
+  return "other";
+}
+
 export function MediaProcessing() {
-  const [processing, setProcessing] = useState(false);
+  const { tenantId } = useActiveTenant();
+  const [loading, setLoading] = useState(false);
+  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [filter, setFilter] = useState<"all" | "video" | "image" | "pdf" | "document">("all");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const videoProjects: any[] = [];
+  const hdr = tenantId ? { "x-tenant-id": tenantId } : {};
 
-  const imageJobs: any[] = [];
+  async function loadFiles() {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/files`, { headers: hdr });
+      const json = await res.json().catch(() => ({}));
+      if (json?.ok) setFiles(json.files ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const pdfJobs: any[] = [];
+  async function uploadFile(file: File) {
+    if (!tenantId) {
+      toast.error("Select a business first.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${API_BASE}/v1/files/upload`, {
+        method: "POST",
+        headers: hdr,
+        body: fd,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(json?.error ?? "Upload failed");
+        return;
+      }
+      toast.success(`Uploaded: ${file.name}`);
+      await loadFiles();
+    } finally {
+      setUploading(false);
+    }
+  }
 
-  const ocrQueue: any[] = [];
+  async function getSignedUrl(path: string) {
+    const res = await fetch(`${API_BASE}/v1/files/url?path=${encodeURIComponent(path)}`, { headers: hdr });
+    const json = await res.json().catch(() => ({}));
+    if (json?.ok && json.url) {
+      window.open(json.url, "_blank", "noopener,noreferrer");
+    } else {
+      toast.error("Failed to get download URL");
+    }
+  }
 
-  const subtitleJobs: any[] = [];
+  async function deleteFile(path: string) {
+    const res = await fetch(`${API_BASE}/v1/files?path=${encodeURIComponent(path)}`, {
+      method: "DELETE",
+      headers: hdr,
+    });
+    const json = await res.json().catch(() => ({}));
+    if (json?.ok) {
+      toast.success("File deleted");
+      await loadFiles();
+    } else {
+      toast.error("Delete failed");
+    }
+  }
 
-  const upscaleJobs: any[] = [];
+  useEffect(() => { loadFiles(); }, [tenantId]);
+
+  const filtered = filter === "all"
+    ? files
+    : files.filter(f => categorizeFile(f.contentType) === filter);
+
+  const stats = {
+    videos: files.filter(f => categorizeFile(f.contentType) === "video").length,
+    images: files.filter(f => categorizeFile(f.contentType) === "image").length,
+    pdfs: files.filter(f => categorizeFile(f.contentType) === "pdf").length,
+    documents: files.filter(f => categorizeFile(f.contentType) === "document").length,
+  };
+
+  const totalSizeMB = files.reduce((acc, f) => acc + (f.size ?? 0), 0) / (1024 * 1024);
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Film className="w-8 h-8 text-cyan-400" />
-          <h2 className="text-3xl font-bold text-white">Advanced Media Processing</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Film className="w-8 h-8 text-cyan-400" />
+              <h2 className="text-3xl font-bold text-white">Media Processing</h2>
+            </div>
+            <p className="text-slate-400">
+              Upload, manage, and organize media files across your workspace
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={loadFiles}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || !tenantId}
+              className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 rounded-lg text-sm font-semibold text-white transition-all flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              {uploading ? "Uploading…" : "Upload Files"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={async (e) => {
+                const flist = e.target.files;
+                if (!flist) return;
+                for (const f of Array.from(flist)) {
+                  await uploadFile(f);
+                }
+                e.target.value = "";
+              }}
+            />
+          </div>
         </div>
-        <p className="text-slate-400">
-          Professional-grade media editing and manipulation tools powered by AI
-        </p>
       </div>
 
       {/* Processing Stats */}
-      <div className="grid md:grid-cols-4 gap-6 mb-8">
+      <div className="grid md:grid-cols-5 gap-6 mb-8">
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <Film className="w-8 h-8 text-red-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">0</div>
-          <div className="text-sm text-slate-400">Videos processed</div>
+          <div className="text-3xl font-bold text-white mb-1">{stats.videos}</div>
+          <div className="text-sm text-slate-400">Videos</div>
         </div>
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <Image className="w-8 h-8 text-blue-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">0</div>
-          <div className="text-sm text-slate-400">Images optimized</div>
+          <div className="text-3xl font-bold text-white mb-1">{stats.images}</div>
+          <div className="text-sm text-slate-400">Images</div>
         </div>
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <FileText className="w-8 h-8 text-purple-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">0</div>
-          <div className="text-sm text-slate-400">PDFs manipulated</div>
+          <div className="text-3xl font-bold text-white mb-1">{stats.pdfs}</div>
+          <div className="text-sm text-slate-400">PDFs</div>
         </div>
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <Type className="w-8 h-8 text-green-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">0</div>
-          <div className="text-sm text-slate-400">Pages OCR'd</div>
+          <div className="text-3xl font-bold text-white mb-1">{stats.documents}</div>
+          <div className="text-sm text-slate-400">Documents</div>
+        </div>
+        <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
+          <Layers className="w-8 h-8 text-cyan-400 mb-3" />
+          <div className="text-3xl font-bold text-white mb-1">{totalSizeMB.toFixed(1)}</div>
+          <div className="text-sm text-slate-400">Total MB</div>
         </div>
       </div>
 
-      {/* AI Video Auto-Editor */}
-      <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Film className="w-6 h-6 text-red-400" />
-            <h3 className="text-xl font-semibold text-white">AI Video Auto-Editor</h3>
-          </div>
-          <button onClick={() => queuePremiumJob("Upload Video")} className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-400 hover:to-pink-400 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            Upload Video
-          </button>
-        </div>
-
-        <div className="grid gap-3">
-          {videoProjects.map((video) => (
-            <div
-              key={video.id}
-              className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-red-500/30 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-16 h-16 bg-gradient-to-br from-red-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
-                    <Film className="w-8 h-8 text-red-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-white mb-1">{video.name}</div>
-                    <div className="flex items-center gap-4 text-sm text-slate-400">
-                      <span>{video.duration}</span>
-                      <span>•</span>
-                      <span>{video.edits}</span>
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1">{video.created}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {video.status === 'completed' && (
-                    <div className="flex items-center gap-2 text-green-400 text-sm">
-                      <CheckCircle className="w-4 h-4" />
-                      <span>Completed</span>
-                    </div>
-                  )}
-                  {video.status === 'processing' && (
-                    <div className="flex items-center gap-2 text-cyan-400 text-sm">
-                      <Clock className="w-4 h-4 animate-spin" />
-                      <span>Processing...</span>
-                    </div>
-                  )}
-                  {video.status === 'queued' && (
-                    <div className="flex items-center gap-2 text-yellow-400 text-sm">
-                      <Clock className="w-4 h-4" />
-                      <span>Queued</span>
-                    </div>
-                  )}
-                  <button onClick={() => queuePremiumJob("Premium action")} className="ml-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded text-xs text-red-400 transition-colors">
-                    <Download className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-          <div className="flex items-start gap-3">
-            <Scissors className="w-5 h-5 text-red-400 mt-0.5" />
-            <div>
-              <div className="text-sm font-semibold text-red-400 mb-1">Smart Editing AI</div>
-              <div className="text-xs text-slate-400">
-                Automatically removes pauses, cuts dead air, adds transitions, and balances audio levels
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Background Removal & Batch Processing */}
+      {/* File Browser */}
       <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 mb-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Layers className="w-6 h-6 text-blue-400" />
-            <h3 className="text-xl font-semibold text-white">Batch Image Processing</h3>
+            <h3 className="text-xl font-semibold text-white">File Browser</h3>
           </div>
-          <button onClick={() => queuePremiumJob("Upload Images")} className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            Upload Images
-          </button>
-        </div>
-
-        <div className="grid gap-3">
-          {imageJobs.map((job) => (
-            <div
-              key={job.id}
-              className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-blue-500/30 transition-colors"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-lg flex items-center justify-center">
-                    <Image className="w-8 h-8 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-white mb-1">{job.name}</div>
-                    <div className="flex items-center gap-4 text-sm text-slate-400">
-                      <span>{job.count} images</span>
-                      <span>•</span>
-                      <span>{job.operation}</span>
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1">{job.time}</div>
-                  </div>
-                </div>
-                <div>
-                  {job.status === 'completed' && (
-                    <div className="flex items-center gap-2 text-green-400 text-sm">
-                      <CheckCircle className="w-4 h-4" />
-                      <span>Done</span>
-                    </div>
-                  )}
-                  {job.status === 'processing' && (
-                    <div className="w-32">
-                      <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                        <span>Processing</span>
-                        <span>{job.progress}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all"
-                          style={{ width: `${job.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {job.status === 'queued' && (
-                    <div className="flex items-center gap-2 text-yellow-400 text-sm">
-                      <Clock className="w-4 h-4" />
-                      <span>Queued</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          <button onClick={() => queuePremiumJob("Remove Background")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-blue-500/30 rounded-lg text-sm text-slate-300 transition-colors">
-            <Wand2 className="w-5 h-5 mx-auto mb-1 text-blue-400" />
-            Remove Background
-          </button>
-          <button onClick={() => queuePremiumJob("Resize & Crop")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-blue-500/30 rounded-lg text-sm text-slate-300 transition-colors">
-            <Scissors className="w-5 h-5 mx-auto mb-1 text-blue-400" />
-            Resize & Crop
-          </button>
-          <button onClick={() => queuePremiumJob("Watermark")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-blue-500/30 rounded-lg text-sm text-slate-300 transition-colors">
-            <Sparkles className="w-5 h-5 mx-auto mb-1 text-blue-400" />
-            Watermark
-          </button>
-        </div>
-      </div>
-
-      {/* PDF Manipulation Suite */}
-      <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <FileText className="w-6 h-6 text-purple-400" />
-            <h3 className="text-xl font-semibold text-white">PDF Manipulation Suite</h3>
-          </div>
-          <button onClick={() => queuePremiumJob("Upload PDFs")} className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-lg text-sm text-purple-400 transition-colors flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            Upload PDFs
-          </button>
-        </div>
-
-        <div className="grid gap-3 mb-4">
-          {pdfJobs.map((job) => (
-            <div
-              key={job.id}
-              className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-purple-500/30 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
-                    <FileText className="w-8 h-8 text-purple-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-white mb-1">{job.name}</div>
-                    <div className="flex items-center gap-4 text-sm text-slate-400">
-                      <span>{job.files} files</span>
-                      <span>•</span>
-                      <span>{job.operation}</span>
-                      <span>•</span>
-                      <span>{job.pages} pages</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  {job.status === 'completed' && (
-                    <div className="flex items-center gap-2 text-green-400 text-sm">
-                      <CheckCircle className="w-4 h-4" />
-                      <span>Complete</span>
-                    </div>
-                  )}
-                  {job.status === 'processing' && job.progress && (
-                    <div className="w-32">
-                      <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                        <span>Processing</span>
-                        <span>{job.progress}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
-                          style={{ width: `${job.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-4 gap-3">
-          <button onClick={() => queuePremiumJob("Merge PDFs")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-xs text-slate-300 transition-colors">
-            Merge PDFs
-          </button>
-          <button onClick={() => queuePremiumJob("Split PDF")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-xs text-slate-300 transition-colors">
-            Split PDF
-          </button>
-          <button onClick={() => queuePremiumJob("Extract Pages")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-xs text-slate-300 transition-colors">
-            Extract Pages
-          </button>
-          <button onClick={() => queuePremiumJob("Compress")} className="p-3 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-xs text-slate-300 transition-colors">
-            Compress
-          </button>
-        </div>
-      </div>
-
-      {/* OCR Everything */}
-      <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Type className="w-6 h-6 text-green-400" />
-            <h3 className="text-xl font-semibold text-white">OCR Everything</h3>
-          </div>
-          <button onClick={() => queuePremiumJob("Upload for OCR")} className="px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg text-sm text-green-400 transition-colors flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            Upload for OCR
-          </button>
-        </div>
-
-        <div className="grid gap-3">
-          {ocrQueue.map((job) => (
-            <div
-              key={job.id}
-              className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-green-500/30 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-16 h-16 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg flex items-center justify-center">
-                    <Type className="w-8 h-8 text-green-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-white mb-1">{job.name}</div>
-                    <div className="flex items-center gap-4 text-sm text-slate-400">
-                      <span>{job.count} {job.type}</span>
-                      <span>•</span>
-                      <span>{job.extracted}</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  {job.status === 'completed' && (
-                    <div className="flex items-center gap-2 text-green-400 text-sm">
-                      <CheckCircle className="w-4 h-4" />
-                      <span>Done</span>
-                    </div>
-                  )}
-                  {job.status === 'processing' && job.progress && (
-                    <div className="w-32">
-                      <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                        <span>Extracting</span>
-                        <span>{job.progress}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all"
-                          style={{ width: `${job.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {job.status === 'queued' && (
-                    <div className="flex items-center gap-2 text-yellow-400 text-sm">
-                      <Clock className="w-4 h-4" />
-                      <span>Queued</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Auto-Subtitle Generator & Image Upscaling */}
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Auto-Subtitles */}
-        <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <Type className="w-6 h-6 text-yellow-400" />
-            <h3 className="text-xl font-semibold text-white">Auto-Subtitle Generator</h3>
-          </div>
-
-          <div className="grid gap-3">
-            {subtitleJobs.map((job) => (
-              <div
-                key={job.id}
-                className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50"
+          <div className="flex items-center gap-1 p-1 bg-slate-800/50 rounded-lg">
+            {([
+              { key: "all", label: "All" },
+              { key: "image", label: "Images" },
+              { key: "video", label: "Videos" },
+              { key: "pdf", label: "PDFs" },
+              { key: "document", label: "Docs" },
+            ] as const).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setFilter(key)}
+                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                  filter === key
+                    ? "bg-cyan-500/20 text-cyan-300"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
               >
-                <div className="font-semibold text-white mb-2">{job.name}</div>
-                <div className="flex items-center gap-4 text-sm text-slate-400 mb-2">
-                  <span>{job.duration}</span>
-                  <span>•</span>
-                  <span>{job.language}</span>
-                </div>
-                {job.status === 'completed' && (
-                  <div className="flex items-center gap-2 text-green-400 text-sm">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>{job.accuracy} accuracy</span>
-                  </div>
-                )}
-                {job.status === 'processing' && job.progress && (
-                  <div>
-                    <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                      <span>Generating...</span>
-                      <span>{job.progress}%</span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all"
-                        style={{ width: `${job.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+                {label}
+              </button>
             ))}
           </div>
         </div>
 
-        {/* Image Upscaling */}
-        <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <Sparkles className="w-6 h-6 text-pink-400" />
-            <h3 className="text-xl font-semibold text-white">AI Image Upscaling</h3>
-          </div>
+        {filtered.length > 0 ? (
+          <div className="bg-slate-800/30 border border-slate-700 rounded-xl overflow-hidden max-h-[600px] overflow-y-auto">
+            <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-700 text-xs text-slate-400 sticky top-0 bg-slate-900">
+              <div className="col-span-1">Type</div>
+              <div className="col-span-4">Filename</div>
+              <div className="col-span-2">Format</div>
+              <div className="col-span-2 text-right">Size</div>
+              <div className="col-span-2">Updated</div>
+              <div className="col-span-1 text-right">Actions</div>
+            </div>
+            {filtered.map((f) => {
+              const cat = categorizeFile(f.contentType);
+              const TypeIcon = cat === "video" ? Film : cat === "image" ? Image : cat === "pdf" ? FileText : Type;
+              const iconColor = cat === "video" ? "text-red-400" : cat === "image" ? "text-blue-400" : cat === "pdf" ? "text-purple-400" : "text-green-400";
 
-          <div className="grid gap-3">
-            {upscaleJobs.map((job) => (
-              <div
-                key={job.id}
-                className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50"
-              >
-                <div className="font-semibold text-white mb-2">{job.name}</div>
-                <div className="flex items-center gap-4 text-sm text-slate-400 mb-2">
-                  <span>{job.count} images</span>
-                  <span>•</span>
-                  <span>{job.from} → {job.to}</span>
+              return (
+                <div key={f.path} className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-700/50 text-sm items-center hover:bg-slate-800/30 transition-colors">
+                  <div className="col-span-1">
+                    <TypeIcon className={`w-4 h-4 ${iconColor}`} />
+                  </div>
+                  <div className="col-span-4 text-white truncate" title={f.name}>{f.name}</div>
+                  <div className="col-span-2 text-slate-400 text-xs">{f.contentType ?? "—"}</div>
+                  <div className="col-span-2 text-right text-slate-300 text-xs">
+                    {f.size != null ? (f.size > 1048576 ? `${(f.size / 1048576).toFixed(1)} MB` : `${(f.size / 1024).toFixed(1)} KB`) : "—"}
+                  </div>
+                  <div className="col-span-2 text-slate-500 text-xs">
+                    {f.updatedAt ? new Date(f.updatedAt).toLocaleDateString() : "—"}
+                  </div>
+                  <div className="col-span-1 flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => getSignedUrl(f.path)}
+                      className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+                      title="Download"
+                    >
+                      <Download className="w-3.5 h-3.5 text-cyan-400" />
+                    </button>
+                    <button
+                      onClick={() => deleteFile(f.path)}
+                      className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                    </button>
+                  </div>
                 </div>
-                {job.status === 'completed' && (
-                  <div className="flex items-center gap-2 text-green-400 text-sm">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Enhanced</span>
-                  </div>
-                )}
-                {job.status === 'processing' && job.progress && (
-                  <div>
-                    <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                      <span>Upscaling...</span>
-                      <span>{job.progress}%</span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all"
-                        style={{ width: `${job.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
+        ) : (
+          <div className="text-center py-12">
+            <Layers className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+            <div className="text-slate-400 mb-2">
+              {files.length === 0 ? "No files uploaded yet." : `No ${filter} files found.`}
+            </div>
+            <div className="text-xs text-slate-500">Upload files using the button above. Supports images, videos, PDFs, and documents.</div>
+          </div>
+        )}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <Sparkles className="w-6 h-6 text-pink-400" />
+          <h3 className="text-xl font-semibold text-white">Quick Actions</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="p-4 bg-slate-950/50 border border-slate-700/50 hover:border-cyan-500/30 rounded-lg text-sm text-slate-300 transition-colors text-center"
+          >
+            <Upload className="w-5 h-5 mx-auto mb-2 text-cyan-400" />
+            Upload Media
+          </button>
+          <button
+            onClick={() => { setFilter("image"); toast.message("Filtered to images"); }}
+            className="p-4 bg-slate-950/50 border border-slate-700/50 hover:border-blue-500/30 rounded-lg text-sm text-slate-300 transition-colors text-center"
+          >
+            <Image className="w-5 h-5 mx-auto mb-2 text-blue-400" />
+            Browse Images
+          </button>
+          <button
+            onClick={() => { setFilter("video"); toast.message("Filtered to videos"); }}
+            className="p-4 bg-slate-950/50 border border-slate-700/50 hover:border-red-500/30 rounded-lg text-sm text-slate-300 transition-colors text-center"
+          >
+            <Film className="w-5 h-5 mx-auto mb-2 text-red-400" />
+            Browse Videos
+          </button>
+          <button
+            onClick={() => { setFilter("pdf"); toast.message("Filtered to PDFs"); }}
+            className="p-4 bg-slate-950/50 border border-slate-700/50 hover:border-purple-500/30 rounded-lg text-sm text-slate-300 transition-colors text-center"
+          >
+            <FileText className="w-5 h-5 mx-auto mb-2 text-purple-400" />
+            Browse PDFs
+          </button>
+        </div>
+      </div>
+
+      {/* Upcoming Features */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <div className="bg-slate-900/50 border border-slate-700/30 rounded-xl p-6 opacity-60">
+          <Scissors className="w-6 h-6 text-red-400 mb-3" />
+          <div className="text-white font-semibold mb-1">AI Video Auto-Editor</div>
+          <div className="text-xs text-slate-400">Auto-cut dead air, add transitions, balance audio. Requires external processing API.</div>
+          <div className="mt-3 px-2 py-1 bg-slate-800 rounded text-xs text-slate-500 inline-block">Coming Soon</div>
+        </div>
+        <div className="bg-slate-900/50 border border-slate-700/30 rounded-xl p-6 opacity-60">
+          <Wand2 className="w-6 h-6 text-blue-400 mb-3" />
+          <div className="text-white font-semibold mb-1">Background Removal</div>
+          <div className="text-xs text-slate-400">Batch remove backgrounds, resize, crop, and watermark images.</div>
+          <div className="mt-3 px-2 py-1 bg-slate-800 rounded text-xs text-slate-500 inline-block">Coming Soon</div>
+        </div>
+        <div className="bg-slate-900/50 border border-slate-700/30 rounded-xl p-6 opacity-60">
+          <Type className="w-6 h-6 text-green-400 mb-3" />
+          <div className="text-white font-semibold mb-1">OCR & Subtitles</div>
+          <div className="text-xs text-slate-400">Extract text from images/PDFs and auto-generate video subtitles.</div>
+          <div className="mt-3 px-2 py-1 bg-slate-800 rounded text-xs text-slate-500 inline-block">Coming Soon</div>
         </div>
       </div>
     </div>

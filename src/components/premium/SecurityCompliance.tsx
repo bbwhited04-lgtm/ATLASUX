@@ -1,34 +1,114 @@
-import { useState } from 'react';
-import { 
-  Shield, Lock, FileCheck, MapPin, Activity, 
-  Users, Key, AlertTriangle, CheckCircle, Clock,
-  FileText, Download, Eye, Settings
+import { useEffect, useState } from 'react';
+import { useActiveTenant } from '@/lib/activeTenant';
+import { API_BASE } from '@/lib/api';
+import {
+  Shield, Lock, FileCheck, Activity,
+  Users, AlertTriangle, CheckCircle, Clock,
+  Download, RefreshCw, Eye,
 } from 'lucide-react';
 
+type AuditEntry = {
+  id: string;
+  tenantId?: string;
+  actorType?: string;
+  actorUserId?: string;
+  actorExternalId?: string;
+  action: string;
+  level: "info" | "warn" | "error";
+  entityType?: string;
+  entityId?: string;
+  message?: string;
+  meta?: any;
+  timestamp?: string;
+  createdAt?: string;
+};
+
+type AgentRole = {
+  id: string;
+  name: string;
+  title: string;
+  tier: string;
+};
+
+type FileEntry = {
+  name: string;
+  path: string;
+  size: number | null;
+  contentType: string | null;
+  updatedAt: string | null;
+};
+
 export function SecurityCompliance() {
-  const dlpRules: any[] = [];
+  const { tenantId } = useActiveTenant();
+  const [loading, setLoading] = useState(false);
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
+  const [auditStats, setAuditStats] = useState({ total: 0, errors: 0, warns: 0 });
+  const [agents, setAgents] = useState<AgentRole[]>([]);
+  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [pendingDecisions, setPendingDecisions] = useState(0);
 
-  const complianceReports: any[] = [];
+  const hdr = tenantId ? { "x-tenant-id": tenantId } : {};
 
-  const sharedFiles: any[] = [];
+  async function loadAll() {
+    setLoading(true);
+    try {
+      const qs = tenantId ? `tenantId=${encodeURIComponent(tenantId)}` : "";
 
-  const geofenceLocations: any[] = [];
+      const [auditRes, agentsRes, filesRes, acctRes] = await Promise.all([
+        fetch(`${API_BASE}/v1/audit/list?limit=100&${qs}`, { headers: hdr }).then(r => r.json()).catch(() => null),
+        fetch(`${API_BASE}/v1/agents`, { headers: hdr }).then(r => r.json()).catch(() => null),
+        fetch(`${API_BASE}/v1/files?${qs}`, { headers: hdr }).then(r => r.json()).catch(() => null),
+        fetch(`${API_BASE}/v1/accounting/summary?${qs}`, { headers: hdr }).then(r => r.json()).catch(() => null),
+      ]);
 
-  const activityLog: any[] = [];
+      if (auditRes?.ok) {
+        const items: AuditEntry[] = auditRes.items ?? [];
+        setAuditEntries(items);
+        setAuditStats({
+          total: items.length,
+          errors: items.filter(a => a.level === "error").length,
+          warns: items.filter(a => a.level === "warn").length,
+        });
+      }
+      if (agentsRes?.ok) setAgents(agentsRes.agents ?? []);
+      if (filesRes?.ok) setFiles(filesRes.files ?? []);
+      if (acctRes?.ok) setPendingDecisions(acctRes.summary?.approvalsPending ?? 0);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const roles: any[] = [];
+  useEffect(() => { loadAll(); }, [tenantId]);
+
+  const tierGroups: Record<string, AgentRole[]> = {};
+  for (const a of agents) {
+    const tier = a.tier || "Other";
+    if (!tierGroups[tier]) tierGroups[tier] = [];
+    tierGroups[tier].push(a);
+  }
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Shield className="w-8 h-8 text-cyan-400" />
-          <h2 className="text-3xl font-bold text-white">Enterprise Security & Compliance</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Shield className="w-8 h-8 text-cyan-400" />
+              <h2 className="text-3xl font-bold text-white">Enterprise Security & Compliance</h2>
+            </div>
+            <p className="text-slate-400">
+              Audit trail, access control, and compliance status across your workspace
+            </p>
+          </div>
+          <button
+            onClick={loadAll}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
         </div>
-        <p className="text-slate-400">
-          Advanced security features and compliance tools for enterprise deployment
-        </p>
       </div>
 
       {/* Security Overview */}
@@ -36,243 +116,79 @@ export function SecurityCompliance() {
         <div className="bg-slate-900/50 border border-green-500/20 rounded-xl p-6">
           <div className="flex items-center justify-between mb-3">
             <Shield className="w-8 h-8 text-green-400" />
-            <div className="px-2 py-1 bg-green-500/20 border border-green-500/30 rounded text-xs text-green-400">
-              ACTIVE
+            <div className={`px-2 py-1 rounded text-xs ${
+              auditStats.errors === 0
+                ? "bg-green-500/20 border border-green-500/30 text-green-400"
+                : "bg-red-500/20 border border-red-500/30 text-red-400"
+            }`}>
+              {auditStats.errors === 0 ? "HEALTHY" : `${auditStats.errors} ERRORS`}
             </div>
           </div>
-          <div className="text-2xl font-bold text-white mb-1">Secure</div>
+          <div className="text-2xl font-bold text-white mb-1">{auditStats.errors === 0 ? "Secure" : "Alert"}</div>
           <div className="text-sm text-slate-400">Overall Status</div>
         </div>
 
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <AlertTriangle className="w-8 h-8 text-yellow-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">0</div>
-          <div className="text-sm text-slate-400">Compliance Issues</div>
+          <div className="text-3xl font-bold text-white mb-1">{auditStats.warns}</div>
+          <div className="text-sm text-slate-400">Warnings</div>
         </div>
 
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <Lock className="w-8 h-8 text-cyan-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">0</div>
-          <div className="text-sm text-slate-400">Files Encrypted</div>
+          <div className="text-3xl font-bold text-white mb-1">{files.length}</div>
+          <div className="text-sm text-slate-400">Files Managed</div>
         </div>
 
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
           <Activity className="w-8 h-8 text-blue-400 mb-3" />
-          <div className="text-3xl font-bold text-white mb-1">0</div>
-          <div className="text-sm text-slate-400">Audit Logs</div>
+          <div className="text-3xl font-bold text-white mb-1">{auditStats.total}</div>
+          <div className="text-sm text-slate-400">Audit Log Entries</div>
         </div>
       </div>
 
-      {/* Data Loss Prevention (DLP) */}
-      <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Shield className="w-6 h-6 text-red-400" />
-            <h3 className="text-xl font-semibold text-white">Data Loss Prevention (DLP)</h3>
-          </div>
-          <button className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-sm text-red-400 transition-colors">
-            Add Rule
-          </button>
-        </div>
-
-        <div className="grid gap-3">
-          {dlpRules.map((rule) => (
-            <div
-              key={rule.id}
-              className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-red-500/30 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-12 h-12 bg-gradient-to-br from-red-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-red-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-white mb-1">{rule.name}</div>
-                    <div className="flex items-center gap-4 text-sm text-slate-400">
-                      <span>{rule.detected} detected</span>
-                      <span>•</span>
-                      <span className="text-red-400">{rule.blocked} blocked</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 rounded text-xs font-semibold ${
-                    rule.status === 'active'
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                      : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  }`}>
-                    {rule.status}
-                  </span>
-                  <button className="px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 rounded text-xs text-slate-300 transition-colors">
-                    Configure
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Compliance Reporting */}
+      {/* Compliance Status */}
       <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 mb-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <FileCheck className="w-6 h-6 text-blue-400" />
-            <h3 className="text-xl font-semibold text-white">Compliance Reporting</h3>
+            <h3 className="text-xl font-semibold text-white">Compliance Status</h3>
           </div>
-          <button className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Export All Reports
-          </button>
         </div>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          {complianceReports.map((report) => (
-            <div
-              key={report.id}
-              className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-blue-500/30 transition-colors"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-lg flex items-center justify-center">
-                    <FileCheck className="w-6 h-6 text-blue-400" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-white">{report.type}</div>
-                    <div className="text-xs text-slate-400">Last audit: {report.lastAudit}</div>
-                  </div>
-                </div>
-                <div>
-                  {report.status === 'compliant' ? (
-                    <div className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs font-semibold">
-                      COMPLIANT
-                    </div>
-                  ) : (
-                    <div className="px-3 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded text-xs font-semibold">
-                      REVIEW
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-slate-400">
-                  {report.issues === 0 ? (
-                    <span className="text-green-400">No issues found</span>
-                  ) : (
-                    <span className="text-yellow-400">{report.issues} issues to resolve</span>
-                  )}
-                </div>
-                <button className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
-                  View Report →
-                </button>
-              </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-white">Audit Trail</div>
+              <div className="px-2 py-0.5 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs">ACTIVE</div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Secure File Sharing */}
-      <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Lock className="w-6 h-6 text-purple-400" />
-            <h3 className="text-xl font-semibold text-white">Secure File Sharing</h3>
+            <div className="text-xs text-slate-400">All mutations logged to audit_log table with actor, action, and timestamp.</div>
           </div>
-          <button className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-lg text-sm text-purple-400 transition-colors">
-            Create Secure Link
-          </button>
-        </div>
-
-        <div className="grid gap-3">
-          {sharedFiles.map((file) => (
-            <div
-              key={file.id}
-              className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-purple-500/30 transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="font-semibold text-white mb-2">{file.name}</div>
-                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-400 mb-2">
-                    <div className="flex items-center gap-2">
-                      <Eye className="w-4 h-4 text-purple-400" />
-                      <span>Shared with: {file.recipient}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-yellow-400" />
-                      <span>Expires: {file.expires}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Key className="w-4 h-4 text-green-400" />
-                      <span>Password protected</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Download className="w-4 h-4 text-cyan-400" />
-                      <span>{file.downloads}/{file.maxDownloads} downloads</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2 ml-4">
-                  <button className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded text-xs text-purple-400 transition-colors">
-                    Revoke
-                  </button>
-                </div>
+          <div className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-white">Approval Workflow</div>
+              <div className={`px-2 py-0.5 rounded text-xs ${
+                pendingDecisions > 0
+                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                  : "bg-green-500/20 text-green-400 border border-green-500/30"
+              }`}>
+                {pendingDecisions > 0 ? `${pendingDecisions} PENDING` : "CLEAR"}
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Geofencing */}
-      <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <MapPin className="w-6 h-6 text-green-400" />
-            <h3 className="text-xl font-semibold text-white">Geofencing</h3>
+            <div className="text-xs text-slate-400">High-risk actions require decision memos before execution.</div>
           </div>
-          <button className="px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg text-sm text-green-400 transition-colors">
-            Add Location
-          </button>
-        </div>
-
-        <div className="grid gap-3">
-          {geofenceLocations.map((location) => (
-            <div
-              key={location.id}
-              className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-green-500/30 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg flex items-center justify-center">
-                    <MapPin className="w-6 h-6 text-green-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-white mb-1">{location.name}</div>
-                    <div className="text-sm text-slate-400">{location.address}</div>
-                    <div className="text-xs text-slate-500 mt-1">Radius: {location.radius}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs font-semibold">
-                    ACTIVE
-                  </span>
-                  <button className="px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 rounded text-xs text-slate-300 transition-colors">
-                    Edit
-                  </button>
-                </div>
-              </div>
+          <div className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-white">Daily Action Cap</div>
+              <div className="px-2 py-0.5 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs">ENFORCED</div>
             </div>
-          ))}
-        </div>
-
-        <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-          <div className="flex items-start gap-3">
-            <MapPin className="w-5 h-5 text-green-400 mt-0.5" />
-            <div>
-              <div className="text-sm font-semibold text-green-400 mb-1">Location-Based Security</div>
-              <div className="text-xs text-slate-400">
-                Atlas UX will only function within approved geofenced locations. Prevent unauthorized access from outside secure zones.
-              </div>
+            <div className="text-xs text-slate-400">MAX_ACTIONS_PER_DAY and daily posting caps enforced by engine.</div>
+          </div>
+          <div className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-white">Spend Limit</div>
+              <div className="px-2 py-0.5 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs">ENFORCED</div>
             </div>
+            <div className="text-xs text-slate-400">AUTO_SPEND_LIMIT_USD enforced. Recurring purchases blocked by default.</div>
           </div>
         </div>
       </div>
@@ -284,88 +200,135 @@ export function SecurityCompliance() {
             <Activity className="w-6 h-6 text-cyan-400" />
             <h3 className="text-xl font-semibold text-white">Activity Timeline</h3>
           </div>
-          <button className="px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-sm text-cyan-400 transition-colors flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Export Audit Log
-          </button>
+          <div className="text-sm text-slate-400">{auditEntries.length} entries (latest 100)</div>
         </div>
 
-        <div className="space-y-4">
-          {activityLog.map((log) => (
-            <div
-              key={log.id}
-              className="flex items-start gap-4 p-4 bg-slate-950/50 rounded-lg border border-slate-700/50"
-            >
-              <div className={`w-2 h-2 rounded-full mt-2 ${
-                log.risk === 'high' ? 'bg-red-400' : log.risk === 'medium' ? 'bg-yellow-400' : 'bg-green-400'
-              }`} />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-white">{log.user}</span>
-                  <span className="text-slate-400">—</span>
-                  <span className="text-slate-300">{log.action}</span>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-slate-400">
-                  <span>{log.resource}</span>
-                  <span>•</span>
-                  <span>{log.time}</span>
-                  <span>•</span>
-                  <span className={`${
-                    log.risk === 'high' ? 'text-red-400' : log.risk === 'medium' ? 'text-yellow-400' : 'text-green-400'
-                  }`}>
-                    {log.risk} risk
-                  </span>
+        {auditEntries.length > 0 ? (
+          <div className="space-y-2 max-h-[500px] overflow-y-auto">
+            {auditEntries.slice(0, 50).map((log) => (
+              <div
+                key={log.id}
+                className="flex items-start gap-4 p-3 bg-slate-950/50 rounded-lg border border-slate-700/50"
+              >
+                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                  log.level === 'error' ? 'bg-red-400' : log.level === 'warn' ? 'bg-yellow-400' : 'bg-green-400'
+                }`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-white text-sm truncate">{log.action}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-xs ${
+                      log.level === 'error' ? 'bg-red-500/20 text-red-400' :
+                      log.level === 'warn' ? 'bg-amber-500/20 text-amber-400' :
+                      'bg-slate-700/50 text-slate-400'
+                    }`}>
+                      {log.level}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                    {log.entityType && <span>{log.entityType}{log.entityId ? ` #${log.entityId.slice(0, 8)}` : ""}</span>}
+                    {log.message && <span className="text-slate-400 truncate max-w-[300px]">{log.message}</span>}
+                    <span>{new Date(log.timestamp ?? log.createdAt ?? "").toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-sm text-slate-400 py-6 text-center">No audit entries found for this tenant.</div>
+        )}
       </div>
 
-      {/* Role-Based Access Control */}
-      <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6">
+      {/* Role-Based Access Control (Agent Roster) */}
+      <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 mb-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Users className="w-6 h-6 text-orange-400" />
-            <h3 className="text-xl font-semibold text-white">Role-Based Access Control</h3>
+            <h3 className="text-xl font-semibold text-white">Agent Access Control</h3>
           </div>
-          <button className="px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 rounded-lg text-sm text-orange-400 transition-colors">
-            Create Role
-          </button>
+          <div className="text-sm text-slate-400">{agents.length} agents registered</div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          {roles.map((role) => (
-            <div
-              key={role.id}
-              className="p-4 bg-slate-950/50 rounded-lg border border-slate-700/50 hover:border-orange-500/30 transition-colors"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 bg-gradient-to-br from-${role.color}-500/20 to-${role.color}-600/20 rounded-lg flex items-center justify-center`}>
-                    <Users className={`w-6 h-6 text-${role.color}-400`} />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-white">{role.name}</div>
-                    <div className="text-xs text-slate-400">{role.users} users</div>
-                  </div>
+        {Object.keys(tierGroups).length > 0 ? (
+          <div className="space-y-4">
+            {Object.entries(tierGroups).map(([tier, members]) => (
+              <div key={tier}>
+                <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">{tier} ({members.length})</div>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {members.map((agent) => (
+                    <div key={agent.id} className="p-3 bg-slate-950/50 rounded-lg border border-slate-700/50 flex items-center gap-3">
+                      <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Users className="w-4 h-4 text-cyan-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-white capitalize">{agent.name}</div>
+                        <div className="text-xs text-slate-400 truncate">{agent.title}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <button className="px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 rounded text-xs text-slate-300 transition-colors">
-                  Manage
-                </button>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {role.permissions.map((perm, idx) => (
-                  <span
-                    key={idx}
-                    className="px-2 py-1 bg-slate-800/50 border border-slate-700/50 rounded text-xs text-slate-300"
-                  >
-                    {perm}
-                  </span>
-                ))}
-              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-sm text-slate-400 py-6 text-center">No agents loaded.</div>
+        )}
+      </div>
+
+      {/* File Inventory */}
+      <div className="bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Lock className="w-6 h-6 text-purple-400" />
+            <h3 className="text-xl font-semibold text-white">Managed Files</h3>
+          </div>
+          <div className="text-sm text-slate-400">{files.length} files</div>
+        </div>
+
+        {files.length > 0 ? (
+          <div className="bg-slate-800/30 border border-slate-700 rounded-xl overflow-hidden max-h-[400px] overflow-y-auto">
+            <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-700 text-xs text-slate-400 sticky top-0 bg-slate-900">
+              <div className="col-span-5">Filename</div>
+              <div className="col-span-2">Type</div>
+              <div className="col-span-2 text-right">Size</div>
+              <div className="col-span-3">Updated</div>
             </div>
-          ))}
+            {files.slice(0, 100).map((f) => (
+              <div key={f.path} className="grid grid-cols-12 gap-2 px-4 py-2 border-b border-slate-700/50 text-sm">
+                <div className="col-span-5 text-white truncate" title={f.name}>{f.name}</div>
+                <div className="col-span-2 text-slate-400 text-xs">{f.contentType?.split("/")[1] ?? "—"}</div>
+                <div className="col-span-2 text-right text-slate-300 text-xs">
+                  {f.size != null ? `${(f.size / 1024).toFixed(1)} KB` : "—"}
+                </div>
+                <div className="col-span-3 text-slate-500 text-xs">
+                  {f.updatedAt ? new Date(f.updatedAt).toLocaleString() : "—"}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-sm text-slate-400 py-6 text-center">No files uploaded for this tenant.</div>
+        )}
+      </div>
+
+      {/* Upcoming Features */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <div className="bg-slate-900/50 border border-slate-700/30 rounded-xl p-6 opacity-60">
+          <Shield className="w-6 h-6 text-red-400 mb-3" />
+          <div className="text-white font-semibold mb-1">Data Loss Prevention</div>
+          <div className="text-xs text-slate-400">Custom DLP rules to detect and block sensitive data exposure.</div>
+          <div className="mt-3 px-2 py-1 bg-slate-800 rounded text-xs text-slate-500 inline-block">Coming Soon</div>
+        </div>
+        <div className="bg-slate-900/50 border border-slate-700/30 rounded-xl p-6 opacity-60">
+          <Eye className="w-6 h-6 text-green-400 mb-3" />
+          <div className="text-white font-semibold mb-1">Geofencing</div>
+          <div className="text-xs text-slate-400">Location-based access restrictions for secure zones.</div>
+          <div className="mt-3 px-2 py-1 bg-slate-800 rounded text-xs text-slate-500 inline-block">Coming Soon</div>
+        </div>
+        <div className="bg-slate-900/50 border border-slate-700/30 rounded-xl p-6 opacity-60">
+          <Download className="w-6 h-6 text-purple-400 mb-3" />
+          <div className="text-white font-semibold mb-1">Secure File Sharing</div>
+          <div className="text-xs text-slate-400">Expiring links with password protection and download limits.</div>
+          <div className="mt-3 px-2 py-1 bg-slate-800 rounded text-xs text-slate-500 inline-block">Coming Soon</div>
         </div>
       </div>
     </div>
