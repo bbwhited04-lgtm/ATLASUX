@@ -290,17 +290,17 @@ export default function Integrations() {
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">Integrations</h2>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-slate-400">
             Connect once per provider — OAuth scopes unlock all sub-services automatically.
           </p>
-          <div className="text-xs text-neutral-500">
-            Connected: <span className="text-slate-800 font-semibold">{connectedCount}</span> / {totalProviders} providers
+          <div className="text-xs text-slate-500">
+            Connected: <span className="text-cyan-400 font-semibold">{connectedCount}</span> / {totalProviders} providers
           </div>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="glass flex items-center gap-2 rounded-xl px-3 py-2">
-            <Search className="h-4 w-4 text-slate-600" />
+            <Search className="h-4 w-4 text-slate-400" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -310,7 +310,7 @@ export default function Integrations() {
           </div>
 
           <div className="glass flex items-center gap-2 rounded-xl px-3 py-2">
-            <Filter className="h-4 w-4 text-slate-600" />
+            <Filter className="h-4 w-4 text-slate-400" />
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as any)}
@@ -323,7 +323,7 @@ export default function Integrations() {
           </div>
 
           <button className="glass inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm" onClick={refreshStatus} title="Refresh status">
-            <RefreshCw className="h-4 w-4 text-slate-700" />
+            <RefreshCw className="h-4 w-4 text-slate-400" />
           </button>
         </div>
       </div>
@@ -348,14 +348,14 @@ export default function Integrations() {
                     <div className="flex items-center gap-2">
                       <div className="text-sm font-semibold">{i.name}</div>
                       {i.group && (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500 uppercase tracking-wide">
+                        <span className="rounded-full bg-cyan-500/20 border border-cyan-500/30 px-2 py-0.5 text-[10px] font-medium text-cyan-400 uppercase tracking-wide">
                           Suite
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-slate-600">
+                    <div className="text-xs text-slate-400">
                       {i.category}
-                      <span className="mx-2 text-neutral-400">•</span>
+                      <span className="mx-2 text-slate-600">•</span>
                       {i.description}
                     </div>
                   </div>
@@ -379,7 +379,7 @@ export default function Integrations() {
                     {i.covers.map((s) => (
                       <span
                         key={s}
-                        className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600"
+                        className="rounded-md bg-slate-800/50 border border-slate-700/50 px-1.5 py-0.5 text-[10px] text-slate-300"
                       >
                         {s}
                       </span>

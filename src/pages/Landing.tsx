@@ -237,6 +237,7 @@ export default function Landing() {
             <li>X (Twitter) API v2 service — full service library (post tweet, post thread, delete, search recent, get tweet, like, retweet, user profile); Kelly now has post_to_x and search_x agent tools with audit logging; approval-gated posting with token from vault or env fallback</li>
             <li>Added 4 missing worker scripts to package.json — jobs, SMS, Reddit, and social monitoring workers now invocable via npm run</li>
             <li>Meta (Facebook) data deletion callback — POST /v1/meta/datadeletion handles GDPR deletion requests with signed_request verification, audit logging, token cleanup, and confirmation code; required for Meta app review compliance</li>
+            <li>Integrations tab dark theme fix — .glass cards now use dark translucent background with cyan borders instead of white; Suite badges, sub-service chips, search/filter icons, and text all corrected to match dark theme</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
