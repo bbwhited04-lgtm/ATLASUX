@@ -6,30 +6,54 @@ import AppGate from "./components/AppGate";
 import { RootLayout } from "./components/RootLayout";
 import MobilePage from "./routes/mobile";
 
+/**
+ * Lazy import with auto-reload on chunk load failure.
+ * After a Vercel deploy, old chunk hashes are gone — this catches the
+ * import error and does a single hard reload so the browser fetches
+ * the new index.html with updated chunk references.
+ */
+function lazyRetry(factory: () => Promise<any>) {
+  return lazy(() =>
+    factory().catch(() => {
+      const key = "chunk_reload";
+      const last = sessionStorage.getItem(key);
+      // Only reload once per session to prevent infinite loops
+      if (!last || Date.now() - Number(last) > 10_000) {
+        sessionStorage.setItem(key, String(Date.now()));
+        window.location.reload();
+      }
+      // Return a minimal component so React doesn't crash while reloading
+      return { default: () => React.createElement("div", {
+        className: "flex items-center justify-center h-full min-h-[200px] text-slate-500 text-sm",
+      }, "Updating… please wait.") };
+    })
+  );
+}
+
 // Lazy-loaded app pages — only fetched when the user navigates to them
-const JobRunner = lazy(() => import("./components/JobRunner").then(m => ({ default: m.JobRunner })));
-const ChatInterface = lazy(() => import("./components/ChatInterface").then(m => ({ default: m.ChatInterface })));
-const SocialMonitoring = lazy(() => import("./components/SocialMonitoring").then(m => ({ default: m.SocialMonitoring })));
-const CRM = lazy(() => import("./components/CRM"));
-const Settings = lazy(() => import("./components/Settings").then(m => ({ default: m.Settings })));
-const BusinessManager = lazy(() => import("./components/business-manager").then(m => ({ default: m.BusinessManager })));
-const HelpPage = lazy(() => import("./components/HelpPage").then(m => ({ default: m.HelpPage })));
-const AgentsHub = lazy(() => import("./components/AgentsHub").then(m => ({ default: m.AgentsHub })));
-const KnowledgeBaseHub = lazy(() => import("./components/KnowledgeBaseHub").then(m => ({ default: m.KnowledgeBaseHub })));
-const MessagingHub = lazy(() => import("./components/MessagingHub").then(m => ({ default: m.MessagingHub })));
-const AgentWatcher = lazy(() => import("./components/AgentWatcher").then(m => ({ default: m.AgentWatcher })));
+const JobRunner = lazyRetry(() => import("./components/JobRunner").then(m => ({ default: m.JobRunner })));
+const ChatInterface = lazyRetry(() => import("./components/ChatInterface").then(m => ({ default: m.ChatInterface })));
+const SocialMonitoring = lazyRetry(() => import("./components/SocialMonitoring").then(m => ({ default: m.SocialMonitoring })));
+const CRM = lazyRetry(() => import("./components/CRM"));
+const Settings = lazyRetry(() => import("./components/Settings").then(m => ({ default: m.Settings })));
+const BusinessManager = lazyRetry(() => import("./components/business-manager").then(m => ({ default: m.BusinessManager })));
+const HelpPage = lazyRetry(() => import("./components/HelpPage").then(m => ({ default: m.HelpPage })));
+const AgentsHub = lazyRetry(() => import("./components/AgentsHub").then(m => ({ default: m.AgentsHub })));
+const KnowledgeBaseHub = lazyRetry(() => import("./components/KnowledgeBaseHub").then(m => ({ default: m.KnowledgeBaseHub })));
+const MessagingHub = lazyRetry(() => import("./components/MessagingHub").then(m => ({ default: m.MessagingHub })));
+const AgentWatcher = lazyRetry(() => import("./components/AgentWatcher").then(m => ({ default: m.AgentWatcher })));
 
 // Lazy-loaded public pages
-const Privacy = lazy(() => import("./pages/Privacy"));
-const Terms = lazy(() => import("./pages/Terms"));
-const AcceptableUse = lazy(() => import("./pages/AcceptableUse"));
-const Payment = lazy(() => import("./pages/Payment"));
-const Store = lazy(() => import("./pages/Store"));
-const Product = lazy(() => import("./pages/Product"));
-const BlogHome = lazy(() => import("./pages/blog/BlogHome"));
-const BlogPost = lazy(() => import("./pages/blog/BlogPost"));
-const BlogCategory = lazy(() => import("./pages/blog/BlogCategory"));
-const About = lazy(() => import("./pages/About"));
+const Privacy = lazyRetry(() => import("./pages/Privacy"));
+const Terms = lazyRetry(() => import("./pages/Terms"));
+const AcceptableUse = lazyRetry(() => import("./pages/AcceptableUse"));
+const Payment = lazyRetry(() => import("./pages/Payment"));
+const Store = lazyRetry(() => import("./pages/Store"));
+const Product = lazyRetry(() => import("./pages/Product"));
+const BlogHome = lazyRetry(() => import("./pages/blog/BlogHome"));
+const BlogPost = lazyRetry(() => import("./pages/blog/BlogPost"));
+const BlogCategory = lazyRetry(() => import("./pages/blog/BlogCategory"));
+const About = lazyRetry(() => import("./pages/About"));
 
 /** Minimal loading spinner shown while lazy chunks load */
 function LazyFallback() {
