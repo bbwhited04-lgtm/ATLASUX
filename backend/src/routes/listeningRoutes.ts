@@ -7,10 +7,10 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
    * GET /v1/listening/plan?tenantId=...
    * Returns candidate assets + whether their provider is connected.
    */
-  app.get("/plan", async (req) => {
+  app.get("/plan", async (req, reply) => {
     const q = (req.query ?? {}) as any;
     const tenantId = ((req as any).tenantId ?? null) as string | null;
-    if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const assets = await prisma.asset.findMany({
       where: { tenantId },
@@ -45,17 +45,17 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
       type: a.type,
     }));
 
-    return { ok: true, tenantId, plan };
+    return reply.send({ ok: true, tenantId, plan });
   });
 
   /**
    * POST /v1/listening/start?tenantId=...
    * Creates a queued job and writes an audit_log entry.
    */
-  app.post("/start", async (req) => {
+  app.post("/start", async (req, reply) => {
     const q = (req.query ?? {}) as any;
     const tenantId = ((req as any).tenantId ?? null) as string | null;
-    if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const planRes = await (app as any).inject({ method: "GET", url: `/v1/listening/plan?tenantId=${encodeURIComponent(tenantId)}` });
     const planJson = planRes.json() as any;
@@ -91,16 +91,16 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
       } as any,
     }).catch(() => null);
 
-    return { ok: true, tenantId, job, disconnectedProviders: Array.from(new Set(disconnected.map((d: any) => d.provider))) };
+    return reply.send({ ok: true, tenantId, job, disconnectedProviders: Array.from(new Set(disconnected.map((d: any) => d.provider))) });
   });
 
   /**
    * GET /v1/listening/mentions?tenantId=...&limit=50&platform=twitter
    * Returns mentions stored by the social monitoring worker.
    */
-  app.get("/mentions", async (req) => {
+  app.get("/mentions", async (req, reply) => {
     const tenantId = ((req as any).tenantId ?? null) as string | null;
-    if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const q = (req.query ?? {}) as any;
     const limit = Math.min(Number(q.limit ?? 50), 200);
@@ -118,6 +118,6 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
 
     const total = await prisma.distributionEvent.count({ where });
 
-    return { ok: true, tenantId, mentions, total };
+    return reply.send({ ok: true, tenantId, mentions, total });
   });
 };

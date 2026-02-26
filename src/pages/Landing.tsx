@@ -197,7 +197,7 @@ export default function Landing() {
             <li>JobRunner auto-refreshes every 10s (was manual-only)</li>
             <li>Telegram "Use chat" button — now visible as a cyan badge; shows "Use &amp; send" when you have a message typed and sends immediately on click</li>
             <li>seedAiKb.ts — 62 comprehensive AI/tech KB documents across 11 categories: prompt engineering, AI agents, RAG retrieval, LLMOps, AI marketing, AI CRM, productivity, security, strategy, data engineering, and social media AI</li>
-            <li>Full codebase audit — fixed 9 broken Prisma imports, added audit logging to 8 endpoints, Telegram webhook auth + secret token validation, Helmet security headers, ToolsHub dark theme fix, Vite Tailwind plugin, Electron dev-only DevTools, reduced Agent Watcher polling (4s→15s), added email-worker + engine-worker to render.yaml, cleaned up duplicate DB indexes, added missing env var definitions, blog post route fix (#/app/blog/:slug now works)</li>
+            <li>Full codebase audit — fixed 9 broken Prisma imports, added audit logging to 8 endpoints, Telegram webhook auth + secret token validation, Helmet security headers, ToolsHub dark theme fix, Electron dev-only DevTools, reduced Agent Watcher polling (4s→15s), added email-worker + engine-worker to render.yaml, cleaned up duplicate DB indexes, added missing env var definitions, blog post route fix (#/app/blog/:slug now works), replaced all alert() calls with toast notifications, rate-limited job creation + file uploads, fixed all routes to use reply.send() consistently, added tenant check to mobile pairing, fixed Dashboard navigation</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

@@ -106,6 +106,12 @@ export const mobileRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(404).send({ ok: false, error: "CODE_NOT_FOUND_OR_EXPIRED" });
     }
 
+    // Verify the requesting tenant matches the code's tenant
+    const reqTenantId = (req as any).tenantId as string | undefined;
+    if (reqTenantId && reqTenantId !== entry.tenantId) {
+      return reply.code(403).send({ ok: false, error: "TENANT_MISMATCH" });
+    }
+
     entry.status = "confirmed";
     entry.deviceInfo = {
       name: String(body.deviceName ?? "iPhone").slice(0, 60),

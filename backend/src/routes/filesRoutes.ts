@@ -69,7 +69,7 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ── POST /v1/files/upload ─────────────────────────────────────────────────
-  app.post("/upload", async (req, reply) => {
+  app.post("/upload", { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } }, async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useActiveTenant } from "@/lib/activeTenant";
 import { API_BASE } from "@/lib/api";
 import {
@@ -41,7 +42,7 @@ export function SocialMonitoring() {
   const toggleListening = async () => {
   // If no business selected, keep it safe and clear.
   if (!tenantId) {
-    alert("Select a business in Business Manager first.");
+    toast.error("Select a business in Business Manager first.");
     return;
   }
   try {
@@ -49,18 +50,16 @@ export function SocialMonitoring() {
       const r = await fetch(`${API_BASE}/v1/listening/start?tenantId=${encodeURIComponent(tenantId)}`, { method: "POST" });
       const j = await r.json();
       if (j?.disconnectedProviders?.length) {
-        alert(`Listening is queued, but these providers are not connected yet: ${j.disconnectedProviders.join(", ")}.
-Go to Settings → Integrations to connect them.`);
+        toast.warning(`Listening queued — these providers are not connected: ${j.disconnectedProviders.join(", ")}. Go to Settings → Integrations.`);
       } else {
-        alert("Listening is queued.");
+        toast.success("Listening is queued.");
       }
     } else {
       // stop is UI-only for now (worker stop will be added later)
     }
     setIsListening((prev) => !prev);
-  } catch (e) {
-    console.error(e);
-    alert("Failed to start listening.");
+  } catch {
+    toast.error("Failed to start listening.");
   }
 };
 

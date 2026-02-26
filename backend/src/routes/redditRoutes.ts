@@ -34,9 +34,9 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
    * Returns all PROPOSED DecisionMemos for Donna's Reddit actions.
    * Used by the UI to show the approval queue.
    */
-  app.get("/pending", async (req) => {
+  app.get("/pending", async (req, reply) => {
     const tenantId = resolveTenant(req);
-    if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const memos = await prisma.decisionMemo.findMany({
       where: {
@@ -49,7 +49,7 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
       take: 50,
     });
 
-    return { ok: true, pending: memos };
+    return reply.send({ ok: true, pending: memos });
   });
 
   /**
@@ -105,10 +105,10 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
     const memo = await prisma.decisionMemo.findFirst({
       where: { id: memoId, tenantId, agent: "donna", status: "PROPOSED" },
     });
-    if (!memo) return { ok: false, error: "Memo not found or already processed" };
+    if (!memo) return reply.code(404).send({ ok: false, error: "Memo not found or already processed" });
 
     const token = await getRedditToken(tenantId);
-    if (!token) return { ok: false, error: "No Reddit token — connect Reddit in Integrations first" };
+    if (!token) return reply.code(400).send({ ok: false, error: "No Reddit token — connect Reddit in Integrations first" });
 
     const p = memo.payload as any;
     try {
@@ -118,7 +118,7 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
       } else if (p.action === "reddit_post") {
         posted = await submitPost(token, p.subreddit, p.title, p.text);
       } else {
-        return { ok: false, error: `Unknown action: ${p.action}` };
+        return reply.code(400).send({ ok: false, error: `Unknown action: ${p.action}` });
       }
 
       await prisma.decisionMemo.update({
@@ -126,9 +126,9 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
         data: { status: "EXECUTED", payload: { ...p, posted } },
       });
 
-      return { ok: true, posted };
+      return reply.send({ ok: true, posted });
     } catch (e: any) {
-      return { ok: false, error: e.message };
+      return reply.code(502).send({ ok: false, error: e.message });
     }
   });
 
@@ -136,9 +136,9 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
    * POST /v1/reddit/reject/:memoId
    * Reject a pending memo.
    */
-  app.post("/reject/:memoId", async (req) => {
+  app.post("/reject/:memoId", async (req, reply) => {
     const tenantId = resolveTenant(req);
-    if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const { memoId } = req.params as any;
     const body = req.body as any;
@@ -146,7 +146,7 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
     const memo = await prisma.decisionMemo.findFirst({
       where: { id: memoId, tenantId, agent: "donna", status: "PROPOSED" },
     });
-    if (!memo) return { ok: false, error: "Memo not found or already processed" };
+    if (!memo) return reply.code(404).send({ ok: false, error: "Memo not found or already processed" });
 
     await prisma.decisionMemo.update({
       where: { id: memoId },
@@ -156,6 +156,6 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
       },
     });
 
-    return { ok: true };
+    return reply.send({ ok: true });
   });
 };

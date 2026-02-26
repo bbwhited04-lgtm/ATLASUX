@@ -7,7 +7,7 @@ function isUUID(s: string): boolean {
 
 export const jobsRoutes: FastifyPluginAsync = async (app) => {
   // GET /v1/jobs/list
-  app.get("/list", async (req) => {
+  app.get("/list", async (req, reply) => {
     const tenantId = (req as any).tenantId as string | undefined;
     const q = (req.query ?? {}) as any;
 
@@ -15,13 +15,13 @@ export const jobsRoutes: FastifyPluginAsync = async (app) => {
     const tid = tenantId || q.org_id || q.orgId || null;
 
     if (!tid || !isUUID(tid)) {
-      return {
+      return reply.send({
         ok: true,
         org_id: tid ?? null,
         user_id: q.user_id ?? q.userId ?? null,
         items: [],
         ts: new Date().toISOString(),
-      };
+      });
     }
 
     const items = await prisma.job.findMany({
@@ -30,7 +30,7 @@ export const jobsRoutes: FastifyPluginAsync = async (app) => {
       take: 200,
     });
 
-    return {
+    return reply.send({
       ok: true,
       org_id: tid,
       user_id: q.user_id ?? q.userId ?? null,
@@ -48,7 +48,7 @@ export const jobsRoutes: FastifyPluginAsync = async (app) => {
         updatedAt: j.updatedAt,
       })),
       ts: new Date().toISOString(),
-    };
+    });
   });
 
   // DELETE /v1/jobs/:id — cancel/remove a job (queued or paused only)
@@ -67,7 +67,7 @@ export const jobsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // POST /v1/jobs — enqueue a job
-  app.post("/", async (req, reply) => {
+  app.post("/", { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } }, async (req, reply) => {
     const tenantId = (req as any).tenantId as string | undefined;
     const body = req.body as any;
 

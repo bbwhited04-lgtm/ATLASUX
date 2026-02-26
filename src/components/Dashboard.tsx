@@ -364,7 +364,7 @@ const navigate = useNavigate();
           </Card>
         </button>
         
-        <a href="#/app/settings" className="group">
+        <button onClick={() => navigate("/app/settings")} className="group text-left w-full">
           <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30 backdrop-blur-xl p-6 hover:from-green-500/20 hover:to-emerald-500/20 transition-all">
             <div className="flex items-start justify-between mb-4">
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
@@ -391,7 +391,7 @@ const navigate = useNavigate();
               </div>
             </div>
           </Card>
-        </a>
+        </button>
       </div>
     </div>
   )
