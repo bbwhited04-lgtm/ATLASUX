@@ -19,7 +19,7 @@ function apiDocToBlogPost(doc: any): BlogPost {
       category: doc.category || "Updates",
       tags: Array.isArray(doc.tags) ? doc.tags : [],
       excerpt: doc.excerpt || "",
-      coverImage: "/blog/covers/default.png",
+      coverImage: doc.featuredImageUrl || "/blog/covers/default.png",
       featured: false,
       author: "ATLAS",
     },
