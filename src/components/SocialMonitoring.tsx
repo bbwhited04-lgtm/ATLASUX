@@ -47,7 +47,10 @@ export function SocialMonitoring() {
   }
   try {
     if (!isListening) {
-      const r = await fetch(`${API_BASE}/v1/listening/start?tenantId=${encodeURIComponent(tenantId)}`, { method: "POST" });
+      const r = await fetch(`${API_BASE}/v1/listening/start?tenantId=${encodeURIComponent(tenantId)}`, {
+        method: "POST",
+        headers: tenantId ? { "x-tenant-id": tenantId } : {},
+      });
       const j = await r.json();
       if (j?.disconnectedProviders?.length) {
         toast.warning(`Listening queued — these providers are not connected: ${j.disconnectedProviders.join(", ")}. Go to Settings → Integrations.`);

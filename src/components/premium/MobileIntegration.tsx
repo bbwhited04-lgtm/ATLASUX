@@ -96,7 +96,10 @@ export function MobileIntegration() {
     try {
       const res  = await fetch(`${API_BASE}/v1/comms/sms`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          ...(tid ? { 'x-tenant-id': tid } : {}),
+        },
         body: JSON.stringify({ to: phone.trim(), message: `Atlas UX pairing link: ${pairUrl}` }),
       });
       const data = await res.json().catch(() => ({}));

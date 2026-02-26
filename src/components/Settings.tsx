@@ -147,7 +147,9 @@ const defaultDriveAccess = [
 
 export function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { org_id: tenantId } = useMemo(() => getOrgUser(), []);
+  const { tenantId: activeTid } = useActiveTenant();
+  const { org_id } = useMemo(() => getOrgUser(), []);
+  const tenantId = activeTid ?? org_id;
 
   const initialTab = (searchParams.get("tab") || "general").toLowerCase();
   const [tab, setTab] = useState<string>(initialTab);
@@ -171,7 +173,9 @@ export function Settings() {
     try {
       if (!tenantId) { setAuditRows([]); setAuditLoading(false); return; }
       const qs = new URLSearchParams({ tenantId, limit: "100" }).toString();
-      const res = await fetch(`${API_BASE}/v1/audit/list?${qs}`);
+      const res = await fetch(`${API_BASE}/v1/audit/list?${qs}`, {
+        headers: tenantId ? { "x-tenant-id": tenantId } : {},
+      });
       const json = await res.json().catch(() => ({ ok: false, rows: [] }));
       const rows = (json?.items ?? json?.rows ?? []) as any[];
       setAuditRows(Array.isArray(rows) ? rows : []);

@@ -143,12 +143,14 @@ async function refreshAll() {
   setLoading(true);
   setWarning(null);
   try {
-    const qs = new URLSearchParams({ org_id, user_id, tenantId: activeTenantId ?? org_id }).toString();
+    const tid = activeTenantId ?? org_id;
+    const qs = new URLSearchParams({ org_id, user_id, tenantId: tid }).toString();
+    const hdr = tid ? { "x-tenant-id": tid } : {};
     const [iRes, aRes, jRes, auRes] = await Promise.all([
-      fetch(`${API_BASE}/v1/integrations/summary?${qs}`),
-      fetch(`${API_BASE}/v1/accounting/summary?${qs}`),
-      fetch(`${API_BASE}/v1/jobs/list?${qs}&limit=50`),
-      fetch(`${API_BASE}/v1/audit/list?${qs}&limit=50`)
+      fetch(`${API_BASE}/v1/integrations/summary?${qs}`, { headers: hdr }),
+      fetch(`${API_BASE}/v1/accounting/summary?${qs}`, { headers: hdr }),
+      fetch(`${API_BASE}/v1/jobs/list?${qs}&limit=50`, { headers: hdr }),
+      fetch(`${API_BASE}/v1/audit/list?${qs}&limit=50`, { headers: hdr }),
     ]);
 
     const iJson = await iRes.json().catch(() => ({}));
@@ -182,11 +184,13 @@ async function connect(provider: "google" | "meta" | "x") {
 }
 
 async function disconnect(provider: "google" | "meta" | "x") {
-  const qs = new URLSearchParams({ org_id, user_id }).toString();
-  await fetch(`${API_BASE}/v1/integrations/${provider}/disconnect?${qs}`, { method: "POST" }).catch(() => null);
+  const tid = activeTenantId ?? org_id;
+  const hdr = tid ? { "x-tenant-id": tid } : {};
+  const qs = new URLSearchParams({ org_id, user_id, tenantId: tid }).toString();
+  await fetch(`${API_BASE}/v1/integrations/${provider}/disconnect?${qs}`, { method: "POST", headers: hdr }).catch(() => null);
   await fetch(`${API_BASE}/v1/audit`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...hdr },
     body: JSON.stringify({ actor_type: "user", action: `integrations.${provider}.disconnect`, status: "success" })
   }).catch(() => null);
   await refreshAll();
@@ -219,17 +223,19 @@ async function disconnect(provider: "google" | "meta" | "x") {
 
 
 async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
+  const tid = activeTenantId ?? org_id;
+  const hdr = tid ? { "x-tenant-id": tid } : {};
   const payload = { requested_from: "business_manager" };
   const res = await fetch(`${API_BASE}/v1/jobs`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...hdr },
     body: JSON.stringify({ org_id, user_id, type, payload })
   }).catch(() => null);
 
   const ok = !!res && res.ok;
   await fetch(`${API_BASE}/v1/audit`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...hdr },
     body: JSON.stringify({ actor_type: "user", action: `jobs.create.${type}`, status: ok ? "success" : "failure" })
   }).catch(() => null);
 

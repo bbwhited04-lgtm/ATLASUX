@@ -41,9 +41,10 @@ export function AgentDeploymentHub() {
     setLoading(true);
     setMsg("");
     try {
+      const hdr = tenantId ? { "x-tenant-id": tenantId } : {};
       const [aRes, wRes] = await Promise.all([
-        fetch(`${API_BASE}/v1/agents`).then((r) => r.json()),
-        fetch(`${API_BASE}/v1/workflows`).then((r) => r.json()),
+        fetch(`${API_BASE}/v1/agents`, { headers: hdr }).then((r) => r.json()),
+        fetch(`${API_BASE}/v1/workflows`, { headers: hdr }).then((r) => r.json()),
       ]);
       if (aRes?.ok) setAgents(aRes.agents ?? []);
       if (wRes?.ok) setWorkflows(wRes.workflows ?? []);
@@ -62,9 +63,10 @@ export function AgentDeploymentHub() {
     setLoading(true);
     setMsg("");
     try {
+      const hdr = tenantId ? { "x-tenant-id": tenantId } : {};
       const [tRes, oRes] = await Promise.all([
-        fetch(`${API_BASE}/v1/tasks?tenantId=${encodeURIComponent(tenantId)}&agentId=${encodeURIComponent(selectedAgent)}`).then((r) => r.json()),
-        fetch(`${API_BASE}/v1/comms/outbox?tenantId=${encodeURIComponent(tenantId)}`).then((r) => r.json()),
+        fetch(`${API_BASE}/v1/tasks?tenantId=${encodeURIComponent(tenantId)}&agentId=${encodeURIComponent(selectedAgent)}`, { headers: hdr }).then((r) => r.json()),
+        fetch(`${API_BASE}/v1/comms/outbox?tenantId=${encodeURIComponent(tenantId)}`, { headers: hdr }).then((r) => r.json()),
       ]);
       if (tRes?.ok) setTasks(tRes.tasks ?? []);
       if (oRes?.ok) setOutbox(oRes.jobs ?? []);
@@ -82,7 +84,10 @@ export function AgentDeploymentHub() {
     try {
       const res = await fetch(`${API_BASE}/v1/tasks`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+        },
         body: JSON.stringify({
           tenantId,
           assignedAgentId: selectedAgent,
@@ -110,7 +115,10 @@ export function AgentDeploymentHub() {
     try {
       const res = await fetch(`${API_BASE}/v1/comms/email`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+        },
         body: JSON.stringify({
           tenantId,
           fromAgent: selectedAgent,

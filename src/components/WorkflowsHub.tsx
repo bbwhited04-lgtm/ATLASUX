@@ -89,7 +89,9 @@ export function WorkflowsHub() {
 
   React.useEffect(() => {
     // prefer backend-provided catalog if available
-    fetch(`${API_BASE}/v1/workflows`)
+    fetch(`${API_BASE}/v1/workflows`, {
+      headers: activeTenantId ? { "x-tenant-id": activeTenantId } : {},
+    })
       .then((r) => r.json())
       .then((d) => {
         const rows = Array.isArray(d?.workflows) ? d.workflows : [];
@@ -144,7 +146,10 @@ export function WorkflowsHub() {
 
       const res = await fetch(`${API_BASE}/v1/engine/run`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+        },
         body: JSON.stringify({
           tenantId,
           agentId,

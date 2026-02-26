@@ -106,7 +106,10 @@ export function TaskAutomation() {
 
 const res = await fetch(`${API_BASE}/v1/engine/run`, {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+  },
   body: JSON.stringify({
     tenantId,
     agentId: "binky",

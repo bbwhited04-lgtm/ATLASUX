@@ -1,4 +1,5 @@
 import { API_BASE } from "@/lib/api";
+import { useActiveTenant } from "@/lib/activeTenant";
 import { useState, useRef, useEffect } from "react";
 import { 
   Send, 
@@ -45,6 +46,7 @@ interface AIPlatform {
 }
 
 export function ChatInterface() {
+  const { tenantId } = useActiveTenant();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -187,7 +189,10 @@ const handleSend = async () => {
 
     const resp = await fetch(`${API_BASE}/v1/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+      },
       body: JSON.stringify(body)
     });
 

@@ -168,6 +168,7 @@ export default function Integrations() {
     try {
       const r = await fetch(`${BACKEND_URL}/v1/integrations/summary?tenantId=${encodeURIComponent(tenantId ?? "")}`, {
         credentials: "include",
+        headers: tenantId ? { "x-tenant-id": tenantId } : {},
       });
       const raw = await r.json() as any;
       // Prefer the flat providers map (canonical); fall back to integrations array
@@ -241,6 +242,7 @@ export default function Integrations() {
     await fetch(`${BACKEND_URL}/v1/integrations/${i.oauth}/disconnect?tenantId=${encodeURIComponent(tenantId ?? "")}`, {
       method: "POST",
       credentials: "include",
+      headers: tenantId ? { "x-tenant-id": tenantId } : {},
     });
     await refreshStatus();
     setLoading(null);

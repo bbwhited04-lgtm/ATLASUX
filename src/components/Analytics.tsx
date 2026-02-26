@@ -212,7 +212,9 @@ export function Analytics() {
     try {
       const tid = activeTenantId ?? org_id;
       const qs = new URLSearchParams({ org_id, user_id, tenantId: tid }).toString();
-      const res = await fetch(`${API_BASE}/v1/integrations/summary?${qs}`);
+      const res = await fetch(`${API_BASE}/v1/integrations/summary?${qs}`, {
+        headers: tid ? { "x-tenant-id": tid } : {},
+      });
       const json = await res.json().catch(() => ({}));
       if (json?.providers) setConnectedProviders(json.providers);
     } catch {
@@ -265,7 +267,10 @@ export function Analytics() {
   async function handleDisconnect(provider: OAuthProvider) {
     const tid = activeTenantId ?? org_id;
     const qs = new URLSearchParams({ org_id, user_id, tenantId: tid }).toString();
-    await fetch(`${API_BASE}/v1/integrations/${provider}/disconnect?${qs}`, { method: "POST" }).catch(() => null);
+    await fetch(`${API_BASE}/v1/integrations/${provider}/disconnect?${qs}`, {
+      method: "POST",
+      headers: tid ? { "x-tenant-id": tid } : {},
+    }).catch(() => null);
     await loadStatus();
   }
 

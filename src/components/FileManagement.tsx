@@ -91,6 +91,7 @@ export function FileManagement() {
     try {
       const r = await fetch(`${API_BASE}/v1/files?tenantId=${encodeURIComponent(tenantId)}`, {
         credentials: "include",
+        headers: { "x-tenant-id": tenantId },
       });
       const data = await r.json() as any;
       if (data?.ok) setFiles(data.files ?? []);
@@ -114,6 +115,7 @@ export function FileManagement() {
       const r = await fetch(`${API_BASE}/v1/files/upload?tenantId=${encodeURIComponent(tenantId)}`, {
         method: "POST",
         credentials: "include",
+        headers: { "x-tenant-id": tenantId },
         body: form,
       });
       const data = await r.json() as any;
@@ -136,7 +138,7 @@ export function FileManagement() {
     try {
       const r = await fetch(
         `${API_BASE}/v1/files/url?tenantId=${encodeURIComponent(tenantId)}&path=${encodeURIComponent(file.path)}`,
-        { credentials: "include" },
+        { credentials: "include", headers: { "x-tenant-id": tenantId } },
       );
       const data = await r.json() as any;
       if (data?.url) {
@@ -158,7 +160,7 @@ export function FileManagement() {
     try {
       const r = await fetch(
         `${API_BASE}/v1/files?tenantId=${encodeURIComponent(tenantId)}&path=${encodeURIComponent(file.path)}`,
-        { method: "DELETE", credentials: "include" },
+        { method: "DELETE", credentials: "include", headers: { "x-tenant-id": tenantId } },
       );
       const data = await r.json() as any;
       if (data?.ok) {

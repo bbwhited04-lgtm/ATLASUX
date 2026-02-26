@@ -40,7 +40,9 @@ const navigate = useNavigate();
         return;
       }
       try {
-        const res = await fetch(`${API_BASE}/v1/decisions?tenantId=${encodeURIComponent(tenantId)}&status=AWAITING_HUMAN&take=200`);
+        const res = await fetch(`${API_BASE}/v1/decisions?tenantId=${encodeURIComponent(tenantId)}&status=AWAITING_HUMAN&take=200`, {
+          headers: { "x-tenant-id": tenantId },
+        });
         const json = await res.json();
         const count = Array.isArray(json?.memos) ? json.memos.length : 0;
         if (!cancelled) setPendingDecisionsCount(count);

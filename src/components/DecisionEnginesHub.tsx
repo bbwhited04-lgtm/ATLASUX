@@ -1,6 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { API_BASE } from "../lib/api";
+import { useActiveTenant } from "../lib/activeTenant";
 
 type DecisionPresetId = "binky" | "tina" | "larry" | "jenny" | "benny" | "cheryl";
 
@@ -72,10 +73,13 @@ function makeTemplate(preset: DecisionPresetId, question: string, context: strin
   };
 }
 
-async function postAudit(action: string, detail?: any) {
+async function postAudit(action: string, tenantId: string | null, detail?: any) {
   await fetch(`${API_BASE}/v1/audit`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+    },
     body: JSON.stringify({
       actor_type: "user",
       action,
@@ -86,6 +90,7 @@ async function postAudit(action: string, detail?: any) {
 }
 
 export function DecisionEnginesHub() {
+  const { tenantId } = useActiveTenant();
   const [preset, setPreset] = React.useState<DecisionPresetId>("binky");
   const [question, setQuestion] = React.useState("");
   const [context, setContext] = React.useState("");
@@ -97,12 +102,12 @@ export function DecisionEnginesHub() {
   const generate = async () => {
     const pkt = makeTemplate(preset, question, context);
     setPacket(pkt);
-    await postAudit("decision.packet.generate", { preset, packet_id: pkt.packet_id });
+    await postAudit("decision.packet.generate", tenantId, { preset, packet_id: pkt.packet_id });
   };
 
   const requestApproval = async () => {
     if (!packet) return;
-    await postAudit("decision.packet.approval_requested", { preset, packet_id: packet.packet_id, question: packet.question });
+    await postAudit("decision.packet.approval_requested", tenantId, { preset, packet_id: packet.packet_id, question: packet.question });
     toast.success("Approval requested (audit logged). Paste this packet into the approval email thread.");
   };
 

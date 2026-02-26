@@ -56,7 +56,9 @@ function RootLayoutInner() {
     setAtlasStateLoading(true);
     setAtlasStateErr(null);
     try {
-      const res = await fetch(`${API_BASE}/v1/api/system/state/atlas_online`);
+      const res = await fetch(`${API_BASE}/v1/api/system/state/atlas_online`, {
+        headers: tenantId ? { "x-tenant-id": tenantId } : {},
+      });
       const data = await res.json();
       if (!data?.ok) throw new Error(data?.error ?? "Failed to read atlas state");
       // Backend has evolved across revisions. Accept multiple shapes:
@@ -82,7 +84,14 @@ function RootLayoutInner() {
     setAtlasStateErr(null);
     try {
       const url = next ? `${API_BASE}/v1/api/system/atlas/online` : `${API_BASE}/v1/api/system/atlas/offline`;
-      const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+        },
+        body: JSON.stringify({}),
+      });
       const data = await res.json();
       if (!data?.ok) throw new Error(data?.error ?? "Failed to set atlas state");
       const s = data?.state ?? null;
@@ -122,7 +131,9 @@ function RootLayoutInner() {
         return;
       }
       try {
-        const res = await fetch(`${API_BASE}/v1/decisions?tenantId=${encodeURIComponent(tenantId)}&status=AWAITING_HUMAN&take=200`);
+        const res = await fetch(`${API_BASE}/v1/decisions?tenantId=${encodeURIComponent(tenantId)}&status=AWAITING_HUMAN&take=200`, {
+          headers: { "x-tenant-id": tenantId },
+        });
         const json = await res.json();
         const count = Array.isArray(json?.memos) ? json.memos.length : 0;
         if (!cancelled) setPendingDecisionsCount(count);

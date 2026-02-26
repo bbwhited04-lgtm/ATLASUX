@@ -50,7 +50,11 @@ export function MobileConnectionProvider({ children }: { children: React.ReactNo
 
     // Try backend first (real-ish flow). Fallback to local-only demo if backend isn't running.
     try {
-      const res = await fetch(`${API_BASE}/v1/mobile/pair/start`, { method: "POST" });
+      const tid = localStorage.getItem("atlas_active_tenant_id") ?? "";
+      const res = await fetch(`${API_BASE}/v1/mobile/pair/start`, {
+        method: "POST",
+        headers: tid ? { "x-tenant-id": tid } : {},
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "pair_start_failed");
       setPairingCode(String(data.code));
