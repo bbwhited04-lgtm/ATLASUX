@@ -225,7 +225,7 @@ const digitalProducts: DigitalProduct[] = [
       "6 difficult situation emails",
       "6 networking & relationship emails",
     ],
-    paymentLink: "https://buy.stripe.com/00g5kE4GZdGf622djJ8IU09",
+    paymentLink: "hhttps://buy.stripe.com/28E4gA4GZby7duu1B18IU0j",
     downloadUrl: "/downloads/50-business-email-prompts.txt",
   },
   {
@@ -248,7 +248,7 @@ const digitalProducts: DigitalProduct[] = [
       "6 business advisory & strategy",
       "6 practice management prompts",
     ],
-    paymentLink: "https://buy.stripe.com/28EcN6gpHgSrfCCcfF8IU0a",
+    paymentLink: "https://buy.stripe.com/14AcN66P78lV9ee2F58IU0k",
     downloadUrl: "/downloads/50-accounting-bookkeeper-prompts.txt",
   },
   {
