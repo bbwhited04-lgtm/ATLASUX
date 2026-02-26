@@ -15,6 +15,10 @@
     "worker:engine": "node dist/workers/engineLoop.js",
     "worker:email": "node dist/workers/emailSender.js",
     "worker:scheduler": "node dist/workers/schedulerWorker.js",
+    "worker:jobs": "node dist/workers/jobWorker.js",
+    "worker:sms": "node dist/workers/smsWorker.js",
+    "worker:reddit": "node dist/workers/redditWorker.js",
+    "worker:social": "node dist/workers/socialMonitoringWorker.js",
     "kb:chunk-docs": "ts-node scripts/chunkKbDocuments.ts"
   },
   "prisma": {

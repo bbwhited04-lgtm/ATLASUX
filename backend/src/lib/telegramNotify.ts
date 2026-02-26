@@ -15,7 +15,7 @@
  *   await sendTelegramDirect(chatId, "Hello from Atlas");
  */
 
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 
 const TG_API = "https://api.telegram.org/bot";
 

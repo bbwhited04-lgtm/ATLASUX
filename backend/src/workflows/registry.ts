@@ -1,4 +1,4 @@
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 import { n8nWorkflows, type AtlasWorkflowDef } from "./n8n/manifest.js";
 import { getKbContext } from "../core/kb/getKbContext.js";
 import { runLLM, type AuditHook } from "../core/engine/brainllm.js";

@@ -20,14 +20,17 @@
  *   send_telegram_message     — send a Telegram notification to the tenant's default chat
  *   search_my_memories        — unified recall: conversation memory, audit trail, workflow history, agent KB
  *   delegate_task             — agent-to-agent task handoff: creates a queued AGENT_TASK job for another agent
+ *   post_to_x                — post a tweet via X API v2 (Kelly's primary tool)
+ *   search_x                 — search recent tweets on X (app-only bearer token)
  *
  * Usage: resolveAgentTools(tenantId, query, agentId) — returns formatted context string.
  */
 
-import { prisma }                    from "../../prisma.js";
+import { prisma }                    from "../../db/prisma.js";
 import { getKbContext }              from "../kb/getKbContext.js";
 import { callGraph }                 from "../../lib/m365Tools.js";
 import { sendTelegramNotification }  from "../../lib/telegramNotify.js";
+import { postTweet, searchRecentTweets } from "../../services/x.js";
 import { getMemory }                 from "./agentMemory.js";
 
 export type ToolResult = {
@@ -511,6 +514,104 @@ async function delegateTask(
   }
 }
 
+// ── Tool: post_to_x ─────────────────────────────────────────────────────────
+
+async function getXAccessToken(tenantId: string): Promise<string | null> {
+  // 1. Try per-tenant OAuth token from vault
+  try {
+    const integration = await prisma.integration.findFirst({
+      where: { tenantId, provider: "x", connected: true },
+    });
+    if (integration?.access_token) return integration.access_token;
+  } catch { /* fall through */ }
+
+  // 2. Fallback to env var (owner's token)
+  return process.env.X_ACCESS_TOKEN ?? null;
+}
+
+async function postToX(tenantId: string, agentId: string, query: string): Promise<ToolResult> {
+  try {
+    const token = await getXAccessToken(tenantId);
+    if (!token) {
+      return { tool: "post_to_x", data: "X not connected — no access token found. Connect X in Settings > Integrations.", usedAt: new Date().toISOString() };
+    }
+
+    // Extract tweet text: everything after "tweet:", "post:", or the full query
+    const textMatch = query.match(/(?:tweet|post|publish|share|announce)\s*(?:to x|on x|on twitter|to twitter)?\s*[:\-–]\s*(.+)/is)
+                   ?? query.match(/(?:tweet|post)\s+(?:this|that|about)\s*[:\-–]?\s*(.+)/is);
+    const tweetText = textMatch ? textMatch[1].trim() : query.trim();
+
+    if (tweetText.length > 280) {
+      return { tool: "post_to_x", data: `Tweet too long (${tweetText.length} chars, max 280). Shorten and try again.`, usedAt: new Date().toISOString() };
+    }
+
+    const result = await postTweet(token, tweetText);
+
+    if (!result.ok) {
+      return { tool: "post_to_x", data: `Failed to post: ${result.error}`, usedAt: new Date().toISOString() };
+    }
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorUserId: null,
+        actorExternalId: agentId,
+        actorType: "agent",
+        level: "info",
+        action: "X_TWEET_POSTED",
+        entityType: "tweet",
+        entityId: result.tweetId ?? null,
+        message: `${agentId} posted tweet: ${tweetText.slice(0, 120)}`,
+        meta: { tweetId: result.tweetId, agentId, charCount: tweetText.length },
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
+    return {
+      tool: "post_to_x",
+      data: `Tweet posted successfully.\nTweet ID: ${result.tweetId}\nText: ${result.text ?? tweetText}\nURL: https://x.com/i/status/${result.tweetId}`,
+      usedAt: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    return { tool: "post_to_x", data: `[error posting to X: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
+// ── Tool: search_x ──────────────────────────────────────────────────────────
+
+async function searchX(tenantId: string, query: string): Promise<ToolResult> {
+  try {
+    // Extract search terms
+    const searchMatch = query.match(/(?:search|find|look up|trending|monitor|check)\s+(?:on\s+)?(?:x|twitter)\s*(?:for)?\s*[:\-–]?\s*(.+)/is);
+    const searchTerms = searchMatch ? searchMatch[1].trim() : query.replace(/\b(x|twitter|search|find|trending|hot|topics?|check|monitor)\b/gi, "").trim();
+
+    if (!searchTerms || searchTerms.length < 2) {
+      return { tool: "search_x", data: "No search terms provided. Try: 'search X for AI agents'", usedAt: new Date().toISOString() };
+    }
+
+    const tweets = await searchRecentTweets(searchTerms, 10);
+    if (!tweets.length) {
+      return { tool: "search_x", data: `No recent tweets found for "${searchTerms}".`, usedAt: new Date().toISOString() };
+    }
+
+    const lines = tweets.map((t, i) => {
+      const metrics = t.public_metrics
+        ? ` (${t.public_metrics.like_count} likes, ${t.public_metrics.retweet_count} RT, ${t.public_metrics.impression_count ?? "?"} views)`
+        : "";
+      return `${i + 1}. ${t.text.slice(0, 200)}${metrics}\n   ID: ${t.id} | ${t.created_at ?? ""}`;
+    });
+
+    return {
+      tool: "search_x",
+      data: `X search results for "${searchTerms}" (${tweets.length} tweets):\n\n${lines.join("\n\n")}`,
+      usedAt: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    return { tool: "search_x", data: `[error searching X: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
 // ── Pattern detection ─────────────────────────────────────────────────────────
 
 const SUBSCRIPTION_PATTERNS = [
@@ -607,6 +708,19 @@ const DELEGATE_PATTERNS = [
   /\b(task\s+for|job\s+for|work\s+for)\s+\w+/i,
 ];
 
+const X_POST_PATTERNS = [
+  /\b(post|tweet|publish|send)\s+(to|on)\s+(x|twitter)\b/i,
+  /\b(tweet|post)\s*(this|that|it|about|:)/i,
+  /\b(share|announce|publish)\s+(on|to)\s+(x|twitter)\b/i,
+  /\b(draft|compose|write)\s+(a\s+)?(tweet|x post|post for x)\b/i,
+];
+
+const X_SEARCH_PATTERNS = [
+  /\b(search|find|look up|trending|what.*(hot|trending))\s+(on\s+)?(x|twitter)\b/i,
+  /\b(x|twitter)\s+(trends?|search|mentions?|hot topics?)\b/i,
+  /\b(check|monitor)\s+(x|twitter)\b/i,
+];
+
 // ── Agent → allowed tools map (from WF-107 approved proposals) ───────────────
 // Controls which tools can fire for which agent — prevents unnecessary DB hits.
 
@@ -628,7 +742,7 @@ const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   link:        ["calendar", "memory"],
   cornwall:    ["calendar", "memory"],
   donna:       ["calendar", "memory"],
-  kelly:       ["calendar", "memory"],
+  kelly:       ["calendar", "memory", "xPost", "xSearch"],
   timmy:       ["calendar", "memory"],
   fran:        ["calendar", "memory"],
   dwight:      ["calendar", "memory"],
@@ -636,7 +750,7 @@ const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   terry:       ["calendar", "memory"],
   penny:       ["calendar", "memory"],
   archy:       ["calendar", "memory"],
-  sunday:      ["calendar", "memory", "delegate"],
+  sunday:      ["calendar", "memory", "delegate", "xSearch"],
   venny:       ["calendar", "memory"],
 };
 
@@ -656,6 +770,8 @@ export type ToolNeeds = {
   telegram:     boolean;
   memory:       boolean;
   delegate:     boolean;
+  xPost:        boolean;
+  xSearch:      boolean;
   query:        string;
 };
 
@@ -681,6 +797,8 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     telegram:     can("telegram")     && TELEGRAM_PATTERNS.some(p => p.test(q)),
     memory:       can("memory")       && MEMORY_PATTERNS.some(p => p.test(q)),
     delegate:     can("delegate")     && DELEGATE_PATTERNS.some(p => p.test(q)),
+    xPost:        can("xPost")        && X_POST_PATTERNS.some(p => p.test(q)),
+    xSearch:      can("xSearch")      && X_SEARCH_PATTERNS.some(p => p.test(q)),
     query:        q,
   };
 }
@@ -718,6 +836,8 @@ export async function resolveAgentTools(
     needs.telegram     ? sendTelegramMessage(tenantId, needs.query)            : Promise.resolve(null),
     needs.memory       ? searchMyMemories(tenantId, aid, needs.query)          : Promise.resolve(null),
     needs.delegate     ? delegateTask(tenantId, aid, needs.query)              : Promise.resolve(null),
+    needs.xPost        ? postToX(tenantId, aid, needs.query)                   : Promise.resolve(null),
+    needs.xSearch      ? searchX(tenantId, needs.query)                        : Promise.resolve(null),
   ];
 
   const results = (await Promise.all(jobs)).filter(Boolean) as ToolResult[];

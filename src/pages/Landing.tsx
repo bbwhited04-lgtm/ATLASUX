@@ -233,6 +233,9 @@ export default function Landing() {
             <li>Per-category blog placeholders — posts without a featured image now show a category-colored gradient with the category initial instead of the generic Atlas logo; 12 category-specific color schemes (AI, Marketing, Security, Strategy, etc.); applies to blog cards, list view, and full post hero</li>
             <li>Fixed seedAiKb.ts import path — script was referencing wrong Prisma path (../prisma.js → ../db/prisma.js); now runnable on Render to seed 62 AI/tech KB documents</li>
             <li>Job metering — job creation now tracked in usage_meters table per user/tenant/month (was unmetered before)</li>
+            <li>Fixed 13 broken Prisma imports across backend — emailSender, tasksRoutes, ledger, telegramNotify, growthLoop, guardrails, decisionMemos, metricsSnapshot, systemState, workflows registry, agentTools, and 2 seed scripts all pointed to non-existent ../prisma.js; corrected to ../db/prisma.js</li>
+            <li>X (Twitter) API v2 service — full service library (post tweet, post thread, delete, search recent, get tweet, like, retweet, user profile); Kelly now has post_to_x and search_x agent tools with audit logging; approval-gated posting with token from vault or env fallback</li>
+            <li>Added 4 missing worker scripts to package.json — jobs, SMS, Reddit, and social monitoring workers now invocable via npm run</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

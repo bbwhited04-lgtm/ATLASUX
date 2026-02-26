@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 import { meterJobCreated } from "../lib/usageMeter.js";
 
 type CreateTaskRequest = {

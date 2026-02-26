@@ -1,4 +1,4 @@
-import { prisma } from "../prisma.js"; // adjust import to your prisma client
+import { prisma } from "../db/prisma.js";
 import { Prisma, LedgerCategory, LedgerEntryType } from "@prisma/client";
 
 

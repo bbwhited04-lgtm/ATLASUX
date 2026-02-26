@@ -6,7 +6,7 @@
  * - background workers (separate process) can read the same state
  */
 
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 
 export type SystemStateRow = {
   key: string;

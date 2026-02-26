@@ -1,4 +1,4 @@
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 import { computeMetricsSnapshot, upsertDailySnapshot } from "./metricsSnapshot.js";
 import { createDecisionMemo } from "./decisionMemos.js";
 
