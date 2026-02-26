@@ -109,6 +109,26 @@ function agentEmail(agentId: string): string | null {
 }
 
 /**
+ * Determine report recipients based on org hierarchy.
+ * Reports always go to Atlas (CEO). The agent's direct leader is CC'd
+ * if they are not Atlas (so Binky, Sunday, etc. stay in the loop).
+ */
+function getReportRecipients(agentId: string): { to: string; cc: string[] } {
+  const atlasAddr = agentEmail("atlas") ?? "atlas@deadapp.info";
+  const agent = agentRegistry.find((a) => a.id === agentId);
+  const leader = agent?.reportsTo;
+  const cc: string[] = [];
+
+  // CC the direct leader if they aren't atlas or chairman
+  if (leader && leader !== "atlas" && leader !== "chairman") {
+    const leaderAddr = agentEmail(leader);
+    if (leaderAddr) cc.push(leaderAddr);
+  }
+
+  return { to: atlasAddr, cc };
+}
+
+/**
  * Wrap a runLLM call with graceful fallback.
  * Returns the LLM text on success, or a fallback string on any error.
  */
@@ -223,20 +243,30 @@ function createN8nHandler(def: AtlasWorkflowDef): WorkflowHandler {
       },
     }).catch(() => null);
 
-    // 3. Queue result email to owner agent (if email configured)
-    const toEmail = agentEmail(def.ownerAgent);
-    if (toEmail) {
+    // 3. Queue result email to Atlas (CEO) + CC agent's direct leader
+    const { to: reportTo, cc: reportCc } = getReportRecipients(def.ownerAgent);
+    const reportSubject = `[${def.id}] ${def.name} — Run Complete`;
+    const reportText = [
+      `Workflow: ${def.name}`,
+      `Agent:    ${def.ownerAgent.toUpperCase()}`,
+      `Trace:    ${ctx.traceId ?? ctx.intentId}`,
+      `KB docs:  ${kb.items.length}`,
+      def.humanInLoop ? "\n⚠️ HUMAN APPROVAL REQUIRED before external action.\n" : "",
+      `\n${llmText}`,
+    ].join("\n");
+
+    await queueEmail(ctx, {
+      to: reportTo,
+      fromAgent: def.ownerAgent,
+      subject: reportSubject,
+      text: reportText,
+    });
+    for (const cc of reportCc) {
       await queueEmail(ctx, {
-        to: toEmail,
-        fromAgent: "atlas",
-        subject: `[${def.id}] ${def.name} — Run Complete`,
-        text: [
-          `Workflow: ${def.name}`,
-          `Trace: ${ctx.traceId ?? ctx.intentId}`,
-          `KB docs used: ${kb.items.length}`,
-          def.humanInLoop ? "\n⚠️ HUMAN APPROVAL REQUIRED before external action.\n" : "",
-          `\n${llmText}`,
-        ].join("\n"),
+        to: cc,
+        fromAgent: def.ownerAgent,
+        subject: `[CC] ${reportSubject}`,
+        text: reportText,
       });
     }
 
@@ -563,19 +593,20 @@ const handlers: Record<string, WorkflowHandler> = {
 
     await writeStepAudit(ctx, "brief.composed", `Brief composed (${llmText.length} chars, ${kb.items.length} KB docs)`);
 
-    const toEmail = agentEmail("binky") ?? "binky@deadapp.info";
+    // Send brief to Atlas (CEO) — Binky reports to Atlas
+    const { to: briefTo } = getReportRecipients("binky");
     await queueEmail(ctx, {
-      to: toEmail,
+      to: briefTo,
       subject: `[DAILY BRIEF] ${new Date().toISOString().slice(0, 10)}`,
-      text: `Daily Executive Brief\n${"=".repeat(40)}\n\n${llmText}\n\nTrace: ${ctx.traceId ?? ctx.intentId}`,
+      text: `Daily Executive Brief\n${"=".repeat(40)}\n\nPrepared by: BINKY (CRO)\n\n${llmText}\n\nTrace: ${ctx.traceId ?? ctx.intentId}`,
       fromAgent: "binky",
     });
 
-    await writeStepAudit(ctx, "brief.queued", `Brief queued to ${toEmail}`);
+    await writeStepAudit(ctx, "brief.queued", `Brief queued to ${briefTo}`);
 
     // CC DAILY-INTEL mailbox as central reporting hub
     const dailyIntelEmail = agentEmail("daily_intel") ?? process.env.AGENT_EMAIL_DAILY_INTEL?.trim();
-    if (dailyIntelEmail && dailyIntelEmail !== toEmail) {
+    if (dailyIntelEmail && dailyIntelEmail !== briefTo) {
       await queueEmail(ctx, {
         to: dailyIntelEmail,
         fromAgent: "binky",
@@ -677,27 +708,36 @@ function createPlatformIntelHandler(platformName: string, searchQuery: string): 
       { kbItems: kb.items.length, serpActive: !!serpData },
     );
 
-    // 4. Email report to agent mailbox
-    const agentMailbox = agentEmail(ctx.agentId);
-    if (agentMailbox) {
+    // 4. Email report to Atlas (CEO) + CC agent's direct leader
+    const { to: intelTo, cc: intelCc } = getReportRecipients(ctx.agentId);
+    const intelSubject = `[${platformName.toUpperCase()} INTEL] ${new Date().toISOString().slice(0, 10)} — Hot Topics & Trends`;
+    const intelBody = [
+      `${platformName} Platform Intelligence Report`,
+      "=".repeat(50),
+      `Agent: ${ctx.agentId.toUpperCase()} | Date: ${new Date().toISOString().slice(0, 10)}`,
+      `SERP: ${serpData ? "LIVE" : "KB-only"} | KB docs: ${kb.items.length}`,
+      `Trace: ${ctx.traceId ?? ctx.intentId}`,
+      `\n${llmText}`,
+    ].join("\n");
+
+    await queueEmail(ctx, {
+      to: intelTo,
+      fromAgent: ctx.agentId,
+      subject: intelSubject,
+      text: intelBody,
+    });
+    for (const cc of intelCc) {
       await queueEmail(ctx, {
-        to: agentMailbox,
+        to: cc,
         fromAgent: ctx.agentId,
-        subject: `[${platformName.toUpperCase()} INTEL] ${new Date().toISOString().slice(0, 10)} — Hot Topics & Trends`,
-        text: [
-          `${platformName} Platform Intelligence Report`,
-          "=".repeat(50),
-          `Agent: ${ctx.agentId.toUpperCase()} | Date: ${new Date().toISOString().slice(0, 10)}`,
-          `SERP: ${serpData ? "LIVE" : "KB-only"} | KB docs: ${kb.items.length}`,
-          `Trace: ${ctx.traceId ?? ctx.intentId}`,
-          `\n${llmText}`,
-        ].join("\n"),
+        subject: `[CC] ${intelSubject}`,
+        text: intelBody,
       });
     }
 
     // 5. CC DAILY-INTEL hub
     const hubEmail = process.env.AGENT_EMAIL_DAILY_INTEL?.trim();
-    if (hubEmail && hubEmail !== agentMailbox) {
+    if (hubEmail && hubEmail !== intelTo) {
       await queueEmail(ctx, {
         to: hubEmail,
         fromAgent: ctx.agentId,
@@ -1420,11 +1460,11 @@ handlers["WF-108"] = async (ctx) => {
     };
   }
 
-  // 6. Email Reynolds + Billy with confirmation
+  // 6. Email Atlas (CEO) + CC Reynolds' leader (Sunday) + CC Billy
   const frontendUrl  = process.env.FRONTEND_URL?.trim() ?? "https://atlasux.cloud";
   const blogPostUrl  = `${frontendUrl}/#/app/blog/${publishedSlug}`;
   const billyEmail   = process.env.BILLING_EMAIL?.trim() ?? "billy@deadapp.info";
-  const reynoldsEmail = agentEmail("reynolds") ?? "reynolds@deadapp.info";
+  const { to: blogReportTo, cc: blogReportCc } = getReportRecipients("reynolds");
 
   const emailBody = [
     `Blog Post Published Successfully`,
@@ -1446,15 +1486,26 @@ handlers["WF-108"] = async (ctx) => {
     "...",
   ].join("\n");
 
+  // Primary: Atlas
   await queueEmail(ctx, {
-    to:        reynoldsEmail,
+    to:        blogReportTo,
     fromAgent: "reynolds",
     subject:   `[BLOG PUBLISHED] ${title.slice(0, 80)} — ${today}`,
     text:      emailBody,
   });
 
-  // CC Billy
-  if (billyEmail !== reynoldsEmail) {
+  // CC: Reynolds' leader (Sunday)
+  for (const cc of blogReportCc) {
+    await queueEmail(ctx, {
+      to:        cc,
+      fromAgent: "reynolds",
+      subject:   `[CC] [BLOG PUBLISHED] ${title.slice(0, 70)} — ${today}`,
+      text:      emailBody,
+    });
+  }
+
+  // CC Billy (owner)
+  if (billyEmail !== blogReportTo) {
     await queueEmail(ctx, {
       to:        billyEmail,
       fromAgent: "reynolds",
