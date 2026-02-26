@@ -50,6 +50,7 @@ import { budgetRoutes } from "./routes/budgetRoutes.js";
 import { filesRoutes } from "./routes/filesRoutes.js";
 import { userRoutes } from "./routes/userRoutes.js";
 import { metaRoutes } from "./routes/metaRoutes.js";
+import { googleRoutes } from "./routes/googleRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -223,6 +224,9 @@ await app.register(userRoutes, { prefix: "/v1/user" });
 
 // Meta (Facebook/Instagram) — data deletion callback (GDPR compliance)
 await app.register(metaRoutes, { prefix: "/v1/meta" });
+
+// Google — data deletion callback (OAuth verification compliance)
+await app.register(googleRoutes, { prefix: "/v1/google" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
