@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { engineTick } from "../core/engine/engine.js";
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 
 type EngineRunRequest = {
   tenantId: string;

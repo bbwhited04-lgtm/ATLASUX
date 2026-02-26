@@ -101,6 +101,22 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
       },
     });
 
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: null,
+        actorExternalId: (req as any).auth?.userId ?? null,
+        level: "info",
+        action: "CRM_CONTACT_UPDATED",
+        entityType: "crm_contact",
+        entityId: id,
+        message: `Contact updated: ${id}`,
+        meta: {},
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
     return reply.send({ ok: true, contact: updated });
   });
 
@@ -113,6 +129,23 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
 
     await prisma.crmContact.delete({ where: { id } });
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: null,
+        actorExternalId: (req as any).auth?.userId ?? null,
+        level: "info",
+        action: "CRM_CONTACT_DELETED",
+        entityType: "crm_contact",
+        entityId: id,
+        message: `Contact deleted: ${id}`,
+        meta: {},
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
     return reply.send({ ok: true });
   });
 
@@ -126,6 +159,23 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     if (!ids.length) return reply.code(400).send({ ok: false, error: "ids[] required" });
 
     const { count } = await prisma.crmContact.deleteMany({ where: { tenantId, id: { in: ids } } });
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: null,
+        actorExternalId: (req as any).auth?.userId ?? null,
+        level: "info",
+        action: "CRM_CONTACTS_BULK_DELETED",
+        entityType: "crm_contact",
+        entityId: ids.join(",").slice(0, 200),
+        message: `Bulk deleted ${count} contacts`,
+        meta: { ids, count },
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
     return reply.send({ ok: true, deleted: count });
   });
 

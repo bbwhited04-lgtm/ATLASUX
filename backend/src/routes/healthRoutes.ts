@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 
 export const healthRoutes: FastifyPluginAsync = async (app) => {
   // No-dependency liveness

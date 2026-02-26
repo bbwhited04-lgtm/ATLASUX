@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 
 const DistributionEventSchema = z.object({
   agent:       z.string().min(1).max(100).default("unknown"),

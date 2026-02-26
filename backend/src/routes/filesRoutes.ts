@@ -14,6 +14,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { createClient } from "@supabase/supabase-js";
 import multipart from "@fastify/multipart";
 import { Readable } from "stream";
+import { prisma } from "../db/prisma.js";
 
 const BUCKET = process.env.KB_UPLOAD_BUCKET ?? "kb_uploads";
 const SIGNED_URL_TTL = 3600; // 1 hour
@@ -132,6 +133,23 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
       const storage = makeStorage();
       const { error } = await storage.from(BUCKET).remove([path]);
       if (error) return reply.code(500).send({ ok: false, error: error.message });
+
+      await prisma.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: (req as any).auth?.userId ?? null,
+          level: "info",
+          action: "FILE_DELETED",
+          entityType: "file",
+          entityId: path.slice(0, 200),
+          message: `File deleted: ${path}`,
+          meta: { path },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+
       return reply.send({ ok: true });
     } catch (e: any) {
       return reply.code(500).send({ ok: false, error: e?.message ?? "Delete failed" });

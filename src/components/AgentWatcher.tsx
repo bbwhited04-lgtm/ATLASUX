@@ -128,8 +128,8 @@ export function AgentWatcher() {
   // Auto-poll — audit every 4 s, jobs every 8 s
   useEffect(() => {
     if (paused) return;
-    const auditTimer = setInterval(fetchAudit, 4000);
-    const jobsTimer  = setInterval(fetchJobs, 8000);
+    const auditTimer = setInterval(fetchAudit, 15000);
+    const jobsTimer  = setInterval(fetchJobs, 30000);
     return () => { clearInterval(auditTimer); clearInterval(jobsTimer); };
   }, [paused, fetchAudit, fetchJobs]);
 
@@ -171,7 +171,7 @@ export function AgentWatcher() {
             <Activity className="w-6 h-6 text-cyan-400" />
             Agent Watcher
           </h2>
-          <p className="text-slate-400 text-sm mt-1">Live activity feed — auto-refreshes every 4 seconds</p>
+          <p className="text-slate-400 text-sm mt-1">Live activity feed — auto-refreshes every 15 seconds</p>
         </div>
         <div className="flex items-center gap-2">
           {lastRefresh && (

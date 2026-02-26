@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 import { TicketCategory, TicketSeverity, TicketStatus } from "@prisma/client";
 
 // Lightweight beta ticketing (NOT a full helpdesk).

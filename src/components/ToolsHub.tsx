@@ -49,7 +49,7 @@ const TOOLS: ToolRow[] = [
 
 function Badge({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+    <span className="inline-flex items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-300">
       {children}
     </span>
   );
@@ -60,49 +60,49 @@ export function ToolsHub() {
     <div className="p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Tools</h1>
-          <p className="text-sm text-slate-600">Internal capabilities that agents can use (governed by SGL).</p>
+          <h1 className="text-2xl font-semibold text-white">Tools</h1>
+          <p className="text-sm text-slate-400">Internal capabilities that agents can use (governed by SGL).</p>
         </div>
-        <div className="flex items-center gap-2 text-slate-600">
+        <div className="flex items-center gap-2 text-slate-400">
           <Wrench className="h-5 w-5 text-cyan-300" />
           <Badge>Constitution-first</Badge>
         </div>
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-slate-900">
+        <div className="rounded-2xl border border-cyan-500/20 bg-slate-900/50 p-5 backdrop-blur-xl">
+          <div className="flex items-center gap-2 text-white">
             <ShieldCheck className="h-5 w-5 text-cyan-300" />
             <div className="font-semibold">Governance</div>
           </div>
-          <div className="mt-2 text-sm text-slate-600">Every action becomes an intent, evaluated before execution.</div>
+          <div className="mt-2 text-sm text-slate-400">Every action becomes an intent, evaluated before execution.</div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-slate-900">
+        <div className="rounded-2xl border border-cyan-500/20 bg-slate-900/50 p-5 backdrop-blur-xl">
+          <div className="flex items-center gap-2 text-white">
             <Lock className="h-5 w-5 text-cyan-300" />
             <div className="font-semibold">No Backdoors</div>
           </div>
-          <div className="mt-2 text-sm text-slate-600">No override switches. Bypass attempts trigger shutdown + audit.</div>
+          <div className="mt-2 text-sm text-slate-400">No override switches. Bypass attempts trigger shutdown + audit.</div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-slate-900">
+        <div className="rounded-2xl border border-cyan-500/20 bg-slate-900/50 p-5 backdrop-blur-xl">
+          <div className="flex items-center gap-2 text-white">
             <KeyRound className="h-5 w-5 text-cyan-300" />
             <div className="font-semibold">Two-Key Control</div>
           </div>
-          <div className="mt-2 text-sm text-slate-600">REVIEW actions require explicit human approval before execution.</div>
+          <div className="mt-2 text-sm text-slate-400">REVIEW actions require explicit human approval before execution.</div>
         </div>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div className="grid grid-cols-12 gap-2 border-b border-slate-200 px-4 py-3 text-xs text-slate-600">
+      <div className="mt-6 overflow-hidden rounded-2xl border border-cyan-500/20 bg-slate-900/50">
+        <div className="grid grid-cols-12 gap-2 border-b border-cyan-500/10 px-4 py-3 text-xs text-slate-500">
           <div className="col-span-4">Tool</div>
           <div className="col-span-2">Type</div>
           <div className="col-span-2">Status</div>
           <div className="col-span-4">Description</div>
         </div>
         {TOOLS.map((t) => (
-          <div key={t.name} className="grid grid-cols-12 gap-2 px-4 py-3 text-sm text-slate-700 border-b border-cyan-500/5 last:border-b-0">
-            <div className="col-span-4 font-medium text-slate-900 flex items-center gap-2">
+          <div key={t.name} className="grid grid-cols-12 gap-2 px-4 py-3 text-sm text-slate-300 border-b border-cyan-500/5 last:border-b-0">
+            <div className="col-span-4 font-medium text-white flex items-center gap-2">
               {t.type === "Guard" ? <ShieldCheck className="h-4 w-4 text-cyan-300" /> : t.type === "Runtime" ? <Server className="h-4 w-4 text-cyan-300" /> : <Workflow className="h-4 w-4 text-cyan-300" />}
               {t.name}
             </div>
@@ -112,7 +112,7 @@ export function ToolsHub() {
                 {t.status}
               </span>
             </div>
-            <div className="col-span-4 text-slate-600">{t.description}</div>
+            <div className="col-span-4 text-slate-400">{t.description}</div>
           </div>
         ))}
       </div>

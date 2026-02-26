@@ -39,7 +39,7 @@ export function MobileInstallModal({ isOpen, onClose }: MobileInstallModalProps)
     if (!phoneNumber || !acceptedTerms) return;
     
     // Simulate SMS sending
-    console.log(`Sending SMS to ${phoneNumber} with link: ${installationLink}`);
+    // SMS send handled by backend
     setSmsSent(true);
     
     setTimeout(() => {

@@ -75,6 +75,22 @@ export const cannedResponseRoutes: FastifyPluginAsync = async (app) => {
       },
     });
 
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: null,
+        actorExternalId: (req as any).auth?.userId ?? null,
+        level: "info",
+        action: "CANNED_RESPONSE_UPDATED",
+        entityType: "canned_response",
+        entityId: id,
+        message: `Canned response updated: ${response.title}`,
+        meta: {},
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
     return reply.send({ ok: true, response });
   });
 
@@ -89,6 +105,23 @@ export const cannedResponseRoutes: FastifyPluginAsync = async (app) => {
     if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
 
     await prisma.cannedResponse.delete({ where: { id } });
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: null,
+        actorExternalId: (req as any).auth?.userId ?? null,
+        level: "info",
+        action: "CANNED_RESPONSE_DELETED",
+        entityType: "canned_response",
+        entityId: id,
+        message: `Canned response deleted: ${existing.title}`,
+        meta: {},
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
     return reply.send({ ok: true });
   });
 };

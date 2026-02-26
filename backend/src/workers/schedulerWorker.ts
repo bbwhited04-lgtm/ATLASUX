@@ -69,7 +69,11 @@ import { prisma } from "../db/prisma.js";
 import { getSystemState, setSystemState } from "../services/systemState.js";
 
 const POLL_MS = Math.max(15_000, Number(process.env.SCHEDULER_POLL_MS ?? 60_000));
-const TENANT_ID = process.env.TENANT_ID ?? "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
+const TENANT_ID = process.env.TENANT_ID ?? "";
+if (!TENANT_ID) {
+  console.warn("[scheduler] TENANT_ID not set — using fallback. Set TENANT_ID env var for production.");
+}
+const RESOLVED_TENANT_ID = TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
 
 type ScheduledJob = {
   id: string;
@@ -122,7 +126,7 @@ async function markFired(key: string, token: string) {
 async function fireJob(job: ScheduledJob) {
   const intent = await prisma.intent.create({
     data: {
-      tenantId: TENANT_ID,
+      tenantId: RESOLVED_TENANT_ID,
       agentId: null,
       intentType: "ENGINE_RUN",
       payload: JSON.parse(JSON.stringify({
@@ -130,7 +134,7 @@ async function fireJob(job: ScheduledJob) {
         workflowId: job.workflowId,
         input: job.payload,
         traceId: `scheduler-${job.id}-${todayUTC()}`,
-        requestedBy: TENANT_ID,
+        requestedBy: RESOLVED_TENANT_ID,
       })),
       status: "DRAFT",
     },
@@ -138,7 +142,7 @@ async function fireJob(job: ScheduledJob) {
 
   await prisma.auditLog.create({
     data: {
-      tenantId: TENANT_ID,
+      tenantId: RESOLVED_TENANT_ID,
       actorType: "system",
       actorUserId: null,
       actorExternalId: "scheduler",

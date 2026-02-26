@@ -971,7 +971,6 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                     if (!newBusinessForm.name.trim()) return;
 
                     try {
-                      console.log("Creating business:", newBusinessForm);
 
       await createBusiness({
         name: newBusinessForm.name.trim(),

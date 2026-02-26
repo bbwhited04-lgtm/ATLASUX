@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import "dotenv/config";
 
@@ -135,6 +136,11 @@ await app.register(cors, {
     "x-client-source",
     "x-inbound-secret",
   ],
+});
+
+await app.register(helmet, {
+  contentSecurityPolicy: false, // CSP managed by frontend/CDN
+  crossOriginEmbedderPolicy: false,
 });
 
 await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });

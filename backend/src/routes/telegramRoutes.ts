@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { saveTelegramChatId } from "../lib/telegramNotify.js";
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 
 const BOT_API = "https://api.telegram.org/bot";
 
@@ -11,8 +11,10 @@ function getBotToken(): string {
 }
 
 export const telegramRoutes: FastifyPluginAsync = async (app) => {
-  // GET /v1/telegram/me — verify bot is reachable
-  app.get("/me", async (_req, reply) => {
+  // GET /v1/telegram/me — verify bot is reachable (auth required)
+  app.get("/me", async (req, reply) => {
+    const tenantId = String((req as any).tenantId ?? "");
+    if (!tenantId) return reply.code(401).send({ ok: false, error: "tenantId required" });
     try {
       const token = getBotToken();
       const res = await fetch(`${BOT_API}${token}/getMe`);
@@ -54,8 +56,10 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // GET /v1/telegram/updates — poll for recent incoming messages (dev / no-webhook mode)
-  app.get("/updates", async (_req, reply) => {
+  // GET /v1/telegram/updates — poll for recent incoming messages (auth required)
+  app.get("/updates", async (req, reply) => {
+    const tenantId = String((req as any).tenantId ?? "");
+    if (!tenantId) return reply.code(401).send({ ok: false, error: "tenantId required" });
     try {
       const token = getBotToken();
       const res = await fetch(`${BOT_API}${token}/getUpdates`);
@@ -67,7 +71,16 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // POST /v1/telegram/webhook — receive incoming updates from Telegram
+  // Validates the request comes from Telegram via the secret_token header
   app.post("/webhook", async (req, reply) => {
+    const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET ?? "";
+    if (webhookSecret) {
+      const provided = String(req.headers["x-telegram-bot-api-secret-token"] ?? "");
+      if (provided !== webhookSecret) {
+        return reply.code(403).send({ ok: false, error: "invalid_webhook_secret" });
+      }
+    }
+
     const body = req.body as any;
     const message = body?.message;
     if (message) {

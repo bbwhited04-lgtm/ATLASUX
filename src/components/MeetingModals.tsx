@@ -30,7 +30,7 @@ export function AddMeetingModal({
 
   const handleSubmit = () => {
     // Handle meeting submission
-    console.log({ meetingTitle, meetingLink, meetingDate, meetingTime });
+    // TODO: Submit meeting to backend
     onClose();
   };
 

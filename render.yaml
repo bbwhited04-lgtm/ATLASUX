@@ -13,3 +13,17 @@ services:
     rootDir: backend
     buildCommand: npm install && npm run build
     startCommand: npm run worker:scheduler
+
+  - type: worker
+    name: atlasux-email-worker
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run worker:email
+
+  - type: worker
+    name: atlasux-engine-worker
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run worker:engine

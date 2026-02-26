@@ -24,8 +24,10 @@ function createWindow() {
     mainWindow.loadFile(startUrl);
   }
 
- // Always open DevTools for debugging
-mainWindow.webContents.openDevTools();
+  // Only open DevTools in development
+  if (process.env.ELECTRON_START_URL) {
+    mainWindow.webContents.openDevTools();
+  }
 
   mainWindow.on('closed', () => {
     mainWindow = null;

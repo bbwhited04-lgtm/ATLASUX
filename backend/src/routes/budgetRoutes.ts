@@ -155,6 +155,22 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
       },
     });
 
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: null,
+        actorExternalId: (req as any).auth?.userId ?? null,
+        level: "info",
+        action: "BUDGET_UPDATED",
+        entityType: "budget",
+        entityId: id,
+        message: `Budget updated: ${budget.name}`,
+        meta: {},
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
     const spentCents = await computeSpend(tenantId, budget.periodDays, budget.category);
     return reply.send({ ok: true, budget: serializeBudget(budget, spentCents) });
   });
@@ -170,6 +186,23 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
     if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
 
     await prisma.budget.delete({ where: { id } });
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorType: "system",
+        actorUserId: null,
+        actorExternalId: (req as any).auth?.userId ?? null,
+        level: "info",
+        action: "BUDGET_DELETED",
+        entityType: "budget",
+        entityId: id,
+        message: `Budget deleted: ${existing.name}`,
+        meta: {},
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+
     return reply.send({ ok: true });
   });
 

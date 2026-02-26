@@ -21,7 +21,7 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
 

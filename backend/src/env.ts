@@ -5,6 +5,10 @@ const EnvSchema = z.object({
   PORT: z.string().optional(),
   NODE_ENV: z.string().optional(),
 
+  // Database
+  DATABASE_URL: z.string().optional(),
+  DIRECT_URL: z.string().optional(),
+
   // Public app url(s)
   APP_URL: z.string().optional(),          // e.g. https://atlasux.cloud
   APP_PROTOCOL: z.string().optional(),     // e.g. atlasux://oauth/callback
@@ -19,6 +23,9 @@ const EnvSchema = z.object({
   OPENAI_BASE_URL: z.string().optional(), // optional override
   DEEPSEEK_API_KEY: z.string().optional(),
   DEEPSEEK_BASE_URL: z.string().optional(),
+  OPENROUTER_API_KEY: z.string().optional(),
+  CEREBRAS_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
 
   // OAuth providers
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -65,7 +72,38 @@ const EnvSchema = z.object({
 
   // Stripe (optional here; can be wired later)
   STRIPE_SECRET_KEY: z.string().optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().optional()
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+
+  // Email sending
+  OUTBOUND_EMAIL_PROVIDER: z.string().optional(),  // "microsoft" | "resend"
+  OUTBOUND_EMAIL_FROM: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  MS_TENANT_ID: z.string().optional(),
+  MS_CLIENT_ID: z.string().optional(),
+  MS_CLIENT_SECRET: z.string().optional(),
+  MS_SENDER_UPN: z.string().optional(),
+
+  // Telegram
+  BOTFATHERTOKEN: z.string().optional(),
+  TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
+
+  // Discord
+  DISCORD_PUBLIC_KEY: z.string().optional(),
+
+  // Engine + safety
+  ENGINE_ENABLED: z.string().optional(),
+  ENGINE_TICK_INTERVAL_MS: z.string().optional(),
+  AUTO_SPEND_LIMIT_USD: z.string().optional(),
+  MAX_ACTIONS_PER_DAY: z.string().optional(),
+  CONFIDENCE_AUTO_THRESHOLD: z.string().optional(),
+
+  // Scheduler
+  SCHEDULER_ENABLED: z.string().optional(),
+  SCHEDULER_POLL_MS: z.string().optional(),
+  TENANT_ID: z.string().optional(),
+
+  // Workers
+  WORKERS_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

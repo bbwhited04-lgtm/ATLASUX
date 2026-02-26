@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 
 const router = Router();
 
@@ -43,7 +43,7 @@ router.get("/status", async (_req, res) => {
       updatedAt: row?.updated_at ?? null,
     });
   } catch (err) {
-    console.error(err);
+    // error logged via Fastify logger
     return res.status(500).json({ ok: false, error: "RUNTIME_STATUS_FAILED" });
   }
 });

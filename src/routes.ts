@@ -1,5 +1,5 @@
 import React from "react";
-import { createHashRouter, Navigate } from "react-router-dom";
+import { createHashRouter, Navigate, useParams } from "react-router-dom";
 import Landing from "./pages/Landing";
 import { Dashboard } from "./components/Dashboard";
 import { JobRunner } from "./components/JobRunner";
@@ -78,6 +78,10 @@ export const router = createHashRouter([
       { path: "business-manager", Component: BusinessManager },
       { path: "kb", Component: KnowledgeBaseHub },
       { path: "blog", Component: BlogManager },
+      { path: "blog/:slug", Component: () => {
+        const { slug } = useParams();
+        return React.createElement(Navigate, { to: `/blog/${slug ?? ""}`, replace: true });
+      }},
       { path: "settings", Component: Settings },
       { path: "help", Component: HelpPage },
       { path: "decisions", Component: DecisionsInbox },

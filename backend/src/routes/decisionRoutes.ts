@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { prisma } from "../prisma.js";
+import { prisma } from "../db/prisma.js";
 import { approveDecisionMemo, createDecisionMemo, rejectDecisionMemo } from "../services/decisionMemos.js";
 
 const CreateMemoSchema = z.object({
