@@ -236,6 +236,7 @@ export default function Landing() {
             <li>Fixed 13 broken Prisma imports across backend — emailSender, tasksRoutes, ledger, telegramNotify, growthLoop, guardrails, decisionMemos, metricsSnapshot, systemState, workflows registry, agentTools, and 2 seed scripts all pointed to non-existent ../prisma.js; corrected to ../db/prisma.js</li>
             <li>X (Twitter) API v2 service — full service library (post tweet, post thread, delete, search recent, get tweet, like, retweet, user profile); Kelly now has post_to_x and search_x agent tools with audit logging; approval-gated posting with token from vault or env fallback</li>
             <li>Added 4 missing worker scripts to package.json — jobs, SMS, Reddit, and social monitoring workers now invocable via npm run</li>
+            <li>Meta (Facebook) data deletion callback — POST /v1/meta/datadeletion handles GDPR deletion requests with signed_request verification, audit logging, token cleanup, and confirmation code; required for Meta app review compliance</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
