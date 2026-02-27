@@ -20,7 +20,7 @@ import {
   Download,
   Upload,
   AlertTriangle,
-  CheckCircle2,
+  CheckCircle,
   Info,
   FolderOpen,
   Mic,
@@ -33,7 +33,12 @@ import {
   Loader2,
   Plug,
   Gauge,
-  Smartphone
+  Smartphone,
+  Brain,
+  BarChart,
+  Settings as SettingsCog,
+  Zap,
+  Database
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -47,9 +52,14 @@ import * as adminAuth from "../utils/admin-auth";
 // Import existing feature components
 import Integrations from './Integrations';
 import { FileManagement } from './FileManagement';
-import { ProcessingSettings } from './ProcessingSettings'; 
+import { ProcessingSettings } from './ProcessingSettings';
+import AtlasAgentSettings from './AtlasAgentSettings';
+import AnalyticsDashboard from './AnalyticsDashboard';
+import SettingsProfiles from './SettingsProfiles';
+import WorkflowBuilder from './WorkflowBuilder';
+import KnowledgeManagement from './KnowledgeManagement'; 
 import { MobileIntegration } from './premium/MobileIntegration';
-import { getOrgUser } from "@/lib/org";
+import { getOrgUser } from "../lib/org";
 
 // Icon mapping for permissions
 const iconMap: Record<string, any> = {
@@ -349,6 +359,26 @@ export function Settings() {
             <SettingsIcon className="w-4 h-4 mr-2" />
             General
           </TabsTrigger>
+          <TabsTrigger value="atlas" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Brain className="w-4 h-4 mr-2" />
+            Atlas Agent
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <BarChart className="w-4 h-4 mr-2" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="profiles" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <SettingsCog className="w-4 h-4 mr-2" />
+            Profiles
+          </TabsTrigger>
+          <TabsTrigger value="workflows" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Zap className="w-4 h-4 mr-2" />
+            Workflows
+          </TabsTrigger>
+          <TabsTrigger value="knowledge" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Database className="w-4 h-4 mr-2" />
+            Knowledge
+          </TabsTrigger>
           <TabsTrigger value="permissions" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Shield className="w-4 h-4 mr-2" />
             Permissions
@@ -372,7 +402,8 @@ export function Settings() {
           <TabsTrigger value="files" className="text-slate-300 data-[state=active]:text-cyan-400">
             <FolderOpen className="w-4 h-4 mr-2" />
             Files
-          </TabsTrigger><TabsTrigger value="mobile" className="text-slate-300 data-[state=active]:text-cyan-400">
+          </TabsTrigger>
+          <TabsTrigger value="mobile" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Smartphone className="w-4 h-4 mr-2" />
             Mobile
           </TabsTrigger>
@@ -506,7 +537,32 @@ export function Settings() {
             </div>
           </Card>
         </TabsContent>
-        
+
+        {/* Atlas Agent Tab */}
+        <TabsContent value="atlas" className="space-y-4">
+          <AtlasAgentSettings />
+        </TabsContent>
+
+        {/* Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-4">
+          <AnalyticsDashboard />
+        </TabsContent>
+
+        {/* Profiles Tab */}
+        <TabsContent value="profiles" className="space-y-4">
+          <SettingsProfiles />
+        </TabsContent>
+
+        {/* Workflows Tab */}
+        <TabsContent value="workflows" className="space-y-4">
+          <WorkflowBuilder />
+        </TabsContent>
+
+        {/* Knowledge Tab */}
+        <TabsContent value="knowledge" className="space-y-4">
+          <KnowledgeManagement />
+        </TabsContent>
+
         {/* Permissions Tab */}
         <TabsContent value="permissions" className="space-y-4">
           <Card className="bg-slate-900/50 border-cyan-500/20 p-6">
@@ -734,7 +790,7 @@ export function Settings() {
               <div className="space-y-4">
                 <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
                   <div className="flex gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
                       <p className="text-green-400 font-medium mb-1">Admin Authenticated</p>
                       <p className="text-sm text-green-400/80">
