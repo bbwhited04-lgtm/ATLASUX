@@ -156,6 +156,8 @@ await app.register(authPlugin);
 await app.register(tenantPlugin);
 await app.register(engineRoutes, { prefix: "/v1/engine" });
 await app.register(healthRoutes, { prefix: "/v1" });
+// Root-level health check for Render's healthCheckPath: /health
+app.get("/health", async () => ({ ok: true, status: "alive" }));
 await app.register(agentsRoutes, { prefix: "/v1/agents" });
 await app.register(workflowsRoutes, { prefix: "/v1/workflows" });
 await app.register(tasksRoutes, { prefix: "/v1/tasks" });
