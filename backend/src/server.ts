@@ -52,9 +52,7 @@ import { userRoutes } from "./routes/userRoutes.js";
 import { metaRoutes } from "./routes/metaRoutes.js";
 import { googleRoutes } from "./routes/googleRoutes.js";
 import { runtimeRoutes } from "./routes/runtimeRoutes.js";
-import billingWebhookRoutes from "./routes/billingWebhook.js";
 import { atlasRoutes } from "./routes/atlasRoutes.js";
-import voiceCommandsRoutes from "./routes/voiceCommands.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -229,17 +227,12 @@ await app.register(userRoutes, { prefix: "/v1/user" });
 // Meta (Facebook/Instagram) — data deletion callback (GDPR compliance)
 await app.register(metaRoutes, { prefix: "/v1/meta" });
 
-// Atlas Voice Commands - natural language control
-await app.register(voiceCommandsRoutes, { prefix: "/api" });
-
 // Google — data deletion callback (OAuth verification compliance)
 await app.register(googleRoutes, { prefix: "/v1/google" });
 
 // Runtime status (engine enabled, pending approvals, last tick)
 await app.register(runtimeRoutes, { prefix: "/v1/runtime" });
 
-// Stripe billing webhook (scoped raw body parser for signature verification)
-await app.register(billingWebhookRoutes, { prefix: "/v1/billing" });
 await app.register(atlasRoutes, { prefix: "/v1/atlas" });
 
 const port = Number(process.env.PORT ?? 8787);
