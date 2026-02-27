@@ -64,10 +64,11 @@ function RootLayoutInner() {
       const v1 = typeof s?.value === "boolean" ? s.value : null;
       const v2 = typeof s?.value === "object" && s?.value && typeof s.value.online === "boolean" ? s.value.online : null;
       const parsed = direct ?? v2 ?? v1;
-      setAtlasOnline(typeof parsed === "boolean" ? parsed : null);
-    } catch (e: any) {
-      setAtlasStateErr(e?.message ?? String(e));
-      setAtlasOnline(null);
+      setAtlasOnline(typeof parsed === "boolean" ? parsed : true);
+    } catch {
+      // If the state endpoint isn't available, default to online (non-critical)
+      setAtlasStateErr(null);
+      setAtlasOnline(true);
     } finally {
       setAtlasStateLoading(false);
     }

@@ -2,10 +2,31 @@ const { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain, shel
 const path = require("path");
 const log = require("electron-log");
 
+// Disable console transport in production to prevent EPIPE crashes
+// (happens when there's no terminal attached, e.g. launched from desktop icon)
+if (!process.env.ELECTRON_START_URL) {
+  log.transports.console.level = false;
+}
+
 // Auto-updater — checks GitHub Releases for new versions
-const { autoUpdater } = require("electron-updater");
-autoUpdater.logger = log;
-autoUpdater.logger.transports.file.level = "info";
+// Wrapped in try-catch because it crashes when no matching release tag exists
+let autoUpdater;
+try {
+  autoUpdater = require("electron-updater").autoUpdater;
+  autoUpdater.logger = log;
+  autoUpdater.logger.transports.file.level = "warn";
+  autoUpdater.autoDownload = false; // don't download until user confirms
+} catch (err) {
+  log.warn("Auto-updater not available:", err.message);
+}
+
+/** Safe wrapper — never let update checks crash the app */
+function safeCheckForUpdates() {
+  if (!autoUpdater) return;
+  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+    log.warn("Update check failed (non-fatal):", err.message);
+  });
+}
 
 let mainWindow;
 let avatarWindow;
@@ -42,7 +63,13 @@ function createWindow() {
 
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
-    autoUpdater.checkForUpdatesAndNotify();
+    safeCheckForUpdates();
+  });
+
+  // Pipe renderer console messages to stdout for debugging
+  mainWindow.webContents.on("console-message", (_e, level, message) => {
+    const tag = ["verbose","info","warn","error"][level] || "log";
+    log.info(`[renderer:${tag}] ${message.slice(0, 500)}`);
   });
 
   mainWindow.on("close", (e) => {
@@ -95,6 +122,11 @@ function createAvatarWindow() {
   } else {
     avatarWindow.loadFile(path.join(__dirname, "avatar.html"));
   }
+
+  // Log avatar window errors
+  avatarWindow.webContents.on("console-message", (_e, level, message) => {
+    if (level >= 2) log.info(`[avatar:${level >= 3 ? "error" : "warn"}] ${message.slice(0, 300)}`);
+  });
 
   // Right-click context menu on the avatar window
   avatarWindow.webContents.on("context-menu", () => {
@@ -229,7 +261,7 @@ function createTray() {
     { label: "Show Avatar", click: () => avatarWindow?.show() },
     { label: "Hide Avatar", click: () => avatarWindow?.hide() },
     { type: "separator" },
-    { label: "Check for Updates", click: () => autoUpdater.checkForUpdatesAndNotify() },
+    { label: "Check for Updates", click: () => safeCheckForUpdates() },
     { type: "separator" },
     { label: "Quit Atlas", click: () => { isQuitting = true; app.quit(); }},
   ]);
@@ -257,45 +289,46 @@ function showTrayNotification(title, body) {
 }
 
 /* ── Auto-Updater Events ── */
-autoUpdater.on("checking-for-update", () => {
-  log.info("Checking for update...");
-  mainWindow?.webContents.send("updater-status", { status: "checking" });
-});
-
-autoUpdater.on("update-available", (info) => {
-  log.info("Update available:", info.version);
-  mainWindow?.webContents.send("updater-status", { status: "available", version: info.version });
-});
-
-autoUpdater.on("update-not-available", () => {
-  log.info("No update available");
-  mainWindow?.webContents.send("updater-status", { status: "up-to-date" });
-});
-
-autoUpdater.on("download-progress", (progress) => {
-  mainWindow?.webContents.send("updater-status", {
-    status: "downloading",
-    percent: Math.round(progress.percent),
-    transferred: progress.transferred,
-    total: progress.total,
+if (autoUpdater) {
+  autoUpdater.on("checking-for-update", () => {
+    log.info("Checking for update...");
+    mainWindow?.webContents.send("updater-status", { status: "checking" });
   });
-});
 
-autoUpdater.on("update-downloaded", (info) => {
-  log.info("Update downloaded:", info.version);
-  mainWindow?.webContents.send("updater-status", { status: "ready", version: info.version });
-  showTrayNotification("Atlas UX Update Ready", `Version ${info.version} is ready. Restart to apply.`);
-});
+  autoUpdater.on("update-available", (info) => {
+    log.info("Update available:", info.version);
+    mainWindow?.webContents.send("updater-status", { status: "available", version: info.version });
+  });
 
-autoUpdater.on("error", (err) => {
-  log.error("Auto-update error:", err);
-  mainWindow?.webContents.send("updater-status", { status: "error", message: err?.message });
-});
+  autoUpdater.on("update-not-available", () => {
+    log.info("No update available");
+    mainWindow?.webContents.send("updater-status", { status: "up-to-date" });
+  });
+
+  autoUpdater.on("download-progress", (progress) => {
+    mainWindow?.webContents.send("updater-status", {
+      status: "downloading",
+      percent: Math.round(progress.percent),
+      transferred: progress.transferred,
+      total: progress.total,
+    });
+  });
+
+  autoUpdater.on("update-downloaded", (info) => {
+    log.info("Update downloaded:", info.version);
+    mainWindow?.webContents.send("updater-status", { status: "ready", version: info.version });
+    showTrayNotification("Atlas UX Update Ready", `Version ${info.version} is ready. Restart to apply.`);
+  });
+
+  autoUpdater.on("error", (err) => {
+    log.warn("Auto-update error (non-fatal):", err?.message);
+  });
+}
 
 /* ── IPC Handlers ── */
 ipcMain.handle("get-app-version", () => app.getVersion());
-ipcMain.handle("check-for-updates", () => autoUpdater.checkForUpdatesAndNotify());
-ipcMain.handle("install-update", () => autoUpdater.quitAndInstall());
+ipcMain.handle("check-for-updates", () => safeCheckForUpdates());
+ipcMain.handle("install-update", () => autoUpdater?.quitAndInstall());
 ipcMain.handle("minimize-to-tray", () => mainWindow?.hide());
 ipcMain.handle("restore-from-tray", () => restoreFromTray());
 ipcMain.handle("show-notification", (_e, title, body) => showTrayNotification(title, body));
@@ -313,9 +346,12 @@ ipcMain.handle("avatar-toggle-roam", () => toggleRoam());
 app.whenReady().then(() => {
   createWindow();
   createTray();
-  createAvatarWindow();
+  // Native avatar overlay disabled — the in-app FloatingAtlas component
+  // provides the 3D avatar + chat. The overlay caused model loading failures
+  // inside ASAR (wireframe fallback showed on top of the real avatar).
+  // createAvatarWindow();
 
-  setInterval(() => autoUpdater.checkForUpdatesAndNotify(), 4 * 60 * 60 * 1000);
+  setInterval(safeCheckForUpdates, 4 * 60 * 60 * 1000);
 });
 
 app.on("window-all-closed", () => {

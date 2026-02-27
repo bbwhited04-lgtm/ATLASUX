@@ -12,7 +12,7 @@ import { useGLTF, OrbitControls, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 import { API_BASE } from "../lib/api";
 import { useActiveTenant } from "../lib/activeTenant";
-import { Send, X, Minus, Mic, MicOff } from "lucide-react";
+import { Send, X, Minus, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 
 /* ── Types ── */
 interface ChatMsg {
@@ -210,25 +210,54 @@ export default function FloatingAtlas() {
 
   /* TTS — deep bass voice */
   const [speaking, setSpeaking] = useState(false);
+  const [muted, setMuted] = useState(false);
+
+  /** Strip markdown formatting so TTS doesn't say "star star Tina star star" */
+  function stripMarkdown(text: string): string {
+    return text
+      .replace(/\*\*(.+?)\*\*/g, "$1")  // **bold**
+      .replace(/\*(.+?)\*/g, "$1")       // *italic*
+      .replace(/__(.+?)__/g, "$1")       // __bold__
+      .replace(/_(.+?)_/g, "$1")         // _italic_
+      .replace(/~~(.+?)~~/g, "$1")       // ~~strikethrough~~
+      .replace(/`(.+?)`/g, "$1")         // `code`
+      .replace(/^#{1,6}\s+/gm, "")       // # headers
+      .replace(/\[(.+?)\]\(.+?\)/g, "$1") // [links](url)
+      .replace(/^\s*[-*+]\s+/gm, "")     // - bullet points
+      .replace(/^\s*\d+\.\s+/gm, "")     // 1. numbered lists
+      .trim();
+  }
+
+  const stopSpeaking = useCallback(() => {
+    window.speechSynthesis?.cancel();
+    setSpeaking(false);
+  }, []);
+
   const speak = useCallback((text: string) => {
-    if (!window.speechSynthesis) return;
+    if (!window.speechSynthesis || muted) return;
     window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
+    const clean = stripMarkdown(text);
+    const utter = new SpeechSynthesisUtterance(clean);
     const voices = window.speechSynthesis.getVoices();
-    const deepVoice = voices.find(v => /male/i.test(v.name) && /english/i.test(v.lang || v.name))
-      || voices.find(v => /daniel|david|james|google.*male|microsoft.*mark/i.test(v.name))
-      || voices.find(v => v.lang.startsWith("en") && !/(female|samantha|karen|fiona|moira|tessa|victoria)/i.test(v.name))
+    const deepVoice =
+      // Named male voices (macOS/Windows)
+      voices.find(v => /daniel|david|james|google.*male|microsoft.*mark/i.test(v.name))
+      // Explicit "male" in name
+      || voices.find(v => /male/i.test(v.name) && /english/i.test(v.lang || v.name))
+      // English voice excluding known female names
+      || voices.find(v => v.lang.startsWith("en") && !/(female|samantha|karen|fiona|moira|tessa|victoria|zira|susan|hazel)/i.test(v.name))
+      // Any English voice
       || voices.find(v => v.lang.startsWith("en"))
       || voices[0];
     if (deepVoice) utter.voice = deepVoice;
-    utter.pitch = 0.4;
-    utter.rate = 0.9;
+    utter.pitch = 0.3;
+    utter.rate = 0.85;
     utter.volume = 1.0;
     utter.onstart = () => setSpeaking(true);
     utter.onend = () => setSpeaking(false);
     utter.onerror = () => setSpeaking(false);
     window.speechSynthesis.speak(utter);
-  }, []);
+  }, [muted]);
 
   useEffect(() => {
     window.speechSynthesis?.getVoices();
@@ -317,8 +346,11 @@ export default function FloatingAtlas() {
               <span className="text-[10px] text-slate-500">{meta.label}</span>
             </div>
             <div className="flex items-center gap-1">
+              <button onClick={() => { setMuted(m => { const next = !m; if (next) stopSpeaking(); return next; }); }} className={`p-1 rounded transition-colors ${muted ? "text-red-400 hover:text-red-300" : "text-slate-400 hover:text-white"} hover:bg-slate-800/60`} title={muted ? "Unmute voice" : "Mute voice"}>
+                {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+              </button>
               <button onClick={() => { setChatOpen(false); setMinimized(true); }} className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800/60"><Minus className="w-3.5 h-3.5" /></button>
-              <button onClick={() => setChatOpen(false)} className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800/60"><X className="w-3.5 h-3.5" /></button>
+              <button onClick={() => { stopSpeaking(); setChatOpen(false); }} className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800/60"><X className="w-3.5 h-3.5" /></button>
             </div>
           </div>
           {/* Messages */}
