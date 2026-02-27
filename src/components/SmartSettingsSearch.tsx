@@ -28,7 +28,8 @@ import {
   Filter,
   Lightbulb,
   Target,
-  Compass
+  Compass,
+  MessageSquare
 } from "lucide-react";
 import { toast } from "sonner";
 
