@@ -9,12 +9,12 @@
   },
   "files": [
     "dist/**/*",
-    "electron/main.js",
-    "electron/preload.js",
+    "electron/**/*.cjs",
+    "electron/**/*.html",
     "package.json"
   ],
   "extraMetadata": {
-    "main": "electron/main.js"
+    "main": "electron/main.cjs"
   },
   "asar": true,
 
