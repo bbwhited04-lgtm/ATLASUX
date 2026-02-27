@@ -157,7 +157,9 @@ export async function runDeepAgent(params: DeepAgentParams): Promise<string> {
 
     const verifyText = verifyResp.text.trim();
     if (verifyText.startsWith("APPROVED")) {
-      finalResponse = verifyText.replace(/^APPROVED\s*\n?/, "").trim() || draft;
+      const stripped = verifyText.replace(/^APPROVED\s*\n?/, "").trim();
+      // The verifier echoes "[response unchanged]" literally — that means use the draft
+      finalResponse = (!stripped || /^\[response unchanged\]$/i.test(stripped)) ? draft : stripped;
       console.log(`[deep-agent] ${agentId} verification: APPROVED`);
     } else if (verifyText.startsWith("REVISED")) {
       finalResponse = verifyText.replace(/^REVISED\s*\n?/, "").trim() || draft;

@@ -90,6 +90,22 @@ interface AnalyticsData {
   };
 }
 
+/** Merge partial API response with safe defaults so we never crash on missing fields. */
+function safeAnalytics(raw: any): AnalyticsData {
+  const r = raw || {};
+  return {
+    conversations: { total: 0, daily: [], hourly: [], avg_duration: 0, success_rate: 0, ...(r.conversations || {}) },
+    voice: {
+      total_requests: 0, total_characters: 0, voice_model_usage: {}, popular_voices: [],
+      ...(r.voice || {}),
+      cost_estimates: { daily: 0, monthly: 0, total: 0, ...(r.voice?.cost_estimates || {}) },
+    },
+    orchestration: { total_decisions: 0, agent_delegations: {}, action_types: {}, success_rates: {}, escalation_rate: 0, avg_processing_time: 0, ...(r.orchestration || {}) },
+    performance: { avg_response_time: 0, api_health: 0, error_rate: 0, uptime: 0, cache_hit_rate: 0, concurrent_users: 0, ...(r.performance || {}) },
+    costs: { api_tokens: 0, voice_synthesis: 0, storage: 0, bandwidth: 0, total_daily: 0, total_monthly: 0, projected_monthly: 0, ...(r.costs || {}) },
+  };
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
 const TIME_RANGES = [
@@ -122,7 +138,7 @@ export default function AnalyticsDashboard() {
       if (response.ok) {
         const result = await response.json();
         if (result.ok) {
-          setData(result.analytics);
+          setData(safeAnalytics(result.analytics));
           setLastRefresh(new Date());
         }
       }
@@ -530,7 +546,9 @@ export default function AnalyticsDashboard() {
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-400">
-                  {Object.values(data.orchestration.success_rates).reduce((a, b) => a + b, 0) / Object.keys(data.orchestration.success_rates).length}%
+                  {Object.keys(data.orchestration.success_rates).length > 0
+                    ? (Object.values(data.orchestration.success_rates).reduce((a, b) => a + b, 0) / Object.keys(data.orchestration.success_rates).length).toFixed(1)
+                    : '0'}%
                 </div>
                 <div className="text-sm text-slate-400 mt-1">Avg Success Rate</div>
               </div>

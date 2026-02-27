@@ -824,7 +824,7 @@ export default function WorkflowBuilder() {
                         {workflow.category}
                       </Badge>
                       <div className="text-xs text-slate-500">
-                        {workflow.nodes.length} nodes
+                        {(workflow.nodes ?? []).length} nodes
                       </div>
                     </div>
                   </div>
@@ -862,15 +862,15 @@ export default function WorkflowBuilder() {
                 <div className="flex items-center gap-4 text-sm text-slate-400">
                   <div className="flex items-center gap-1">
                     <Zap className="w-3 h-3" />
-                    {workflow.triggers.length} triggers
+                    {(workflow.triggers ?? []).length} triggers
                   </div>
                   <div className="flex items-center gap-1">
                     <Users className="w-3 h-3" />
-                    {workflow.nodes.filter(n => n.type === 'agent').length} agents
+                    {(workflow.nodes ?? []).filter(n => n.type === 'agent').length} agents
                   </div>
                   <div className="flex items-center gap-1">
                     <Settings className="w-3 h-3" />
-                    {workflow.nodes.filter(n => n.type === 'action').length} actions
+                    {(workflow.nodes ?? []).filter(n => n.type === 'action').length} actions
                   </div>
                 </div>
               </Card>

@@ -6,7 +6,7 @@
  * Click to expand chat panel. Voice input + deep bass TTS.
  */
 
-import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF, OrbitControls, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
@@ -89,19 +89,22 @@ function AtlasModel({ status, speaking }: { status: FloatStatus; speaking: boole
     }
   });
 
-  // Compute bounds to center + scale the model
-  const box = new THREE.Box3().setFromObject(scene);
-  const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
-  const maxDim = Math.max(size.x, size.y, size.z);
-  const scale = 2.2 / maxDim; // fit to ~2.2 units tall
+  // Compute bounds once so re-renders don't recalculate (prevents shrinking)
+  const { modelScale, offset } = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(scene);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const s = 2.2 / maxDim; // fit to ~2.2 units tall
+    return { modelScale: s, offset: [-center.x * s, -center.y * s, -center.z * s] as const };
+  }, [scene]);
 
   return (
     <group ref={groupRef}>
       <primitive
         object={scene}
-        scale={scale}
-        position={[-center.x * scale, -center.y * scale, -center.z * scale]}
+        scale={modelScale}
+        position={[offset[0], offset[1], offset[2]]}
       />
       {/* Status-reactive core light */}
       <pointLight
@@ -353,7 +356,7 @@ export default function FloatingAtlas() {
       )}
 
       {/* 3D Robot Avatar */}
-      <div className="relative">
+      <div className="relative flex-shrink-0">
         {/* Status dot */}
         <div
           className="absolute top-1 right-1 z-10 w-3.5 h-3.5 rounded-full border-2 border-slate-950"
