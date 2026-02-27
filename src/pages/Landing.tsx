@@ -251,6 +251,7 @@ export default function Landing() {
             <li>Stripe billing webhook — POST /v1/billing/stripe/webhook with HMAC signature verification; logs checkout completions, payment successes, and refunds to audit trail; STRIPE_WEBHOOK_SECRET pushed to Render</li>
             <li>Teams Graph API fix — sending channel messages now uses Group.ReadWrite.All (Application permission) instead of nonexistent ChannelMessage.Send; all 22 Azure AD permissions granted with admin consent; error messages updated with accurate permission guidance</li>
             <li>Deep project audit — fixed broken Store payment link (hhttps typo), corrected Business/Enterprise annual pricing, removed duplicate imports and dead route files, registered /v1/runtime status endpoint, replaced hardcoded tenant IDs with env var fallback</li>
+            <li>138 documentation files — full docs suite across 6 categories: API reference (27), user guides (21), developer docs (23), architecture (17), knowledge base (28), and marketing (22); covers every endpoint, feature, integration, and architectural pattern in the platform</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
