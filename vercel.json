@@ -1,1 +1,10 @@
-{"version": 2, "builds": [{"src": "package.json", "use": "@vercel/static-build", "config": {"distDir": "dist"}}], "routes": [{"src": "/(.*)", "dest": "/index.html"}], "buildCommand": "npm run build", "outputDirectory": "dist", "framework": "vite"}
+{
+  "version": 2,
+  "framework": "vite",
+  "installCommand": "npm install --omit=optional --legacy-peer-deps",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "routes": [
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}
