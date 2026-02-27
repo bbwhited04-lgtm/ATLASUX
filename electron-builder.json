@@ -1,0 +1,99 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.deadappcorp.atlasux",
+  "productName": "Atlas UX",
+  "copyright": "Copyright © 2026 DEAD APP CORP",
+  "directories": {
+    "output": "installers",
+    "buildResources": "build"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/main.js",
+    "electron/preload.js",
+    "package.json"
+  ],
+  "extraMetadata": {
+    "main": "electron/main.js"
+  },
+  "asar": true,
+
+  "publish": {
+    "provider": "github",
+    "owner": "bbwhited04-lgtm",
+    "repo": "ATLASUX",
+    "releaseType": "release"
+  },
+
+  "mac": {
+    "target": [
+      { "target": "dmg", "arch": ["arm64", "x64"] },
+      { "target": "zip", "arch": ["arm64", "x64"] }
+    ],
+    "category": "public.app-category.productivity",
+    "icon": "build/icon.png",
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist",
+    "artifactName": "Atlas-UX-${version}-${arch}.${ext}",
+    "minimumSystemVersion": "11.0"
+  },
+  "dmg": {
+    "iconSize": 120,
+    "window": { "width": 660, "height": 480 },
+    "contents": [
+      { "x": 180, "y": 240, "type": "file" },
+      { "x": 480, "y": 240, "type": "link", "path": "/Applications" }
+    ],
+    "artifactName": "Atlas-UX-${version}-${arch}.dmg",
+    "title": "Atlas UX ${version}"
+  },
+
+  "linux": {
+    "target": [
+      { "target": "AppImage", "arch": ["x64"] },
+      { "target": "deb", "arch": ["x64"] }
+    ],
+    "category": "Utility",
+    "icon": "build/icons",
+    "artifactName": "atlas-ux-${version}-${arch}.${ext}",
+    "desktop": {
+      "entry": {
+        "Name": "Atlas UX",
+        "Comment": "Your Standalone AI Employee — All-in-One Productivity Platform",
+        "Categories": "Utility;Office;Development;Network;"
+      }
+    }
+  },
+  "appImage": {
+    "artifactName": "Atlas-UX-${version}-${arch}.AppImage"
+  },
+  "deb": {
+    "depends": ["libnotify4", "libxtst6", "libnss3"],
+    "artifactName": "atlas-ux-${version}-${arch}.deb"
+  },
+
+  "win": {
+    "target": [
+      { "target": "nsis", "arch": ["x64"] },
+      { "target": "portable", "arch": ["x64"] }
+    ],
+    "icon": "build/icon.png",
+    "artifactName": "Atlas-UX-Setup-${version}-${arch}.${ext}",
+    "verifyUpdateCodeSignature": false
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Atlas UX",
+    "deleteAppDataOnUninstall": false,
+    "runAfterFinish": true
+  },
+  "portable": {
+    "artifactName": "Atlas-UX-Portable-${version}.exe"
+  }
+}

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </radialGradient>
+    <radialGradient id="core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.9"/>
+      <stop offset="70%" stop-color="#06b6d4" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="250" fill="url(#bg)" stroke="#06b6d4" stroke-width="4" opacity="0.95"/>
+
+  <!-- Head -->
+  <ellipse cx="256" cy="145" rx="90" ry="95" stroke="#06b6d4" stroke-width="5" fill="none" opacity="0.85"/>
+  <ellipse cx="256" cy="145" rx="64" ry="70" stroke="#06b6d4" stroke-width="2" fill="none" opacity="0.3"/>
+
+  <!-- Eyes -->
+  <line x1="211" y1="132" x2="237" y2="132" stroke="#22d3ee" stroke-width="10" stroke-linecap="round" opacity="0.95"/>
+  <line x1="275" y1="132" x2="301" y2="132" stroke="#22d3ee" stroke-width="10" stroke-linecap="round" opacity="0.95"/>
+  <circle cx="224" cy="132" r="4" fill="#67e8f9" opacity="0.6"/>
+  <circle cx="288" cy="132" r="4" fill="#67e8f9" opacity="0.6"/>
+
+  <!-- Mouth -->
+  <path d="M230 170 Q256 185 282 170" stroke="#06b6d4" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.4"/>
+
+  <!-- Neck -->
+  <line x1="237" y1="240" x2="237" y2="270" stroke="#06b6d4" stroke-width="4" opacity="0.5"/>
+  <line x1="275" y1="240" x2="275" y2="270" stroke="#06b6d4" stroke-width="4" opacity="0.5"/>
+
+  <!-- Torso -->
+  <path d="M155 270 L357 270 L370 430 Q256 455 142 430 Z" stroke="#06b6d4" stroke-width="5" fill="none" opacity="0.7"/>
+  <path d="M180 285 L332 285 L342 415 Q256 432 170 415 Z" stroke="#06b6d4" stroke-width="2" fill="none" opacity="0.3"/>
+
+  <!-- Shoulders -->
+  <path d="M155 270 Q115 275 78 300" stroke="#06b6d4" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
+  <path d="M357 270 Q397 275 434 300" stroke="#06b6d4" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
+
+  <!-- Heartbeat core glow -->
+  <circle cx="256" cy="350" r="50" fill="url(#core)"/>
+  <!-- Core diamond -->
+  <path d="M256 312 L288 350 L256 388 L224 350 Z" stroke="#06b6d4" stroke-width="4" fill="#06b6d4" fill-opacity="0.2"/>
+  <!-- Inner dot -->
+  <circle cx="256" cy="350" r="12" fill="#06b6d4" opacity="0.9"/>
+
+  <!-- Energy lines from core -->
+  <line x1="256" y1="312" x2="256" y2="270" stroke="#06b6d4" stroke-width="2" opacity="0.4" stroke-dasharray="8 8"/>
+  <line x1="288" y1="350" x2="340" y2="350" stroke="#06b6d4" stroke-width="2" opacity="0.3" stroke-dasharray="8 8"/>
+  <line x1="224" y1="350" x2="172" y2="350" stroke="#06b6d4" stroke-width="2" opacity="0.3" stroke-dasharray="8 8"/>
+</svg>

@@ -29,12 +29,15 @@ pnpm-debug.log*
 # Vite / Next / Frontend builds
 ########################################
 dist/
-build/
 out/
 .next/
 .vite/
 .turbo/
 .cache/
+
+# electron-builder buildResources live in build/ — keep it tracked
+# but ignore generated node_modules artifacts inside it
+build/node_modules/
 
 ########################################
 # Backend builds
@@ -70,6 +73,7 @@ electron/build/
 electron/out/
 electron/.webpack/
 electron/.cache/
+installers/
 
 ########################################
 # Rust (if pulled in via tauri)

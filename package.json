@@ -1,6 +1,6 @@
 {
   "name": "atlas-ux",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Your Standalone AI Employee - All-in-One Productivity Platform",
   "author": "DEAD APP CORP",
   "license": "UNLICENSED",
@@ -49,6 +49,8 @@
     "@tailwindcss/vite": "^4.1.18",
     "@tauri-apps/api": "^2.10.1",
     "class-variance-authority": "^0.7.1",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.8.3",
     "lucide-react": "^0.564.0",
     "motion": "^11.15.0",
     "Postcss": "npm:postcss@^8.5.6",
@@ -81,6 +83,7 @@
     "postcss-cli": "^11.0.1",
     "prisma": "^5.22.0",
     "puppeteer": "^24.37.5",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.19",
     "vite": "^6.0.11",
     "wait-on": "^8.0.1"

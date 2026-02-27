@@ -1,0 +1,118 @@
+Atlas UX — Proprietary Software License
+
+Copyright (c) 2026 DEAD APP CORP. All rights reserved.
+
+ATLAS UX END-USER LICENSE AGREEMENT (EULA)
+
+This End-User License Agreement ("Agreement") is a legal agreement between you
+("User") and DEAD APP CORP ("Company") for the Atlas UX software application,
+including all associated documentation, updates, and services ("Software").
+
+By installing, copying, or otherwise using the Software, you agree to be bound
+by the terms of this Agreement.
+
+1. GRANT OF LICENSE
+
+   The Company grants you a limited, non-exclusive, non-transferable,
+   revocable license to:
+
+   a) Install and use the Software on devices you own or control.
+   b) Access the hosted version of the Software at atlasux.cloud.
+   c) Receive updates distributed through the auto-update mechanism.
+
+2. RESTRICTIONS
+
+   You may NOT:
+
+   a) Copy, modify, or distribute the Software or any portion thereof.
+   b) Reverse engineer, decompile, or disassemble the Software.
+   c) Sublicense, rent, lease, or lend the Software to third parties.
+   d) Remove or alter any proprietary notices, labels, or marks.
+   e) Use the Software to develop a competing product or service.
+   f) Use the Software for any unlawful purpose.
+
+3. AI AGENTS AND AUTONOMOUS ACTIONS
+
+   The Software includes AI agents that may perform autonomous actions on
+   your behalf, including but not limited to sending communications,
+   managing tasks, and executing business workflows. You acknowledge that:
+
+   a) You are responsible for configuring appropriate safety guardrails.
+   b) The Company is not liable for actions taken by AI agents.
+   c) High-risk actions require your explicit approval via the decision
+      memo workflow.
+   d) Daily action caps and spending limits are enforced for your safety.
+
+4. DATA AND PRIVACY
+
+   a) Your data is stored in tenant-isolated databases.
+   b) The Company processes data in accordance with its Privacy Policy.
+   c) You retain ownership of all data you input into the Software.
+   d) The Company may use anonymized, aggregated usage data to improve
+      the Software.
+
+5. SUBSCRIPTION AND PAYMENT
+
+   Access to the Software may require a paid subscription. Payment terms
+   are governed by the applicable subscription agreement. The Company
+   reserves the right to modify pricing with 30 days' notice.
+
+6. UPDATES
+
+   The Software may automatically download and install updates. These
+   updates may include bug fixes, feature enhancements, and security
+   patches. By using the Software, you consent to receiving automatic
+   updates.
+
+7. INTELLECTUAL PROPERTY
+
+   The Software, including all code, design, documentation, AI models,
+   agent configurations, and trademarks, is the exclusive property of
+   DEAD APP CORP. This Agreement does not transfer any intellectual
+   property rights to you.
+
+8. WARRANTY DISCLAIMER
+
+   THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+   NONINFRINGEMENT. THE COMPANY DOES NOT WARRANT THAT THE SOFTWARE
+   WILL BE UNINTERRUPTED, ERROR-FREE, OR COMPLETELY SECURE.
+
+9. LIMITATION OF LIABILITY
+
+   IN NO EVENT SHALL THE COMPANY BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+   SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT
+   LIMITED TO LOSS OF PROFITS, DATA, OR BUSINESS OPPORTUNITIES, ARISING
+   OUT OF OR IN CONNECTION WITH THE USE OF THE SOFTWARE, EVEN IF ADVISED
+   OF THE POSSIBILITY OF SUCH DAMAGES.
+
+   THE COMPANY'S TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT PAID BY
+   YOU FOR THE SOFTWARE IN THE TWELVE (12) MONTHS PRECEDING THE CLAIM.
+
+10. TERMINATION
+
+    This Agreement is effective until terminated. The Company may
+    terminate this Agreement immediately if you breach any of its terms.
+    Upon termination, you must destroy all copies of the Software and
+    cease all use.
+
+11. GOVERNING LAW
+
+    This Agreement shall be governed by and construed in accordance with
+    the laws of the State of [Your State], without regard to its conflict
+    of law provisions.
+
+12. ENTIRE AGREEMENT
+
+    This Agreement constitutes the entire agreement between you and the
+    Company regarding the Software and supersedes all prior agreements
+    and understandings.
+
+---
+
+DEAD APP CORP
+https://atlasux.cloud
+contact@deadapp.info
+
+Version 2.0 — February 2026
