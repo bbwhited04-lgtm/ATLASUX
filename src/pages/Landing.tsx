@@ -273,6 +273,7 @@ export default function Landing() {
             <li>[Claude Code] Fixed Vercel build — removed desktop-only packages (Electron, Sharp, Puppeteer, Tauri CLI) that Windsurf.ai added to package.json; Vercel only installs what the static web build needs; desktop deps install separately via `npm run electron:setup`</li>
             <li>[Claude Code] Fixed Vercel white screen — Windsurf.ai's legacy `routes` config was serving index.html for JS/CSS asset requests (every script loaded as HTML); switched to `rewrites` which only applies to non-static paths</li>
             <li>[Claude Code] Fixed FloatingAtlas not rendering — Windsurf.ai imported it in App.tsx which was dead code (nothing ever imported App.tsx); moved to main.tsx, the actual entry point that runs the app</li>
+            <li>[Claude Code] 3D Atlas Avatar — replaced SVG wireframe with real sci-fi armor GLB model rendered via Three.js (@react-three/fiber + drei); auto-rotates, floats, status-reactive lighting (cyan/purple/red), subtle vibration when speaking in deep bass voice; Three.js split into its own chunk so it doesn't block page load; click to open chat with voice commands</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

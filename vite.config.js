@@ -27,6 +27,7 @@ export default defineConfig({
           'router': ['react-router'],
           'ui-vendor': ['motion', 'lucide-react'],
           'charts': ['recharts'],
+          'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
         },
       },
     },

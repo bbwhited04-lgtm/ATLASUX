@@ -1,12 +1,15 @@
 /**
- * Floating Atlas — large wireframe robot that floats on screen.
+ * Floating Atlas — 3D sci-fi armor robot that floats on screen.
  *
- * Always visible, non-intrusive. Click to expand chat panel.
- * The robot is detailed enough to look high-end at desktop size.
- * Connects to real /v1/chat endpoint.
+ * Uses the real GLB model from public/models/atlas-avatar.glb
+ * rendered via @react-three/fiber + @react-three/drei.
+ * Click to expand chat panel. Voice input + deep bass TTS.
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useGLTF, OrbitControls, ContactShadows } from "@react-three/drei";
+import * as THREE from "three";
 import { API_BASE } from "../lib/api";
 import { useActiveTenant } from "../lib/activeTenant";
 import { Send, X, Minus, Mic, MicOff } from "lucide-react";
@@ -28,42 +31,120 @@ interface StatusMeta {
   pulseSpeed: string;
   heartColor: string;
   heartGlow: string;
+  threeColor: string;
 }
 
 const STATUS_MAP: Record<FloatStatus, StatusMeta> = {
-  online:    { color: "#22c55e", glow: "rgba(34,197,94,0.6)",   label: "Online",        pulseSpeed: "2s",   heartColor: "#06b6d4", heartGlow: "rgba(6,182,212,0.5)" },
-  busy:      { color: "#a855f7", glow: "rgba(168,85,247,0.6)",  label: "Processing",    pulseSpeed: "1s",   heartColor: "#a855f7", heartGlow: "rgba(168,85,247,0.5)" },
-  attention: { color: "#ef4444", glow: "rgba(239,68,68,0.7)",   label: "Needs approval", pulseSpeed: "0.6s", heartColor: "#ef4444", heartGlow: "rgba(239,68,68,0.5)" },
+  online:    { color: "#22c55e", glow: "rgba(34,197,94,0.6)",   label: "Online",        pulseSpeed: "2s",   heartColor: "#06b6d4", heartGlow: "rgba(6,182,212,0.5)", threeColor: "#06b6d4" },
+  busy:      { color: "#a855f7", glow: "rgba(168,85,247,0.6)",  label: "Processing",    pulseSpeed: "1s",   heartColor: "#a855f7", heartGlow: "rgba(168,85,247,0.5)", threeColor: "#a855f7" },
+  attention: { color: "#ef4444", glow: "rgba(239,68,68,0.7)",   label: "Needs approval", pulseSpeed: "0.6s", heartColor: "#ef4444", heartGlow: "rgba(239,68,68,0.5)", threeColor: "#ef4444" },
 };
 
-/* ── Keyframes ── */
+/* ── 3D Model Component ── */
+const MODEL_PATH = "./models/atlas-avatar.glb";
+
+function AtlasModel({ status, speaking }: { status: FloatStatus; speaking: boolean }) {
+  const { scene } = useGLTF(MODEL_PATH);
+  const groupRef = useRef<THREE.Group>(null!);
+  const lightRef = useRef<THREE.PointLight>(null!);
+  const meta = STATUS_MAP[status];
+
+  // Clone scene so we can modify it safely
+  useEffect(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        if (mesh.material) {
+          (mesh.material as THREE.MeshStandardMaterial).metalness = 0.6;
+          (mesh.material as THREE.MeshStandardMaterial).roughness = 0.3;
+        }
+      }
+    });
+  }, [scene]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const t = state.clock.elapsedTime;
+
+    // Slow idle rotation
+    groupRef.current.rotation.y = Math.sin(t * 0.4) * 0.3;
+
+    // Floating bob
+    groupRef.current.position.y = Math.sin(t * 0.8) * 0.08;
+
+    // Speaking: subtle rapid vibration
+    if (speaking) {
+      groupRef.current.rotation.x = Math.sin(t * 12) * 0.015;
+    } else {
+      groupRef.current.rotation.x = 0;
+    }
+
+    // Pulse the status light
+    if (lightRef.current) {
+      lightRef.current.color.set(meta.threeColor);
+      const pulse = speaking
+        ? 3 + Math.sin(t * 8) * 1.5
+        : 2 + Math.sin(t * 2) * 0.8;
+      lightRef.current.intensity = pulse;
+    }
+  });
+
+  // Compute bounds to center + scale the model
+  const box = new THREE.Box3().setFromObject(scene);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const scale = 2.2 / maxDim; // fit to ~2.2 units tall
+
+  return (
+    <group ref={groupRef}>
+      <primitive
+        object={scene}
+        scale={scale}
+        position={[-center.x * scale, -center.y * scale, -center.z * scale]}
+      />
+      {/* Status-reactive core light */}
+      <pointLight
+        ref={lightRef}
+        position={[0, 0, 0.5]}
+        distance={4}
+        decay={2}
+      />
+    </group>
+  );
+}
+
+// Preload model
+useGLTF.preload(MODEL_PATH);
+
+/* ── Loading fallback ── */
+function LoadingFallback() {
+  const meshRef = useRef<THREE.Mesh>(null!);
+  useFrame((state) => {
+    if (!meshRef.current) return;
+    meshRef.current.rotation.y = state.clock.elapsedTime * 2;
+  });
+  return (
+    <mesh ref={meshRef}>
+      <octahedronGeometry args={[0.5, 0]} />
+      <meshStandardMaterial color="#06b6d4" wireframe transparent opacity={0.6} />
+    </mesh>
+  );
+}
+
+/* ── Keyframes for status dot ── */
 const STYLE_ID = "floating-atlas-kf";
 function ensureKeyframes() {
   if (document.getElementById(STYLE_ID)) return;
   const s = document.createElement("style");
   s.id = STYLE_ID;
   s.textContent = `
-    @keyframes fa-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-    @keyframes fa-heartbeat {
-      0%{transform:scale(1);opacity:0.9} 15%{transform:scale(1.25);opacity:1}
-      30%{transform:scale(1);opacity:0.9} 45%{transform:scale(1.12);opacity:1}
-      60%,100%{transform:scale(1);opacity:0.9}
-    }
-    @keyframes fa-ring {
-      0%{transform:scale(1);opacity:0.4} 15%{transform:scale(2);opacity:0}
-      30%{transform:scale(1);opacity:0.4} 45%{transform:scale(1.6);opacity:0}
-      60%,100%{transform:scale(1);opacity:0.2}
-    }
-    @keyframes fa-scan {
-      0%{opacity:0.08;transform:translateY(0)} 50%{opacity:0.2;transform:translateY(140px)} 100%{opacity:0.08;transform:translateY(0)}
-    }
-    @keyframes fa-energy { 0%{stroke-dashoffset:16} 100%{stroke-dashoffset:0} }
-    @keyframes fa-eye-glow { 0%,100%{opacity:0.8} 50%{opacity:1} }
+    @keyframes fa-status-pulse { 0%,100%{transform:scale(1);opacity:0.9} 50%{transform:scale(1.3);opacity:1} }
   `;
   document.head.appendChild(s);
 }
 
-/* ── Component ── */
+/* ── Main Component ── */
 export default function FloatingAtlas() {
   const { tenantId } = useActiveTenant();
   const [chatOpen, setChatOpen] = useState(false);
@@ -99,7 +180,6 @@ export default function FloatingAtlas() {
       const transcript = e.results[0][0].transcript;
       if (transcript.trim()) {
         setInput(transcript);
-        // Auto-send voice commands
         setTimeout(() => {
           const form = document.getElementById("atlas-chat-form") as HTMLFormElement | null;
           form?.requestSubmit();
@@ -125,14 +205,12 @@ export default function FloatingAtlas() {
     }
   };
 
-  /* TTS — deep bass voice for Atlas responses */
+  /* TTS — deep bass voice */
   const [speaking, setSpeaking] = useState(false);
   const speak = useCallback((text: string) => {
     if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel(); // stop any current speech
+    window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
-
-    // Pick the deepest male voice available
     const voices = window.speechSynthesis.getVoices();
     const deepVoice = voices.find(v => /male/i.test(v.name) && /english/i.test(v.lang || v.name))
       || voices.find(v => /daniel|david|james|google.*male|microsoft.*mark/i.test(v.name))
@@ -140,20 +218,15 @@ export default function FloatingAtlas() {
       || voices.find(v => v.lang.startsWith("en"))
       || voices[0];
     if (deepVoice) utter.voice = deepVoice;
-
-    // Deep bass settings
-    utter.pitch = 0.4;     // low pitch (0-2 range, 1 is normal)
-    utter.rate = 0.9;      // slightly slower for authority
+    utter.pitch = 0.4;
+    utter.rate = 0.9;
     utter.volume = 1.0;
-
     utter.onstart = () => setSpeaking(true);
     utter.onend = () => setSpeaking(false);
     utter.onerror = () => setSpeaking(false);
-
     window.speechSynthesis.speak(utter);
   }, []);
 
-  // Preload voices (some browsers load async)
   useEffect(() => {
     window.speechSynthesis?.getVoices();
     window.speechSynthesis?.addEventListener?.("voiceschanged", () => window.speechSynthesis.getVoices());
@@ -205,7 +278,6 @@ export default function FloatingAtlas() {
       const data = await resp.json().catch(() => ({}));
       const content = data?.content || (resp.ok ? "..." : `Error: ${data?.error || resp.statusText}`);
       setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content, time: now() }]);
-      // Speak the response in deep bass voice
       speak(content);
     } catch (err: any) {
       setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: `Offline — ${err?.message || "network error"}`, time: now() }]);
@@ -230,8 +302,8 @@ export default function FloatingAtlas() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9998] flex items-end gap-3">
-      {/* Chat panel (slides in from right of robot) */}
+    <div className="fixed bottom-4 right-4 z-[9998] flex items-end gap-3">
+      {/* Chat panel */}
       {chatOpen && (
         <div className="w-[360px] max-h-[480px] flex flex-col rounded-2xl border border-cyan-500/20 bg-slate-950/95 backdrop-blur-xl shadow-2xl shadow-cyan-500/10 overflow-hidden mb-2">
           {/* Header */}
@@ -280,127 +352,54 @@ export default function FloatingAtlas() {
         </div>
       )}
 
-      {/* The robot */}
-      <button
-        onClick={() => setChatOpen(o => !o)}
-        className="relative cursor-pointer transition-transform hover:scale-105 focus:outline-none"
-        style={{ animation: "fa-float 4s ease-in-out infinite", filter: `drop-shadow(0 0 12px ${meta.heartGlow})` }}
-        title={`Atlas — ${meta.label}. Click to chat.`}
-      >
-        <svg
-          viewBox="0 0 160 220"
-          width={120}
-          height={165}
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="select-none"
+      {/* 3D Robot Avatar */}
+      <div className="relative">
+        {/* Status dot */}
+        <div
+          className="absolute top-1 right-1 z-10 w-3.5 h-3.5 rounded-full border-2 border-slate-950"
+          style={{
+            backgroundColor: meta.color,
+            boxShadow: `0 0 8px ${meta.glow}`,
+            animation: "fa-status-pulse 2s ease-in-out infinite",
+          }}
+        />
+        <button
+          onClick={() => setChatOpen(o => !o)}
+          className="relative cursor-pointer transition-transform hover:scale-105 focus:outline-none rounded-2xl overflow-hidden"
+          style={{
+            width: 140,
+            height: 180,
+            filter: `drop-shadow(0 0 16px ${meta.heartGlow})`,
+          }}
+          title={`Atlas — ${meta.label}. Click to chat.`}
         >
-          {/* ═══ HEAD ═══ */}
-          <ellipse cx="80" cy="32" rx="28" ry="30" stroke="#06b6d4" strokeWidth="2" opacity="0.85" />
-          <ellipse cx="80" cy="32" rx="20" ry="22" stroke="#06b6d4" strokeWidth="0.8" opacity="0.3" />
-          {/* Face wireframe lines */}
-          <ellipse cx="80" cy="22" rx="22" ry="1" stroke="#06b6d4" strokeWidth="0.6" opacity="0.2" />
-          <ellipse cx="80" cy="30" rx="27" ry="1" stroke="#06b6d4" strokeWidth="0.6" opacity="0.25" />
-          <ellipse cx="80" cy="38" rx="27" ry="1" stroke="#06b6d4" strokeWidth="0.6" opacity="0.25" />
-          <ellipse cx="80" cy="46" rx="20" ry="1" stroke="#06b6d4" strokeWidth="0.6" opacity="0.2" />
-          <path d="M80 2 Q80 32 80 62" stroke="#06b6d4" strokeWidth="0.6" opacity="0.15" />
-
-          {/* Antenna */}
-          <line x1="80" y1="2" x2="80" y2="8" stroke="#06b6d4" strokeWidth="1.5" opacity="0.5" />
-          <circle cx="80" cy="2" r="2.5" fill={meta.heartColor} opacity="0.8"
-            style={{ animation: `fa-eye-glow 2s ease-in-out infinite` }}
-          />
-
-          {/* Eyes — bright and glowing, pulse faster when speaking */}
-          <line x1="66" y1="28" x2="74" y2="28" stroke={speaking ? "#67e8f9" : "#22d3ee"} strokeWidth={speaking ? "4" : "3"} strokeLinecap="round" opacity="1" />
-          <line x1="86" y1="28" x2="94" y2="28" stroke={speaking ? "#67e8f9" : "#22d3ee"} strokeWidth={speaking ? "4" : "3"} strokeLinecap="round" opacity="1" />
-          <circle cx="70" cy="28" r={speaking ? 3 : 2} fill="#67e8f9" opacity={speaking ? 1 : 0.7} style={{ animation: `fa-eye-glow ${speaking ? "0.3s" : "3s"} ease-in-out infinite` }} />
-          <circle cx="90" cy="28" r={speaking ? 3 : 2} fill="#67e8f9" opacity={speaking ? 1 : 0.7} style={{ animation: `fa-eye-glow ${speaking ? "0.3s" : "3s"} ease-in-out infinite` }} />
-
-          {/* Mouth — animates when speaking */}
-          <path d={speaking ? "M72 40 Q80 48 88 40" : "M72 42 Q80 46 88 42"} stroke={speaking ? "#22d3ee" : "#06b6d4"} strokeWidth={speaking ? "1.5" : "1"} strokeLinecap="round" opacity={speaking ? 0.8 : 0.4} />
-
-          {/* ═══ NECK ═══ */}
-          <line x1="74" y1="62" x2="74" y2="74" stroke="#06b6d4" strokeWidth="1.5" opacity="0.5" />
-          <line x1="86" y1="62" x2="86" y2="74" stroke="#06b6d4" strokeWidth="1.5" opacity="0.5" />
-          <line x1="80" y1="62" x2="80" y2="75" stroke="#06b6d4" strokeWidth="0.8" opacity="0.25" />
-          {/* Neck rings */}
-          <ellipse cx="80" cy="66" rx="8" ry="2" stroke="#06b6d4" strokeWidth="0.8" opacity="0.3" />
-          <ellipse cx="80" cy="70" rx="9" ry="2" stroke="#06b6d4" strokeWidth="0.8" opacity="0.3" />
-
-          {/* ═══ TORSO ═══ */}
-          <path d="M48 76 L112 76 L116 136 Q80 144 44 136 Z" stroke="#06b6d4" strokeWidth="2" opacity="0.7" fill="none" />
-          <path d="M56 82 L104 82 L108 128 Q80 134 52 128 Z" stroke="#06b6d4" strokeWidth="0.8" opacity="0.25" fill="none" />
-          {/* Rib lines */}
-          <line x1="50" y1="90" x2="110" y2="90" stroke="#06b6d4" strokeWidth="0.6" opacity="0.2" />
-          <line x1="48" y1="104" x2="112" y2="104" stroke="#06b6d4" strokeWidth="0.6" opacity="0.2" />
-          <line x1="46" y1="118" x2="114" y2="118" stroke="#06b6d4" strokeWidth="0.6" opacity="0.2" />
-          <line x1="80" y1="76" x2="80" y2="140" stroke="#06b6d4" strokeWidth="0.6" opacity="0.15" />
-
-          {/* ═══ HEARTBEAT CORE ═══ */}
-          <circle cx="80" cy="100" r="16" fill="none" stroke={meta.heartColor} strokeWidth="0.5" opacity="0.2"
-            style={{ animation: `fa-ring ${meta.pulseSpeed} ease-in-out infinite`, transformOrigin: "80px 100px" }}
-          />
-          <circle cx="80" cy="100" r="10" fill={meta.heartColor} fillOpacity="0.08"
-            style={{ animation: `fa-ring ${meta.pulseSpeed} ease-in-out infinite`, transformOrigin: "80px 100px" }}
-          />
-          <path d="M80 88 L90 100 L80 112 L70 100 Z" stroke={meta.heartColor} strokeWidth="1.5" fill={meta.heartColor} fillOpacity="0.15"
-            style={{ animation: `fa-heartbeat ${meta.pulseSpeed} ease-in-out infinite`, transformOrigin: "80px 100px" }}
-          />
-          <circle cx="80" cy="100" r="4" fill={meta.heartColor} opacity="0.95"
-            style={{ animation: `fa-heartbeat ${meta.pulseSpeed} ease-in-out infinite`, transformOrigin: "80px 100px" }}
-          />
-          {/* Energy lines from core */}
-          <line x1="80" y1="88" x2="80" y2="76" stroke={meta.heartColor} strokeWidth="0.8" opacity="0.4" strokeDasharray="3 3" style={{ animation: "fa-energy 1.5s linear infinite" }} />
-          <line x1="90" y1="100" x2="108" y2="100" stroke={meta.heartColor} strokeWidth="0.8" opacity="0.3" strokeDasharray="3 3" style={{ animation: "fa-energy 1.5s linear infinite" }} />
-          <line x1="70" y1="100" x2="52" y2="100" stroke={meta.heartColor} strokeWidth="0.8" opacity="0.3" strokeDasharray="3 3" style={{ animation: "fa-energy 1.5s linear infinite" }} />
-          <line x1="80" y1="112" x2="80" y2="130" stroke={meta.heartColor} strokeWidth="0.8" opacity="0.3" strokeDasharray="3 3" style={{ animation: "fa-energy 1.5s linear infinite" }} />
-
-          {/* ═══ SHOULDERS ═══ */}
-          <path d="M48 76 Q36 78 24 86" stroke="#06b6d4" strokeWidth="1.8" strokeLinecap="round" opacity="0.6" />
-          <path d="M112 76 Q124 78 136 86" stroke="#06b6d4" strokeWidth="1.8" strokeLinecap="round" opacity="0.6" />
-          {/* Shoulder joints */}
-          <circle cx="24" cy="86" r="4" stroke="#06b6d4" strokeWidth="1" fill="none" opacity="0.4" />
-          <circle cx="136" cy="86" r="4" stroke="#06b6d4" strokeWidth="1" fill="none" opacity="0.4" />
-
-          {/* ═══ ARMS ═══ */}
-          {/* Left */}
-          <line x1="24" y1="86" x2="16" y2="116" stroke="#06b6d4" strokeWidth="1.5" opacity="0.5" />
-          <line x1="16" y1="116" x2="12" y2="140" stroke="#06b6d4" strokeWidth="1.2" opacity="0.4" />
-          <circle cx="16" cy="116" r="3" stroke="#06b6d4" strokeWidth="0.8" fill="none" opacity="0.35" />
-          <path d="M12 140 L8 146 M12 140 L12 148 M12 140 L16 146" stroke="#06b6d4" strokeWidth="0.8" strokeLinecap="round" opacity="0.35" />
-          {/* Right */}
-          <line x1="136" y1="86" x2="144" y2="116" stroke="#06b6d4" strokeWidth="1.5" opacity="0.5" />
-          <line x1="144" y1="116" x2="148" y2="140" stroke="#06b6d4" strokeWidth="1.2" opacity="0.4" />
-          <circle cx="144" cy="116" r="3" stroke="#06b6d4" strokeWidth="0.8" fill="none" opacity="0.35" />
-          <path d="M148 140 L152 146 M148 140 L148 148 M148 140 L144 146" stroke="#06b6d4" strokeWidth="0.8" strokeLinecap="round" opacity="0.35" />
-
-          {/* ═══ WAIST / HIP ═══ */}
-          <path d="M52 136 Q80 144 108 136" stroke="#06b6d4" strokeWidth="1.2" opacity="0.5" />
-          <path d="M60 140 L100 140 L96 154 L64 154 Z" stroke="#06b6d4" strokeWidth="1" opacity="0.4" fill="none" />
-
-          {/* ═══ LEGS ═══ */}
-          {/* Left */}
-          <line x1="66" y1="154" x2="60" y2="184" stroke="#06b6d4" strokeWidth="1.5" opacity="0.5" />
-          <line x1="60" y1="184" x2="56" y2="208" stroke="#06b6d4" strokeWidth="1.2" opacity="0.4" />
-          <circle cx="60" cy="184" r="3.5" stroke="#06b6d4" strokeWidth="0.8" fill="none" opacity="0.35" />
-          <path d="M56 208 L48 214 L64 214 Z" stroke="#06b6d4" strokeWidth="1" fill="none" opacity="0.4" />
-          {/* Right */}
-          <line x1="94" y1="154" x2="100" y2="184" stroke="#06b6d4" strokeWidth="1.5" opacity="0.5" />
-          <line x1="100" y1="184" x2="104" y2="208" stroke="#06b6d4" strokeWidth="1.2" opacity="0.4" />
-          <circle cx="100" cy="184" r="3.5" stroke="#06b6d4" strokeWidth="0.8" fill="none" opacity="0.35" />
-          <path d="M104 208 L96 214 L112 214 Z" stroke="#06b6d4" strokeWidth="1" fill="none" opacity="0.4" />
-
-          {/* ═══ SCAN LINE ═══ */}
-          <rect x="10" y="10" width="140" height="2" rx="1" fill="#22d3ee" opacity="0.1"
-            style={{ animation: "fa-scan 5s ease-in-out infinite" }}
-          />
-
-          {/* Status dot */}
-          <circle cx="140" cy="12" r="8" fill={meta.color} opacity="0.9" />
-          <circle cx="140" cy="12" r="8" stroke="#0f172a" strokeWidth="3" fill="none" />
-        </svg>
-      </button>
+          <Canvas
+            camera={{ position: [0, 0, 3.5], fov: 40 }}
+            style={{ background: "transparent" }}
+            gl={{ alpha: true, antialias: true }}
+          >
+            <ambientLight intensity={0.4} />
+            <directionalLight position={[3, 4, 5]} intensity={1.2} color="#e0f2fe" />
+            <directionalLight position={[-2, -1, 3]} intensity={0.4} color="#0ea5e9" />
+            <Suspense fallback={<LoadingFallback />}>
+              <AtlasModel status={status} speaking={speaking} />
+              <ContactShadows
+                position={[0, -1.3, 0]}
+                opacity={0.3}
+                scale={4}
+                blur={2}
+                far={3}
+                color={meta.threeColor}
+              />
+            </Suspense>
+            <OrbitControls
+              enableZoom={false}
+              enablePan={false}
+              enableRotate={false}
+            />
+          </Canvas>
+        </button>
+      </div>
     </div>
   );
 }
