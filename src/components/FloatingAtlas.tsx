@@ -34,6 +34,7 @@ const STATUS_MAP: Record<string, AtlasStatus> = {
 export default function FloatingAtlas() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isSystemTrayMode, setIsSystemTrayMode] = useState(false);
   const [status, setStatus] = useState<'online' | 'busy' | 'attention'>('online');
   const [messages, setMessages] = useState<AtlasMessage[]>([]);
   const [inputText, setInputText] = useState("");
@@ -53,18 +54,83 @@ export default function FloatingAtlas() {
 
   // Load avatar URL
   useEffect(() => {
-    const loadAvatar = async () => {
+    const loadAvatarUrl = async () => {
       try {
-        const response = await fetch(`${API_BASE}/v1/atlas/avatar`);
-        const data = await response.json();
-        if (data.ok) {
-          setAvatarUrl(data.avatar_url);
+        const response = await fetch(`${API_BASE}/v1/atlas/avatar-url`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.ok) {
+            setAvatarUrl(data.avatar_url);
+          }
         }
       } catch (error) {
         console.error('Failed to load Atlas avatar:', error);
       }
     };
-    loadAvatar();
+
+    loadAvatarUrl();
+  }, []);
+
+  useEffect(() => {
+    // Check if we're in system tray mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const trayMode = urlParams.get('tray') === 'true';
+    setIsSystemTrayMode(trayMode);
+
+    if (trayMode) {
+      // Set initial position for tray mode (bottom right corner)
+      setPosition({ x: window.innerWidth - 360, y: window.innerHeight - 120 });
+      setIsExpanded(true); // Auto-expand in tray mode
+    }
+
+    // Load avatar URL
+    
+    // Setup system tray event listeners
+    if ((window as any).electronAPI) {
+      (window as any).electronAPI.onTrayClick(() => {
+        if (trayMode) {
+          setIsExpanded(prev => !prev);
+        }
+      });
+      
+      (window as any).electronAPI.onTrayDoubleClick(() => {
+        if (trayMode) {
+          setIsExpanded(true);
+          inputRef.current?.focus();
+        }
+      });
+      
+      (window as any).electronAPI.onTrayRightClick(() => {
+        // Show context menu
+        console.log('Tray right click');
+      });
+      
+      (window as any).electronAPI.onVoiceToggled((enabled: boolean) => {
+        setIsVoiceEnabled(enabled);
+      });
+      
+      (window as any).electronAPI.onNotificationsToggled((enabled: boolean) => {
+        // Handle notification toggle
+        console.log('Notifications toggled:', enabled);
+      });
+      
+      (window as any).electronAPI.onNavigateTo((path: string) => {
+        // Handle navigation
+        console.log('Navigate to:', path);
+      });
+    }
+
+    // Cleanup
+    return () => {
+      if ((window as any).electronAPI) {
+        (window as any).electronAPI.removeAllListeners('tray-click');
+        (window as any).electronAPI.removeAllListeners('tray-double-click');
+        (window as any).electronAPI.removeAllListeners('tray-right-click');
+        (window as any).electronAPI.removeAllListeners('voice-toggled');
+        (window as any).electronAPI.removeAllListeners('notifications-toggled');
+        (window as any).electronAPI.removeAllListeners('navigate-to');
+      }
+    };
   }, []);
 
   // Auto-scroll to bottom of messages

@@ -63,7 +63,8 @@ import WorkflowBuilder from './WorkflowBuilder';
 import KnowledgeManagement from './KnowledgeManagement';
 import MultiTenantCollaboration from './MultiTenantCollaboration';
 import SmartSettingsSearch from './SmartSettingsSearch';
-import RealTimeStatusDashboard from './RealTimeStatusDashboard'; 
+import RealTimeStatusDashboard from './RealTimeStatusDashboard';
+import VoiceCommandSystem from './VoiceCommandSystem'; 
 import { MobileIntegration } from './premium/MobileIntegration';
 import { getOrgUser } from "../lib/org";
 
@@ -397,6 +398,10 @@ export function Settings() {
             <Activity className="w-4 h-4 mr-2" />
             Status
           </TabsTrigger>
+          <TabsTrigger value="voice" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Mic className="w-4 h-4 mr-2" />
+            Voice Commands
+          </TabsTrigger>
           <TabsTrigger value="permissions" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Shield className="w-4 h-4 mr-2" />
             Permissions
@@ -594,6 +599,11 @@ export function Settings() {
         {/* Status Tab */}
         <TabsContent value="status" className="space-y-4">
           <RealTimeStatusDashboard />
+        </TabsContent>
+
+        {/* Voice Commands Tab */}
+        <TabsContent value="voice" className="space-y-4">
+          <VoiceCommandSystem />
         </TabsContent>
 
         {/* Permissions Tab */}
