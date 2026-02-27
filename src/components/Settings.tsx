@@ -177,6 +177,8 @@ export function Settings() {
   }, [searchParams]);
   const [permissions, setPermissions] = useState<any[]>(defaultPermissions);
   const [driveAccess, setDriveAccess] = useState<any[]>(defaultDriveAccess);
+  const [autoStart, setAutoStart] = useState(() => localStorage.getItem('atlas-auto-start') !== 'false');
+  const [minimizeToTray, setMinimizeToTray] = useState(() => localStorage.getItem('atlas-minimize-tray') !== 'false');
 
   // Audit log (read-only)
   const [auditRows, setAuditRows] = useState<any[]>([]);
@@ -517,25 +519,31 @@ export function Settings() {
               <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-lg border border-cyan-500/10">
                 <div>
                   <p className="text-white font-medium">Dark Mode</p>
-                  <p className="text-sm text-slate-400">Atlas UX dark theme</p>
+                  <p className="text-sm text-slate-400">Atlas UX dark theme (always on)</p>
                 </div>
-                <Switch defaultChecked disabled />
+                <Switch checked disabled />
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-lg border border-cyan-500/10">
                 <div>
                   <p className="text-white font-medium">Auto-Start</p>
                   <p className="text-sm text-slate-400">Launch Atlas on system startup</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch
+                  checked={autoStart}
+                  onCheckedChange={(v) => { setAutoStart(v); localStorage.setItem('atlas-auto-start', String(v)); }}
+                />
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-lg border border-cyan-500/10">
                 <div>
                   <p className="text-white font-medium">Minimize to Tray</p>
                   <p className="text-sm text-slate-400">Keep Atlas running in background</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch
+                  checked={minimizeToTray}
+                  onCheckedChange={(v) => { setMinimizeToTray(v); localStorage.setItem('atlas-minimize-tray', String(v)); }}
+                />
               </div>
               
               <div className="pt-4 border-t border-cyan-500/10 space-y-3">

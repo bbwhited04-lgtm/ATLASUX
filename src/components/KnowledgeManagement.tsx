@@ -660,9 +660,9 @@ export default function KnowledgeManagement() {
                       </div>
                     </div>
                     
-                    {document.tags.length > 0 && (
+                    {(document.tags ?? []).length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-3">
-                        {document.tags.map(tag => (
+                        {(document.tags ?? []).map(tag => (
                           <Badge key={tag} variant="secondary" className="bg-cyan-500/20 text-cyan-300 text-xs">
                             {tag}
                           </Badge>

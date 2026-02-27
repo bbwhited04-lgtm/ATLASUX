@@ -4,32 +4,27 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useActiveTenant } from "../lib/activeTenant";
-import { API_BASE } from "../lib/api";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
-import { 
-  Search, 
-  Sparkles, 
-  Clock, 
-  TrendingUp, 
-  Settings, 
-  Zap, 
-  Brain, 
-  Database, 
-  Users, 
-  Shield, 
-  BarChart, 
-  FolderOpen, 
-  MessageSquare, 
-  ChevronRight, 
-  ArrowRight, 
-  ExternalLink, 
-  Bookmark, 
-  History, 
+import {
+  Search,
+  Clock,
+  TrendingUp,
+  Settings,
+  Zap,
+  Brain,
+  Database,
+  Users,
+  Shield,
+  BarChart,
+  ChevronRight,
+  ExternalLink,
+  History,
   Filter,
   Lightbulb,
   Target,
@@ -55,17 +50,6 @@ interface SearchHistory {
   timestamp: string;
   results_count: number;
   clicked_result?: string;
-}
-
-interface AIRecommendation {
-  id: string;
-  title: string;
-  description: string;
-  reason: string;
-  confidence: number;
-  category: string;
-  action_text: string;
-  action_path: string;
 }
 
 const SETTING_CATEGORIES = {
@@ -155,11 +139,41 @@ const HELP_ARTICLES = [
   },
 ];
 
+// Map categories/paths to Settings tab names
+const CATEGORY_TO_TAB: Record<string, string> = {
+  general: 'general',
+  atlas: 'atlas',
+  analytics: 'analytics',
+  workflows: 'workflows',
+  knowledge: 'knowledge',
+  teams: 'teams',
+  security: 'security',
+  integrations: 'integrations',
+  help: 'general',
+};
+
+// All searchable settings items (client-side index)
+const ALL_SETTINGS: SearchSuggestion[] = [
+  { id: 's-voice', title: 'Atlas Voice Settings', description: 'Configure voice synthesis and audio', category: 'atlas', path: 'atlas', keywords: ['voice', 'audio', 'speech', 'tts', 'sound'], action_type: 'setting', icon: Brain },
+  { id: 's-personality', title: 'Atlas Personality', description: 'Tone, response style, formality', category: 'atlas', path: 'atlas', keywords: ['personality', 'tone', 'style', 'formality'], action_type: 'setting', icon: Brain },
+  { id: 's-memory', title: 'Atlas Memory', description: 'Retention, context window, cleanup', category: 'atlas', path: 'atlas', keywords: ['memory', 'retention', 'context', 'conversations'], action_type: 'setting', icon: Database },
+  { id: 's-analytics', title: 'Analytics Dashboard', description: 'View usage metrics and performance', category: 'analytics', path: 'analytics', keywords: ['analytics', 'metrics', 'dashboard', 'usage', 'stats'], action_type: 'setting', icon: BarChart },
+  { id: 's-workflows', title: 'Workflow Builder', description: 'Create and manage automation workflows', category: 'workflows', path: 'workflows', keywords: ['workflow', 'automation', 'trigger', 'nodes'], action_type: 'setting', icon: Zap },
+  { id: 's-knowledge', title: 'Knowledge Base', description: 'Manage documents and knowledge', category: 'knowledge', path: 'knowledge', keywords: ['knowledge', 'documents', 'base', 'kb'], action_type: 'setting', icon: Database },
+  { id: 's-teams', title: 'Team Management', description: 'Manage team members and collaboration', category: 'teams', path: 'teams', keywords: ['team', 'members', 'collaboration', 'invite'], action_type: 'setting', icon: Users },
+  { id: 's-security', title: 'Security Settings', description: 'Admin auth and security configuration', category: 'security', path: 'security', keywords: ['security', 'auth', 'admin', 'password', 'encryption'], action_type: 'setting', icon: Shield },
+  { id: 's-integrations', title: 'Integrations', description: 'Connect external services and APIs', category: 'integrations', path: 'integrations', keywords: ['integration', 'connect', 'api', 'oauth', 'slack', 'google'], action_type: 'setting', icon: ExternalLink },
+  { id: 's-permissions', title: 'System Permissions', description: 'File, network, and device access', category: 'general', path: 'permissions', keywords: ['permissions', 'access', 'microphone', 'camera', 'clipboard'], action_type: 'setting', icon: Shield },
+  { id: 's-drives', title: 'Drive Access', description: 'Configure drive and storage access', category: 'general', path: 'drives', keywords: ['drive', 'storage', 'disk', 'folder'], action_type: 'setting', icon: Database },
+  { id: 's-audit', title: 'Audit Log', description: 'View action history and audit trail', category: 'general', path: 'audit', keywords: ['audit', 'log', 'history', 'trail', 'actions'], action_type: 'setting', icon: Settings },
+  { id: 's-performance', title: 'Performance', description: 'Hardware acceleration and processing', category: 'general', path: 'performance', keywords: ['performance', 'gpu', 'cpu', 'speed', 'optimization'], action_type: 'setting', icon: Settings },
+];
+
 export default function SmartSettingsSearch() {
   const { tenantId } = useActiveTenant();
+  const [, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
-  const [recommendations, setRecommendations] = useState<AIRecommendation[]>([]);
   const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -167,113 +181,78 @@ export default function SmartSettingsSearch() {
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    loadSearchHistory();
-    loadRecommendations();
-  }, [tenantId]);
+    const saved = localStorage.getItem('atlas-search-history');
+    if (saved) {
+      try { setSearchHistory(JSON.parse(saved)); } catch { /* ignore */ }
+    }
+  }, []);
 
   useEffect(() => {
-    if (query.length > 2) {
-      searchSettings(query);
+    if (query.length > 1) {
+      searchSettingsLocal(query);
     } else {
       setSuggestions([]);
     }
   }, [query, selectedCategory]);
 
-  const loadSearchHistory = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/v1/settings/search-history`, {
-        headers: {
-          'X-Tenant-ID': tenantId || '',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.ok) {
-          setSearchHistory(data.history || []);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load search history:', error);
-    }
+  /** Navigate to a settings tab */
+  const navigateToTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+    setShowResults(false);
+    setQuery('');
   };
 
-  const loadRecommendations = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/v1/settings/recommendations`, {
-        headers: {
-          'X-Tenant-ID': tenantId || '',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.ok) {
-          setRecommendations(data.recommendations || []);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load recommendations:', error);
-    }
-  };
-
-  const searchSettings = async (searchQuery: string) => {
+  /** Client-side fuzzy search across all settings + quick actions */
+  const searchSettingsLocal = (q: string) => {
     setIsSearching(true);
-    try {
-      const response = await fetch(`${API_BASE}/v1/settings/search?q=${encodeURIComponent(searchQuery)}&category=${selectedCategory}`, {
-        headers: {
-          'X-Tenant-ID': tenantId || '',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.ok) {
-          setSuggestions(data.suggestions || []);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to search settings:', error);
-    } finally {
-      setIsSearching(false);
-    }
+    const lower = q.toLowerCase();
+    const catFilter = selectedCategory === 'all' ? null : selectedCategory;
+    const results = ALL_SETTINGS.filter(s => {
+      if (catFilter && s.category !== catFilter) return false;
+      return s.title.toLowerCase().includes(lower) ||
+             s.description.toLowerCase().includes(lower) ||
+             s.keywords.some(k => k.includes(lower));
+    });
+    setSuggestions(results);
+    setIsSearching(false);
   };
 
   const handleSearch = (searchQuery: string) => {
     setQuery(searchQuery);
     setShowResults(true);
-    
-    // Add to search history
+
     const historyItem: SearchHistory = {
       query: searchQuery,
       timestamp: new Date().toISOString(),
       results_count: suggestions.length,
     };
-    
-    setSearchHistory(prev => [historyItem, ...prev.slice(0, 9)]);
+
+    const updated = [historyItem, ...searchHistory.slice(0, 9)];
+    setSearchHistory(updated);
+    localStorage.setItem('atlas-search-history', JSON.stringify(updated));
   };
 
   const handleSuggestionClick = (suggestion: SearchSuggestion) => {
-    // Navigate to the setting
-    toast.info(`Navigating to: ${suggestion.title}`);
-    
-    // Update search history
+    // Navigate to the correct settings tab
+    const tab = suggestion.path || CATEGORY_TO_TAB[suggestion.category] || 'general';
+    navigateToTab(tab);
+    toast.success(`Opened: ${suggestion.title}`);
+
     const historyItem: SearchHistory = {
       query: query,
       timestamp: new Date().toISOString(),
       results_count: suggestions.length,
       clicked_result: suggestion.id,
     };
-    
-    setSearchHistory(prev => [historyItem, ...prev.slice(0, 9)]);
-    setShowResults(false);
-    setQuery('');
+    const updated = [historyItem, ...searchHistory.slice(0, 9)];
+    setSearchHistory(updated);
+    localStorage.setItem('atlas-search-history', JSON.stringify(updated));
   };
 
   const handleQuickAction = (action: typeof QUICK_ACTIONS[0]) => {
-    toast.info(`Executing: ${action.title}`);
-    setShowResults(false);
-    setQuery('');
+    const tab = CATEGORY_TO_TAB[action.category] || 'general';
+    navigateToTab(tab);
+    toast.success(`Opened: ${action.title}`);
   };
 
   const getCategoryIcon = (category: string) => {
@@ -412,52 +391,6 @@ export default function SmartSettingsSearch() {
         </div>
       </Card>
 
-      {/* AI Recommendations */}
-      {recommendations.length > 0 && (
-        <Card className="bg-slate-900/50 border-cyan-500/20 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-purple-400" />
-            <h3 className="text-lg font-semibold text-white">AI Recommendations</h3>
-            <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 text-xs">
-              Powered by Atlas AI
-            </Badge>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recommendations.map((rec) => {
-              const categoryStyle = getCategoryStyle(rec.category);
-              const Icon = getCategoryIcon(rec.category);
-              
-              return (
-                <div
-                  key={rec.id}
-                  className="p-4 bg-slate-800/30 rounded-lg border border-slate-600 hover:bg-slate-800/50 cursor-pointer transition-colors"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-lg ${categoryStyle.bgColor} flex items-center justify-center flex-shrink-0`}>
-                      <Icon className={`w-4 h-4 ${categoryStyle.color}`} />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-white font-medium mb-1">{rec.title}</h4>
-                      <p className="text-sm text-slate-400 mb-2">{rec.description}</p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-purple-300 italic">{rec.reason}</p>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs bg-purple-500/20 text-purple-300">
-                            {Math.round(rec.confidence * 100)}% match
-                          </Badge>
-                          <ArrowRight className="w-3 h-3 text-purple-400" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
-
       {/* Quick Actions */}
       <Card className="bg-slate-900/50 border-cyan-500/20 p-6">
         <div className="flex items-center gap-2 mb-4">
@@ -527,20 +460,21 @@ export default function SmartSettingsSearch() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { title: 'Atlas Voice Settings', category: 'atlas', description: 'Configure voice synthesis' },
-            { title: 'Analytics Dashboard', category: 'analytics', description: 'View usage metrics' },
-            { title: 'Team Management', category: 'teams', description: 'Manage team members' },
-            { title: 'Workflow Builder', category: 'workflows', description: 'Create automation' },
-            { title: 'Knowledge Base', category: 'knowledge', description: 'Manage documents' },
-            { title: 'Security Settings', category: 'security', description: 'Configure security' },
+            { title: 'Atlas Voice Settings', category: 'atlas', tab: 'atlas', description: 'Configure voice synthesis' },
+            { title: 'Analytics Dashboard', category: 'analytics', tab: 'analytics', description: 'View usage metrics' },
+            { title: 'Team Management', category: 'teams', tab: 'teams', description: 'Manage team members' },
+            { title: 'Workflow Builder', category: 'workflows', tab: 'workflows', description: 'Create automation' },
+            { title: 'Knowledge Base', category: 'knowledge', tab: 'knowledge', description: 'Manage documents' },
+            { title: 'Security Settings', category: 'security', tab: 'security', description: 'Configure security' },
           ].map((item, index) => {
             const categoryStyle = getCategoryStyle(item.category);
             const Icon = getCategoryIcon(item.category);
-            
+
             return (
               <div
                 key={index}
                 className="p-4 bg-slate-800/30 rounded-lg border border-slate-600 hover:bg-slate-800/50 cursor-pointer transition-colors"
+                onClick={() => navigateToTab(item.tab)}
               >
                 <div className={`w-8 h-8 rounded-lg ${categoryStyle.bgColor} flex items-center justify-center mb-3`}>
                   <Icon className={`w-4 h-4 ${categoryStyle.color}`} />

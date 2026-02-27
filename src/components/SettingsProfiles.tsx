@@ -5,7 +5,6 @@
 
 import { useState, useEffect } from "react";
 import { useActiveTenant } from "../lib/activeTenant";
-import { API_BASE } from "../lib/api";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -191,136 +190,86 @@ export default function SettingsProfiles() {
     settings: '',
   });
 
+  const STORAGE_KEY = 'atlas-custom-profiles';
+  const ACTIVE_PROFILE_KEY = 'atlas-active-profile';
+
   useEffect(() => {
     loadCustomProfiles();
-  }, [tenantId]);
+    // Restore active profile
+    const savedActive = localStorage.getItem(ACTIVE_PROFILE_KEY);
+    if (savedActive) {
+      try {
+        setSelectedProfile(JSON.parse(savedActive));
+      } catch { /* ignore */ }
+    }
+  }, []);
 
-  const loadCustomProfiles = async () => {
+  const loadCustomProfiles = () => {
     try {
-      const response = await fetch(`${API_BASE}/v1/settings/profiles`, {
-        headers: {
-          'X-Tenant-ID': tenantId || '',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.ok) {
-          setCustomProfiles(data.profiles || []);
-        }
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setCustomProfiles(JSON.parse(saved));
       }
     } catch (error) {
       console.error('Failed to load custom profiles:', error);
     }
   };
 
-  const applyProfile = async (profile: SettingsProfile) => {
-    setIsApplying(true);
-    try {
-      const response = await fetch(`${API_BASE}/v1/settings/apply-profile`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant-ID': tenantId || '',
-        },
-        body: JSON.stringify({ profile_id: profile.id, settings: profile.settings }),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.ok) {
-          toast.success(`Applied ${profile.name} profile successfully`);
-          setSelectedProfile(profile);
-        } else {
-          toast.error('Failed to apply profile');
-        }
-      } else {
-        toast.error('Failed to apply profile');
-      }
-    } catch (error) {
-      console.error('Failed to apply profile:', error);
-      toast.error('Failed to apply profile');
-    } finally {
-      setIsApplying(false);
-    }
+  const saveCustomProfiles = (profiles: SettingsProfile[]) => {
+    setCustomProfiles(profiles);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
   };
 
-  const createCustomProfile = async () => {
+  const applyProfile = (profile: SettingsProfile) => {
+    setIsApplying(true);
+    // Save the profile settings to localStorage for other components to read
+    localStorage.setItem('atlas-agent-config', JSON.stringify(profile.settings.atlas_agent || {}));
+    setSelectedProfile(profile);
+    localStorage.setItem(ACTIVE_PROFILE_KEY, JSON.stringify(profile));
+    toast.success(`Applied ${profile.name} profile successfully`);
+    setIsApplying(false);
+  };
+
+  const createCustomProfile = () => {
     if (!newProfile.name || !newProfile.description || !newProfile.settings) {
       toast.error('Please fill in all fields');
       return;
     }
 
     setIsCreating(true);
+    let settings;
     try {
-      let settings;
-      try {
-        settings = JSON.parse(newProfile.settings);
-      } catch (error) {
-        toast.error('Invalid JSON in settings');
-        setIsCreating(false);
-        return;
-      }
-
-      const response = await fetch(`${API_BASE}/v1/settings/profiles`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant-ID': tenantId || '',
-        },
-        body: JSON.stringify({
-          name: newProfile.name,
-          description: newProfile.description,
-          category: 'custom',
-          icon: 'settings',
-          settings,
-        }),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.ok) {
-          toast.success('Custom profile created successfully');
-          setNewProfile({ name: '', description: '', settings: '' });
-          loadCustomProfiles();
-        } else {
-          toast.error('Failed to create profile');
-        }
-      } else {
-        toast.error('Failed to create profile');
-      }
-    } catch (error) {
-      console.error('Failed to create profile:', error);
-      toast.error('Failed to create profile');
-    } finally {
+      settings = JSON.parse(newProfile.settings);
+    } catch {
+      toast.error('Invalid JSON in settings');
       setIsCreating(false);
+      return;
     }
+
+    const profile: SettingsProfile = {
+      id: `custom-${Date.now()}`,
+      name: newProfile.name,
+      description: newProfile.description,
+      category: 'custom',
+      icon: 'settings',
+      settings,
+      created_at: new Date().toISOString(),
+    };
+
+    saveCustomProfiles([...customProfiles, profile]);
+    toast.success('Custom profile created successfully');
+    setNewProfile({ name: '', description: '', settings: '' });
+    setIsCreating(false);
   };
 
-  const deleteCustomProfile = async (profileId: string) => {
-    try {
-      const response = await fetch(`${API_BASE}/v1/settings/profiles/${profileId}`, {
-        method: 'DELETE',
-        headers: {
-          'X-Tenant-ID': tenantId || '',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.ok) {
-          toast.success('Profile deleted successfully');
-          loadCustomProfiles();
-        } else {
-          toast.error('Failed to delete profile');
-        }
-      } else {
-        toast.error('Failed to delete profile');
-      }
-    } catch (error) {
-      console.error('Failed to delete profile:', error);
-      toast.error('Failed to delete profile');
+  const deleteCustomProfile = (profileId: string) => {
+    const updated = customProfiles.filter(p => p.id !== profileId);
+    saveCustomProfiles(updated);
+    if (selectedProfile?.id === profileId) {
+      setSelectedProfile(null);
+      localStorage.removeItem(ACTIVE_PROFILE_KEY);
     }
+    toast.success('Profile deleted successfully');
   };
 
   const exportProfile = (profile: SettingsProfile) => {
@@ -342,42 +291,25 @@ export default function SettingsProfiles() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = (e) => {
       try {
         const profile = JSON.parse(e.target?.result as string);
-        
-        // Validate profile structure
+
         if (!profile.name || !profile.description || !profile.settings) {
           toast.error('Invalid profile format');
           return;
         }
 
-        // Create as custom profile
-        const response = await fetch(`${API_BASE}/v1/settings/profiles`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Tenant-ID': tenantId || '',
-          },
-          body: JSON.stringify({
-            ...profile,
-            category: 'custom',
-            icon: 'settings',
-            id: `custom-${Date.now()}`,
-          }),
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.ok) {
-            toast.success('Profile imported successfully');
-            loadCustomProfiles();
-          } else {
-            toast.error('Failed to import profile');
-          }
-        } else {
-          toast.error('Failed to import profile');
-        }
+        const imported: SettingsProfile = {
+          ...profile,
+          category: 'custom',
+          icon: 'settings',
+          id: `custom-${Date.now()}`,
+          created_at: new Date().toISOString(),
+        };
+
+        saveCustomProfiles([...customProfiles, imported]);
+        toast.success('Profile imported successfully');
       } catch (error) {
         console.error('Failed to import profile:', error);
         toast.error('Failed to import profile');

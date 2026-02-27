@@ -147,19 +147,38 @@ function ensureKeyframes() {
   document.head.appendChild(s);
 }
 
+const CHAT_STORAGE_KEY = "atlas-chat-messages";
+const GREETING: ChatMsg = { id: 0, role: "assistant", content: "Hey — I'm Atlas. Ask me anything or give me a task.", time: now() };
+
+function loadSavedMessages(): ChatMsg[] {
+  try {
+    const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved) as ChatMsg[];
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch { /* ignore */ }
+  return [GREETING];
+}
+
 /* ── Main Component ── */
 export default function FloatingAtlas() {
   const { tenantId } = useActiveTenant();
   const [chatOpen, setChatOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    { id: 0, role: "assistant", content: "Hey — I'm Atlas. Ask me anything or give me a task.", time: now() },
-  ]);
+  const [messages, setMessages] = useState<ChatMsg[]>(loadSavedMessages);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [status, setStatus] = useState<FloatStatus>("online");
   const [listening, setListening] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
+
+  // Persist chat messages to localStorage whenever they change
+  useEffect(() => {
+    // Keep last 50 messages to avoid bloating localStorage
+    const toSave = messages.slice(-50);
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toSave));
+  }, [messages]);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

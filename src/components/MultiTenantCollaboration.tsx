@@ -407,7 +407,7 @@ export default function MultiTenantCollaboration() {
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-white font-medium">{team.name}</h4>
                   <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 text-xs">
-                    {team.members.length} members
+                    {(team.members ?? []).length} members
                   </Badge>
                 </div>
                 <p className="text-sm text-slate-400 mb-3">{team.description}</p>
@@ -657,7 +657,7 @@ export default function MultiTenantCollaboration() {
                         </Badge>
                       </div>
                       <p className="text-sm text-slate-400 mb-3">
-                        {space.members.length} members • {space.settings.is_public ? 'Public' : 'Private'}
+                        {(space.members ?? []).length} members • {space.settings?.is_public ? 'Public' : 'Private'}
                       </p>
                       <div className="flex items-center gap-2 text-xs text-slate-500">
                         <Calendar className="w-3 h-3" />

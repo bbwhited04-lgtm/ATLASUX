@@ -118,6 +118,10 @@ export function ProcessingSettings() {
         <p className="text-slate-400">
           Hardware acceleration settings for maximum performance
         </p>
+        <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-xs text-yellow-400">
+          <AlertCircle className="w-3 h-3" />
+          Demo view — actual system metrics coming in a future update
+        </div>
       </div>
 
       {/* System Overview */}
