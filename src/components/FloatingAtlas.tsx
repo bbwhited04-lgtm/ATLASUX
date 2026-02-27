@@ -163,6 +163,10 @@ function loadSavedMessages(): ChatMsg[] {
 
 /* ── Main Component ── */
 export default function FloatingAtlas() {
+  // Only show if the user has passed the gate (sessionStorage persists per tab)
+  const gateOk = (() => { try { return sessionStorage.getItem("atlasux_gate_ok") === "1"; } catch { return false; } })();
+  if (!gateOk) return null;
+
   const { tenantId } = useActiveTenant();
   const [chatOpen, setChatOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
