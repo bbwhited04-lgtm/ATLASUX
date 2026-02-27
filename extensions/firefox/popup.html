@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=400">
+  <title>Atlas UX</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- ═══════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════ -->
+  <header id="header">
+    <div class="header-left">
+      <img src="icons/icon48.svg" alt="Atlas UX" class="header-icon">
+      <h1>Atlas UX</h1>
+    </div>
+    <div class="header-right">
+      <span id="statusDot" class="status-dot disconnected" title="Disconnected"></span>
+      <button id="logoutBtn" class="icon-btn" title="Disconnect" style="display:none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════
+       LOGIN FORM
+       ═══════════════════════════════════════════ -->
+  <section id="loginSection">
+    <div class="card">
+      <h2>Connect to Atlas</h2>
+      <p class="subtitle">Enter your API credentials to get started.</p>
+      <div class="form-group">
+        <label for="apiUrl">API URL</label>
+        <input type="url" id="apiUrl" placeholder="https://atlas-ux.onrender.com/v1" spellcheck="false">
+      </div>
+      <div class="form-group">
+        <label for="authToken">Auth Token</label>
+        <input type="password" id="authToken" placeholder="Bearer token or JWT" spellcheck="false">
+      </div>
+      <div class="form-group">
+        <label for="tenantId">Tenant ID</label>
+        <input type="text" id="tenantId" placeholder="Your tenant identifier" spellcheck="false">
+      </div>
+      <div id="loginError" class="error-msg" style="display:none;"></div>
+      <button id="loginBtn" class="btn-primary">
+        <span class="btn-text">Connect</span>
+        <span class="btn-spinner" style="display:none;"></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN CONTENT (shown when connected)
+       ═══════════════════════════════════════════ -->
+  <main id="mainSection" style="display:none;">
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-value" id="statJobs">--</span>
+        <span class="stat-label">Active Jobs</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-value" id="statDecisions">--</span>
+        <span class="stat-label">Pending</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-value" id="statAgents">--</span>
+        <span class="stat-label">Agents</span>
+      </div>
+    </div>
+
+    <!-- Mini Chat -->
+    <div class="card chat-card">
+      <div class="chat-header">
+        <h3>Agent Chat</h3>
+        <div class="agent-pills" id="agentPills">
+          <button class="agent-pill active" data-agent="atlas">Atlas</button>
+          <button class="agent-pill" data-agent="binky">Binky</button>
+          <button class="agent-pill" data-agent="cheryl">Cheryl</button>
+          <button class="agent-pill" data-agent="sunday">Sunday</button>
+        </div>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-placeholder">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+          </svg>
+          <span>Send a message to get started</span>
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Message Atlas..." maxlength="500">
+        <button id="chatSendBtn" class="btn-icon-send" title="Send">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Activity Feed -->
+    <div class="card">
+      <div class="section-header">
+        <h3>Recent Activity</h3>
+        <button id="refreshActivityBtn" class="icon-btn" title="Refresh">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+          </svg>
+        </button>
+      </div>
+      <div id="activityFeed" class="activity-feed">
+        <div class="activity-placeholder">Loading activity...</div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button id="newJobBtn" class="btn-secondary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New Job
+      </button>
+      <button id="openDashboardBtn" class="btn-secondary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        Open Dashboard
+      </button>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════
+       NEW JOB MODAL
+       ═══════════════════════════════════════════ -->
+  <div id="jobModal" class="modal-overlay" style="display:none;">
+    <div class="card modal-card">
+      <div class="modal-header">
+        <h3>Create Job</h3>
+        <button id="closeJobModal" class="icon-btn">&times;</button>
+      </div>
+      <div class="form-group">
+        <label for="jobType">Job Type</label>
+        <select id="jobType">
+          <option value="CONTENT_GENERATION">Content Generation</option>
+          <option value="RESEARCH">Research</option>
+          <option value="EMAIL_SEND">Email Send</option>
+          <option value="SOCIAL_POST">Social Post</option>
+          <option value="ANALYSIS">Analysis</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="jobDesc">Description</label>
+        <textarea id="jobDesc" rows="3" placeholder="Describe the job..."></textarea>
+      </div>
+      <div id="jobError" class="error-msg" style="display:none;"></div>
+      <div class="modal-actions">
+        <button id="cancelJobBtn" class="btn-ghost">Cancel</button>
+        <button id="submitJobBtn" class="btn-primary btn-sm">Create Job</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════ -->
+  <footer id="footer">
+    <span>Atlas UX Extension</span>
+    <span class="footer-version">v1.0.0</span>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=400" />
+  <title>Atlas UX</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <!-- ===== HEADER ===== -->
+  <header id="header">
+    <div class="header-left">
+      <div class="logo-mark">A</div>
+      <div class="header-text">
+        <h1>Atlas UX</h1>
+        <span class="tagline">AI Employee Platform</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="connectionStatus" class="status-dot disconnected" title="Disconnected"></span>
+      <button id="btnSettings" class="icon-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button id="btnLogout" class="icon-btn" title="Logout" style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== LOGIN FORM ===== -->
+  <section id="loginSection" class="section">
+    <div class="card">
+      <h2>Connect to Atlas UX</h2>
+      <p class="muted">Enter your credentials to get started.</p>
+      <form id="loginForm" autocomplete="off">
+        <div class="field">
+          <label for="inputApiUrl">API URL</label>
+          <input type="url" id="inputApiUrl" placeholder="https://atlas-ux.onrender.com" />
+        </div>
+        <div class="field">
+          <label for="inputAuthToken">Auth Token</label>
+          <input type="password" id="inputAuthToken" placeholder="Bearer token" />
+        </div>
+        <div class="field">
+          <label for="inputTenantId">Tenant ID</label>
+          <input type="text" id="inputTenantId" placeholder="your-tenant-uuid" />
+        </div>
+        <div id="loginError" class="error-msg" style="display:none;"></div>
+        <button type="submit" class="btn-primary" id="btnLogin">
+          <span class="btn-text">Connect</span>
+          <span class="btn-spinner" style="display:none;"></span>
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== MAIN UI (shown when logged in) ===== -->
+  <section id="mainSection" style="display:none;">
+
+    <!-- Quick Stats -->
+    <div id="statsBar" class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-value" id="statJobs">--</span>
+        <span class="stat-label">Active Jobs</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-value" id="statDecisions">--</span>
+        <span class="stat-label">Pending</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-value" id="statAgents">--</span>
+        <span class="stat-label">Agents</span>
+      </div>
+    </div>
+
+    <!-- Chat Panel -->
+    <div class="card chat-card">
+      <div class="card-header">
+        <h3>Agent Chat</h3>
+      </div>
+      <div class="agent-selector">
+        <button class="agent-pill active" data-agent="atlas">Atlas</button>
+        <button class="agent-pill" data-agent="binky">Binky</button>
+        <button class="agent-pill" data-agent="cheryl">Cheryl</button>
+        <button class="agent-pill" data-agent="sunday">Sunday</button>
+      </div>
+      <div id="chatMessages" class="chat-messages">
+        <div class="chat-empty">Select an agent and start chatting.</div>
+      </div>
+      <form id="chatForm" class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Ask an agent..." autocomplete="off" />
+        <button type="submit" class="btn-send" title="Send">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Recent Activity</h3>
+        <button id="btnRefreshActivity" class="icon-btn small" title="Refresh">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+      </div>
+      <div id="activityFeed" class="activity-feed">
+        <div class="activity-empty">No recent activity.</div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button id="btnNewJob" class="btn-action">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        New Job
+      </button>
+      <button id="btnDashboard" class="btn-action">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        Dashboard
+      </button>
+    </div>
+
+    <!-- New Job Modal -->
+    <div id="newJobModal" class="modal" style="display:none;">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content card">
+        <div class="card-header">
+          <h3>Create Job</h3>
+          <button id="btnCloseModal" class="icon-btn small" title="Close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <form id="newJobForm">
+          <div class="field">
+            <label for="jobType">Job Type</label>
+            <select id="jobType">
+              <option value="CONTENT_CREATE">Content Create</option>
+              <option value="EMAIL_SEND">Email Send</option>
+              <option value="RESEARCH">Research</option>
+              <option value="SOCIAL_POST">Social Post</option>
+              <option value="CUSTOM">Custom</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="jobDescription">Description</label>
+            <textarea id="jobDescription" rows="3" placeholder="Describe the job..."></textarea>
+          </div>
+          <div id="jobError" class="error-msg" style="display:none;"></div>
+          <button type="submit" class="btn-primary">Create Job</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer id="footer">
+    <span class="version">v1.0.0</span>
+    <span class="footer-sep">&middot;</span>
+    <span class="footer-link" id="footerSettingsLink">Settings</span>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

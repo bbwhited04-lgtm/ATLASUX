@@ -1,0 +1,35 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg128" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0891b2"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="innerGlow" x1="64" y1="0" x2="64" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.15)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+    <filter id="textShadow128">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.3)"/>
+    </filter>
+    <filter id="outerGlow128" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/>
+      <feFlood flood-color="#06b6d4" flood-opacity="0.3"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Background -->
+  <rect width="128" height="128" rx="28" fill="url(#bg128)" filter="url(#outerGlow128)"/>
+  <!-- Inner highlight -->
+  <rect x="2" y="2" width="124" height="124" rx="26" fill="url(#innerGlow)"/>
+  <!-- Border -->
+  <rect x="2" y="2" width="124" height="124" rx="26" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+  <!-- Letter -->
+  <text x="64" y="88" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="76" fill="white" filter="url(#textShadow128)">A</text>
+  <!-- Subtle accent line -->
+  <line x1="32" y1="98" x2="96" y2="98" stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round"/>
+</svg>
