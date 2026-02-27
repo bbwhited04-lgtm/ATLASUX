@@ -192,7 +192,7 @@ function RootLayoutInner() {
   // inside Business Manager as tabs. Agent Watcher heartbeat is in the header.
   const navItems: Array<{ path: string; icon: any; label: string; badge?: number }> = [
     { path: "/app", icon: LayoutDashboard, label: "Dashboard" },
-    { path: "/app/jobs", icon: Cpu, label: "Pluto Jobs" },
+    { path: "/app/jobs", icon: Cpu, label: "Jobs" },
     { path: "/app/chat", icon: MessageSquare, label: "AI Chat" },
     { path: "/app/agents", icon: UserCog, label: "Agents" },
     { path: "/app/monitoring", icon: Radio, label: "Monitoring" },

@@ -233,7 +233,7 @@ export function JobRunner() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-            Pluto Job Runner
+            Job Runner
           </h2>
           <p className="text-slate-400 text-sm mt-1">Manage and monitor all AI tasks</p>
         </div>

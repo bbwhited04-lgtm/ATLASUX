@@ -399,7 +399,7 @@ export function MobileCompanionSetup({ isOpen, onClose }: MobileCompanionSetupPr
                     </div>
                     <div>
                       <div className="text-sm text-white font-medium">Monitor job progress</div>
-                      <div className="text-xs text-slate-400 mt-0.5">Track Pluto jobs in real-time from anywhere</div>
+                      <div className="text-xs text-slate-400 mt-0.5">Track jobs in real-time from anywhere</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">

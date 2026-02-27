@@ -226,12 +226,12 @@ const navigate = useNavigate();
       </div>
       
       <div className="grid grid-cols-3 gap-6">
-        {/* Pluto Job Runner Status */}
+        {/* Job Runner Status */}
         <div className="col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Cpu className="w-5 h-5 text-cyan-400" />
-              Pluto Job Runner
+              Job Runner
             </h3>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />

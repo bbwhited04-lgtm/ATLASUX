@@ -302,10 +302,10 @@ export default function FloatingAtlas() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-[9998] flex items-end gap-3">
-      {/* Chat panel */}
+    <div className="fixed bottom-4 right-4 z-[9998] flex flex-col items-end gap-2">
+      {/* Chat panel — stacked above avatar */}
       {chatOpen && (
-        <div className="w-[360px] max-h-[480px] flex flex-col rounded-2xl border border-cyan-500/20 bg-slate-950/95 backdrop-blur-xl shadow-2xl shadow-cyan-500/10 overflow-hidden mb-2">
+        <div className="w-[360px] max-h-[480px] flex flex-col rounded-2xl border border-cyan-500/20 bg-slate-950/95 backdrop-blur-xl shadow-2xl shadow-cyan-500/10 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-cyan-500/10 bg-slate-900/60">
             <div className="flex items-center gap-2">

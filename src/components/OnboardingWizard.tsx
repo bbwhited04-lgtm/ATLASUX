@@ -210,7 +210,7 @@ export function OnboardingWizard({ isOpen, onComplete, onSkip }: OnboardingWizar
                   <p className="text-lg text-slate-300 mb-8">
                     Atlas UX operates directly from your PC with two powerful systems: 
                     <span className="text-cyan-400 font-semibold"> Atlas</span> (AI CEO) and
-                    <span className="text-blue-400 font-semibold"> Pluto</span> (Job Runner)
+                    <span className="text-blue-400 font-semibold"> Job Runner</span> (Task Execution)
                   </p>
                 </div>
 
@@ -618,7 +618,7 @@ export function OnboardingWizard({ isOpen, onComplete, onSkip }: OnboardingWizar
                       </div>
                       <div>
                         <div className="text-sm font-semibold text-white mb-1">Create Your First Job</div>
-                        <div className="text-xs text-slate-400">Let Pluto run a task for you</div>
+                        <div className="text-xs text-slate-400">Let Atlas run a task for you</div>
                       </div>
                     </div>
                   </div>
