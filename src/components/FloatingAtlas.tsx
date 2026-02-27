@@ -125,6 +125,40 @@ export default function FloatingAtlas() {
     }
   };
 
+  /* TTS — deep bass voice for Atlas responses */
+  const [speaking, setSpeaking] = useState(false);
+  const speak = useCallback((text: string) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel(); // stop any current speech
+    const utter = new SpeechSynthesisUtterance(text);
+
+    // Pick the deepest male voice available
+    const voices = window.speechSynthesis.getVoices();
+    const deepVoice = voices.find(v => /male/i.test(v.name) && /english/i.test(v.lang || v.name))
+      || voices.find(v => /daniel|david|james|google.*male|microsoft.*mark/i.test(v.name))
+      || voices.find(v => v.lang.startsWith("en") && !/(female|samantha|karen|fiona|moira|tessa|victoria)/i.test(v.name))
+      || voices.find(v => v.lang.startsWith("en"))
+      || voices[0];
+    if (deepVoice) utter.voice = deepVoice;
+
+    // Deep bass settings
+    utter.pitch = 0.4;     // low pitch (0-2 range, 1 is normal)
+    utter.rate = 0.9;      // slightly slower for authority
+    utter.volume = 1.0;
+
+    utter.onstart = () => setSpeaking(true);
+    utter.onend = () => setSpeaking(false);
+    utter.onerror = () => setSpeaking(false);
+
+    window.speechSynthesis.speak(utter);
+  }, []);
+
+  // Preload voices (some browsers load async)
+  useEffect(() => {
+    window.speechSynthesis?.getVoices();
+    window.speechSynthesis?.addEventListener?.("voiceschanged", () => window.speechSynthesis.getVoices());
+  }, []);
+
   /* Status poll */
   const pollStatus = useCallback(async () => {
     const headers: Record<string, string> = {};
@@ -171,6 +205,8 @@ export default function FloatingAtlas() {
       const data = await resp.json().catch(() => ({}));
       const content = data?.content || (resp.ok ? "..." : `Error: ${data?.error || resp.statusText}`);
       setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content, time: now() }]);
+      // Speak the response in deep bass voice
+      speak(content);
     } catch (err: any) {
       setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: `Offline — ${err?.message || "network error"}`, time: now() }]);
     } finally {
@@ -275,14 +311,14 @@ export default function FloatingAtlas() {
             style={{ animation: `fa-eye-glow 2s ease-in-out infinite` }}
           />
 
-          {/* Eyes — bright and glowing */}
-          <line x1="66" y1="28" x2="74" y2="28" stroke="#22d3ee" strokeWidth="3" strokeLinecap="round" opacity="1" />
-          <line x1="86" y1="28" x2="94" y2="28" stroke="#22d3ee" strokeWidth="3" strokeLinecap="round" opacity="1" />
-          <circle cx="70" cy="28" r="2" fill="#67e8f9" opacity="0.7" style={{ animation: "fa-eye-glow 3s ease-in-out infinite" }} />
-          <circle cx="90" cy="28" r="2" fill="#67e8f9" opacity="0.7" style={{ animation: "fa-eye-glow 3s ease-in-out infinite" }} />
+          {/* Eyes — bright and glowing, pulse faster when speaking */}
+          <line x1="66" y1="28" x2="74" y2="28" stroke={speaking ? "#67e8f9" : "#22d3ee"} strokeWidth={speaking ? "4" : "3"} strokeLinecap="round" opacity="1" />
+          <line x1="86" y1="28" x2="94" y2="28" stroke={speaking ? "#67e8f9" : "#22d3ee"} strokeWidth={speaking ? "4" : "3"} strokeLinecap="round" opacity="1" />
+          <circle cx="70" cy="28" r={speaking ? 3 : 2} fill="#67e8f9" opacity={speaking ? 1 : 0.7} style={{ animation: `fa-eye-glow ${speaking ? "0.3s" : "3s"} ease-in-out infinite` }} />
+          <circle cx="90" cy="28" r={speaking ? 3 : 2} fill="#67e8f9" opacity={speaking ? 1 : 0.7} style={{ animation: `fa-eye-glow ${speaking ? "0.3s" : "3s"} ease-in-out infinite` }} />
 
-          {/* Mouth */}
-          <path d="M72 42 Q80 46 88 42" stroke="#06b6d4" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
+          {/* Mouth — animates when speaking */}
+          <path d={speaking ? "M72 40 Q80 48 88 40" : "M72 42 Q80 46 88 42"} stroke={speaking ? "#22d3ee" : "#06b6d4"} strokeWidth={speaking ? "1.5" : "1"} strokeLinecap="round" opacity={speaking ? 0.8 : 0.4} />
 
           {/* ═══ NECK ═══ */}
           <line x1="74" y1="62" x2="74" y2="74" stroke="#06b6d4" strokeWidth="1.5" opacity="0.5" />
