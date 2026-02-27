@@ -270,6 +270,7 @@ export default function Landing() {
             <li>[Windsurf] Premium feature panels — SecurityCompliance, BusinessIntelligence, VideoConferencing, SpreadsheetAnalysis, and 19 more premium components inside Business Manager and Settings</li>
             <li>[Claude Code] Rebuilt Floating Atlas — non-intrusive chat bubble in the bottom-right corner using the wireframe robot avatar with heartbeat core; connects to the real /v1/chat endpoint (not phantom routes); collapsible to a small robot bubble, minimizable to a tiny pill, expands to a 380px chat window; status-reactive (cyan/purple/red) from live job and decision polling; replaces Windsurf's FloatingAtlas/SystemTrayAtlas/BrowserExtensionAtlas that called non-existent endpoints</li>
             <li>[Claude Code] Version 2.0.0 — desktop app ready: macOS .dmg (arm64 + x64), Linux .AppImage + .deb, Windows NSIS + portable; auto-updater via GitHub Releases (electron-updater checks every 4 hours, tray notification when update is ready, one-click install); system tray integration with minimize-to-tray, quick chat, and restore; app icon generated from wireframe robot SVG; proprietary EULA license; electron-builder config with hardened runtime + macOS entitlements</li>
+            <li>[Claude Code] Fixed Vercel build — removed desktop-only packages (Electron, Sharp, Puppeteer, Tauri CLI) from package.json entirely; Vercel only installs what the static web build needs; desktop deps install separately via `npm run electron:setup`</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
