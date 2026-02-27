@@ -13,5 +13,18 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Disable right-click context menu
+      document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+      // Block common dev tools shortcuts
+      document.addEventListener('keydown', function(e) {
+        // F12
+        if (e.key === 'F12') { e.preventDefault(); return; }
+        // Ctrl+Shift+I (Inspect), Ctrl+Shift+J (Console), Ctrl+Shift+C (Element picker)
+        if (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) { e.preventDefault(); return; }
+        // Ctrl+U (View Source)
+        if (e.ctrlKey && e.key.toUpperCase() === 'U') { e.preventDefault(); return; }
+      });
+    </script>
   </body>
 </html>
