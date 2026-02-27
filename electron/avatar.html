@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atlas Avatar</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+      -webkit-app-region: no-drag;
+      cursor: pointer;
+    }
+    #status-dot {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34,197,94,0.6);
+      border: 2px solid rgba(0,0,0,0.3);
+      animation: pulse 2s ease-in-out infinite;
+      z-index: 10;
+      -webkit-app-region: no-drag;
+    }
+    @keyframes pulse {
+      0%,100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.3); opacity: 1; }
+    }
+  </style>
+
+  <!-- Import map for Three.js from dist -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.183.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.1/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="status-dot"></div>
+  <script type="module">
+    import * as THREE from "three";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    // Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, 180 / 220, 0.1, 100);
+    camera.position.set(0, 0, 3.5);
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(180, 220);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setClearColor(0x000000, 0);
+    document.body.appendChild(renderer.domElement);
+
+    // Lighting
+    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambient);
+
+    const keyLight = new THREE.DirectionalLight(0xe0f2fe, 1.2);
+    keyLight.position.set(3, 4, 5);
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0x0ea5e9, 0.4);
+    fillLight.position.set(-2, -1, 3);
+    scene.add(fillLight);
+
+    // Status-reactive point light
+    const coreLight = new THREE.PointLight(0x06b6d4, 2, 4, 2);
+    coreLight.position.set(0, 0, 0.5);
+    scene.add(coreLight);
+
+    // State
+    let avatarState = "idle"; // idle | walking
+    let avatarDirection = "forward"; // left | right | forward
+    let model = null;
+    let statusColor = "#22c55e";
+    let coreColor = 0x06b6d4;
+
+    // Load model
+    const loader = new GLTFLoader();
+    const modelPath = "../dist/models/atlas-avatar.glb";
+    loader.load(modelPath, (gltf) => {
+      model = gltf.scene;
+
+      // Compute bounds for centering
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = 2.2 / maxDim;
+
+      model.scale.setScalar(scale);
+      model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+
+      // Enhance materials
+      model.traverse((child) => {
+        if (child.isMesh && child.material) {
+          child.material.metalness = 0.6;
+          child.material.roughness = 0.3;
+        }
+      });
+
+      scene.add(model);
+    }, undefined, (err) => {
+      console.error("Failed to load avatar model:", err);
+      // Fallback: wireframe octahedron
+      const geo = new THREE.OctahedronGeometry(0.6, 1);
+      const mat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, wireframe: true, transparent: true, opacity: 0.7 });
+      model = new THREE.Mesh(geo, mat);
+      scene.add(model);
+    });
+
+    // Click to open main app chat
+    renderer.domElement.addEventListener("click", () => {
+      if (window.atlasAPI) window.atlasAPI.avatarClicked();
+    });
+
+    // Listen for state changes from main process
+    if (window.atlasAPI) {
+      window.atlasAPI.onAvatarState((state) => { avatarState = state; });
+      window.atlasAPI.onAvatarDirection((dir) => { avatarDirection = dir; });
+    }
+
+    // Animation loop
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+
+      if (model) {
+        if (avatarState === "walking") {
+          // Walking bob — vertical bounce
+          model.position.y += Math.sin(t * 6) * 0.003;
+          // Lean in direction of travel
+          const leanTarget = avatarDirection === "right" ? 0.08 : avatarDirection === "left" ? -0.08 : 0;
+          model.rotation.z += (leanTarget - model.rotation.z) * 0.1;
+          // Slight forward/back sway
+          model.rotation.x = Math.sin(t * 6) * 0.04;
+          // Slow rotation toward direction
+          const yTarget = avatarDirection === "right" ? 0.3 : avatarDirection === "left" ? -0.3 : 0;
+          model.rotation.y += (yTarget - model.rotation.y) * 0.05;
+        } else {
+          // Idle — gentle float and slow rotation
+          model.position.y += Math.sin(t * 0.8) * 0.001;
+          model.rotation.y = Math.sin(t * 0.4) * 0.3;
+          model.rotation.x *= 0.95; // ease back to 0
+          model.rotation.z *= 0.95;
+        }
+      }
+
+      // Pulse core light
+      coreLight.intensity = 2 + Math.sin(t * 2) * 0.8;
+      coreLight.color.set(coreColor);
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
