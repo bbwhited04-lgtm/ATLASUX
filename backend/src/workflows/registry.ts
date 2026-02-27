@@ -29,6 +29,7 @@ export const workflowCatalog = [
   { id: "WF-010", name: "Daily Executive Brief (Binky)",  description: "Daily intel digest with traceability.",                                          ownerAgent: "binky"  },
   { id: "WF-020", name: "Engine Run Smoke Test (Atlas)",  description: "Minimal end-to-end cloud surface verification.",                                  ownerAgent: "atlas"  },
   { id: "WF-021", name: "Bootstrap Atlas (Atlas)",          description: "Boot → discover agents → load KB → seed tasks → queue boot email → await command.", ownerAgent: "atlas"    },
+  { id: "WF-107", name: "Atlas Tool Discovery & Proposal",  description: "Look inside (agent gaps) + look outside (SERP external tools) → LLM proposals → email report with approve/deny links.", ownerAgent: "atlas" },
   { id: "WF-108", name: "Reynolds Blog Writer & Publisher", description: "SERP research → LLM drafts full blog post → publishes to KB → emails confirmation.",  ownerAgent: "reynolds" },
 ] as const;
 
@@ -1024,7 +1025,6 @@ handlers["WF-107"] = async (ctx) => {
     where:  { tenantId: ctx.tenantId, status: { in: ["pending", "approved"] } },
     select: { agentId: true, toolName: true, status: true },
   });
-  // Build a set of "agentId:toolName" keys to exclude from new proposals
   const existingKeys = new Set(
     existingProposals.map(p => `${p.agentId}:${p.toolName.toLowerCase()}`)
   );
@@ -1033,14 +1033,13 @@ handlers["WF-107"] = async (ctx) => {
 
   await writeStepAudit(ctx, "WF-107.dedup", `Skipping ${existingKeys.size} already-proposed tools (${alreadyApproved.length} approved, ${alreadyPending.length} pending)`);
 
-  // ── Build agent context snapshot ────────────────────────────────────────────
+  // ── Step 1: Look Inside — build agent context snapshot ────────────────────────
   const agentSnapshots = agentRegistry
     .filter(a => a.id !== "chairman")
     .map(a => {
       const skill = getSkill(a.id);
       const skillSnippet = skill ? skill.slice(0, 600) : "(no SKILL.md)";
       const currentTools = (a.toolsAllowed ?? []).join(", ") || "none listed";
-      // Include approved tools so LLM knows what's already in the pipeline
       const approvedForAgent = alreadyApproved
         .filter(p => p.agentId === a.id)
         .map(p => p.toolName)
@@ -1052,31 +1051,72 @@ handlers["WF-107"] = async (ctx) => {
 
   await writeStepAudit(ctx, "WF-107.snapshot", `Built snapshots for ${agentRegistry.length} agents`);
 
-  // ── LLM: Analyze gaps and generate proposals ────────────────────────────────
+  // ── Step 2: Look Outside — SERP scan for external tools & integrations ────────
+  let externalIntel = "";
+  const serpKey = process.env.SERP_API_KEY?.trim();
+  if (serpKey) {
+    const searches = [
+      "best AI business automation tools APIs integrations 2026",
+      "top SaaS API integrations small business CRM email calendar 2026",
+      "new AI agent tools plugins marketplace productivity 2026",
+    ];
+    const allResults: string[] = [];
+    for (const searchTerm of searches) {
+      try {
+        const q   = encodeURIComponent(searchTerm);
+        const url = `https://serpapi.com/search.json?q=${q}&api_key=${serpKey}&num=6&hl=en&gl=us`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const json = (await res.json()) as any;
+          const results = ((json.organic_results ?? []) as any[]).slice(0, 4);
+          for (const r of results) {
+            allResults.push(`- ${r.title ?? "Untitled"}: ${r.snippet ?? ""}`);
+          }
+        }
+      } catch { /* non-fatal — continue with other searches */ }
+    }
+    if (allResults.length > 0) {
+      externalIntel = allResults.slice(0, 12).join("\n");
+    }
+    await writeStepAudit(ctx, "WF-107.serp", `External tool scan: ${allResults.length} results from ${searches.length} queries`);
+  } else {
+    await writeStepAudit(ctx, "WF-107.serp", "SERP_API_KEY not set — external scan skipped");
+  }
+
+  // ── LLM: Analyze gaps (inside + outside) and generate proposals ───────────────
   const alreadyList = existingKeys.size > 0
     ? `\n\nDO NOT re-propose any of these already-proposed tools:\n${[...existingKeys].map(k => `- ${k}`).join("\n")}`
     : "";
+
+  const externalBlock = externalIntel
+    ? `\n\nEXTERNAL TOOLS & INTEGRATIONS DISCOVERED TODAY:\nThe following tools, APIs, and integrations are available in the market. Consider whether any agent would benefit from integrating with these:\n${externalIntel}`
+    : "\n\n(No external tool scan data available — propose based on your knowledge of available SaaS APIs, webhooks, and integrations.)";
 
   const analysisText = await safeLLM(ctx, {
     agent:   "atlas",
     purpose: "tool-discovery",
     route:   "ORCHESTRATION_REASONING",
-    system: `You are Atlas, AI President of Atlas UX. Your job today is to analyze every agent's current toolset and identify the highest-value tools they are missing.
+    system: `You are Atlas, AI President of Atlas UX. Your job today is to analyze every agent's current toolset AND scan for valuable external tools, APIs, and integrations they should connect to.
+
+DISCOVERY APPROACH:
+1. LOOK INSIDE: Review each agent's current tools vs their role. What internal capabilities are they missing?
+2. LOOK OUTSIDE: Review the external tool/API landscape. What third-party services (Slack, HubSpot, Notion, Stripe, Calendly, Zapier, Twilio, SendGrid, Google Workspace, Microsoft 365, Airtable, etc.) would give agents superpowers?
 
 For each proposal, output EXACTLY this format (one blank line between proposals):
-TOOL: <short tool name, e.g. "read_crm_contacts">
+TOOL: <short tool name, e.g. "hubspot_sync_contacts">
 AGENT: <agent id, lowercase>
 PURPOSE: <one sentence — what this tool does and why this agent needs it>
-IMPL: <one sentence — how to implement it, e.g. "query prisma.crmContact.findMany filtered by tenantId">
+IMPL: <one sentence — how to implement: API endpoint, npm package, webhook, or internal prisma query>
 ---
 
 Rules:
 - Propose 8–15 tools total across all agents. Prioritize the highest-impact gaps.
-- Each proposal must be specific and immediately actionable.
+- Mix internal tools (data access, KB queries) WITH external integrations (SaaS APIs, webhooks).
+- Each proposal must be specific and immediately actionable — name the real API or service.
 - Do not re-propose tools the agent already has OR tools already in the approved/pending list.
-- Focus on: data access tools (KB search, CRM lookups), communication tools (email send, Teams message), and productivity tools (calendar read, file read).
+- Think creatively — what NEW external services have launched or matured recently that our agents should tap into?
 - End the list with END_PROPOSALS on its own line.`,
-    user: `Today: ${today}${alreadyList}\n\nAgent snapshots:\n\n${agentSnapshots.slice(0, 8000)}`,
+    user: `Today: ${today}${alreadyList}${externalBlock}\n\nAgent snapshots:\n\n${agentSnapshots.slice(0, 7000)}`,
   });
 
   await writeStepAudit(ctx, "WF-107.analysis", `LLM analysis complete (${analysisText.length} chars)`);
@@ -1107,19 +1147,17 @@ Rules:
     const key = `${p.agentId}:${p.toolName.toLowerCase()}`;
     return !existingKeys.has(key);
   });
+  const skippedCount = proposals.length - deduped.length;
 
-  if (!deduped.length) {
-    await writeStepAudit(ctx, "WF-107.no-new-proposals", `All ${proposals.length} LLM proposals were duplicates — nothing new to propose`);
-    return { ok: true, message: "WF-107 complete — no new proposals (all already approved or pending)", output: { proposals: 0, skipped: proposals.length } };
+  if (skippedCount > 0) {
+    await writeStepAudit(ctx, "WF-107.hard-dedup", `Filtered ${skippedCount} duplicate proposals, ${deduped.length} new remain`);
   }
 
-  const proposals_final = deduped;
-
-  // ── Save proposals to DB + generate approve/deny tokens ─────────────────────
+  // ── Save new proposals to DB + generate approve/deny tokens ─────────────────
   const crypto = await import("crypto");
   const savedProposals: Array<ProposalRaw & { token: string; num: number }> = [];
 
-  for (const p of proposals_final) {
+  for (const p of deduped) {
     const token = crypto.randomBytes(24).toString("hex");
     await prisma.toolProposal.create({
       data: {
@@ -1132,61 +1170,93 @@ Rules:
         status:        "pending",
         runId:         ctx.intentId,
       },
-    }).catch(() => null); // non-fatal
+    }).catch(() => null);
     savedProposals.push({ ...p, token, num: savedProposals.length + 1 });
   }
 
-  await writeStepAudit(ctx, "WF-107.saved", `Saved ${savedProposals.length} proposals to DB`);
+  if (savedProposals.length > 0) {
+    await writeStepAudit(ctx, "WF-107.saved", `Saved ${savedProposals.length} proposals to DB`);
+  }
 
-  // ── Build email body ─────────────────────────────────────────────────────────
-  const rows = savedProposals.map(p => {
-    const approveUrl = `${backendUrl}/v1/tools/proposals/${p.token}/approve`;
-    const denyUrl    = `${backendUrl}/v1/tools/proposals/${p.token}/deny`;
-    return [
-      `${p.num}. [${p.agentId.toUpperCase()}] ${p.toolName}`,
-      `   Purpose: ${p.purpose}`,
-      `   Impl: ${p.impl || "N/A"}`,
-      `   ✅ APPROVE → ${approveUrl}`,
-      `   ❌ DENY    → ${denyUrl}`,
+  // ── Build email body — ALWAYS send, even if no new proposals ────────────────
+  let emailSubject: string;
+  let emailBody: string;
+
+  if (savedProposals.length > 0) {
+    // New proposals found — full report with approve/deny links
+    const rows = savedProposals.map(p => {
+      const approveUrl = `${backendUrl}/v1/tools/proposals/${p.token}/approve`;
+      const denyUrl    = `${backendUrl}/v1/tools/proposals/${p.token}/deny`;
+      return [
+        `${p.num}. [${p.agentId.toUpperCase()}] ${p.toolName}`,
+        `   Purpose: ${p.purpose}`,
+        `   Impl: ${p.impl || "N/A"}`,
+        `   ✅ APPROVE → ${approveUrl}`,
+        `   ❌ DENY    → ${denyUrl}`,
+      ].join("\n");
+    }).join("\n\n");
+
+    const approveAllUrl = `${backendUrl}/v1/tools/proposals/approve-all/${savedProposals[0].token}`;
+
+    emailSubject = `[WF-107] ${savedProposals.length} Tool Proposals Ready for Review — ${today}`;
+    emailBody = [
+      `Atlas Tool Discovery Report — ${today}`,
+      ``,
+      `Atlas has identified ${savedProposals.length} high-value tools to add to your agent workforce.`,
+      externalIntel ? `External market scan included ${externalIntel.split("\n").length} tools/APIs.` : "",
+      ``,
+      `🚀 APPROVE ALL ${savedProposals.length} TOOLS AT ONCE → ${approveAllUrl}`,
+      ``,
+      `Or review individually and click APPROVE or DENY per tool:`,
+      `Approved tools will be added to the KB and wired into the agent's instructions automatically.`,
+      ``,
+      `═══════════════════════════════════════`,
+      rows,
+      `═══════════════════════════════════════`,
+      ``,
+      `Catalog: ${alreadyApproved.length} approved | ${alreadyPending.length} pending | ${savedProposals.length} new today`,
+      ``,
+      `Atlas — AI President, Atlas UX`,
+      `Generated by WF-107 Tool Discovery Pipeline`,
+    ].filter(Boolean).join("\n");
+  } else {
+    // No new proposals — send status report instead of silently returning
+    emailSubject = `[WF-107] Tool Discovery Status Report — ${today}`;
+    emailBody = [
+      `Atlas Tool Discovery Status Report — ${today}`,
+      ``,
+      `Atlas completed a full internal + external tool scan and found no new tools to propose.`,
+      ``,
+      `CATALOG STATUS:`,
+      `  Approved tools:  ${alreadyApproved.length}`,
+      `  Pending review:  ${alreadyPending.length}`,
+      `  Total cataloged: ${existingKeys.size}`,
+      `  LLM proposed:    ${proposals.length} (all matched existing entries)`,
+      externalIntel ? `  External scan:   ${externalIntel.split("\n").length} tools/APIs reviewed` : `  External scan:   skipped (no SERP_API_KEY)`,
+      ``,
+      `Your tool catalog is comprehensive. Atlas will continue scanning for new`,
+      `tools and integrations as the market evolves.`,
+      ``,
+      `Next steps:`,
+      `  - Review any pending tools awaiting your approval`,
+      `  - Atlas will auto-discover new tools on the next scheduled run`,
+      ``,
+      `Atlas — AI President, Atlas UX`,
+      `Generated by WF-107 Tool Discovery Pipeline`,
     ].join("\n");
-  }).join("\n\n");
-
-  // One-click bulk approve link — uses the first proposal's token as the run key
-  const approveAllUrl = savedProposals.length > 0
-    ? `${backendUrl}/v1/tools/proposals/approve-all/${savedProposals[0].token}`
-    : null;
-
-  const emailBody = [
-    `Atlas Tool Discovery Report — ${today}`,
-    `Atlas has identified ${savedProposals.length} high-value tools to add to your agent workforce.`,
-    ``,
-    approveAllUrl
-      ? `🚀 APPROVE ALL ${savedProposals.length} TOOLS AT ONCE → ${approveAllUrl}`
-      : null,
-    ``,
-    `Or review individually and click APPROVE or DENY per tool:`,
-    `Approved tools will be added to the KB and wired into the agent's instructions automatically.`,
-    ``,
-    `═══════════════════════════════════════`,
-    rows,
-    `═══════════════════════════════════════`,
-    ``,
-    `Atlas — AI President, Atlas UX`,
-    `Generated by WF-107 Tool Discovery Pipeline`,
-  ].filter(l => l !== null).join("\n");
+  }
 
   await queueEmail(ctx, {
     to:        billyEmail,
-    subject:   `[WF-107] ${savedProposals.length} Tool Proposals Ready for Review — ${today}`,
+    subject:   emailSubject,
     text:      emailBody,
     fromAgent: "atlas",
   });
 
-  // CC Atlas mailbox
   if (atlasEmail !== billyEmail) {
     await queueEmail(ctx, {
       to:        atlasEmail,
-      subject:   `[WF-107 COPY] Tool Proposals Sent to Billy — ${today}`,
+      subject:   `[WF-107 COPY] ${savedProposals.length > 0 ? "Tool Proposals Sent to Billy" : "Status Report"} — ${today}`,
       text:      emailBody,
       fromAgent: "atlas",
     });
@@ -1199,20 +1269,22 @@ Rules:
       entryType:   "debit",
       category:    "token_spend",
       amountCents: 0,
-      description: `WF-107 Tool Discovery — ${savedProposals.length} proposals generated`,
+      description: `WF-107 Tool Discovery — ${savedProposals.length} new proposals, ${existingKeys.size} cataloged`,
       occurredAt:  new Date(),
-      meta:        { workflowId: "WF-107", proposalCount: savedProposals.length },
+      meta:        { workflowId: "WF-107", proposalCount: savedProposals.length, catalogSize: existingKeys.size },
     },
   }).catch(() => null);
 
-  await writeStepAudit(ctx, "WF-107.complete", `Tool discovery complete — ${savedProposals.length} proposals emailed to ${billyEmail}`, {
+  await writeStepAudit(ctx, "WF-107.complete", `Tool discovery complete — ${savedProposals.length} new proposals, email sent to ${billyEmail}`, {
     proposalCount: savedProposals.length,
+    catalogSize: existingKeys.size,
+    skipped: skippedCount,
   });
 
   return {
     ok:      true,
     message: `WF-107 complete — ${savedProposals.length} proposals sent to ${billyEmail}`,
-    output:  { proposalCount: savedProposals.length, proposals: savedProposals.map(p => ({ num: p.num, agent: p.agentId, tool: p.toolName })) },
+    output:  { proposalCount: savedProposals.length, catalogSize: existingKeys.size, proposals: savedProposals.map(p => ({ num: p.num, agent: p.agentId, tool: p.toolName })) },
   };
 };
 
