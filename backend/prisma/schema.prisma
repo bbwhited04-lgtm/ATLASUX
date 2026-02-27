@@ -1032,3 +1032,21 @@ model OAuthState {
   @@index([expiresAt])
   @@map("oauth_state")
 }
+
+/// Atlas Orchestration Agent conversations and context
+model AtlasConversation {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId           String   @map("session_id")
+  userId              String   @map("user_id") @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  conversationHistory Json     @map("conversation_history")
+  userProfile          Json     @map("user_profile")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([sessionId])
+  @@index([userId])
+  @@index([tenantId])
+  @@index([createdAt])
+  @@map("atlas_conversations")
+}

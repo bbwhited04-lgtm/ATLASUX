@@ -53,6 +53,7 @@ import { metaRoutes } from "./routes/metaRoutes.js";
 import { googleRoutes } from "./routes/googleRoutes.js";
 import { runtimeRoutes } from "./routes/runtimeRoutes.js";
 import { billingWebhookRoutes } from "./routes/billingWebhookRoutes.js";
+import { atlasRoutes } from "./routes/atlasRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -235,6 +236,7 @@ await app.register(runtimeRoutes, { prefix: "/v1/runtime" });
 
 // Stripe billing webhook (scoped raw body parser for signature verification)
 await app.register(billingWebhookRoutes, { prefix: "/v1/billing" });
+await app.register(atlasRoutes, { prefix: "/v1/atlas" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
