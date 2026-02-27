@@ -152,153 +152,78 @@ export function AtlasAvatar() {
       <button
         ref={buttonRef}
         onClick={() => setOpen(o => !o)}
-        className="relative flex items-center justify-center cursor-pointer transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-slate-900"
+        className="relative flex items-center justify-center cursor-pointer transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-full"
         style={{
-          width: 44,
-          height: 56,
+          width: 48,
+          height: 48,
           animation: "atlas-float 4s ease-in-out infinite",
-          filter: `drop-shadow(0 0 6px rgba(6,182,212,0.4))`,
+          filter: `drop-shadow(0 0 8px ${meta.heartGlow})`,
         }}
         title={`Atlas — ${meta.label}`}
         aria-label={`Atlas avatar — ${meta.label}`}
       >
+        {/* Outer ring */}
         <svg
-          viewBox="0 0 80 110"
-          width={44}
-          height={56}
+          viewBox="0 0 100 100"
+          width={48}
+          height={48}
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="select-none"
+          className="select-none absolute inset-0"
         >
+          {/* Background circle */}
+          <circle cx="50" cy="50" r="46" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" opacity="0.9" />
+          <circle cx="50" cy="50" r="46" stroke={meta.heartColor} strokeWidth="1.5" opacity="0.3"
+            style={{ animation: `atlas-heartbeat-ring ${meta.pulseSpeed} ease-in-out infinite`, transformOrigin: "50px 50px" }}
+          />
+
+          {/* Head */}
+          <ellipse cx="50" cy="32" rx="16" ry="17" stroke="#06b6d4" strokeWidth="2" opacity="0.85" />
+          <ellipse cx="50" cy="32" rx="11" ry="12" stroke="#06b6d4" strokeWidth="0.8" opacity="0.3" />
+
+          {/* Eyes — bright glowing slits */}
+          <line x1="42" y1="30" x2="47" y2="30" stroke="#22d3ee" strokeWidth="2.5" strokeLinecap="round" opacity="1" />
+          <line x1="53" y1="30" x2="58" y2="30" stroke="#22d3ee" strokeWidth="2.5" strokeLinecap="round" opacity="1" />
+          {/* Eye glow dots */}
+          <circle cx="44.5" cy="30" r="1.5" fill="#67e8f9" opacity="0.7" />
+          <circle cx="55.5" cy="30" r="1.5" fill="#67e8f9" opacity="0.7" />
+
+          {/* Mouth */}
+          <path d="M45 38 Q50 41 55 38" stroke="#06b6d4" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
+
+          {/* Neck */}
+          <line x1="46" y1="49" x2="46" y2="55" stroke="#06b6d4" strokeWidth="1.2" opacity="0.5" />
+          <line x1="54" y1="49" x2="54" y2="55" stroke="#06b6d4" strokeWidth="1.2" opacity="0.5" />
+
+          {/* Chest plate */}
+          <path d="M30 56 L70 56 L72 82 Q50 87 28 82 Z" stroke="#06b6d4" strokeWidth="1.5" opacity="0.6" fill="none" />
+
+          {/* Shoulders */}
+          <path d="M30 56 Q22 57 16 62" stroke="#06b6d4" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+          <path d="M70 56 Q78 57 84 62" stroke="#06b6d4" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+
+          {/* Heartbeat core — the main visual */}
+          <circle cx="50" cy="70" r="9" fill="url(#atlas-heart-glow)"
+            style={{ animation: `atlas-heartbeat-ring ${meta.pulseSpeed} ease-in-out infinite`, transformOrigin: "50px 70px" }}
+          />
+          <path d="M50 63 L56 70 L50 77 L44 70 Z" stroke={meta.heartColor} strokeWidth="1.5" fill={meta.heartColor} fillOpacity="0.2"
+            style={{ animation: `atlas-heartbeat ${meta.pulseSpeed} ease-in-out infinite`, transformOrigin: "50px 70px" }}
+          />
+          <circle cx="50" cy="70" r="3" fill={meta.heartColor} opacity="0.95"
+            style={{ animation: `atlas-heartbeat ${meta.pulseSpeed} ease-in-out infinite`, transformOrigin: "50px 70px" }}
+          />
+
+          {/* Status indicator dot */}
+          <circle cx="80" cy="16" r="6" fill={meta.color} opacity="0.95" />
+          <circle cx="80" cy="16" r="6" fill="none" stroke="#0f172a" strokeWidth="2" />
+
           <defs>
-            {/* Heartbeat core glow */}
             <radialGradient id="atlas-heart-glow" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor={meta.heartColor} stopOpacity="0.9" />
               <stop offset="50%" stopColor={meta.heartColor} stopOpacity="0.3" />
               <stop offset="100%" stopColor={meta.heartColor} stopOpacity="0" />
             </radialGradient>
-            {/* Body wireframe gradient */}
-            <linearGradient id="atlas-wire" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#22d3ee" />
-              <stop offset="100%" stopColor="#0891b2" />
-            </linearGradient>
           </defs>
-
-          {/* ═══ HEAD ═══ */}
-          {/* Outer skull */}
-          <ellipse cx="40" cy="16" rx="14" ry="15" stroke="#06b6d4" strokeWidth="1.2" opacity="0.85" />
-          {/* Inner skull ring */}
-          <ellipse cx="40" cy="16" rx="10" ry="11" stroke="#06b6d4" strokeWidth="0.5" opacity="0.3" />
-          {/* Horizontal wireframe across face */}
-          <ellipse cx="40" cy="9"  rx="11" ry="0.8" stroke="#06b6d4" strokeWidth="0.4" opacity="0.25" />
-          <ellipse cx="40" cy="14" rx="13.5" ry="0.8" stroke="#06b6d4" strokeWidth="0.4" opacity="0.3" />
-          <ellipse cx="40" cy="19" rx="13.5" ry="0.8" stroke="#06b6d4" strokeWidth="0.4" opacity="0.3" />
-          <ellipse cx="40" cy="24" rx="10" ry="0.8" stroke="#06b6d4" strokeWidth="0.4" opacity="0.25" />
-          {/* Vertical center line */}
-          <path d="M40 1 Q40 16 40 31" stroke="#06b6d4" strokeWidth="0.4" opacity="0.2" />
-
-          {/* Eyes — glowing slits */}
-          <line x1="33" y1="14" x2="37" y2="14" stroke="#22d3ee" strokeWidth="1.6" strokeLinecap="round" opacity="0.95" />
-          <line x1="43" y1="14" x2="47" y2="14" stroke="#22d3ee" strokeWidth="1.6" strokeLinecap="round" opacity="0.95" />
-          {/* Eye glow */}
-          <circle cx="35" cy="14" r="1" fill="#67e8f9" opacity="0.6" />
-          <circle cx="45" cy="14" r="1" fill="#67e8f9" opacity="0.6" />
-
-          {/* Mouth */}
-          <path d="M36 21 Q40 23 44 21" stroke="#06b6d4" strokeWidth="0.6" strokeLinecap="round" opacity="0.4" />
-
-          {/* ═══ NECK ═══ */}
-          <line x1="37" y1="31" x2="37" y2="37" stroke="#06b6d4" strokeWidth="0.9" opacity="0.5" />
-          <line x1="43" y1="31" x2="43" y2="37" stroke="#06b6d4" strokeWidth="0.9" opacity="0.5" />
-          <line x1="40" y1="31" x2="40" y2="38" stroke="#06b6d4" strokeWidth="0.5" opacity="0.3" />
-
-          {/* ═══ TORSO ═══ */}
-          {/* Outer chest plate */}
-          <path d="M24 38 L56 38 L58 68 Q40 72 22 68 Z" stroke="#06b6d4" strokeWidth="1.1" opacity="0.7" fill="none" />
-          {/* Inner chest plate */}
-          <path d="M28 41 L52 41 L54 64 Q40 67 26 64 Z" stroke="#06b6d4" strokeWidth="0.5" opacity="0.3" fill="none" />
-          {/* Horizontal rib lines */}
-          <line x1="25" y1="45" x2="55" y2="45" stroke="#06b6d4" strokeWidth="0.4" opacity="0.2" />
-          <line x1="24" y1="52" x2="56" y2="52" stroke="#06b6d4" strokeWidth="0.4" opacity="0.2" />
-          <line x1="23" y1="59" x2="57" y2="59" stroke="#06b6d4" strokeWidth="0.4" opacity="0.2" />
-          {/* Vertical torso center line */}
-          <line x1="40" y1="38" x2="40" y2="70" stroke="#06b6d4" strokeWidth="0.4" opacity="0.2" />
-
-          {/* ═══ HEARTBEAT CORE ═══ */}
-          {/* Outer glow ring (animated) */}
-          <circle cx="40" cy="50" r="8" fill="url(#atlas-heart-glow)"
-            style={{ animation: `atlas-heartbeat-ring ${meta.pulseSpeed} ease-in-out infinite`, transformOrigin: "40px 50px" }}
-          />
-          {/* Core diamond shape */}
-          <path d="M40 44 L45 50 L40 56 L35 50 Z" stroke={meta.heartColor} strokeWidth="1" fill={meta.heartColor} fillOpacity="0.15"
-            style={{ animation: `atlas-heartbeat ${meta.pulseSpeed} ease-in-out infinite`, transformOrigin: "40px 50px" }}
-          />
-          {/* Inner core dot */}
-          <circle cx="40" cy="50" r="2" fill={meta.heartColor} opacity="0.9"
-            style={{ animation: `atlas-heartbeat ${meta.pulseSpeed} ease-in-out infinite`, transformOrigin: "40px 50px" }}
-          />
-          {/* Energy lines radiating from core */}
-          <line x1="40" y1="44" x2="40" y2="38" stroke={meta.heartColor} strokeWidth="0.5" opacity="0.4"
-            strokeDasharray="2 2" style={{ animation: "atlas-energy-flow 1.5s linear infinite" }}
-          />
-          <line x1="45" y1="50" x2="52" y2="50" stroke={meta.heartColor} strokeWidth="0.5" opacity="0.3"
-            strokeDasharray="2 2" style={{ animation: "atlas-energy-flow 1.5s linear infinite" }}
-          />
-          <line x1="35" y1="50" x2="28" y2="50" stroke={meta.heartColor} strokeWidth="0.5" opacity="0.3"
-            strokeDasharray="2 2" style={{ animation: "atlas-energy-flow 1.5s linear infinite" }}
-          />
-
-          {/* ═══ SHOULDERS ═══ */}
-          <path d="M24 38 Q18 39 12 43" stroke="#06b6d4" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
-          <path d="M56 38 Q62 39 68 43" stroke="#06b6d4" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
-
-          {/* ═══ ARMS ═══ */}
-          {/* Left arm */}
-          <line x1="12" y1="43" x2="8" y2="58" stroke="#06b6d4" strokeWidth="0.9" opacity="0.5" />
-          <line x1="8" y1="58" x2="6" y2="70" stroke="#06b6d4" strokeWidth="0.8" opacity="0.45" />
-          {/* Left arm wireframe joint */}
-          <circle cx="12" cy="43" r="2" stroke="#06b6d4" strokeWidth="0.6" fill="none" opacity="0.4" />
-          <circle cx="8" cy="58" r="1.5" stroke="#06b6d4" strokeWidth="0.5" fill="none" opacity="0.35" />
-          {/* Left hand */}
-          <path d="M6 70 L4 73 M6 70 L6 74 M6 70 L8 73" stroke="#06b6d4" strokeWidth="0.5" strokeLinecap="round" opacity="0.35" />
-
-          {/* Right arm */}
-          <line x1="68" y1="43" x2="72" y2="58" stroke="#06b6d4" strokeWidth="0.9" opacity="0.5" />
-          <line x1="72" y1="58" x2="74" y2="70" stroke="#06b6d4" strokeWidth="0.8" opacity="0.45" />
-          {/* Right arm wireframe joint */}
-          <circle cx="68" cy="43" r="2" stroke="#06b6d4" strokeWidth="0.6" fill="none" opacity="0.4" />
-          <circle cx="72" cy="58" r="1.5" stroke="#06b6d4" strokeWidth="0.5" fill="none" opacity="0.35" />
-          {/* Right hand */}
-          <path d="M74 70 L76 73 M74 70 L74 74 M74 70 L72 73" stroke="#06b6d4" strokeWidth="0.5" strokeLinecap="round" opacity="0.35" />
-
-          {/* ═══ WAIST / HIP ═══ */}
-          <path d="M26 68 Q40 72 54 68" stroke="#06b6d4" strokeWidth="0.8" opacity="0.5" />
-          <line x1="33" y1="70" x2="33" y2="76" stroke="#06b6d4" strokeWidth="0.5" opacity="0.3" />
-          <line x1="47" y1="70" x2="47" y2="76" stroke="#06b6d4" strokeWidth="0.5" opacity="0.3" />
-          {/* Hip plate */}
-          <path d="M30 70 L50 70 L48 77 L32 77 Z" stroke="#06b6d4" strokeWidth="0.7" opacity="0.4" fill="none" />
-
-          {/* ═══ LEGS ═══ */}
-          {/* Left leg */}
-          <line x1="33" y1="77" x2="30" y2="92" stroke="#06b6d4" strokeWidth="0.9" opacity="0.5" />
-          <line x1="30" y1="92" x2="28" y2="104" stroke="#06b6d4" strokeWidth="0.8" opacity="0.45" />
-          {/* Left knee joint */}
-          <circle cx="30" cy="92" r="1.8" stroke="#06b6d4" strokeWidth="0.5" fill="none" opacity="0.35" />
-          {/* Left foot */}
-          <path d="M28 104 L24 107 L32 107 Z" stroke="#06b6d4" strokeWidth="0.7" fill="none" opacity="0.4" />
-
-          {/* Right leg */}
-          <line x1="47" y1="77" x2="50" y2="92" stroke="#06b6d4" strokeWidth="0.9" opacity="0.5" />
-          <line x1="50" y1="92" x2="52" y2="104" stroke="#06b6d4" strokeWidth="0.8" opacity="0.45" />
-          {/* Right knee joint */}
-          <circle cx="50" cy="92" r="1.8" stroke="#06b6d4" strokeWidth="0.5" fill="none" opacity="0.35" />
-          {/* Right foot */}
-          <path d="M52 104 L48 107 L56 107 Z" stroke="#06b6d4" strokeWidth="0.7" fill="none" opacity="0.4" />
-
-          {/* ═══ SCAN LINE ═══ */}
-          <rect x="4" y="5" width="72" height="1" rx="0.5" fill="#22d3ee" opacity="0.15"
-            style={{ animation: "atlas-scan 4s ease-in-out infinite" }}
-          />
         </svg>
       </button>
 
