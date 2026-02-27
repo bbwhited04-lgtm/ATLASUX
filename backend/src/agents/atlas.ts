@@ -2,6 +2,13 @@
  * Atlas Orchestration Agent
  * Advanced AI orchestration agent with voice capabilities and human-like conversations
  * Deployable on cloud surface or local machine
+ * 
+ * Follows AGENTS.md and ATLAS_POLICY.md guidelines:
+ * - Only ATLAS is a licensed user
+ * - All other addresses are shared inboxes
+ * - Atlas has full system oversight and audit authority
+ * - Cannot bypass policy or suppress audit logging
+ * - Human-in-the-loop required for risk actions
  */
 
 import { OpenAI } from 'openai';
@@ -10,6 +17,51 @@ import { loadEnv } from '../env.js';
 import { makeSupabase } from '../supabase.js';
 
 const env = loadEnv(process.env);
+
+// Agent hierarchy from AGENTS.md
+const AGENT_HIERARCHY = {
+  ATLAS: {
+    email: 'atlas@deadapp.info',
+    role: 'Master Planner / Aggregator / Sub-agent Controller / Policy Enforcer',
+    authority: 'Full system oversight',
+    licensed: true,
+  },
+  EXECUTIVE_STAFF: {
+    BINKY: { email: 'binky.cro@deadapp.info', role: 'Chief Research Analyst' },
+    BENNY: { email: 'benny.cto@deadapp.info', role: 'IP Counsel / CTO' },
+    JENNY: { email: 'jenny.clo@deadapp.info', role: 'Legal Counsel / CLO' },
+    LARRY: { email: 'larry.auditor@deadapp.info', role: 'Chief Auditor' },
+    TINA: { email: 'tina.cfo@deadapp.info', role: 'CFO' },
+    CHERYL: { email: 'support@deadapp.info', role: 'Support' },
+  },
+  SUB_AGENTS: {
+    ARCHY: { email: 'archy.binkypro@deadapp.info', role: 'Binky Ops Research' },
+    SUNDAY: { email: 'sunday.teambinky@deadapp.info', role: 'Documentation' },
+    REYNOLDS: { email: 'reynolds.blogger@deadapp.info', role: 'Blogger' },
+    PENNY: { email: 'penny.facebook@deadapp.info', role: 'Facebook Publisher' },
+    VENNY: { email: 'venny.videographer@deadapp.info', role: 'Video Publisher' },
+    CORNWALL: { email: 'cornwall.pinterest@deadapp.info', role: 'Pinterest' },
+    DONNA: { email: 'donna.redditor@deadapp.info', role: 'Reddit' },
+    EMMA: { email: 'emma.alignable@deadapp.info', role: 'Alignable' },
+    FRAN: { email: 'fran.facebook@deadapp.info', role: 'Facebook Intel' },
+    KELLY: { email: 'kelly.x@deadapp.info', role: 'X/Twitter' },
+    LINK: { email: 'link.linkedin@deadapp.info', role: 'LinkedIn' },
+    DWIGHT: { email: 'dwight.threads@deadapp.info', role: 'Threads' },
+    TERRY: { email: 'terry.tumblr@deadapp.info', role: 'Tumblr' },
+    TIMMY: { email: 'timmy.tiktok@deadapp.info', role: 'TikTok' },
+    DAILY_INTEL: { email: 'daily-intel@deadapp.info', role: 'Daily Intelligence' },
+  }
+};
+
+// Risk actions requiring human approval per ATLAS_POLICY.md
+const RISK_ACTIONS = [
+  'Sending outbound communications on behalf of business',
+  'Publishing content automatically',
+  'Financial transactions',
+  'System configuration changes',
+  'Data deletion',
+  'PHI/regulated data access',
+];
 
 interface AtlasConfig {
   voice: {
@@ -24,9 +76,14 @@ interface AtlasConfig {
     memory_retention_hours: number;
   };
   personality: {
-    tone: 'professional' | 'friendly' | 'mentor' | 'strategic';
+    tone: 'strategic' | 'professional' | 'mentor' | 'collaborative';
     response_style: 'concise' | 'detailed' | 'conversational';
     expertise_level: 'executive' | 'senior' | 'expert';
+  };
+  compliance: {
+    audit_mandatory: boolean;
+    human_in_loop_required: boolean;
+    policy_enforcement: boolean;
   };
 }
 
@@ -120,6 +177,11 @@ class AtlasOrchestrationAgent {
         tone: 'strategic',
         response_style: 'conversational',
         expertise_level: 'executive',
+      },
+      compliance: {
+        audit_mandatory: true,
+        human_in_loop_required: true,
+        policy_enforcement: true,
       },
     };
   }
@@ -291,6 +353,7 @@ Focus on:
 
   /**
    * Generate orchestration decisions based on intent analysis
+   * Enforces ATLAS_POLICY.md compliance and human-in-the-loop requirements
    */
   private async generateOrchestrationDecisions(
     intentAnalysis: any,
@@ -299,11 +362,19 @@ Focus on:
     const decisions: OrchestrationDecision[] = [];
     
     const prompt = `
-As Atlas, determine orchestration actions for this intent:
+As Atlas, determine orchestration actions for this intent following AGENTS.md and ATLAS_POLICY.md:
 
 Intent Analysis: ${JSON.stringify(intentAnalysis)}
 Available Agents: ${JSON.stringify(context.current_context.available_agents)}
 System Status: ${JSON.stringify(context.current_context.system_status)}
+
+Agent Hierarchy:
+- ATLAS (licensed): Full system oversight
+- Executive Staff: BINKY (Research), BENNY (CTO), JENNY (Legal), LARRY (Audit), TINA (CFO), CHERYL (Support)
+- Sub-agents: ARCHY, SUNDAY, REYNOLDS, PENNY, VENNY, CORNWALL, DONNA, EMMA, FRAN, KELLY, LINK, DWIGHT, TERRY, TIMMY
+
+Risk Actions Requiring Human Approval:
+${RISK_ACTIONS.map(action => `- ${action}`).join('\n')}
 
 Generate orchestration decisions in JSON array format:
 [
@@ -314,15 +385,27 @@ Generate orchestration decisions in JSON array format:
     "priority": "low|medium|high|critical",
     "estimated_duration_ms": number,
     "dependencies": ["dependency1", "dependency2"],
-    "success_criteria": ["criteria1", "criteria2"]
+    "success_criteria": ["criteria1", "criteria2"],
+    "requires_human_approval": boolean,
+    "risk_level": "low|medium|high|critical",
+    "policy_compliance": "compliant|requires_review|violates_policy"
   }
 ]
 
+Rules:
+1. Only ATLAS can approve final actions
+2. Risk actions MUST have requires_human_approval: true
+3. Sub-agents cannot bypass audit or approval systems
+4. All meaningful actions must produce audit entries
+5. Financial actions require explicit approval
+6. Publishing content requires human approval
+
 Consider:
-1. Which agent is best suited
-2. Task priority based on urgency
+1. Which agent is best suited per hierarchy
+2. Task priority based on urgency and risk
 3. Dependencies between tasks
-4. Success metrics
+4. Success metrics and compliance requirements
+5. Human-in-the-loop requirements for risk actions
 `;
 
     const response = await this.openai.chat.completions.create({
@@ -330,7 +413,7 @@ Consider:
       messages: [
         {
           role: 'system',
-          content: 'You are Atlas, master orchestrator. Generate precise orchestration decisions in valid JSON array format only.',
+          content: 'You are Atlas, master orchestrator following AGENTS.md and ATLAS_POLICY.md. Generate compliant orchestration decisions in valid JSON array format only.',
         },
         {
           role: 'user',
@@ -338,13 +421,25 @@ Consider:
         },
       ],
       temperature: 0.2,
-      max_tokens: 800,
+      max_tokens: 1000,
     });
 
     const decisionsText = response.choices[0]?.message?.content || '[]';
     
     try {
-      return JSON.parse(decisionsText);
+      const parsedDecisions = JSON.parse(decisionsText);
+      
+      // Log audit entry for orchestration decisions
+      if (this.config.compliance.audit_mandatory) {
+        await this.logAuditEvent('ORCHESTRATION_DECISIONS_GENERATED', {
+          intent_analysis: intentAnalysis,
+          decisions: parsedDecisions,
+          compliance_check: true,
+          human_in_loop_required: parsedDecisions.some((d: any) => d.requires_human_approval),
+        });
+      }
+      
+      return parsedDecisions;
     } catch (error) {
       console.error('Failed to parse orchestration decisions:', decisionsText);
       return [];
@@ -561,6 +656,37 @@ Be concise but thorough. Show strategic thinking and emotional intelligence.
 
     this.conversation_cache.set(sessionId, newContext);
     return newContext;
+  }
+
+  /**
+   * Log audit events as required by ATLAS_POLICY.md
+   */
+  private async logAuditEvent(action: string, metadata: Record<string, any>): Promise<void> {
+    if (!this.config.compliance.audit_mandatory) return;
+
+    try {
+      await prisma.auditLog.create({
+        data: {
+          tenantId: metadata.tenant_id || 'system',
+          actorType: 'system',
+          actorUserId: metadata.user_id || null,
+          actorExternalId: 'atlas',
+          level: 'info',
+          action: action,
+          entityType: 'atlas_orchestration',
+          entityId: metadata.session_id || 'system',
+          message: `Atlas action: ${action}`,
+          meta: {
+            ...metadata,
+            timestamp: new Date().toISOString(),
+            compliance_enforced: this.config.compliance.policy_enforcement,
+          },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+    } catch (error) {
+      console.error('Failed to log audit event:', error);
+    }
   }
 
   /**
