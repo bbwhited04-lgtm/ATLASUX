@@ -38,7 +38,10 @@ import {
   BarChart,
   Settings as SettingsCog,
   Zap,
-  Database
+  Database,
+  Users,
+  Search,
+  Activity
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -57,7 +60,10 @@ import AtlasAgentSettings from './AtlasAgentSettings';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SettingsProfiles from './SettingsProfiles';
 import WorkflowBuilder from './WorkflowBuilder';
-import KnowledgeManagement from './KnowledgeManagement'; 
+import KnowledgeManagement from './KnowledgeManagement';
+import MultiTenantCollaboration from './MultiTenantCollaboration';
+import SmartSettingsSearch from './SmartSettingsSearch';
+import RealTimeStatusDashboard from './RealTimeStatusDashboard'; 
 import { MobileIntegration } from './premium/MobileIntegration';
 import { getOrgUser } from "../lib/org";
 
@@ -379,6 +385,18 @@ export function Settings() {
             <Database className="w-4 h-4 mr-2" />
             Knowledge
           </TabsTrigger>
+          <TabsTrigger value="teams" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Users className="w-4 h-4 mr-2" />
+            Teams
+          </TabsTrigger>
+          <TabsTrigger value="search" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Search className="w-4 h-4 mr-2" />
+            Search
+          </TabsTrigger>
+          <TabsTrigger value="status" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Activity className="w-4 h-4 mr-2" />
+            Status
+          </TabsTrigger>
           <TabsTrigger value="permissions" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Shield className="w-4 h-4 mr-2" />
             Permissions
@@ -561,6 +579,21 @@ export function Settings() {
         {/* Knowledge Tab */}
         <TabsContent value="knowledge" className="space-y-4">
           <KnowledgeManagement />
+        </TabsContent>
+
+        {/* Teams Tab */}
+        <TabsContent value="teams" className="space-y-4">
+          <MultiTenantCollaboration />
+        </TabsContent>
+
+        {/* Search Tab */}
+        <TabsContent value="search" className="space-y-4">
+          <SmartSettingsSearch />
+        </TabsContent>
+
+        {/* Status Tab */}
+        <TabsContent value="status" className="space-y-4">
+          <RealTimeStatusDashboard />
         </TabsContent>
 
         {/* Permissions Tab */}
