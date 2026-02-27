@@ -2,7 +2,7 @@
   "name": "atlas-ux",
   "version": "2.0.0",
   "description": "Your Standalone AI Employee - All-in-One Productivity Platform",
-  "author": "DEAD APP CORP",
+  "author": { "name": "DEAD APP CORP", "email": "atlas@deadapp.info" },
   "license": "UNLICENSED",
   "homepage": "https://atlasux.com",
   "type": "module",
