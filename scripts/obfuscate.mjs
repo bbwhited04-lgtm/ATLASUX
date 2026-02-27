@@ -15,7 +15,7 @@ const ASSETS_DIR = join(process.cwd(), 'dist', 'assets');
 const OBFUSCATE_PATTERNS = [
   'AgentsHub', 'CRM-', 'ChatInterface', 'MessagingHub',
   'business-manager', 'JobRunner', 'KnowledgeBaseHub',
-  'AgentWatcher', 'SocialMonitoring', 'Settings-',
+  'AgentWatcher', 'SocialMonitoring',
   'Store-', 'HelpSection',
 ];
 
