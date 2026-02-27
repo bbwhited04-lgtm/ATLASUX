@@ -49,6 +49,25 @@ export const gateRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(403).send({ valid: false, error: "seat_revoked", revokedAt: seat.revokedAt });
     }
 
+    // Log gate entry to audit_log so owner can see who's in
+    const ip = req.headers["x-forwarded-for"] ?? req.ip ?? "unknown";
+    const ua = req.headers["user-agent"] ?? "unknown";
+    await prisma.auditLog.create({
+      data: {
+        tenantId: "00000000-0000-0000-0000-000000000000",
+        actorUserId: null,
+        actorExternalId: seat.id,
+        actorType: "cloud_seat",
+        level: "info",
+        action: "GATE_ENTRY",
+        entityType: "cloud_seat",
+        entityId: seat.id,
+        message: `[GATE] ${seat.label} entered via cloud seat (${seat.role})`,
+        meta: { seatId: seat.id, label: seat.label, role: seat.role, ip, ua },
+        timestamp: new Date(),
+      },
+    }).catch(() => null);
+
     return {
       valid: true,
       seat: {
@@ -57,6 +76,24 @@ export const gateRoutes: FastifyPluginAsync = async (app) => {
         role: seat.role,
       },
     };
+  });
+
+  // ── Admin: recent gate entries (who logged in and when) ─────────────────
+  app.get("/activity", async (req, reply) => {
+    if (!isAdmin(req)) return reply.code(403).send({ ok: false, error: "forbidden" });
+
+    const entries = await prisma.auditLog.findMany({
+      where: { action: "GATE_ENTRY" },
+      orderBy: { timestamp: "desc" },
+      take: 50,
+      select: {
+        timestamp: true,
+        message: true,
+        meta: true,
+      },
+    });
+
+    return { ok: true, entries };
   });
 
   // ── Admin: list all cloud seats ───────────────────────────────────────────
