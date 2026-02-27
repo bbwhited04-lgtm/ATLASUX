@@ -52,7 +52,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Health check failed",
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   });
@@ -73,7 +73,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Failed to get avatar URL",
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   });
@@ -149,7 +149,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Conversation processing failed",
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   });
@@ -191,7 +191,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Failed to get conversation",
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   });
@@ -232,7 +232,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Orchestration execution failed",
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   });
@@ -258,7 +258,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Failed to get agents",
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   });
@@ -284,7 +284,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Failed to get system status",
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   });
@@ -327,7 +327,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Voice generation failed",
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   });
@@ -358,7 +358,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Failed to clear cache",
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   });
@@ -403,7 +403,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Failed to get analytics",
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   });
