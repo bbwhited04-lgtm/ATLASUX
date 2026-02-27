@@ -122,7 +122,7 @@ export default function Landing() {
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Feb 26, 2026</span>
+            <span className="text-sm text-white/60">Last updated: Feb 27, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
             <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
@@ -252,6 +252,7 @@ export default function Landing() {
             <li>Teams Graph API fix — sending channel messages now uses Group.ReadWrite.All (Application permission) instead of nonexistent ChannelMessage.Send; all 22 Azure AD permissions granted with admin consent; error messages updated with accurate permission guidance</li>
             <li>Deep project audit — fixed broken Store payment link (hhttps typo), corrected Business/Enterprise annual pricing, removed duplicate imports and dead route files, registered /v1/runtime status endpoint, replaced hardcoded tenant IDs with env var fallback</li>
             <li>138 documentation files — full docs suite across 6 categories: API reference (27), user guides (21), developer docs (23), architecture (17), knowledge base (28), and marketing (22); covers every endpoint, feature, integration, and architectural pattern in the platform</li>
+            <li>40 new KB deep-dive docs — industry intel (SaaS metrics, market landscape, e-commerce playbook, B2B lead gen, legal/IP basics), platform publishing guides (X, Facebook, LinkedIn, TikTok, Pinterest, Reddit, blog SEO, emerging platforms), workflow templates (morning brief pipeline, intel sweep, content lifecycle, onboarding, incident response, budget review), technical deep dives (RAG tuning, agent memory, tool calling, multi-model routing, webhook integration), and 7 agent-specific playbooks (Atlas, Binky, Cheryl, Sunday, Mercer, Petra, Venny/Victor)</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
