@@ -12,7 +12,7 @@ const ASSETS_DIR = join(process.cwd(), 'dist', 'assets');
 
 // Skip chunks that break under obfuscation (Three.js hooks in app shell,
 // vendor libs with dynamic property access / destructuring).
-const SKIP_PATTERNS = ['three-vendor', 'react-vendor', 'index-', 'router-'];
+const SKIP_PATTERNS = ['three-vendor', 'react-vendor', 'index-', 'router-', 'Settings-', 'ui-vendor'];
 
 const OBFUSCATOR_OPTIONS = {
   compact: true,
