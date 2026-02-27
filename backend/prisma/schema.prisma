@@ -38,6 +38,11 @@ model Tenant {
   decisionTemplates                        DecisionTemplate[]
   agentMemory                              AgentMemory[]
   toolProposals                            ToolProposal[]
+  dataSubjectRequests                      DataSubjectRequest[]
+  consentRecords                           ConsentRecord[]
+  dataBreaches                             DataBreach[]
+  incidentReports                          IncidentReport[]
+  vendorAssessments                        VendorAssessment[]
 
   @@map("tenants")
 }
@@ -1031,6 +1036,146 @@ model OAuthState {
 
   @@index([expiresAt])
   @@map("oauth_state")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Compliance: GDPR Data Subject Requests, Consent, Breach Tracking,
+// Incident Response, Vendor Risk Management
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// GDPR Data Subject Access Requests (DSAR) — right to access, erasure, portability, restriction, rectification
+model DataSubjectRequest {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  requestType   String   @map("request_type") // access, erasure, portability, restriction, rectification, objection
+  status        String   @default("pending") // pending, in_progress, completed, denied
+  subjectEmail  String   @map("subject_email")
+  subjectName   String?  @map("subject_name")
+  requestedBy   String?  @map("requested_by") @db.Uuid // user who submitted (may be the subject or an admin)
+  reason        String?
+  response      String?  // admin response / denial reason
+  dataExportUrl String?  @map("data_export_url") // signed URL for portability exports
+  completedAt   DateTime? @map("completed_at") @db.Timestamptz(6)
+  dueBy         DateTime  @map("due_by") @db.Timestamptz(6) // 30-day GDPR deadline
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([subjectEmail])
+  @@index([dueBy])
+  @@map("data_subject_requests")
+}
+
+/// GDPR Consent Records — tracks consent per user per processing purpose
+model ConsentRecord {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  subjectEmail    String    @map("subject_email")
+  purpose         String    // marketing, analytics, ai_processing, data_sharing, communications
+  lawfulBasis     String    @map("lawful_basis") // consent, contract, legal_obligation, vital_interest, public_task, legitimate_interest
+  granted         Boolean   @default(false)
+  grantedAt       DateTime? @map("granted_at") @db.Timestamptz(6)
+  withdrawnAt     DateTime? @map("withdrawn_at") @db.Timestamptz(6)
+  ipAddress       String?   @map("ip_address")
+  userAgent       String?   @map("user_agent")
+  version         String    @default("1.0") // consent policy version
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, subjectEmail, purpose])
+  @@index([tenantId])
+  @@index([subjectEmail])
+  @@map("consent_records")
+}
+
+/// Data Breach Register — GDPR 72-hour / HIPAA 60-day notification tracking
+model DataBreach {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String    @map("tenant_id") @db.Uuid
+  severity            String    // p0_critical, p1_high, p2_medium, p3_low
+  status              String    @default("detected") // detected, contained, eradicated, recovered, closed
+  title               String
+  description         String
+  dataTypesAffected   String[]  @map("data_types_affected") // pii, phi, payment, credentials, internal
+  individualsAffected Int?      @map("individuals_affected")
+  detectedAt          DateTime  @map("detected_at") @db.Timestamptz(6)
+  containedAt         DateTime? @map("contained_at") @db.Timestamptz(6)
+  notifyAuthorityBy   DateTime  @map("notify_authority_by") @db.Timestamptz(6) // 72 hours from detection (GDPR)
+  authorityNotifiedAt DateTime? @map("authority_notified_at") @db.Timestamptz(6)
+  notifyIndividualsBy DateTime? @map("notify_individuals_by") @db.Timestamptz(6) // 60 days (HIPAA)
+  individualsNotifiedAt DateTime? @map("individuals_notified_at") @db.Timestamptz(6)
+  rootCause           String?   @map("root_cause")
+  remediationSteps    String?   @map("remediation_steps")
+  postMortemUrl       String?   @map("post_mortem_url")
+  reportedBy          String?   @map("reported_by") @db.Uuid
+  incidentCommander   String?   @map("incident_commander")
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant              Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([severity])
+  @@index([notifyAuthorityBy])
+  @@map("data_breaches")
+}
+
+/// Incident Reports — SOC 2 / ISO 27001 incident tracking
+model IncidentReport {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  severity        String    // p0, p1, p2, p3
+  status          String    @default("open") // open, investigating, mitigated, resolved, closed
+  category        String    // security, availability, data_integrity, access_control, compliance, operational
+  title           String
+  description     String
+  impactSummary   String?   @map("impact_summary")
+  affectedSystems String[]  @map("affected_systems") // api, database, auth, agents, payments, storage
+  reportedBy      String?   @map("reported_by") @db.Uuid
+  assignedTo      String?   @map("assigned_to")
+  resolvedAt      DateTime? @map("resolved_at") @db.Timestamptz(6)
+  rootCause       String?   @map("root_cause")
+  resolution      String?
+  lessonsLearned  String?   @map("lessons_learned")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([severity])
+  @@index([category])
+  @@map("incident_reports")
+}
+
+/// Vendor Risk Assessments — ISO 27001 A.15, SOC 2 vendor management
+model VendorAssessment {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  vendorName        String    @map("vendor_name") // Supabase, Render, Vercel, Stripe, OpenAI, etc.
+  category          String    // infrastructure, payment, ai_provider, communication, storage, analytics
+  riskLevel         String    @map("risk_level") // critical, high, medium, low
+  dataAccess        String[]  @map("data_access") // pii, phi, payment, credentials, usage_data, none
+  complianceCerts   String[]  @map("compliance_certs") // soc2, hipaa, gdpr, pci_dss, iso27001
+  hasDataProcessingAgreement Boolean @default(false) @map("has_dpa")
+  hasBaa            Boolean   @default(false) @map("has_baa") // Business Associate Agreement (HIPAA)
+  lastAssessedAt    DateTime? @map("last_assessed_at") @db.Timestamptz(6)
+  nextAssessmentDue DateTime? @map("next_assessment_due") @db.Timestamptz(6)
+  status            String    @default("active") // active, under_review, suspended, terminated
+  notes             String?
+  assessedBy        String?   @map("assessed_by") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, vendorName])
+  @@index([tenantId])
+  @@index([riskLevel])
+  @@index([nextAssessmentDue])
+  @@map("vendor_assessments")
 }
 
 /// Atlas Orchestration Agent conversations and context

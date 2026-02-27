@@ -103,6 +103,7 @@ Atlas UX maintains comprehensive compliance with major regulatory frameworks and
 ├── INCIDENT_RESPONSE.md            # Security incident response
 ├── RISK_MANAGEMENT.md              # Risk management framework
 ├── VENDOR_MANAGEMENT.md            # Third-party risk management
+├── PCI_DSS_COMPLIANCE.md           # PCI DSS compliance (SAQ-A)
 └── TRAINING_PROGRAMS.md            # Security awareness training
 ```
 

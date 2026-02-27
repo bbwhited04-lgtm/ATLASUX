@@ -53,6 +53,7 @@ import { metaRoutes } from "./routes/metaRoutes.js";
 import { googleRoutes } from "./routes/googleRoutes.js";
 import { runtimeRoutes } from "./routes/runtimeRoutes.js";
 import { atlasRoutes } from "./routes/atlasRoutes.js";
+import { complianceRoutes } from "./routes/complianceRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -236,6 +237,9 @@ await app.register(googleRoutes, { prefix: "/v1/google" });
 await app.register(runtimeRoutes, { prefix: "/v1/runtime" });
 
 await app.register(atlasRoutes, { prefix: "/v1/atlas" });
+
+// Compliance — GDPR DSAR, consent, breach register, incidents, vendor assessments
+await app.register(complianceRoutes, { prefix: "/v1/compliance" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
