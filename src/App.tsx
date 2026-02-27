@@ -3,8 +3,6 @@ import { RouterProvider } from 'react-router';
 import { router } from './routes';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { ActiveTenantProvider } from './lib/activeTenant';
-import FloatingAtlas from './components/FloatingAtlas';
-import SystemTrayAtlas from './components/SystemTrayAtlas';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null };
@@ -75,8 +73,6 @@ export default function App() {
       <div className="min-h-screen overflow-hidden bg-slate-950 text-white">
         <ActiveTenantProvider>
           <RouterProvider router={router} />
-          <FloatingAtlas />
-          <SystemTrayAtlas />
         </ActiveTenantProvider>
         <OnboardingWizard
           isOpen={showOnboarding}
