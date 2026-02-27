@@ -113,3 +113,65 @@ The platform enforces hard safety guardrails:
 - Daily posting cap enforced
 - All mutations logged to audit trail
 - Approval required for any spend above limit or risk tier ≥ 2
+
+---
+
+## MANDATORY BUILD RULES — ALL AI TOOLS MUST FOLLOW
+
+**These rules apply to Claude Code, Windsurf, Cursor, ChatGPT, Copilot, and any other AI tool working in this repo. No exceptions.**
+
+### 1. Build before commit — ALWAYS
+Before committing ANY backend change, run:
+```bash
+cd backend && npm run build
+```
+Before committing ANY frontend change, run:
+```bash
+npm run build
+```
+If either build fails, **do not commit**. Fix every error first. A broken build takes down production — Render and Vercel deploy directly from main.
+
+### 2. Never import files that don't exist
+Before adding an `import` statement, verify the target file exists on disk. Do not create phantom imports expecting the file to appear later. If you need a new module, create the file first, then import it.
+
+### 3. Use only real Prisma models
+The schema is in `backend/prisma/schema.prisma`. Before writing any `prisma.xxx` call, confirm that model exists in the schema. Common mistakes:
+- `prisma.document` — DOES NOT EXIST (use `prisma.kbDocument`)
+- `prisma.workflow` — DOES NOT EXIST (use `prisma.workflows`)
+- `prisma.user` — DOES NOT EXIST (use `prisma.tenantMember` or `prisma.users`)
+- Never guess model names. Read the schema.
+
+### 4. No stub/simulated code in production
+Do not create route handlers or service functions that use `setTimeout` to fake responses, return hardcoded mock data, or simulate behavior. Every endpoint must do real work or not exist at all. Atlas UX is a production platform, not a prototype.
+
+### 5. Prisma import path
+Always import Prisma from:
+```typescript
+import { prisma } from "../db/prisma.js";
+```
+Not `../prisma.js`, not `@prisma/client` directly. Adjust the relative path depth as needed but the target is always `db/prisma.js`.
+
+### 6. Fastify logger signature
+Fastify's logger does not accept `(string, error)` pairs. Use:
+```typescript
+fastify.log.error({ err }, "Description of what failed");
+```
+Not:
+```typescript
+fastify.log.error("Description:", error);  // THIS BREAKS TYPESCRIPT
+```
+
+### 7. Route registration pattern
+All routes mount under `/v1` in `backend/src/server.ts`. If you add a new route file:
+1. Export as `FastifyPluginAsync`
+2. Import in `server.ts`
+3. Register with `await app.register(yourRoutes, { prefix: "/v1/your-prefix" })`
+4. Verify the build passes
+
+### 8. Don't duplicate existing functionality
+Before creating a new file, check if the feature already exists:
+- Stripe billing → `stripeRoutes.ts` (already handles webhooks, checkout, products)
+- Health check → `healthRoutes.ts`
+- Voice/chat → `chatRoutes.ts`
+- Agent tools → `core/agent/agentTools.ts`
+Search the codebase first. Don't create parallel implementations.
