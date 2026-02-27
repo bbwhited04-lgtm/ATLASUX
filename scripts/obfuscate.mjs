@@ -10,26 +10,28 @@ import JavaScriptObfuscator from 'javascript-obfuscator';
 
 const ASSETS_DIR = join(process.cwd(), 'dist', 'assets');
 
-// Skip chunks that break under obfuscation (Three.js uses heavy
-// dynamic property access / destructuring that gets mangled).
-const SKIP_PATTERNS = ['three-vendor', 'react-vendor'];
+// Skip chunks that break under obfuscation (Three.js hooks in app shell,
+// vendor libs with dynamic property access / destructuring).
+const SKIP_PATTERNS = ['three-vendor', 'react-vendor', 'index-', 'router-'];
 
 const OBFUSCATOR_OPTIONS = {
   compact: true,
-  controlFlowFlattening: true,
-  controlFlowFlatteningThreshold: 0.5,
-  deadCodeInjection: true,
-  deadCodeInjectionThreshold: 0.2,
+  controlFlowFlattening: false,
+  deadCodeInjection: false,
   identifierNamesGenerator: 'hexadecimal',
   renameGlobals: false,
   selfDefending: false,
   stringArray: true,
-  stringArrayThreshold: 0.5,
+  stringArrayThreshold: 0.75,
   stringArrayEncoding: ['base64'],
   stringArrayRotate: true,
   stringArrayShuffle: true,
+  stringArrayWrappersCount: 2,
   transformObjectKeys: false,
   unicodeEscapeSequence: false,
+  numbersToExpressions: true,
+  splitStrings: true,
+  splitStringsChunkLength: 5,
 };
 
 async function main() {
