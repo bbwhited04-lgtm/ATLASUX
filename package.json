@@ -48,6 +48,7 @@
     "@react-three/fiber": "^9.5.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tauri-apps/api": "^2.10.1",
+    "@vercel/analytics": "^1.6.1",
     "class-variance-authority": "^0.7.1",
     "lucide-react": "^0.564.0",
     "motion": "^11.15.0",

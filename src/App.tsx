@@ -5,6 +5,7 @@ import { OnboardingWizard } from './components/OnboardingWizard';
 import { ActiveTenantProvider } from './lib/activeTenant';
 import FloatingAtlas from './components/FloatingAtlas';
 import SystemTrayAtlas from './components/SystemTrayAtlas';
+import { Analytics } from '@vercel/analytics/react';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null };
@@ -83,6 +84,7 @@ export default function App() {
           onComplete={handleOnboardingComplete}
           onSkip={handleOnboardingSkip}
         />
+        <Analytics />
       </div>
     </ErrorBoundary>
   );
