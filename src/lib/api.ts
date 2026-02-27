@@ -1,4 +1,4 @@
-const PRODUCTION_API = "https://atlasux-backend.onrender.com";
+const PRODUCTION_API = "https://atlas-ux.onrender.com";
 
 // Desktop (Electron): use local backend on localhost:8787.
 // Run `cd backend && npm run start` to connect to Supabase directly.

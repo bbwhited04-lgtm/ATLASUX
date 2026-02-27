@@ -318,6 +318,7 @@ export default function Landing() {
         <footer className="mt-24 border-t border-slate-800 pt-8 text-sm text-slate-400">
           <div className="flex flex-wrap gap-6 justify-center">
             <Link to="/about" className="hover:text-white">About</Link>
+            <Link to="/blog" className="hover:text-white">Blog</Link>
             <Link to="/store" className="hover:text-white">Store</Link>
             <Link to="/payment" className="hover:text-white">Payment</Link>
             <Link to="/privacy" className="hover:text-white">Privacy</Link>

@@ -21,6 +21,7 @@ import {
   Power,
   Activity,
   Send,
+  Newspaper,
 } from 'lucide-react';
 
 import { API_BASE } from "../lib/api";
@@ -295,6 +296,15 @@ function RootLayoutInner() {
   </div>
 </Link>
 
+          <Link
+            to="/blog"
+            className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-cyan-300 hover:bg-slate-800/50 transition-all relative group"
+          >
+            <Newspaper className="w-5 h-5" />
+            <div className="absolute left-16 bg-slate-800 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 border border-cyan-500/20">
+              Blog
+            </div>
+          </Link>
           <Link
             to="/app/watcher"
             className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-cyan-300 hover:bg-slate-800/50 transition-all relative group"
