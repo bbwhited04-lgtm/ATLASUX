@@ -7,8 +7,12 @@
  */
 
 import { readdir, readFile } from "fs/promises";
-import { join, basename } from "path";
+import { join, basename, dirname } from "path";
+import { fileURLToPath } from "url";
 import { prisma } from "../db/prisma.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const TENANT_ID =
   process.env.TENANT_ID?.trim() ||
@@ -108,6 +112,13 @@ async function main() {
         select: { id: true },
       });
 
+      const tagConnect = {
+        connectOrCreate: {
+          where: { tenantId_name: { tenantId: TENANT_ID, name: category } },
+          create: { tenantId: TENANT_ID, name: category },
+        },
+      };
+
       await prisma.kbDocument.upsert({
         where: { tenantId_slug: { tenantId: TENANT_ID, slug } },
         create: {
@@ -117,14 +128,17 @@ async function main() {
           body: content,
           status: "published",
           createdBy: SEED_CREATED_BY,
-          tags: [category],
+          tags: { create: { tag: tagConnect } },
         },
         update: {
           title,
           body: content,
           status: "published",
           updatedBy: SEED_CREATED_BY,
-          tags: [category],
+          tags: {
+            deleteMany: {},
+            create: { tag: tagConnect },
+          },
         },
       });
 
