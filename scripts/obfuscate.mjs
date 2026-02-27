@@ -10,9 +10,14 @@ import JavaScriptObfuscator from 'javascript-obfuscator';
 
 const ASSETS_DIR = join(process.cwd(), 'dist', 'assets');
 
-// Skip chunks that break under obfuscation (Three.js hooks in app shell,
-// vendor libs with dynamic property access / destructuring).
-const SKIP_PATTERNS = ['three-vendor', 'react-vendor', 'index-', 'router-', 'Settings-', 'ui-vendor'];
+// WHITELIST: only obfuscate business-logic page chunks where the real IP lives.
+// Everything else (vendors, app shell, UI primitives) is left alone.
+const OBFUSCATE_PATTERNS = [
+  'AgentsHub', 'CRM-', 'ChatInterface', 'MessagingHub',
+  'business-manager', 'JobRunner', 'KnowledgeBaseHub',
+  'AgentWatcher', 'SocialMonitoring', 'Settings-',
+  'Store-', 'HelpSection',
+];
 
 const OBFUSCATOR_OPTIONS = {
   compact: true,
@@ -36,7 +41,7 @@ const OBFUSCATOR_OPTIONS = {
 
 async function main() {
   const files = await readdir(ASSETS_DIR);
-  const jsFiles = files.filter((f) => f.endsWith('.js') && !SKIP_PATTERNS.some((p) => f.includes(p)));
+  const jsFiles = files.filter((f) => f.endsWith('.js') && OBFUSCATE_PATTERNS.some((p) => f.includes(p)));
 
   console.log(`Obfuscating ${jsFiles.length} JS files...`);
 
