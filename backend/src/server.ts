@@ -54,6 +54,7 @@ import { googleRoutes } from "./routes/googleRoutes.js";
 import { runtimeRoutes } from "./routes/runtimeRoutes.js";
 import { atlasRoutes } from "./routes/atlasRoutes.js";
 import { complianceRoutes } from "./routes/complianceRoutes.js";
+import { gateRoutes } from "./routes/gateRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -150,6 +151,9 @@ await app.register(helmet, {
 });
 
 await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
+
+// Gate routes — registered before auth (public validate + admin key-based)
+await app.register(gateRoutes, { prefix: "/v1/gate" });
 
 // Plugins (order matters)
 await app.register(auditPlugin);
