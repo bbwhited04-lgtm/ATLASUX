@@ -27,21 +27,13 @@ import {
   Camera,
   MapPin,
   Clipboard,
-  MessageSquare,
   Crown,
   Mail,
   Loader2,
   Plug,
   Gauge,
   Smartphone,
-  Brain,
-  BarChart,
-  Settings as SettingsCog,
-  Zap,
-  Database,
-  Users,
-  Search,
-  Activity
+  Brain
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -57,14 +49,6 @@ import Integrations from './Integrations';
 import { FileManagement } from './FileManagement';
 import { ProcessingSettings } from './ProcessingSettings';
 import AtlasAgentSettings from './AtlasAgentSettings';
-import AnalyticsDashboard from './AnalyticsDashboard';
-import SettingsProfiles from './SettingsProfiles';
-import WorkflowBuilder from './WorkflowBuilder';
-import KnowledgeManagement from './KnowledgeManagement';
-import MultiTenantCollaboration from './MultiTenantCollaboration';
-import SmartSettingsSearch from './SmartSettingsSearch';
-import RealTimeStatusDashboard from './RealTimeStatusDashboard';
-import VoiceCommandSystem from './VoiceCommandSystem'; 
 import { MobileIntegration } from './premium/MobileIntegration';
 import { getOrgUser } from "../lib/org";
 
@@ -372,38 +356,6 @@ export function Settings() {
             <Brain className="w-4 h-4 mr-2" />
             Atlas Agent
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <BarChart className="w-4 h-4 mr-2" />
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger value="profiles" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <SettingsCog className="w-4 h-4 mr-2" />
-            Profiles
-          </TabsTrigger>
-          <TabsTrigger value="workflows" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <Zap className="w-4 h-4 mr-2" />
-            Workflows
-          </TabsTrigger>
-          <TabsTrigger value="knowledge" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <Database className="w-4 h-4 mr-2" />
-            Knowledge
-          </TabsTrigger>
-          <TabsTrigger value="teams" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <Users className="w-4 h-4 mr-2" />
-            Teams
-          </TabsTrigger>
-          <TabsTrigger value="search" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <Search className="w-4 h-4 mr-2" />
-            Search
-          </TabsTrigger>
-          <TabsTrigger value="status" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <Activity className="w-4 h-4 mr-2" />
-            Status
-          </TabsTrigger>
-          <TabsTrigger value="voice" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <Mic className="w-4 h-4 mr-2" />
-            Voice Commands
-          </TabsTrigger>
           <TabsTrigger value="permissions" className="text-slate-300 data-[state=active]:text-cyan-400">
             <Shield className="w-4 h-4 mr-2" />
             Permissions
@@ -574,45 +526,6 @@ export function Settings() {
           <AtlasAgentSettings />
         </TabsContent>
 
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-4">
-          <AnalyticsDashboard />
-        </TabsContent>
-
-        {/* Profiles Tab */}
-        <TabsContent value="profiles" className="space-y-4">
-          <SettingsProfiles />
-        </TabsContent>
-
-        {/* Workflows Tab */}
-        <TabsContent value="workflows" className="space-y-4">
-          <WorkflowBuilder />
-        </TabsContent>
-
-        {/* Knowledge Tab */}
-        <TabsContent value="knowledge" className="space-y-4">
-          <KnowledgeManagement />
-        </TabsContent>
-
-        {/* Teams Tab */}
-        <TabsContent value="teams" className="space-y-4">
-          <MultiTenantCollaboration />
-        </TabsContent>
-
-        {/* Search Tab */}
-        <TabsContent value="search" className="space-y-4">
-          <SmartSettingsSearch />
-        </TabsContent>
-
-        {/* Status Tab */}
-        <TabsContent value="status" className="space-y-4">
-          <RealTimeStatusDashboard />
-        </TabsContent>
-
-        {/* Voice Commands Tab */}
-        <TabsContent value="voice" className="space-y-4">
-          <VoiceCommandSystem />
-        </TabsContent>
 
         {/* Permissions Tab */}
         <TabsContent value="permissions" className="space-y-4">
