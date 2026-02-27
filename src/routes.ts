@@ -14,7 +14,8 @@ import MobilePage from "./routes/mobile";
  */
 function lazyRetry(factory: () => Promise<any>) {
   return lazy(() =>
-    factory().catch(() => {
+    factory().catch((err) => {
+      console.error("[lazyRetry] chunk import failed:", err);
       const key = "chunk_reload";
       const last = sessionStorage.getItem(key);
       // Only reload once per session to prevent infinite loops
@@ -25,7 +26,7 @@ function lazyRetry(factory: () => Promise<any>) {
       // Return a minimal component so React doesn't crash while reloading
       return { default: () => React.createElement("div", {
         className: "flex items-center justify-center h-full min-h-[200px] text-slate-500 text-sm",
-      }, "Updating… please wait.") };
+      }, "Load failed: " + (err?.message || "unknown error") + " — try hard refresh") };
     })
   );
 }
