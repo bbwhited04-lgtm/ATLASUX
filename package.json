@@ -41,6 +41,8 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tauri-apps/api": "^2.10.1",
     "class-variance-authority": "^0.7.1",
@@ -58,7 +60,8 @@
     "recharts": "^2.15.4",
     "slick-carousel": "^1.8.1",
     "sonner": "^1.7.3",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "three": "^0.183.1"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.10.0",

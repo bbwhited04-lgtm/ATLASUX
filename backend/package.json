@@ -19,7 +19,9 @@
     "worker:sms": "node dist/workers/smsWorker.js",
     "worker:reddit": "node dist/workers/redditWorker.js",
     "worker:social": "node dist/workers/socialMonitoringWorker.js",
-    "kb:chunk-docs": "ts-node scripts/chunkKbDocuments.ts"
+    "kb:chunk-docs": "ts-node scripts/chunkKbDocuments.ts",
+    "kb:seed-docs": "npx tsx src/scripts/seedKbFromDocs.ts",
+    "kb:seed-ai": "npx tsx src/scripts/seedAiKb.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

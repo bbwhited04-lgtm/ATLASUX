@@ -6,6 +6,7 @@ import { MobileConnectionModal } from './MobileConnectionModal';
 import { MobileInstallModal } from './MobileInstallModal';
 import { MobileCompanionSetup } from "./MobileCompanionSetup";
 import { MobileConnectionProvider, useMobileConnection } from './mobile/MobileConnectionContext';
+import { AtlasAvatar } from './AtlasAvatar';
 import {
   LayoutDashboard,
   Cpu,
@@ -317,6 +318,9 @@ function RootLayoutInner() {
             <p className="text-xs text-slate-400">The AI Worker who works Where You Work</p>
           </div>
           <div className="flex items-center gap-4">
+            {/* Atlas AI Avatar */}
+            <AtlasAvatar />
+
             {/* Agent Heartbeat — always-visible pulse */}
             <Link
               to="/app/watcher"
