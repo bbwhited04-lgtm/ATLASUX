@@ -12,7 +12,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/obfuscate.mjs",
+    "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
