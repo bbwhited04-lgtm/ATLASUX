@@ -10,6 +10,10 @@ import JavaScriptObfuscator from 'javascript-obfuscator';
 
 const ASSETS_DIR = join(process.cwd(), 'dist', 'assets');
 
+// Skip chunks that break under obfuscation (Three.js uses heavy
+// dynamic property access / destructuring that gets mangled).
+const SKIP_PATTERNS = ['three-vendor', 'react-vendor'];
+
 const OBFUSCATOR_OPTIONS = {
   compact: true,
   controlFlowFlattening: true,
@@ -18,19 +22,19 @@ const OBFUSCATOR_OPTIONS = {
   deadCodeInjectionThreshold: 0.2,
   identifierNamesGenerator: 'hexadecimal',
   renameGlobals: false,
-  selfDefending: true,
+  selfDefending: false,
   stringArray: true,
   stringArrayThreshold: 0.5,
   stringArrayEncoding: ['base64'],
   stringArrayRotate: true,
   stringArrayShuffle: true,
-  transformObjectKeys: true,
+  transformObjectKeys: false,
   unicodeEscapeSequence: false,
 };
 
 async function main() {
   const files = await readdir(ASSETS_DIR);
-  const jsFiles = files.filter((f) => f.endsWith('.js'));
+  const jsFiles = files.filter((f) => f.endsWith('.js') && !SKIP_PATTERNS.some((p) => f.includes(p)));
 
   console.log(`Obfuscating ${jsFiles.length} JS files...`);
 
