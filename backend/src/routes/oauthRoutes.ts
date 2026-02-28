@@ -96,6 +96,8 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
       const scopes = [
         "openid", "email", "profile",
         "https://www.googleapis.com/auth/youtube.readonly",
+        "https://www.googleapis.com/auth/youtube.upload",
+        "https://www.googleapis.com/auth/youtube.force-ssl",
         "https://www.googleapis.com/auth/business.manage",
         "https://www.googleapis.com/auth/calendar.readonly",
         "https://www.googleapis.com/auth/drive.readonly",

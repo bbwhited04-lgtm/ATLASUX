@@ -31,6 +31,8 @@ export const workflowCatalog = [
   { id: "WF-021", name: "Bootstrap Atlas (Atlas)",          description: "Boot → discover agents → load KB → seed tasks → queue boot email → await command.", ownerAgent: "atlas"    },
   { id: "WF-107", name: "Atlas Tool Discovery & Proposal",  description: "Look inside (agent gaps) + look outside (SERP external tools) → LLM proposals → email report with approve/deny links.", ownerAgent: "atlas" },
   { id: "WF-108", name: "Reynolds Blog Writer & Publisher", description: "SERP research → LLM drafts full blog post → publishes to KB → emails confirmation.",  ownerAgent: "reynolds" },
+  { id: "WF-110", name: "Venny YouTube Video Scraper & KB Ingest", description: "Search YouTube by keyword/channel → pull metadata + transcripts → store in KB for team retrieval.", ownerAgent: "venny" },
+  { id: "WF-111", name: "Venny YouTube Shorts Auto-Publisher", description: "Download Victor's exported video from OneDrive → upload to YouTube via Data API v3 → audit trail.", ownerAgent: "venny" },
 ] as const;
 
 export { n8nWorkflows };
@@ -1622,6 +1624,239 @@ handlers["WF-108"] = async (ctx) => {
       bodyChars:  body.length,
       blogPostUrl,
     },
+  };
+};
+
+// ── WF-110 — Venny YouTube Video Scraper & KB Ingest ──────────────────────────
+
+handlers["WF-110"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-110.start", "YouTube scraper starting");
+
+  // Get Google token from token_vault or Integration table
+  let googleToken: string | null = null;
+  try {
+    const vault = await prisma.$queryRaw<Array<{ access_token: string }>>`
+      SELECT access_token FROM token_vault
+      WHERE org_id = ${ctx.tenantId} AND provider = 'google'
+      ORDER BY created_at DESC LIMIT 1
+    `.catch(() => []);
+    googleToken = (vault.length > 0 && vault[0].access_token) ? vault[0].access_token : null;
+
+    if (!googleToken) {
+      const integration = await prisma.integration.findUnique({
+        where: { tenantId_provider: { tenantId: ctx.tenantId, provider: "google" } },
+        select: { access_token: true, connected: true },
+      });
+      if (integration?.connected && integration.access_token) googleToken = integration.access_token;
+    }
+  } catch { /* fallthrough */ }
+
+  if (!googleToken) {
+    return { ok: false, message: "Google/YouTube not connected — no access token" };
+  }
+
+  const input = ctx.input as any ?? {};
+  const query = String(input.query ?? "AI automation small business productivity tools 2026");
+  const channelIds: string[] = Array.isArray(input.channelIds) ? input.channelIds : [];
+  const maxResults = Number(input.maxResults ?? 10);
+
+  // Dynamic import to avoid circular deps
+  const { searchVideos, getChannelVideos, getVideoDetails, getVideoTranscript, buildYouTubeKbBody } =
+    await import("../services/youtube.js");
+
+  // Search by keyword
+  const allResults = await searchVideos(googleToken, query, maxResults);
+
+  // Also get channel videos
+  for (const chId of channelIds) {
+    const channelVids = await getChannelVideos(googleToken, chId, Math.min(maxResults, 10));
+    allResults.push(...channelVids);
+  }
+
+  // De-duplicate
+  const seen = new Set<string>();
+  const unique = allResults.filter(v => {
+    if (seen.has(v.videoId)) return false;
+    seen.add(v.videoId);
+    return true;
+  });
+
+  const SYSTEM_ACTOR = "00000000-0000-0000-0000-000000000000";
+  let stored = 0;
+
+  for (const video of unique) {
+    const details = await getVideoDetails(googleToken, video.videoId);
+    if (!details) continue;
+
+    const transcript = await getVideoTranscript(video.videoId);
+    const body = buildYouTubeKbBody(details, transcript);
+    const slug = `youtube-video-${details.videoId}`;
+
+    // Upsert KbDocument
+    const existing = await prisma.kbDocument.findFirst({
+      where: { tenantId: ctx.tenantId, slug },
+      select: { id: true },
+    });
+
+    let docId: string;
+    if (existing) {
+      await prisma.kbDocument.update({
+        where: { id: existing.id },
+        data: { title: details.title, body, updatedBy: SYSTEM_ACTOR },
+      });
+      docId = existing.id;
+    } else {
+      const doc = await prisma.kbDocument.create({
+        data: {
+          tenantId: ctx.tenantId,
+          title: details.title,
+          slug,
+          body,
+          status: "published",
+          createdBy: SYSTEM_ACTOR,
+        },
+      });
+      docId = doc.id;
+
+      // Tag it
+      const tag = await prisma.kbTag.upsert({
+        where: { tenantId_name: { tenantId: ctx.tenantId, name: "youtube-video" } },
+        create: { tenantId: ctx.tenantId, name: "youtube-video" },
+        update: {},
+      });
+      await prisma.kbTagOnDocument.upsert({
+        where: { documentId_tagId: { documentId: docId, tagId: tag.id } },
+        create: { documentId: docId, tagId: tag.id },
+        update: {},
+      });
+    }
+
+    stored++;
+    await writeStepAudit(ctx, "WF-110.video", `Stored: ${details.title}`, {
+      videoId: details.videoId,
+      views: details.stats.viewCount,
+    });
+  }
+
+  // Send summary email to Atlas
+  const atlasAddr = agentEmail("atlas") ?? "atlas@deadapp.info";
+  await queueEmail(ctx, {
+    to: atlasAddr,
+    subject: `[YOUTUBE SCRAPE] ${stored} videos ingested into KB`,
+    text: `YouTube scraper (WF-110) completed.\n\n${stored} videos stored in Knowledge Base.\n\nQuery: ${query}\nChannels monitored: ${channelIds.length}\n\nVideos:\n${unique.map(v => `- ${v.title}`).join("\n")}`,
+    fromAgent: "venny",
+  });
+
+  return { ok: true, message: `${stored} YouTube videos scraped and stored in KB`, output: { stored } };
+};
+
+// ── WF-111 — Venny YouTube Shorts Auto-Publisher ──────────────────────────────
+
+handlers["WF-111"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-111.start", "YouTube upload starting");
+
+  const input = ctx.input as any ?? {};
+  const { oneDriveFileId, title, description, tags, categoryId, privacyStatus, thumbnailFileId } = input;
+
+  if (!oneDriveFileId || !title) {
+    return { ok: false, message: "Missing oneDriveFileId or title in input" };
+  }
+
+  // Get M365 token for OneDrive download
+  let m365Token: string | null = null;
+  try {
+    const vault = await prisma.$queryRaw<Array<{ access_token: string }>>`
+      SELECT access_token FROM token_vault
+      WHERE org_id = ${ctx.tenantId} AND provider = 'microsoft'
+      ORDER BY created_at DESC LIMIT 1
+    `.catch(() => []);
+    m365Token = (vault.length > 0 && vault[0].access_token) ? vault[0].access_token : null;
+  } catch { /* fallthrough */ }
+
+  if (!m365Token) {
+    return { ok: false, message: "Microsoft 365 not connected — cannot download from OneDrive" };
+  }
+
+  // Get Google/YouTube token for upload
+  let googleToken: string | null = null;
+  try {
+    const vault = await prisma.$queryRaw<Array<{ access_token: string }>>`
+      SELECT access_token FROM token_vault
+      WHERE org_id = ${ctx.tenantId} AND provider = 'google'
+      ORDER BY created_at DESC LIMIT 1
+    `.catch(() => []);
+    googleToken = (vault.length > 0 && vault[0].access_token) ? vault[0].access_token : null;
+  } catch { /* fallthrough */ }
+
+  if (!googleToken) {
+    return { ok: false, message: "Google/YouTube not connected — cannot upload" };
+  }
+
+  const { uploadVideo, setThumbnail } = await import("../services/youtube.js");
+
+  // Download video from OneDrive
+  await writeStepAudit(ctx, "WF-111.download", `Downloading from OneDrive: ${oneDriveFileId}`);
+  const driveRes = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${oneDriveFileId}/content`,
+    { headers: { Authorization: `Bearer ${m365Token}` } },
+  );
+  if (!driveRes.ok) {
+    return { ok: false, message: `OneDrive download failed: ${driveRes.status}` };
+  }
+  const videoBuffer = Buffer.from(await driveRes.arrayBuffer());
+
+  // Upload to YouTube
+  await writeStepAudit(ctx, "WF-111.upload", `Uploading to YouTube: ${title}`);
+  const result = await uploadVideo(googleToken, videoBuffer, {
+    title: String(title).slice(0, 100),
+    description: String(description ?? ""),
+    tags: Array.isArray(tags) ? tags : [],
+    categoryId: String(categoryId ?? "28"),
+    privacyStatus: privacyStatus ?? "public",
+  });
+
+  if (!result.ok) {
+    return { ok: false, message: `YouTube upload failed: ${result.error}` };
+  }
+
+  // Set thumbnail if provided
+  if (thumbnailFileId && result.videoId) {
+    const thumbRes = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${thumbnailFileId}/content`,
+      { headers: { Authorization: `Bearer ${m365Token}` } },
+    );
+    if (thumbRes.ok) {
+      const thumbBuffer = Buffer.from(await thumbRes.arrayBuffer());
+      await setThumbnail(googleToken, result.videoId, thumbBuffer);
+      await writeStepAudit(ctx, "WF-111.thumbnail", "Custom thumbnail set");
+    }
+  }
+
+  // Distribution event
+  await prisma.distributionEvent.create({
+    data: {
+      tenantId: ctx.tenantId,
+      agent: "venny",
+      channel: "youtube",
+      eventType: "video_upload",
+      url: result.url ?? null,
+      meta: { videoId: result.videoId, title, tags: tags ?? [], privacyStatus: privacyStatus ?? "public" },
+    } as any,
+  }).catch(() => null);
+
+  // Email notification
+  const atlasAddr = agentEmail("atlas") ?? "atlas@deadapp.info";
+  await queueEmail(ctx, {
+    to: atlasAddr,
+    subject: `[YOUTUBE UPLOAD] "${title}" published`,
+    text: `Video uploaded to YouTube.\n\nTitle: ${title}\nURL: ${result.url}\nVideo ID: ${result.videoId}\nPrivacy: ${privacyStatus ?? "public"}`,
+    fromAgent: "venny",
+  });
+
+  return {
+    ok: true,
+    message: `Video "${title}" uploaded to YouTube`,
+    output: { videoId: result.videoId, url: result.url },
   };
 };
 

@@ -55,6 +55,7 @@ import { runtimeRoutes } from "./routes/runtimeRoutes.js";
 import { atlasRoutes } from "./routes/atlasRoutes.js";
 import { complianceRoutes } from "./routes/complianceRoutes.js";
 import { gateRoutes } from "./routes/gateRoutes.js";
+import { youtubeRoutes } from "./routes/youtubeRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -244,6 +245,9 @@ await app.register(atlasRoutes, { prefix: "/v1/atlas" });
 
 // Compliance — GDPR DSAR, consent, breach register, incidents, vendor assessments
 await app.register(complianceRoutes, { prefix: "/v1/compliance" });
+
+// YouTube — scraping, search, upload (Venny + Victor workflows)
+await app.register(youtubeRoutes, { prefix: "/v1/youtube" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

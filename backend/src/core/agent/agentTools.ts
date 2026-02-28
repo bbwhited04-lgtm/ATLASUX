@@ -612,6 +612,69 @@ async function searchX(tenantId: string, query: string): Promise<ToolResult> {
   }
 }
 
+// ── Tool: search_youtube ──────────────────────────────────────────────────────
+
+async function searchYouTube(tenantId: string, query: string): Promise<ToolResult> {
+  try {
+    const { searchVideos } = await import("../../services/youtube.js");
+
+    // Get Google token
+    let token: string | null = null;
+    try {
+      const vault = await prisma.$queryRaw<Array<{ access_token: string }>>`
+        SELECT access_token FROM token_vault
+        WHERE org_id = ${tenantId} AND provider = 'google'
+        ORDER BY created_at DESC LIMIT 1
+      `.catch(() => []);
+      token = (vault.length > 0 && vault[0].access_token) ? vault[0].access_token : null;
+    } catch { /* fallthrough */ }
+
+    if (!token) {
+      const integration = await prisma.integration.findUnique({
+        where: { tenantId_provider: { tenantId, provider: "google" } },
+        select: { access_token: true, connected: true },
+      });
+      if (integration?.connected && integration.access_token) token = integration.access_token;
+    }
+
+    if (!token) {
+      return { tool: "search_youtube", data: "YouTube not connected — connect Google in Settings > Integrations.", usedAt: new Date().toISOString() };
+    }
+
+    // Extract search terms from the query
+    const searchTerms = query
+      .replace(/\b(search|find|look up|trending|check|monitor|scrape|on|youtube|for|videos?|about)\b/gi, "")
+      .trim() || "AI automation";
+
+    const results = await searchVideos(token, searchTerms, 5);
+    if (!results.length) {
+      return { tool: "search_youtube", data: `No YouTube videos found for "${searchTerms}".`, usedAt: new Date().toISOString() };
+    }
+
+    const lines = results.map((v, i) =>
+      `${i + 1}. **${v.title}**\n   Channel: ${v.channelTitle} | Published: ${v.publishedAt}\n   URL: https://www.youtube.com/watch?v=${v.videoId}`
+    );
+
+    return {
+      tool: "search_youtube",
+      data: `YouTube search results for "${searchTerms}" (${results.length} videos):\n\n${lines.join("\n\n")}`,
+      usedAt: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    return { tool: "search_youtube", data: `[error searching YouTube: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
+// ── Tool: youtube_upload_info ─────────────────────────────────────────────────
+
+async function youtubeUploadInfo(tenantId: string): Promise<ToolResult> {
+  return {
+    tool: "youtube_upload",
+    data: `To upload a video to YouTube, use workflow WF-111 (Venny YouTube Shorts Auto-Publisher).\n\nRequired input:\n- oneDriveFileId: The OneDrive file ID of the video\n- title: Video title (max 100 chars)\n- description: Video description\n- tags: Array of tags\n- privacyStatus: "public", "unlisted", or "private"\n\nTrigger via: POST /v1/engine/run with workflowId "WF-111"`,
+    usedAt: new Date().toISOString(),
+  };
+}
+
 // ── Pattern detection ─────────────────────────────────────────────────────────
 
 const SUBSCRIPTION_PATTERNS = [
@@ -721,6 +784,19 @@ const X_SEARCH_PATTERNS = [
   /\b(check|monitor)\s+(x|twitter)\b/i,
 ];
 
+const YOUTUBE_SEARCH_PATTERNS = [
+  /\b(search|find|look up|trending)\s+(on\s+)?youtube\b/i,
+  /\b(youtube)\s+(trends?|search|videos?|topics?|channels?)\b/i,
+  /\b(check|monitor|scrape)\s+youtube\b/i,
+  /\b(youtube)\s+(shorts?|content|creators?)\b/i,
+];
+
+const YOUTUBE_UPLOAD_PATTERNS = [
+  /\b(upload|publish|post)\s+(to|on)\s+youtube\b/i,
+  /\b(youtube)\s+(upload|publish|short)\b/i,
+  /\b(create|make|compose)\s+(a\s+)?(youtube\s+)?short\b/i,
+];
+
 // ── Agent → allowed tools map (from WF-107 approved proposals) ───────────────
 // Controls which tools can fire for which agent — prevents unnecessary DB hits.
 
@@ -745,7 +821,8 @@ const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   // ── Content & Comms ──────────────────────────────────────────────────
   sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch"],
   archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate"],
-  venny:       ["calendar", "knowledge", "telegram", "memory", "delegate"],
+  venny:       ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload"],
+  victor:      ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch"],
   reynolds:    ["calendar", "knowledge", "telegram", "memory", "delegate"],
 
   // ── Social Publishers ────────────────────────────────────────────────
@@ -777,9 +854,11 @@ export type ToolNeeds = {
   telegram:     boolean;
   memory:       boolean;
   delegate:     boolean;
-  xPost:        boolean;
-  xSearch:      boolean;
-  query:        string;
+  xPost:          boolean;
+  xSearch:        boolean;
+  youtubeSearch:  boolean;
+  youtubeUpload:  boolean;
+  query:          string;
 };
 
 export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
@@ -804,9 +883,11 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     telegram:     can("telegram")     && TELEGRAM_PATTERNS.some(p => p.test(q)),
     memory:       can("memory")       && MEMORY_PATTERNS.some(p => p.test(q)),
     delegate:     can("delegate")     && DELEGATE_PATTERNS.some(p => p.test(q)),
-    xPost:        can("xPost")        && X_POST_PATTERNS.some(p => p.test(q)),
-    xSearch:      can("xSearch")      && X_SEARCH_PATTERNS.some(p => p.test(q)),
-    query:        q,
+    xPost:          can("xPost")          && X_POST_PATTERNS.some(p => p.test(q)),
+    xSearch:        can("xSearch")        && X_SEARCH_PATTERNS.some(p => p.test(q)),
+    youtubeSearch:  can("youtubeSearch")  && YOUTUBE_SEARCH_PATTERNS.some(p => p.test(q)),
+    youtubeUpload:  can("youtubeUpload")  && YOUTUBE_UPLOAD_PATTERNS.some(p => p.test(q)),
+    query:          q,
   };
 }
 
@@ -843,8 +924,10 @@ export async function resolveAgentTools(
     needs.telegram     ? sendTelegramMessage(tenantId, needs.query)            : Promise.resolve(null),
     needs.memory       ? searchMyMemories(tenantId, aid, needs.query)          : Promise.resolve(null),
     needs.delegate     ? delegateTask(tenantId, aid, needs.query)              : Promise.resolve(null),
-    needs.xPost        ? postToX(tenantId, aid, needs.query)                   : Promise.resolve(null),
-    needs.xSearch      ? searchX(tenantId, needs.query)                        : Promise.resolve(null),
+    needs.xPost          ? postToX(tenantId, aid, needs.query)                   : Promise.resolve(null),
+    needs.xSearch        ? searchX(tenantId, needs.query)                        : Promise.resolve(null),
+    needs.youtubeSearch  ? searchYouTube(tenantId, needs.query)                  : Promise.resolve(null),
+    needs.youtubeUpload  ? youtubeUploadInfo(tenantId)                           : Promise.resolve(null),
   ];
 
   const results = (await Promise.all(jobs)).filter(Boolean) as ToolResult[];

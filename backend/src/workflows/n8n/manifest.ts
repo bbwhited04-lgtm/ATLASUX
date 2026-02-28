@@ -669,6 +669,28 @@ export const n8nWorkflows: AtlasWorkflowDef[] = [
     humanInLoop: true,
     file: "workflows/n8n/orchestration/atlas_tool_discovery.json",
   },
+
+  // ── YouTube — Venny Video Scraper & Publisher ──────────────────────────────
+  {
+    id: "WF-110",
+    name: "Venny YouTube Video Scraper & KB Ingest",
+    description: "Searches YouTube by keyword or monitors specific channels, pulls metadata + transcripts, and stores everything in the KB for team retrieval.",
+    category: "content_creation",
+    ownerAgent: "venny",
+    trigger: "cron",
+    humanInLoop: false,
+    file: "workflows/n8n/content_creation/venny_youtube_scraper.json",
+  },
+  {
+    id: "WF-111",
+    name: "Venny YouTube Shorts Auto-Publisher",
+    description: "Takes Victor's exported Clipchamp video from OneDrive and uploads directly to YouTube via Data API v3 with full audit trail.",
+    category: "social_media",
+    ownerAgent: "venny",
+    trigger: "manual",
+    humanInLoop: true,
+    file: "workflows/n8n/social_media/venny_youtube_upload.json",
+  },
 ];
 
 export default n8nWorkflows;

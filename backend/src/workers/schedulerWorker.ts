@@ -26,6 +26,7 @@
  *
  *   PHASE 3 — Research & Intelligence:
  *   06:00  Binky Research Digest          WF-031  daily
+ *   06:15  Venny YouTube Scraper          WF-110  daily
  *   07:00  Daily-Intel Morning Brief       WF-033  daily
  *   07:30  Archy Research Deep-Dive        WF-034  daily
  *   08:00  Claire Calendar Prep            WF-088  daily
@@ -457,6 +458,13 @@ function buildJobs(): ScheduledJob[] {
       agentId: "reynolds", workflowId: "WF-108",
       payload: { triggeredBy: "scheduler", category: "AI Automation" },
       hourUTC: 13, minuteUTC: 0, dayOfWeek: 3, // Wednesday 13:00 UTC — peak blog engagement
+    },
+    {
+      id: "venny-youtube-scrape",
+      label: "Venny YouTube Video Scraper & KB Ingest (WF-110)",
+      agentId: "venny", workflowId: "WF-110",
+      payload: { triggeredBy: "scheduler", query: "AI automation small business productivity tools 2026", channelIds: [], maxResults: 10 },
+      hourUTC: 6, minuteUTC: 15, // Daily 06:15 UTC — after WF-105 intel and WF-106 aggregation
     },
 
     // ── Weekly (Friday): Compliance & Finance ────────────────────────────────
