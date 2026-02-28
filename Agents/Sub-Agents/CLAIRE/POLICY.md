@@ -18,8 +18,14 @@ Reports to: **EMMA**, escalates to **ATLAS**
 |------|--------|-------|
 | Outlook Calendar | Read + Write (via Atlas) | Calendar event creation requires Atlas approval |
 | Outlook | Read + Draft | Scheduling emails drafted only — Atlas sends |
+| Teams | Read + Draft | Channel coordination and meeting context |
 | Teams Meetings | Read + Create (via Atlas) | Meeting creation requires Atlas approval |
-| OneNote | Read | Agenda reference and meeting notes |
+| Word | Read | Reference documents and agendas |
+| OneNote | Read + Write | Agenda drafting and meeting notes |
+| Planner | Read | Task and schedule visibility |
+| Bookings | Read | Appointment context and availability |
+| SharePoint | Read | Document reference |
+| OneDrive | Read | File access |
 
 - All calendar event creation and meeting invites require **Atlas approval**.
 - External meeting invites (client-facing) require **Atlas + human approval**.

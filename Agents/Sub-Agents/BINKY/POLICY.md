@@ -22,8 +22,14 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
+| Outlook | Read + Draft | Intel correspondence and research emails |
+| Teams | Read + Draft | Research channel coordination |
 | Word | Read + Write | Master intelligence briefs and research reports |
 | OneNote | Read + Write | Research and analysis notes |
+| Excel | Read | Data analysis and metrics |
+| PowerPoint | Read | Research presentation decks |
+| Planner | Read | Task and sprint visibility |
+| Calendar | Read | Schedule awareness |
 | SharePoint | Read | Document library and policy reference |
 | OneDrive | Read | Research file access |
 

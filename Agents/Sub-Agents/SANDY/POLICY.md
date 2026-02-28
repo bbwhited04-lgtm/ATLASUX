@@ -18,9 +18,15 @@ Reports to: **EMMA**, escalates to **MERCER** (acquisition context) or **ATLAS**
 | Tool | Access | Notes |
 |------|--------|-------|
 | Microsoft Bookings | Read + Manage (via Atlas) | Appointment changes require Atlas approval |
-| Outlook Calendar | Read | Cross-reference internal availability |
 | Outlook | Read + Draft | Confirmation emails drafted only — Atlas sends |
+| Outlook Calendar | Read + Write | Availability management and appointment blocks |
 | Teams | Read | Meeting context and follow-up tracking |
+| Teams Meetings | Read | Online meeting context |
+| Word | Read | Reference documents |
+| OneNote | Read | Appointment notes reference |
+| Planner | Read | Task visibility for appointment follow-up |
+| OneDrive | Read | Appointment file reference |
+| SharePoint | Read | Booking template library |
 
 - **All appointment creation, modification, or cancellation** requires Atlas approval.
 - **Client-facing commitments** (pricing, scope, guarantees) require human-in-loop.

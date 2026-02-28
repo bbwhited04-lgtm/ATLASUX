@@ -45,8 +45,13 @@ Truth Law: **Agents/Atlas/SOUL.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
+| Outlook | Read + Draft | Audit notifications and findings — Atlas sends |
+| Teams | Read + Draft | Compliance channel updates — Atlas sends |
 | Word | Read + Write | Audit reports and compliance findings |
+| Excel | Read | Audit data analysis |
 | OneNote | Read + Write | Audit working papers |
+| Planner | Read | Task and audit schedule visibility |
+| OneDrive | Read | Audit file reference |
 | SharePoint | Read | Policy document library reference |
 
 ## Audit & Traceability

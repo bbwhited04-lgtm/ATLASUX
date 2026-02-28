@@ -16,11 +16,15 @@ Reports to: **ATLAS**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
+| Outlook | Read + Draft | Project status emails — Atlas sends |
+| Outlook Calendar | Read | Schedule awareness for sprint planning |
+| Teams | Read + Draft | Channel updates and status posts — Atlas sends |
+| Teams Meetings | Read | Meeting context for project coordination |
 | Microsoft Planner | Read + Write | Primary task management surface |
-| Microsoft Teams | Read + Draft | Channel updates and status posts (Atlas sends) |
 | Word | Read + Write | Status reports and sprint documentation |
+| OneNote | Read + Write | Project notes and meeting minutes |
+| OneDrive | Read + Write | Project file storage and access |
 | SharePoint | Read | Reference docs and project libraries |
-| OneDrive | Read | Project file access |
 
 - All Planner write actions are logged to audit trail.
 - Teams messages are drafted only — Atlas approves all sends.

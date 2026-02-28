@@ -13,9 +13,13 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 |------|--------|-------|
 | Outlook | Read + Draft | Scheduling and comms drafts — Atlas sends |
 | Teams | Read + Draft | Channel posts drafted — Atlas sends |
+| Word | Read + Write | Publishing copy and content documents |
+| PowerPoint | Read + Write | Slide templates and presentation content |
+| OneNote | Read + Write | Publishing notes and content planning |
 | Clipchamp | Read + Write | Manage video projects and exports in OneDrive |
+| Planner | Read | Task and publishing schedule visibility |
+| OneDrive | Read + Write | Publishing file storage |
 | SharePoint | Read | Publishing staging and media library access |
-| PowerPoint | Read | Slide templates and presentation reference |
 
 - Clipchamp write access is for organizing exported assets received from Victor.
 - $0 spend enforced. No paid publishing tools or content schedulers.

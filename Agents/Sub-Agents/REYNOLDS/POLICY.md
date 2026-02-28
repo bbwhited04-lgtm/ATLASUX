@@ -22,9 +22,13 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
-| SharePoint | Read | Policy and audit document reference |
-| OneDrive | Read | Security report file access |
+| Outlook | Read | Security notifications and alert emails |
 | Teams | Read | Security alert channel monitoring |
+| Word | Read + Write | Security reports and audit documentation |
+| PowerPoint | Read | Security presentation reference |
+| OneNote | Read + Write | Security research notes |
+| OneDrive | Read + Write | Security report file storage |
+| SharePoint | Read | Policy and audit document reference |
 
 - All write actions are drafted for Atlas review. Atlas executes sends/publishes.
 - $0 spend enforced. No paid M365 add-ons without human approval.

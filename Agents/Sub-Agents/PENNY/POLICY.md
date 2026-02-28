@@ -22,8 +22,13 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
+| Outlook | Read | Notification and policy alert emails |
+| Teams | Read | Channel updates and coordination |
 | Word | Read + Write | Policy research and compliance reports |
+| Excel | Read | Policy tracking data |
+| PowerPoint | Read + Write | Policy presentation decks |
 | OneNote | Read + Write | Running policy watch log |
+| OneDrive | Read + Write | Policy file storage |
 | SharePoint | Read | Policy document library reference |
 
 - All write actions are drafted for Atlas review. Atlas executes sends/publishes.

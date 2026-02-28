@@ -22,9 +22,12 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
-| SharePoint | Read | Runbook and incident doc storage |
-| OneDrive | Read | Config and script file reference |
-| Teams | Read | Ops channel monitoring |
+| Outlook | Read | Notification and content request emails |
+| Teams | Read | Channel monitoring and coordination |
+| Word | Read | Content reference and copy docs |
+| OneNote | Read | Research notes reference |
+| OneDrive | Read + Write | Content file storage |
+| SharePoint | Read | Brand asset library |
 
 - All write actions are drafted for Atlas review. Atlas executes sends/publishes.
 - $0 spend enforced. No paid M365 add-ons without human approval.

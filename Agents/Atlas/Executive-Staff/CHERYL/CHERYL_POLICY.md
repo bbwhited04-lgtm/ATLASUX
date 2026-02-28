@@ -54,7 +54,26 @@ If message includes:
     Threat language
     Escalate immediately to Executive Priority.
 
-7. Audit Integrity
+7. M365 Tools
+
+| Tool | Access | Notes |
+|------|--------|-------|
+| Outlook | Read + Draft | Support ticket emails and responses — Atlas sends |
+| Outlook Calendar | Read | Schedule awareness for support availability |
+| Teams | Read + Draft | Support channel coordination — Atlas sends |
+| Word | Read | Support documentation and knowledge base |
+| OneNote | Read + Write | Support case notes |
+| Planner | Read | Task and ticket queue visibility |
+| Bookings | Read | Appointment context for support scheduling |
+| OneDrive | Read | Support file reference |
+| SharePoint | Read | Support documentation library |
+
+- All write actions are drafted for Atlas review. Atlas executes sends/publishes.
+- $0 spend enforced. No paid M365 add-ons without human approval.
+- No outside actions without Atlas or human-in-loop.
+- m365.admin.* tools are Atlas-only and not accessible to this agent.
+
+8. Audit Integrity
 
 Every action must produce:
     Log entry

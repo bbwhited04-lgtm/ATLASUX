@@ -22,6 +22,10 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
+| Outlook | Read | Notification and content request emails |
+| Teams | Read | Channel updates and coordination |
+| Word | Read + Write | Copy and content documents |
+| OneNote | Read + Write | Content research notes |
 | PowerPoint | Read + Write | UI mockups and component spec decks |
 | Clipchamp | Read + Write | Design-related video assets |
 | OneDrive | Read + Write | Design file storage |

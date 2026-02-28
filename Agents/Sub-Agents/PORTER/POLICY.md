@@ -16,10 +16,13 @@ Reports to: **LARRY** (audit alignment), escalates to **ATLAS**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
+| Outlook | Read | Notification and SharePoint alert emails |
+| Teams | Read | Channel coordination |
 | SharePoint | Read + Write (via Atlas) | Primary work surface — structural writes require Atlas + human approval |
-| Word | Read | Reference documents only |
+| Word | Read + Write | Page content drafts and reference documents |
 | PowerPoint | Read | Template reference |
-| OneDrive | Read | Cross-reference file access |
+| OneNote | Read | Site architecture notes |
+| OneDrive | Read + Write | Cross-reference file access and staging |
 
 - SharePoint structural changes (site creation, permission assignment, library deletion) require **Atlas approval + human-in-loop**.
 - Non-destructive writes (page content, list items) may be drafted but must be reviewed before publishing.

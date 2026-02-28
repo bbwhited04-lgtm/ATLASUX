@@ -45,8 +45,12 @@ Truth Law: **Agents/Atlas/SOUL.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
+| Outlook | Read + Draft | Legal correspondence drafts — Atlas sends |
+| Teams | Read + Draft | Legal channel updates — Atlas sends |
 | Word | Read + Write | Legal drafts, contract templates |
 | OneNote | Read + Write | Legal research notes |
+| Planner | Read | Task and legal review visibility |
+| OneDrive | Read | Legal file reference |
 | SharePoint | Read | Reference legal documents, prior opinions |
 
 ## Audit & Traceability

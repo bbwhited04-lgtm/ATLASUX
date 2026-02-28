@@ -17,10 +17,15 @@ Reports to: **BINKY**, escalates to **ATLAS**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
+| Outlook | Read | Notification and form response alerts |
+| Teams | Read | Channel coordination |
 | Microsoft Forms | Read + Create (via Atlas) | Form creation requires Atlas approval |
-| Excel | Read | Analyze exported response data |
-| SharePoint | Read | Store response summaries and form templates |
-| OneDrive | Read | Response data access |
+| Excel | Read + Write | Analyze and organize response data |
+| Word | Read | Reference documents |
+| OneNote | Read + Write | Data analysis notes |
+| Planner | Read | Task visibility |
+| OneDrive | Read + Write | Response data and form template storage |
+| SharePoint | Read | Form template library |
 
 - **No form creation or publication** without Atlas approval.
 - **No PII storage** beyond what's necessary and compliant — route data minimization questions to Jenny.

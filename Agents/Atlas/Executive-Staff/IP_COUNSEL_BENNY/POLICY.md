@@ -46,8 +46,12 @@ Truth Law: **Agents/Atlas/SOUL.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
+| Outlook | Read + Draft | IP clearance notifications — Atlas sends |
+| Teams | Read | IP discussion channel monitoring |
 | Word | Read + Write | IP review reports, clearance memos |
 | OneNote | Read + Write | IP research notes, trademark watch |
+| Planner | Read | Task and clearance queue visibility |
+| OneDrive | Read | IP file reference |
 | SharePoint | Read | Reference IP documents, license records |
 
 ## Audit & Traceability

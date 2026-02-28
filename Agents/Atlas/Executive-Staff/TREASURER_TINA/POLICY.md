@@ -36,8 +36,14 @@ Truth Law: **Agents/Atlas/SOUL.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
+| Outlook | Read + Draft | Financial alerts and budget notifications — Atlas sends |
+| Outlook Calendar | Read | Schedule awareness for financial deadlines |
+| Teams | Read + Draft | Financial updates — Atlas sends |
+| Word | Read | Financial reference documents |
 | Excel | Read + Write | Financial models, budget trackers |
 | OneNote | Read + Write | Financial review notes |
+| Planner | Read | Task and deadline visibility |
+| OneDrive | Read | Financial file reference |
 | SharePoint | Read | Reference accounting documents |
 
 ## Audit & Traceability

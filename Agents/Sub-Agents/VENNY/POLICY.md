@@ -22,9 +22,14 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
-| Word | Read + Write | Vendor comparison documents and shortlists |
-| OneNote | Read + Write | Vendor research notes |
-| OneDrive | Read | Reference file access |
+| Outlook | Read | Notification and coordination emails |
+| Teams | Read | Channel updates and media requests |
+| Word | Read + Write | Media briefs and production documents |
+| OneNote | Read + Write | Visual media research notes |
+| Clipchamp | Read + Write | Video editing and asset management |
+| PowerPoint | Read + Write | Presentation graphics and slide decks |
+| SharePoint | Read | Brand asset library reference |
+| OneDrive | Read + Write | Media file storage and handoff |
 
 - All write actions are drafted for Atlas review. Atlas executes sends/publishes.
 - $0 spend enforced. No paid M365 add-ons without human approval.

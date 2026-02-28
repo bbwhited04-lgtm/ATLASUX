@@ -10,16 +10,61 @@
  *  4. All writes still require Atlas approval at the engine level.
  *  5. Spend = $0 always.
  *  6. No outside actions without Atlas or human-in-loop.
+ *
+ * Updated 2026-02-28: Expanded to match all Azure AD permissions granted.
  */
+
+// ── Shared tool sets (DRY) ──────────────────────────────────────────────────
+
+/** Every agent gets at least these read tools */
+const BASE_READ = [
+  "m365.teams.read",
+  "m365.onedrive.read",
+  "m365.sharepoint.read",
+] as const;
+
+/** Research-focused agents also get these */
+const RESEARCH_READ = [
+  ...BASE_READ,
+  "m365.outlook.read",
+  "m365.word.read",
+  "m365.onenote.read",
+  "m365.onenote.write",
+  "m365.planner.read",
+] as const;
+
+/** Content-focused agents get drafting tools */
+const CONTENT_TOOLS = [
+  ...BASE_READ,
+  "m365.word.read",
+  "m365.word.write",
+  "m365.onenote.read",
+  "m365.onenote.write",
+  "m365.onedrive.write",
+] as const;
+
+/** Communication-focused agents */
+const COMMS_TOOLS = [
+  ...BASE_READ,
+  "m365.outlook.read",
+  "m365.outlook.draft",
+  "m365.teams.draft",
+  "m365.onenote.read",
+] as const;
+
+// ── Per-agent permissions ───────────────────────────────────────────────────
 
 /** All M365 tool IDs an agent is permitted to use. */
 export const AGENT_M365_PERMISSIONS: Record<string, string[]> = {
   // ── Board ──────────────────────────────────────────────────────────────────
   chairman: [
     "m365.outlook.read",
+    "m365.teams.read",
     "m365.sharepoint.read",
     "m365.onedrive.read",
     "m365.onenote.read",
+    "m365.planner.read",
+    "m365.outlook.calendar.read",
   ],
 
   // ── Atlas: full admin access ───────────────────────────────────────────────
@@ -68,224 +113,247 @@ export const AGENT_M365_PERMISSIONS: Record<string, string[]> = {
 
   // ── Governors ─────────────────────────────────────────────────────────────
   tina: [
+    ...COMMS_TOOLS,
     "m365.excel.read",
     "m365.excel.write",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
-    "m365.outlook.read",
+    "m365.word.read",
+    "m365.planner.read",
+    "m365.outlook.calendar.read",
   ],
   larry: [
-    "m365.word.read",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
-    "m365.onenote.read",
+    ...RESEARCH_READ,
+    "m365.outlook.draft",
+    "m365.word.write",
+    "m365.excel.read",
+    "m365.teams.draft",
   ],
 
-  // ── Specialists ────────────────────────────────────────────────────────────
+  // ── Executives ────────────────────────────────────────────────────────────
   binky: [
-    "m365.word.read",
+    ...RESEARCH_READ,
     "m365.word.write",
-    "m365.onenote.read",
-    "m365.onenote.write",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
+    "m365.outlook.draft",
+    "m365.teams.draft",
+    "m365.excel.read",
+    "m365.powerpoint.read",
+    "m365.outlook.calendar.read",
   ],
   jenny: [
-    "m365.word.read",
+    ...RESEARCH_READ,
     "m365.word.write",
-    "m365.onenote.read",
-    "m365.onenote.write",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
+    "m365.outlook.draft",
+    "m365.teams.draft",
   ],
   benny: [
-    "m365.word.read",
+    ...RESEARCH_READ,
     "m365.word.write",
-    "m365.onenote.read",
-    "m365.onenote.write",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
+    "m365.outlook.draft",
   ],
   cheryl: [
-    "m365.outlook.read",
-    "m365.outlook.draft",
-    "m365.teams.read",
-    "m365.teams.draft",
-    "m365.sharepoint.read",
+    ...COMMS_TOOLS,
+    "m365.word.read",
+    "m365.planner.read",
+    "m365.onenote.write",
+    "m365.outlook.calendar.read",
+    "m365.bookings.read",
   ],
 
   // ── Research subagents ─────────────────────────────────────────────────────
   "daily-intel": [
-    "m365.onenote.read",
-    "m365.onenote.write",
-    "m365.word.read",
+    ...RESEARCH_READ,
     "m365.word.write",
-    "m365.onedrive.read",
+    "m365.outlook.draft",
+    "m365.teams.draft",
+    "m365.excel.read",
   ],
   archy: [
-    "m365.word.read",
+    ...RESEARCH_READ,
     "m365.word.write",
-    "m365.onenote.read",
-    "m365.onenote.write",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
-  ],
-  venny: [
-    "m365.word.read",
-    "m365.word.write",
-    "m365.onenote.read",
-    "m365.onenote.write",
-    "m365.onedrive.read",
-  ],
-  penny: [
-    "m365.word.read",
-    "m365.word.write",
-    "m365.onenote.read",
-    "m365.onenote.write",
-    "m365.sharepoint.read",
+    "m365.outlook.draft",
+    "m365.teams.draft",
+    "m365.excel.read",
+    "m365.powerpoint.read",
   ],
 
   // ── Content & Creative ─────────────────────────────────────────────────────
+  venny: [
+    ...CONTENT_TOOLS,
+    "m365.clipchamp.read",
+    "m365.clipchamp.write",
+    "m365.powerpoint.read",
+    "m365.powerpoint.write",
+    "m365.outlook.read",
+  ],
+  penny: [
+    ...CONTENT_TOOLS,
+    "m365.powerpoint.read",
+    "m365.powerpoint.write",
+    "m365.excel.read",
+    "m365.outlook.read",
+  ],
   donna: [
-    "m365.word.read",
-    "m365.word.write",
+    ...CONTENT_TOOLS,
     "m365.powerpoint.read",
     "m365.powerpoint.write",
     "m365.clipchamp.read",
     "m365.clipchamp.write",
-    "m365.onedrive.read",
-    "m365.onedrive.write",
-    "m365.sharepoint.read",
+    "m365.outlook.read",
   ],
   fran: [
+    ...CONTENT_TOOLS,
     "m365.powerpoint.read",
     "m365.powerpoint.write",
     "m365.clipchamp.read",
     "m365.clipchamp.write",
-    "m365.onedrive.read",
-    "m365.onedrive.write",
-    "m365.sharepoint.read",
+    "m365.outlook.read",
   ],
   sunday: [
-    "m365.outlook.read",
-    "m365.outlook.draft",
-    "m365.teams.read",
-    "m365.teams.draft",
-    "m365.clipchamp.read",
-    "m365.clipchamp.write",
-    "m365.sharepoint.read",
-    "m365.powerpoint.read",
-  ],
-
-  // ── Operations subagents ────────────────────────────────────────────────────
-  cornwall: [
-    "m365.excel.read",
-    "m365.excel.write",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
-  ],
-  link: [
-    "m365.teams.read",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
-  ],
-  dwight: [
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
-    "m365.teams.read",
-  ],
-  reynolds: [
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
-    "m365.teams.read",
-  ],
-  emma: [
-    "m365.outlook.read",
-    "m365.outlook.draft",
-    "m365.outlook.calendar.read",
-    "m365.teams.read",
-    "m365.teams.draft",
-    "m365.onedrive.read",
-    "m365.onenote.read",
-    "m365.onenote.write",
-  ],
-  kelly: [
-    "m365.teams.read",
-    "m365.teams.draft",
-    "m365.outlook.read",
-    "m365.outlook.draft",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
-  ],
-  terry: [
+    ...COMMS_TOOLS,
     "m365.word.read",
     "m365.word.write",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
-    "m365.onenote.read",
-  ],
-  timmy: [
-    "m365.teams.read",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
-  ],
-  mercer: [
-    "m365.outlook.read",
-    "m365.outlook.draft",
-    "m365.teams.read",
-    "m365.teams.draft",
     "m365.powerpoint.read",
     "m365.powerpoint.write",
-    "m365.sharepoint.read",
+    "m365.clipchamp.read",
+    "m365.clipchamp.write",
+    "m365.onenote.write",
+    "m365.onedrive.write",
+    "m365.planner.read",
+  ],
+
+  // ── Social media subagents ────────────────────────────────────────────────
+  cornwall: [
+    ...BASE_READ,
+    "m365.word.read",
+    "m365.excel.read",
+    "m365.excel.write",
+    "m365.onenote.read",
+    "m365.onedrive.write",
+    "m365.outlook.read",
+  ],
+  link: [
+    ...CONTENT_TOOLS,
+    "m365.outlook.read",
+    "m365.powerpoint.read",
+  ],
+  dwight: [
+    ...BASE_READ,
+    "m365.word.read",
+    "m365.onenote.read",
+    "m365.outlook.read",
+    "m365.onedrive.write",
+  ],
+  reynolds: [
+    ...CONTENT_TOOLS,
+    "m365.powerpoint.read",
+    "m365.outlook.read",
+  ],
+  emma: [
+    ...COMMS_TOOLS,
+    "m365.word.read",
+    "m365.onenote.write",
+    "m365.outlook.calendar.read",
+    "m365.planner.read",
+    "m365.onedrive.write",
+    "m365.bookings.read",
+  ],
+  kelly: [
+    ...COMMS_TOOLS,
+    "m365.word.read",
+    "m365.onenote.write",
+    "m365.onedrive.write",
+  ],
+  terry: [
+    ...CONTENT_TOOLS,
+    "m365.outlook.read",
+    "m365.powerpoint.read",
+  ],
+  timmy: [
+    ...BASE_READ,
+    "m365.word.read",
+    "m365.onenote.read",
+    "m365.clipchamp.read",
+    "m365.outlook.read",
+    "m365.onedrive.write",
+  ],
+  mercer: [
+    ...COMMS_TOOLS,
+    "m365.word.read",
+    "m365.word.write",
+    "m365.powerpoint.read",
+    "m365.powerpoint.write",
+    "m365.onenote.write",
+    "m365.onedrive.write",
+    "m365.planner.read",
+    "m365.outlook.calendar.read",
+    "m365.bookings.read",
+    "m365.excel.read",
   ],
 
   // ── New agents ─────────────────────────────────────────────────────────────
   petra: [
+    ...COMMS_TOOLS,
     "m365.planner.read",
     "m365.planner.write",
-    "m365.teams.read",
-    "m365.teams.draft",
     "m365.word.read",
     "m365.word.write",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
+    "m365.onenote.write",
+    "m365.onedrive.write",
+    "m365.outlook.calendar.read",
+    "m365.teams.meeting.read",
   ],
   porter: [
-    "m365.sharepoint.read",
+    ...BASE_READ,
     "m365.sharepoint.write",
     "m365.word.read",
+    "m365.word.write",
     "m365.powerpoint.read",
-    "m365.onedrive.read",
+    "m365.onenote.read",
+    "m365.onedrive.write",
+    "m365.outlook.read",
   ],
   claire: [
+    ...COMMS_TOOLS,
     "m365.outlook.calendar.read",
     "m365.outlook.calendar.write",
-    "m365.outlook.read",
-    "m365.outlook.draft",
     "m365.teams.meeting.read",
     "m365.teams.meeting.create",
-    "m365.onenote.read",
+    "m365.onenote.write",
+    "m365.planner.read",
+    "m365.bookings.read",
+    "m365.word.read",
   ],
   victor: [
+    ...BASE_READ,
     "m365.clipchamp.read",
     "m365.clipchamp.write",
-    "m365.onedrive.read",
     "m365.onedrive.write",
-    "m365.sharepoint.read",
+    "m365.word.read",
+    "m365.onenote.read",
+    "m365.outlook.read",
+    "m365.powerpoint.read",
   ],
   frank: [
+    ...BASE_READ,
     "m365.forms.read",
     "m365.forms.create",
     "m365.excel.read",
-    "m365.sharepoint.read",
-    "m365.onedrive.read",
+    "m365.excel.write",
+    "m365.word.read",
+    "m365.onenote.read",
+    "m365.onenote.write",
+    "m365.outlook.read",
+    "m365.onedrive.write",
+    "m365.planner.read",
   ],
   sandy: [
+    ...COMMS_TOOLS,
     "m365.bookings.read",
     "m365.bookings.manage",
     "m365.outlook.calendar.read",
-    "m365.outlook.read",
-    "m365.teams.read",
+    "m365.outlook.calendar.write",
+    "m365.teams.meeting.read",
+    "m365.planner.read",
+    "m365.word.read",
   ],
 };
 

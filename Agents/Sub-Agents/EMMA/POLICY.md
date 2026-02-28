@@ -25,8 +25,12 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 | Outlook | Read + Draft | Email drafts for Atlas review — Atlas sends |
 | Outlook Calendar | Read | Schedule awareness for task planning |
 | Teams | Read + Draft | Internal comms drafts — Atlas sends |
-| OneDrive | Read | Reference file access |
+| Word | Read | Reference documents |
 | OneNote | Read + Write | Meeting notes and task documentation |
+| Planner | Read | Task and assignment visibility |
+| Bookings | Read | Appointment and availability context |
+| OneDrive | Read + Write | File storage and access |
+| SharePoint | Read | Document library reference |
 
 - All write actions are drafted for Atlas review. Atlas executes sends/publishes.
 - $0 spend enforced. No paid M365 add-ons without human approval.

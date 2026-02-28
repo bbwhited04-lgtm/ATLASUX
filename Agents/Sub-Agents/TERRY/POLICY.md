@@ -22,10 +22,13 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
+| Outlook | Read | QA notifications and test result emails |
+| Teams | Read | Channel updates and coordination |
 | Word | Read + Write | QA checklists and verification reports |
+| PowerPoint | Read | Spec and requirement reference |
+| OneNote | Read + Write | QA notes and test documentation |
+| OneDrive | Read + Write | Test artifact storage |
 | SharePoint | Read | Policy and spec document reference |
-| OneDrive | Read | Test artifact access |
-| OneNote | Read | QA notes reference |
 
 - All write actions are drafted for Atlas review. Atlas executes sends/publishes.
 - $0 spend enforced. No paid M365 add-ons without human approval.

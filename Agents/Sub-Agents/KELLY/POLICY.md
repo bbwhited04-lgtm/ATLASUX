@@ -22,10 +22,12 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
-| Teams | Read + Draft | HR channel updates — Atlas sends |
-| Outlook | Read + Draft | Onboarding emails — Atlas sends |
-| SharePoint | Read | SOP library and org documentation |
-| OneDrive | Read | HR document access |
+| Outlook | Read + Draft | Post drafts and engagement emails — Atlas sends |
+| Teams | Read + Draft | Channel coordination — Atlas sends |
+| Word | Read | Content reference documents |
+| OneNote | Read + Write | Content research and drafting notes |
+| OneDrive | Read + Write | Content file storage |
+| SharePoint | Read | Brand asset library |
 
 - All write actions are drafted for Atlas review. Atlas executes sends/publishes.
 - $0 spend enforced. No paid M365 add-ons without human approval.

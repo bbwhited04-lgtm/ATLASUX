@@ -22,8 +22,13 @@ Global Sub-Agent Policy: **Agents/Sub-Agents/POLICY.md**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
-| OneNote | Read + Write | Daily intelligence packet drafts |
+| Outlook | Read + Draft | Intel correspondence and daily digest emails |
+| Teams | Read + Draft | Research channel monitoring and updates |
 | Word | Read + Write | Briefing document output |
+| OneNote | Read + Write | Daily intelligence packet drafts |
+| Excel | Read | Data and metrics reference |
+| Planner | Read | Task visibility across agents |
+| SharePoint | Read | Document library reference |
 | OneDrive | Read | Research file access |
 
 - All write actions are drafted for Atlas review. Atlas executes sends/publishes.

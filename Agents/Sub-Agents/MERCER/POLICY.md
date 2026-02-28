@@ -38,8 +38,15 @@ White-label discussions are permitted **only** when:
 | Tool | Access | Notes |
 |------|--------|-------|
 | Outlook | Read + Draft | Outreach sequence drafts — Atlas sends |
+| Outlook Calendar | Read | Availability context for prospect scheduling |
 | Teams | Read + Draft | Pipeline updates — Atlas sends |
+| Word | Read + Write | Outreach copy and acquisition playbooks |
+| Excel | Read | Pipeline data and prospect tracking |
 | PowerPoint | Read + Write | Pitch decks and acquisition playbooks |
+| OneNote | Read + Write | Prospect research notes |
+| Planner | Read | Task and pipeline visibility |
+| Bookings | Read | Appointment context for prospect follow-up |
+| OneDrive | Read + Write | Prospect file storage |
 | SharePoint | Read | Sales collateral reference |
 
 - All write actions are drafted for Atlas review. Atlas executes sends/publishes.

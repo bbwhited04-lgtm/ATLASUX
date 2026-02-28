@@ -17,7 +17,12 @@ Reports to: **DONNA** (content direction), escalates to **ATLAS**
 ## M365 Tools
 | Tool | Access | Notes |
 |------|--------|-------|
+| Outlook | Read | Production notifications and media requests |
+| Teams | Read | Channel updates and coordination |
 | Clipchamp | Read + Write | Primary video production surface (OneDrive-backed) |
+| Word | Read | Production briefs and script reference |
+| PowerPoint | Read | Storyboard and visual reference |
+| OneNote | Read | Production notes reference |
 | OneDrive | Read + Write | Source media library and export storage |
 | SharePoint | Read | Media library reference and distribution staging |
 
