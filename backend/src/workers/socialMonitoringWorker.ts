@@ -11,7 +11,11 @@
  *   6. Store results as DistributionEvent records with eventType="MENTION".
  */
 import { prisma } from "../db/prisma.js";
+import { loadEnv } from "../env.js";
+import { readIntegrationToken } from "../lib/tokenStore.js";
+import { refreshTokenIfNeeded } from "../lib/tokenLifecycle.js";
 
+const env = loadEnv(process.env);
 const POLL_MS = Number(process.env.SOCIAL_WORKER_INTERVAL_MS ?? 300_000);
 
 interface Mention {
@@ -168,11 +172,10 @@ async function processOneTenant(tenantId: string): Promise<number> {
 
   // Run Twitter search if tenant has a connected X integration
   try {
-    const xIntegration = await prisma.integration.findFirst({
-      where: { tenantId, provider: "x" as any, connected: true },
-    });
-    if (xIntegration?.access_token) {
-      const twitterMentions = await fetchTwitterMentions(xIntegration.access_token, keywords);
+    const xToken = await refreshTokenIfNeeded(env, tenantId, "x")
+      ?? (await readIntegrationToken(env, tenantId, "x"))?.access_token;
+    if (xToken) {
+      const twitterMentions = await fetchTwitterMentions(xToken, keywords);
       for (const m of twitterMentions) {
         if (await storeMention(tenantId, m)) totalNew++;
       }

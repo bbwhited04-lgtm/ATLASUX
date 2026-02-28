@@ -16,8 +16,12 @@ import { createClient } from "@supabase/supabase-js";
 import multipart from "@fastify/multipart";
 import { meterStorage } from "../lib/usageMeter.js";
 import { enforceStorageLimit } from "../lib/seatEnforcement.js";
+import { scanFile } from "../lib/virusScan.js";
+import { loadEnv } from "../env.js";
 import { Readable } from "stream";
 import { prisma } from "../db/prisma.js";
+
+const env = loadEnv(process.env);
 
 const ALLOWED_MIME = new Set([
   "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
@@ -144,6 +148,12 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const buf = await streamToBuffer(data.file as unknown as Readable);
+
+      // Virus scan (defense-in-depth; fails open if disabled or on error)
+      const scanResult = await scanFile(buf, data.filename, env);
+      if (!scanResult.ok) {
+        return reply.code(422).send({ ok: false, error: scanResult.reason ?? "File rejected by virus scan" });
+      }
 
       // Seat-level storage enforcement
       if (userId && tenantId) {

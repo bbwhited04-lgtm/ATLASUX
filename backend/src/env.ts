@@ -112,6 +112,13 @@ const EnvSchema = z.object({
 
   // Workers
   WORKERS_API_KEY: z.string().optional(),
+
+  // Security: token encryption at rest (64 hex chars = 32 bytes AES-256 key)
+  TOKEN_ENCRYPTION_KEY: z.string().regex(/^[0-9a-fA-F]{64}$/).optional(),
+
+  // Security: virus scanning via VirusTotal
+  VIRUS_SCAN_ENABLED: z.string().optional(),
+  VIRUSTOTAL_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

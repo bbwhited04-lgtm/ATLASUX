@@ -1,6 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
 import { providerForPlatform, SUPPORTED_PROVIDERS } from "../lib/providerMapping.js";
+import { loadEnv } from "../env.js";
+import { revokeToken } from "../lib/tokenLifecycle.js";
+
+const env = loadEnv(process.env);
 
 async function ensureStubIntegration(tenantId: string, provider: any) {
   try {
@@ -120,6 +124,9 @@ export const integrationsRoutes: FastifyPluginAsync = async (app) => {
     const provider = String(params.provider ?? "").toLowerCase();
     if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
     if (!(SUPPORTED_PROVIDERS as string[]).includes(provider)) return { ok: false, error: "UNSUPPORTED_PROVIDER" };
+
+    // Revoke token at provider + clear token_vault + clear integration tokens
+    await revokeToken(env, tenantId, provider as any).catch(() => null);
 
     const row = await prisma.integration.upsert({
       where: { tenantId_provider: { tenantId, provider: provider as any } },

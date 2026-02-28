@@ -1,6 +1,7 @@
 import type { Env } from "./env.js";
 import { makeSupabase } from "./supabase.js";
 import { webcrypto } from "node:crypto";
+import { writeTokenVault } from "./lib/tokenStore.js";
 
 export type Provider = "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin";
 
@@ -356,6 +357,7 @@ export async function exchangeLinkedInCode(env: Env, code: string) {
 }
 
 // Token vault storage (Supabase table: token_vault)
+// Delegates to tokenStore for transparent encryption at rest.
 export async function storeTokenVault(env: Env, args: {
   org_id: string;
   user_id?: string | null;
@@ -366,17 +368,5 @@ export async function storeTokenVault(env: Env, args: {
   scope?: string | null;
   meta?: any;
 }) {
-  const supabase = makeSupabase(env);
-  const { error } = await supabase.from("token_vault").upsert({
-    org_id: args.org_id,
-    user_id: args.user_id || args.org_id, // fall back to org_id — no demo_user ever touches the vault
-    provider: args.provider,
-    access_token: args.access_token,
-    refresh_token: args.refresh_token ?? null,
-    expires_at: args.expires_at ?? null,
-    scope: args.scope ?? null,
-    meta: args.meta ?? null,
-    updated_at: new Date().toISOString()
-  }, { onConflict: "org_id,user_id,provider" });
-  if (error) throw new Error(`token_vault upsert failed: ${error.message}`);
+  await writeTokenVault(env, args);
 }

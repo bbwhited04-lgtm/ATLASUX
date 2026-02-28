@@ -23,9 +23,8 @@
  */
 
 import { prisma } from "../db/prisma.js";
-import { makeSupabase } from "../supabase.js";
 import { loadEnv } from "../env.js";
-import { refreshRedditToken } from "../oauth.js";
+import { refreshTokenIfNeeded } from "../lib/tokenLifecycle.js";
 import {
   fetchNewPosts, fetchHotPosts, submitComment, submitPost,
   hasAlreadyCommented, RedditPost,
@@ -57,34 +56,7 @@ function sleep(ms: number) {
 // ── Token vault helpers ───────────────────────────────────────────────────────
 
 async function getRedditToken(tenantId: string): Promise<string | null> {
-  const supabase = makeSupabase(env);
-  const { data } = await supabase
-    .from("token_vault")
-    .select("access_token, refresh_token, expires_at")
-    .eq("org_id", tenantId)
-    .eq("provider", "reddit")
-    .maybeSingle();
-
-  if (!data) return null;
-
-  // Refresh if within 5 minutes of expiry
-  if (data.expires_at && new Date(data.expires_at).getTime() < Date.now() + 5 * 60 * 1000) {
-    if (!data.refresh_token) return data.access_token;
-    try {
-      const fresh = await refreshRedditToken(env, data.refresh_token);
-      const expires_at = new Date(Date.now() + fresh.expires_in * 1000).toISOString();
-      await supabase.from("token_vault").update({
-        access_token: fresh.access_token,
-        expires_at,
-        updated_at: new Date().toISOString(),
-      }).eq("org_id", tenantId).eq("provider", "reddit");
-      return fresh.access_token;
-    } catch {
-      return data.access_token;
-    }
-  }
-
-  return data.access_token;
+  return refreshTokenIfNeeded(env, tenantId, "reddit");
 }
 
 // ── AI relevance + reply draft ────────────────────────────────────────────────

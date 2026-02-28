@@ -19,6 +19,8 @@ import { meterApiCall } from "../lib/usageMeter.js";
  *
  * Phase 2: Also meters the API call for the authenticated user.
  */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const plugin: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", async (req, reply) => {
     if (req.method === "OPTIONS") return;
@@ -29,6 +31,11 @@ const plugin: FastifyPluginAsync = async (app) => {
     const tenantId = headerTenantId || queryTenantId;
 
     if (!tenantId) return; // Nothing to set — routes check req.tenantId themselves
+
+    // Validate UUID format to prevent SQL injection via RLS session variable
+    if (!UUID_RE.test(tenantId)) {
+      return reply.code(400).send({ ok: false, error: "INVALID_TENANT_ID" });
+    }
 
     const userId = (req as any).auth?.userId ?? null;
 
