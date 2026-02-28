@@ -238,6 +238,30 @@ export default function PublicFooter() {
               >
                 Privacy
               </Link>
+              <Link
+                to="/payment"
+                className="text-sm text-white/80 hover:text-white hover:underline"
+              >
+                Payments
+              </Link>
+              <Link
+                to="/acceptable-use"
+                className="text-sm text-white/80 hover:text-white hover:underline"
+              >
+                Acceptable Use
+              </Link>
+              <Link
+                to="/about"
+                className="text-sm text-white/80 hover:text-white hover:underline"
+              >
+                About
+              </Link>
+              <Link
+                to="/store"
+                className="text-sm text-white/80 hover:text-white hover:underline"
+              >
+                Store
+              </Link>
               <span className="text-white/30">·</span>
               <Link
                 to="/terms"
