@@ -3,15 +3,16 @@
  *
  * POST /v1/video/compose  — compose a Short from images/clips/text/audio (async job)
  * GET  /v1/video/status/:jobId — check composition/generation job status
- * POST /v1/video/generate — AI video generation via ComfyUI + CogVideoX-5B
- * GET  /v1/video/capabilities — check available video engines
+ * POST /v1/video/generate — AI video generation via ComfyUI (auto-selects CogVideoX or HunyuanVideo)
+ * GET  /v1/video/capabilities — check available video engines + installed models
+ * GET  /v1/video/models — list installed AI video models with specs
  * POST /v1/video/thumbnail — extract thumbnail frame from a video
  */
 
 import { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
 import * as comfyui from "../services/comfyui.js";
-import { textToVideo, imageToVideo, videoToVideo } from "../services/cogvideo.js";
+import { generateVideo, detectInstalledModels, type VideoModel } from "../services/videoModelRouter.js";
 import { isFfmpegAvailable } from "../services/videoComposer.js";
 import { isAvailable as isFlux1Available } from "../services/flux1.js";
 
@@ -26,13 +27,70 @@ export const videoRoutes: FastifyPluginAsync = async (app) => {
       isFlux1Available(),
     ]);
 
+    let installedModels = { cogvideox: false, hunyuan: false };
+    if (comfyAvailable) {
+      installedModels = await detectInstalledModels();
+    }
+
     return reply.send({
       ok: true,
       engines: {
         ffmpeg: { available: ffmpeg, description: "FFmpeg video composition (compose, resize, overlay, concat)" },
-        comfyui: { available: comfyAvailable, description: "ComfyUI + CogVideoX-5B AI video generation (desktop only)" },
+        comfyui: {
+          available: comfyAvailable,
+          description: "ComfyUI AI video generation (desktop only)",
+          models: installedModels,
+        },
         flux1: { available: flux1, description: "Flux1 AI image generation (cloud API)" },
       },
+    });
+  });
+
+  // ── Installed models ────────────────────────────────────────────────────────
+
+  app.get("/models", async (req, reply) => {
+    const comfyAvailable = await comfyui.isAvailable();
+    if (!comfyAvailable) {
+      return reply.send({
+        ok: true,
+        comfyui: false,
+        models: [],
+        note: "ComfyUI offline — AI video models unavailable (desktop only)",
+      });
+    }
+
+    const installed = await detectInstalledModels();
+    const models = [];
+
+    if (installed.cogvideox) {
+      models.push({
+        id: "cogvideox",
+        name: "CogVideoX-5B",
+        params: "5B",
+        vram: "12GB",
+        fps: 8,
+        strengths: "Fast generation, low VRAM, good for short clips and quick drafts",
+        bestFor: ["text-to-video short clips", "rapid iteration", "consumer GPUs"],
+      });
+    }
+
+    if (installed.hunyuan) {
+      models.push({
+        id: "hunyuan",
+        name: "HunyuanVideo 13B",
+        params: "13B",
+        vram: "24GB (FP8)",
+        fps: 24,
+        strengths: "Superior motion, temporal coherence, dual text encoder, xDiT parallelism",
+        bestFor: ["image-to-video", "video-to-video", "longer clips", "high quality output"],
+      });
+    }
+
+    return reply.send({
+      ok: true,
+      comfyui: true,
+      models,
+      autoSelectNote: "Use model='auto' in /generate to let Victor pick the best model for the task",
     });
   });
 
@@ -84,29 +142,30 @@ export const videoRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ ok: true, jobId: job.id, status: "queued" });
   });
 
-  // ── AI Video Generation ─────────────────────────────────────────────────────
+  // ── AI Video Generation (auto-selects model) ───────────────────────────────
 
   app.post("/generate", async (req, reply) => {
     const tenantId = (req as any).tenantId;
     if (!tenantId) return reply.code(401).send({ ok: false, error: "unauthorized" });
 
     const body = req.body as any;
-    const mode = String(body?.mode ?? "text-to-video"); // text-to-video | image-to-video | video-to-video
+    const mode = String(body?.mode ?? "text-to-video") as "text-to-video" | "image-to-video" | "video-to-video";
     const prompt = String(body?.prompt ?? "");
+    const model = (body?.model ?? "auto") as VideoModel;
+
     if (!prompt) return reply.code(400).send({ ok: false, error: "prompt required" });
 
-    // Check ComfyUI availability
-    const comfyAvailable = await comfyui.isAvailable();
-    if (!comfyAvailable) {
-      return reply.code(503).send({
-        ok: false,
-        error: "ComfyUI not available. AI video generation requires a local ComfyUI instance (desktop only).",
-      });
+    if (mode === "image-to-video" && !body?.imagePath) {
+      return reply.code(400).send({ ok: false, error: "imagePath required for image-to-video" });
+    }
+    if (mode === "video-to-video" && !body?.inputVideoPath) {
+      return reply.code(400).send({ ok: false, error: "inputVideoPath required for video-to-video" });
     }
 
-    // Build the appropriate workflow
-    let workflow: Record<string, any>;
-    const opts = {
+    // Route through model router (auto-selects CogVideoX vs HunyuanVideo)
+    const result = await generateVideo({
+      mode,
+      model,
       prompt,
       negativePrompt: body?.negativePrompt,
       durationSec: body?.durationSec,
@@ -115,27 +174,15 @@ export const videoRoutes: FastifyPluginAsync = async (app) => {
       steps: body?.steps,
       cfgScale: body?.cfgScale,
       seed: body?.seed,
-    };
+      imagePath: body?.imagePath,
+      strength: body?.strength,
+      inputVideoPath: body?.inputVideoPath,
+      denoise: body?.denoise,
+    });
 
-    switch (mode) {
-      case "image-to-video":
-        if (!body?.imagePath) return reply.code(400).send({ ok: false, error: "imagePath required for image-to-video" });
-        workflow = imageToVideo({ ...opts, imagePath: body.imagePath, strength: body?.strength });
-        break;
-      case "video-to-video":
-        if (!body?.inputVideoPath) return reply.code(400).send({ ok: false, error: "inputVideoPath required for video-to-video" });
-        workflow = videoToVideo({ ...opts, inputVideoPath: body.inputVideoPath, denoise: body?.denoise });
-        break;
-      case "text-to-video":
-      default:
-        workflow = textToVideo(opts);
-        break;
-    }
-
-    // Submit to ComfyUI
-    const result = await comfyui.queuePrompt(workflow);
     if (!result.ok) {
-      return reply.code(500).send({ ok: false, error: result.error });
+      const code = result.error?.includes("offline") ? 503 : 500;
+      return reply.code(code).send({ ok: false, error: result.error });
     }
 
     // Track as a job
@@ -145,7 +192,17 @@ export const videoRoutes: FastifyPluginAsync = async (app) => {
         jobType: "VIDEO_GENERATE",
         status: "queued",
         priority: 5,
-        input: { mode, promptId: result.promptId, ...opts },
+        input: {
+          mode,
+          prompt,
+          model: result.model,
+          modelReason: result.reason,
+          promptId: result.promptId,
+          negativePrompt: body?.negativePrompt,
+          durationSec: body?.durationSec,
+          width: body?.width,
+          height: body?.height,
+        },
       },
     });
 
@@ -159,13 +216,20 @@ export const videoRoutes: FastifyPluginAsync = async (app) => {
         action: "VIDEO_GENERATE_QUEUED",
         entityType: "job",
         entityId: job.id,
-        message: `Victor queued AI video generation: ${mode} — "${prompt.slice(0, 100)}"`,
-        meta: { jobId: job.id, promptId: result.promptId, mode },
+        message: `Victor queued AI video (${result.model}): ${mode} — "${prompt.slice(0, 80)}"`,
+        meta: { jobId: job.id, promptId: result.promptId, mode, model: result.model, reason: result.reason },
         timestamp: new Date(),
       },
     }).catch(() => null);
 
-    return reply.send({ ok: true, jobId: job.id, promptId: result.promptId, status: "queued" });
+    return reply.send({
+      ok: true,
+      jobId: job.id,
+      promptId: result.promptId,
+      model: result.model,
+      modelReason: result.reason,
+      status: "queued",
+    });
   });
 
   // ── Job status check ────────────────────────────────────────────────────────
@@ -195,6 +259,7 @@ export const videoRoutes: FastifyPluginAsync = async (app) => {
       jobId: job.id,
       jobType: job.jobType,
       status: job.status,
+      model: input?.model ?? null,
       createdAt: job.createdAt,
       startedAt: job.startedAt,
       finishedAt: job.finishedAt,

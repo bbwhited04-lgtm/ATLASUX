@@ -689,14 +689,27 @@ async function videoComposeInfo(): Promise<ToolResult> {
 
 async function videoGenerateInfo(): Promise<ToolResult> {
   const { isAvailable } = await import("../../services/comfyui.js");
+  const { detectInstalledModels } = await import("../../services/videoModelRouter.js");
   const comfyAvailable = await isAvailable();
+
+  let modelsMsg = "";
+  if (comfyAvailable) {
+    const installed = await detectInstalledModels();
+    const models = [];
+    if (installed.cogvideox) models.push("CogVideoX-5B (5B params, 8fps, 12GB VRAM — fast, short clips)");
+    if (installed.hunyuan) models.push("HunyuanVideo (13B params, 24fps, 24GB VRAM — quality, long clips, I2V/V2V)");
+    modelsMsg = models.length > 0
+      ? `Installed models:\n${models.map(m => `  - ${m}`).join("\n")}`
+      : "No video models detected — install CogVideoX-5B or HunyuanVideo in ComfyUI.";
+  }
+
   const statusMsg = comfyAvailable
-    ? "ComfyUI is ONLINE and ready for AI video generation."
+    ? `ComfyUI is ONLINE.\n${modelsMsg}`
     : "ComfyUI is OFFLINE. AI video generation requires a local ComfyUI instance (desktop/Electron only).";
 
   return {
     tool: "video_generate",
-    data: `${statusMsg}\n\nModes:\n- text-to-video: Generate video from text prompt\n- image-to-video: Animate a still image\n- video-to-video: Style transfer on existing video\n\nModel: CogVideoX-5B (13B parameters, 8fps output)\n\nAPI: POST /v1/video/generate\nInput: { mode: "text-to-video"|"image-to-video"|"video-to-video", prompt: string, durationSec?, width?, height?, steps?, cfgScale?, imagePath?, inputVideoPath? }\nReturns: { jobId, promptId } — async generation.\n\nCheck status: GET /v1/video/status/:jobId`,
+    data: `${statusMsg}\n\nModes:\n- text-to-video: Generate video from text prompt\n- image-to-video: Animate a still image\n- video-to-video: Style transfer on existing video\n\nModel selection (model param):\n- "auto" (default): Victor auto-selects based on task:\n  → Short clips + text-to-video → CogVideoX (faster)\n  → Long clips + I2V/V2V + high res → HunyuanVideo (quality)\n- "cogvideox": Force CogVideoX-5B\n- "hunyuan": Force HunyuanVideo 13B\n\nAPI: POST /v1/video/generate\nInput: { mode, prompt, model?: "auto"|"cogvideox"|"hunyuan", durationSec?, width?, height?, steps?, cfgScale?, imagePath?, inputVideoPath? }\nReturns: { jobId, promptId, model, modelReason }\n\nCheck models: GET /v1/video/models\nCheck status: GET /v1/video/status/:jobId`,
     usedAt: new Date().toISOString(),
   };
 }
