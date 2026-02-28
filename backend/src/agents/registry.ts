@@ -145,7 +145,7 @@ export const agentRegistry: AgentSummary[] = [
     tier: "Subagent",
     reportsTo: "sunday",
     summary: "Produces branded image assets, graphics, and visual media for all social channels. Manages YouTube scraping (WF-110) and Shorts auto-publishing (WF-111) via Victor.",
-    toolsAllowed: ["Video editor", "OneDrive write", "Content scheduler", "YouTube API"],
+    toolsAllowed: ["Video editor", "OneDrive write", "Content scheduler", "YouTube API", "Flux1 image generation"],
     toolsForbidden: ["Publishing without Atlas approval"],
     escalationTargets: ["sunday", "atlas"],
   }),

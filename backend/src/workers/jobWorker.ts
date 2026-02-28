@@ -4,6 +4,8 @@
  * WORKFLOW: executes a named workflow step-by-step.
  */
 import { prisma } from "../db/prisma.js";
+import { composeShort } from "../services/videoComposer.js";
+import * as comfyui from "../services/comfyui.js";
 
 const POLL_MS = Number(process.env.JOB_WORKER_INTERVAL_MS ?? 15_000);
 
@@ -185,12 +187,59 @@ async function handleWorkflow(jobId: string, tenantId: string, input: any) {
   return { workflowKey, steps: results.length, results };
 }
 
+// ── VIDEO_COMPOSE handler ─────────────────────────────────────────────────────
+
+async function handleVideoCompose(_jobId: string, _tenantId: string, input: any) {
+  const result = await composeShort({
+    images: input.images,
+    clips: input.clips,
+    textOverlays: input.textOverlays,
+    audioPath: input.audioPath,
+    imageDurationSec: input.imageDurationSec,
+    outputPath: input.outputPath,
+  });
+
+  if (!result.ok) throw new Error(result.error ?? "Video composition failed");
+
+  return {
+    outputPath: result.outputPath,
+    durationSec: result.durationSec,
+  };
+}
+
+// ── VIDEO_GENERATE handler ────────────────────────────────────────────────────
+
+async function handleVideoGenerate(_jobId: string, _tenantId: string, input: any) {
+  const promptId = input.promptId;
+  if (!promptId) throw new Error("promptId required for VIDEO_GENERATE");
+
+  // Poll ComfyUI for completion (max 10 min)
+  const deadline = Date.now() + 600_000;
+  while (Date.now() < deadline) {
+    const status = await comfyui.getStatus(promptId);
+
+    if (status.status === "completed") {
+      const output = await comfyui.getOutput(promptId);
+      return { promptId, status: "completed", files: output.files ?? [] };
+    }
+
+    if (status.status === "failed") {
+      throw new Error(`ComfyUI generation failed: ${status.error ?? "unknown"}`);
+    }
+
+    // Still running — wait 5s
+    await new Promise((r) => setTimeout(r, 5_000));
+  }
+
+  throw new Error("ComfyUI generation timed out after 10 minutes");
+}
+
 // ── Main poll loop ────────────────────────────────────────────────────────────
 
 async function processJobs() {
   const jobs = await prisma.job.findMany({
     where: {
-      jobType: { in: ["SOCIAL_POST", "WORKFLOW"] },
+      jobType: { in: ["SOCIAL_POST", "WORKFLOW", "VIDEO_COMPOSE", "VIDEO_GENERATE"] },
       status: "queued",
       OR: [
         { nextRetryAt: null },
@@ -217,6 +266,10 @@ async function processJobs() {
         output = await handleSocialPost(job.id, job.tenantId, input);
       } else if (job.jobType === "WORKFLOW") {
         output = await handleWorkflow(job.id, job.tenantId, input);
+      } else if (job.jobType === "VIDEO_COMPOSE") {
+        output = await handleVideoCompose(job.id, job.tenantId, input);
+      } else if (job.jobType === "VIDEO_GENERATE") {
+        output = await handleVideoGenerate(job.id, job.tenantId, input);
       }
 
       await prisma.job.update({

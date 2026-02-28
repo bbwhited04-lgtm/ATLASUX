@@ -675,6 +675,48 @@ async function youtubeUploadInfo(tenantId: string): Promise<ToolResult> {
   };
 }
 
+// ── Video Compose (FFmpeg) ────────────────────────────────────────────────────
+
+async function videoComposeInfo(): Promise<ToolResult> {
+  return {
+    tool: "video_compose",
+    data: `Victor's FFmpeg video composition engine is available.\n\nCapabilities:\n- Compose YouTube Shorts (9:16, 1080×1920) from images + clips + text overlays + audio\n- Concatenate video clips\n- Add text overlays (burned into video)\n- Add audio tracks\n- Extract thumbnails\n- Resize any video to Shorts format\n\nAPI: POST /v1/video/compose\nInput: { images: string[], clips: string[], textOverlays: [{text, fontSize, fontColor, x, y}], audioPath: string }\nReturns: { jobId } — async composition via job worker.\n\nCheck status: GET /v1/video/status/:jobId\nCheck capabilities: GET /v1/video/capabilities`,
+    usedAt: new Date().toISOString(),
+  };
+}
+
+// ── Video Generate (ComfyUI + CogVideoX) ──────────────────────────────────────
+
+async function videoGenerateInfo(): Promise<ToolResult> {
+  const { isAvailable } = await import("../../services/comfyui.js");
+  const comfyAvailable = await isAvailable();
+  const statusMsg = comfyAvailable
+    ? "ComfyUI is ONLINE and ready for AI video generation."
+    : "ComfyUI is OFFLINE. AI video generation requires a local ComfyUI instance (desktop/Electron only).";
+
+  return {
+    tool: "video_generate",
+    data: `${statusMsg}\n\nModes:\n- text-to-video: Generate video from text prompt\n- image-to-video: Animate a still image\n- video-to-video: Style transfer on existing video\n\nModel: CogVideoX-5B (13B parameters, 8fps output)\n\nAPI: POST /v1/video/generate\nInput: { mode: "text-to-video"|"image-to-video"|"video-to-video", prompt: string, durationSec?, width?, height?, steps?, cfgScale?, imagePath?, inputVideoPath? }\nReturns: { jobId, promptId } — async generation.\n\nCheck status: GET /v1/video/status/:jobId`,
+    usedAt: new Date().toISOString(),
+  };
+}
+
+// ── Flux1 Image Generation ────────────────────────────────────────────────────
+
+async function flux1GenerateInfo(): Promise<ToolResult> {
+  const { isAvailable } = await import("../../services/flux1.js");
+  const available = await isAvailable();
+  const statusMsg = available
+    ? "Flux1 image generation is configured and ready."
+    : "Flux1 API key not configured (FLUX1_API_KEY).";
+
+  return {
+    tool: "flux1_image_generate",
+    data: `${statusMsg}\n\nFlux1 by Black Forest Labs — fast, high-quality AI image generation.\n\nModels: flux1-schnell (fast), flux1-dev (quality), flux1-pro (best)\n\nCapabilities:\n- Text → Image generation\n- Configurable resolution (default 1024×1024)\n- Adjustable steps and guidance scale\n\nAPI: Use Venny's image pipeline or call the service directly.\nThe Flux1 service returns image URLs that can be downloaded and stored in OneDrive.`,
+    usedAt: new Date().toISOString(),
+  };
+}
+
 // ── Pattern detection ─────────────────────────────────────────────────────────
 
 const SUBSCRIPTION_PATTERNS = [
@@ -784,6 +826,26 @@ const X_SEARCH_PATTERNS = [
   /\b(check|monitor)\s+(x|twitter)\b/i,
 ];
 
+const VIDEO_COMPOSE_PATTERNS = [
+  /\b(compose|create|make|build|assemble)\s+(a\s+)?(video|short|clip|reel)\b/i,
+  /\b(video|short)\s+(composition|assembly|creation)\b/i,
+  /\b(ffmpeg|concatenate|overlay|slideshow)\b/i,
+  /\b(add\s+text|burn\s+text|text\s+overlay)\s+(to|on)\s+(video|clip)\b/i,
+];
+
+const VIDEO_GENERATE_PATTERNS = [
+  /\b(generate|ai\s+generate|create\s+ai)\s+(video|clip|animation)\b/i,
+  /\b(text.to.video|image.to.video|video.to.video|t2v|i2v|v2v)\b/i,
+  /\b(cogvideo|comfyui|hunyuan)\s*(video)?\b/i,
+  /\b(animate)\s+(image|photo|picture)\b/i,
+];
+
+const FLUX1_PATTERNS = [
+  /\b(generate|create|make)\s+(an?\s+)?(image|picture|graphic|thumbnail|visual)\b/i,
+  /\b(flux|flux1|image\s+generation|ai\s+image)\b/i,
+  /\b(design|produce)\s+(an?\s+)?(banner|poster|cover|artwork)\b/i,
+];
+
 const YOUTUBE_SEARCH_PATTERNS = [
   /\b(search|find|look up|trending)\s+(on\s+)?youtube\b/i,
   /\b(youtube)\s+(trends?|search|videos?|topics?|channels?)\b/i,
@@ -821,8 +883,8 @@ const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   // ── Content & Comms ──────────────────────────────────────────────────
   sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch"],
   archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate"],
-  venny:       ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload"],
-  victor:      ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch"],
+  venny:       ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1"],
+  victor:      ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate"],
   reynolds:    ["calendar", "knowledge", "telegram", "memory", "delegate"],
 
   // ── Social Publishers ────────────────────────────────────────────────
@@ -858,6 +920,9 @@ export type ToolNeeds = {
   xSearch:        boolean;
   youtubeSearch:  boolean;
   youtubeUpload:  boolean;
+  videoCompose:   boolean;
+  videoGenerate:  boolean;
+  flux1:          boolean;
   query:          string;
 };
 
@@ -887,6 +952,9 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     xSearch:        can("xSearch")        && X_SEARCH_PATTERNS.some(p => p.test(q)),
     youtubeSearch:  can("youtubeSearch")  && YOUTUBE_SEARCH_PATTERNS.some(p => p.test(q)),
     youtubeUpload:  can("youtubeUpload")  && YOUTUBE_UPLOAD_PATTERNS.some(p => p.test(q)),
+    videoCompose:   can("videoCompose")   && VIDEO_COMPOSE_PATTERNS.some(p => p.test(q)),
+    videoGenerate:  can("videoGenerate")  && VIDEO_GENERATE_PATTERNS.some(p => p.test(q)),
+    flux1:          can("flux1")          && FLUX1_PATTERNS.some(p => p.test(q)),
     query:          q,
   };
 }
@@ -928,6 +996,9 @@ export async function resolveAgentTools(
     needs.xSearch        ? searchX(tenantId, needs.query)                        : Promise.resolve(null),
     needs.youtubeSearch  ? searchYouTube(tenantId, needs.query)                  : Promise.resolve(null),
     needs.youtubeUpload  ? youtubeUploadInfo(tenantId)                           : Promise.resolve(null),
+    needs.videoCompose   ? videoComposeInfo()                                     : Promise.resolve(null),
+    needs.videoGenerate  ? videoGenerateInfo()                                    : Promise.resolve(null),
+    needs.flux1          ? flux1GenerateInfo()                                    : Promise.resolve(null),
   ];
 
   const results = (await Promise.all(jobs)).filter(Boolean) as ToolResult[];
