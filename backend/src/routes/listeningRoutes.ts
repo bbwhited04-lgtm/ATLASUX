@@ -154,7 +154,7 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const sources = await prisma.asset.findMany({
-      where: { tenantId, type: "social_profile" as any },
+      where: { tenantId, type: { in: ["social", "social_profile", "app"] as any } },
       select: { id: true, name: true, url: true, platform: true, type: true, createdAt: true },
       orderBy: { createdAt: "desc" },
       take: 500,
