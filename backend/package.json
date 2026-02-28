@@ -35,6 +35,7 @@
     "@fastify/multipart": "^9.4.0",
     "@fastify/rate-limit": "^10.3.0",
     "@fastify/sensible": "^6.0.4",
+    "@pinecone-database/pinecone": "^7.1.0",
     "@prisma/client": "^5.22.0",
     "@supabase/supabase-js": "^2.48.1",
     "cors": "^2.8.5",

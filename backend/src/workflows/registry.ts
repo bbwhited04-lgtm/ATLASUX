@@ -5,6 +5,8 @@ import { runLLM, type AuditHook } from "../core/engine/brainllm.js";
 import { agentRegistry } from "../agents/registry.js";
 import { getSkill } from "../core/kb/skillLoader.js";
 import { appendMemory } from "../core/agent/agentMemory.js";
+import { searchWeb, searchReddit } from "../lib/webSearch.js";
+import { searchRecentTweets } from "../services/x.js";
 
 export type WorkflowContext = {
   tenantId: string;
@@ -42,6 +44,10 @@ export const workflowCatalog = [
   { id: "WF-117", name: "Lucy End-of-Day Reception Summary",    description: "Compile daily log → calls, bookings, leads, messages → summary email to Atlas.",                    ownerAgent: "lucy" },
   { id: "WF-118", name: "Lucy Chat Widget First Response",      description: "Greet chat visitor → identify intent → FAQ or escalate to Cheryl/specialist.",                      ownerAgent: "lucy" },
   { id: "WF-119", name: "Nightly Agent Memory Log",             description: "Each agent logs a summary of their daily activity to memory for future recall.",                    ownerAgent: "atlas" },
+  { id: "WF-120", name: "Brand Mention Sweep (Sunday)",        description: "Weekly brand awareness sweep: web + X + Reddit for Atlas UX, atlasux, Dead App Corp.",                 ownerAgent: "sunday" },
+  { id: "WF-121", name: "Competitor Intel Sweep (Archy)",      description: "Weekly competitive landscape analysis: web search for AI employee platforms + competitor terms.",        ownerAgent: "archy" },
+  { id: "WF-122", name: "SEO Rank Tracker (Reynolds)",         description: "Weekly SEO check: search target keywords, track Atlas UX ranking position in top 20.",                  ownerAgent: "reynolds" },
+  { id: "WF-123", name: "Lead Enrichment (Mercer)",            description: "On-demand lead enrichment: web search company/contact, LLM profile, update CRM.",                       ownerAgent: "mercer" },
 ] as const;
 
 export { n8nWorkflows };
@@ -652,29 +658,23 @@ function createPlatformIntelHandler(platformName: string, searchQuery: string): 
   return async (ctx) => {
     await writeStepAudit(ctx, `${ctx.workflowId}.start`, `Starting platform intel for ${platformName}`);
 
-    // 1. Real-time trends via SERP API (SerpAPI)
+    // 1. Real-time trends via multi-provider web search
     let serpData = "";
-    const serpKey = process.env.SERP_API_KEY?.trim();
-    if (serpKey) {
-      try {
-        const query = encodeURIComponent(
-          `${searchQuery} trending ${new Date().toISOString().slice(0, 10)}`,
-        );
-        const url = `https://serpapi.com/search.json?q=${query}&api_key=${serpKey}&num=10&hl=en&gl=us`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const json = (await res.json()) as any;
-          const results = (json.organic_results ?? []).slice(0, 8);
-          serpData = results
-            .map(
-              (r: any, i: number) =>
-                `${i + 1}. ${r.title}\n   ${r.snippet ?? ""}\n   Source: ${r.link ?? ""}`,
-            )
-            .join("\n\n");
-        }
-      } catch (err: any) {
-        serpData = `[SERP error: ${err?.message ?? "unavailable"}]`;
+    try {
+      const searchResult = await searchWeb(
+        `${searchQuery} trending ${new Date().toISOString().slice(0, 10)}`,
+        8,
+      );
+      if (searchResult.ok) {
+        serpData = searchResult.results
+          .map(
+            (r, i) =>
+              `${i + 1}. ${r.title}\n   ${r.snippet}\n   Source: ${r.url}`,
+          )
+          .join("\n\n");
       }
+    } catch (err: any) {
+      serpData = `[search error: ${err?.message ?? "unavailable"}]`;
     }
 
     // 2. KB context for this agent
@@ -814,22 +814,17 @@ handlers["WF-106"] = async (ctx) => {
     requestedBy: ctx.requestedBy,
   });
 
-  // 2. Get real-time macro context via SERP
+  // 2. Get real-time macro context via multi-provider web search
   let macroIntel = "";
-  const serpKey = process.env.SERP_API_KEY?.trim();
-  if (serpKey) {
-    try {
-      const q = encodeURIComponent(`AI automation small business trending news ${today}`);
-      const res = await fetch(`https://serpapi.com/search.json?q=${q}&api_key=${serpKey}&num=6&hl=en&gl=us`);
-      if (res.ok) {
-        const json = (await res.json()) as any;
-        macroIntel = ((json.organic_results ?? []) as any[])
-          .slice(0, 5)
-          .map((r: any, i: number) => `${i + 1}. ${r.title} — ${r.snippet ?? ""}`)
-          .join("\n");
-      }
-    } catch { /* non-fatal */ }
-  }
+  try {
+    const macroResult = await searchWeb(`AI automation small business trending news ${today}`, 6);
+    if (macroResult.ok) {
+      macroIntel = macroResult.results
+        .slice(0, 5)
+        .map((r, i) => `${i + 1}. ${r.title} — ${r.snippet}`)
+        .join("\n");
+    }
+  } catch { /* non-fatal */ }
 
   // 3. Daily-Intel synthesizes all platform reports into a unified packet
   const synthPrompt = [
@@ -1062,37 +1057,28 @@ handlers["WF-107"] = async (ctx) => {
 
   await writeStepAudit(ctx, "WF-107.snapshot", `Built snapshots for ${agentRegistry.length} agents`);
 
-  // ── Step 2: Look Outside — SERP scan for external tools & integrations ────────
+  // ── Step 2: Look Outside — web search scan for external tools & integrations ──
   let externalIntel = "";
-  const serpKey = process.env.SERP_API_KEY?.trim();
-  if (serpKey) {
-    const searches = [
-      "best AI business automation tools APIs integrations 2026",
-      "top SaaS API integrations small business CRM email calendar 2026",
-      "new AI agent tools plugins marketplace productivity 2026",
-    ];
-    const allResults: string[] = [];
-    for (const searchTerm of searches) {
-      try {
-        const q   = encodeURIComponent(searchTerm);
-        const url = `https://serpapi.com/search.json?q=${q}&api_key=${serpKey}&num=6&hl=en&gl=us`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const json = (await res.json()) as any;
-          const results = ((json.organic_results ?? []) as any[]).slice(0, 4);
-          for (const r of results) {
-            allResults.push(`- ${r.title ?? "Untitled"}: ${r.snippet ?? ""}`);
-          }
+  const searches = [
+    "best AI business automation tools APIs integrations 2026",
+    "top SaaS API integrations small business CRM email calendar 2026",
+    "new AI agent tools plugins marketplace productivity 2026",
+  ];
+  const allResults: string[] = [];
+  for (const searchTerm of searches) {
+    try {
+      const searchResult = await searchWeb(searchTerm, 6);
+      if (searchResult.ok) {
+        for (const r of searchResult.results.slice(0, 4)) {
+          allResults.push(`- ${r.title}: ${r.snippet}`);
         }
-      } catch { /* non-fatal — continue with other searches */ }
-    }
-    if (allResults.length > 0) {
-      externalIntel = allResults.slice(0, 12).join("\n");
-    }
-    await writeStepAudit(ctx, "WF-107.serp", `External tool scan: ${allResults.length} results from ${searches.length} queries`);
-  } else {
-    await writeStepAudit(ctx, "WF-107.serp", "SERP_API_KEY not set — external scan skipped");
+      }
+    } catch { /* non-fatal — continue with other searches */ }
   }
+  if (allResults.length > 0) {
+    externalIntel = allResults.slice(0, 12).join("\n");
+  }
+  await writeStepAudit(ctx, "WF-107.serp", `External tool scan: ${allResults.length} results from ${searches.length} queries`);
 
   // ── LLM: Analyze gaps (inside + outside) and generate proposals ───────────────
   const alreadyList = existingKeys.size > 0
@@ -1327,30 +1313,25 @@ handlers["WF-108"] = async (ctx) => {
   const topicHint = String(ctx.input?.topic ?? "").trim();
   const category  = String(ctx.input?.category ?? "AI Automation").trim();
 
-  // 1. SERP — trending blog/AI topics for inspiration
+  // 1. Web search — trending blog/AI topics for inspiration (multi-provider)
   let serpData = "";
-  const serpKey = process.env.SERP_API_KEY?.trim();
-  if (serpKey) {
-    try {
-      const searchTerm = topicHint
-        ? `${topicHint} AI automation blog 2026`
-        : `AI automation small business trending blog topics ${today}`;
-      const q   = encodeURIComponent(searchTerm);
-      const url = `https://serpapi.com/search.json?q=${q}&api_key=${serpKey}&num=8&hl=en&gl=us`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const json = (await res.json()) as any;
-        const results = ((json.organic_results ?? []) as any[]).slice(0, 6);
-        serpData = results
-          .map((r: any, i: number) =>
-            `${i + 1}. ${r.title}\n   ${r.snippet ?? ""}\n   ${r.link ?? ""}`
-          )
-          .join("\n\n");
-      }
-    } catch (err: any) {
-      serpData = `[SERP error: ${err?.message ?? "unavailable"}]`;
+  try {
+    const searchTerm = topicHint
+      ? `${topicHint} AI automation blog 2026`
+      : `AI automation small business trending blog topics ${today}`;
+    const searchResult = await searchWeb(searchTerm, 8);
+    if (searchResult.ok) {
+      serpData = searchResult.results
+        .slice(0, 6)
+        .map((r, i) =>
+          `${i + 1}. ${r.title}\n   ${r.snippet}\n   ${r.url}`
+        )
+        .join("\n\n");
     }
-    await writeStepAudit(ctx, "WF-108.serp", `SERP research ${serpData ? "complete" : "unavailable"}`);
+    await writeStepAudit(ctx, "WF-108.serp", `Web research ${serpData ? "complete" : "unavailable"} (via ${searchResult.provider})`);
+  } catch (err: any) {
+    serpData = `[search error: ${err?.message ?? "unavailable"}]`;
+    await writeStepAudit(ctx, "WF-108.serp", `Web research error: ${err?.message}`);
   }
 
   // 2. KB context — Reynolds content strategy + brand guidelines
@@ -1940,6 +1921,527 @@ handlers["WF-119"] = async (ctx) => {
     ok: true,
     message: `WF-119 complete — ${logged} agents logged daily memory, ${skipped} had no activity`,
     output: { logged, skipped, date: today },
+  };
+};
+
+// ── WF-120 Brand Mention Sweep (Sunday) ───────────────────────────────────
+// Weekly: search web, X, Reddit for Atlas UX brand mentions.
+
+handlers["WF-120"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-120.start", "Brand mention sweep beginning");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const brandTerms = ["Atlas UX", "atlasux", "dead app corp", "atlasux.cloud"];
+
+  // 1. Web search for each brand term
+  const webResults: string[] = [];
+  for (const term of brandTerms) {
+    try {
+      const result = await searchWeb(`"${term}"`, 5);
+      if (result.ok) {
+        for (const r of result.results) {
+          webResults.push(`- [${term}] ${r.title}: ${r.snippet.slice(0, 120)} (${r.url})`);
+        }
+      }
+    } catch { /* non-fatal */ }
+  }
+  const webSection = webResults.length
+    ? webResults.join("\n")
+    : "(No web mentions found)";
+
+  await writeStepAudit(ctx, "WF-120.web", `Web search complete: ${webResults.length} results across ${brandTerms.length} terms`);
+
+  // 2. X (Twitter) search
+  let xSection = "(X search unavailable)";
+  try {
+    const tweets = await searchRecentTweets("Atlas UX OR atlasux OR deadappcorp", 10);
+    if (tweets.length) {
+      xSection = tweets
+        .map((t, i) => `${i + 1}. ${t.text.slice(0, 200)} (${t.id})`)
+        .join("\n");
+    } else {
+      xSection = "(No recent X mentions found)";
+    }
+  } catch { /* non-fatal */ }
+
+  await writeStepAudit(ctx, "WF-120.x", "X search complete");
+
+  // 3. Reddit search
+  let redditSection = "(Reddit search unavailable)";
+  try {
+    const reddit = await searchReddit("Atlas UX OR atlasux OR dead app corp", 10);
+    if (reddit.ok && reddit.posts.length) {
+      redditSection = reddit.posts
+        .map((p, i) => `${i + 1}. ${p.title} (${p.subreddit}, ${p.score} pts) — ${p.permalink}`)
+        .join("\n");
+    } else {
+      redditSection = "(No Reddit mentions found)";
+    }
+  } catch { /* non-fatal */ }
+
+  await writeStepAudit(ctx, "WF-120.reddit", "Reddit search complete");
+
+  // 4. KB context
+  const kb = await getKbContext({
+    tenantId: ctx.tenantId,
+    agentId: "sunday",
+    query: "brand awareness marketing strategy Atlas UX",
+    intentId: ctx.intentId,
+    requestedBy: ctx.requestedBy,
+  });
+
+  // 5. LLM compiles brand awareness report
+  const llmText = await safeLLM(ctx, {
+    agent: "SUNDAY",
+    purpose: "brand_sweep",
+    route: "LONG_CONTEXT_SUMMARY",
+    system: [
+      "You are SUNDAY, CMO of Atlas UX.",
+      "Compile a professional brand awareness report from live search data.",
+      kb.text ? `\nKB context (${kb.items.length} docs):\n${kb.text.slice(0, 2000)}` : "",
+    ].join("\n"),
+    user: [
+      `Date: ${today}`,
+      `Brand terms searched: ${brandTerms.join(", ")}`,
+      `\nWEB SEARCH RESULTS:\n${webSection}`,
+      `\nX (TWITTER) MENTIONS:\n${xSection}`,
+      `\nREDDIT MENTIONS:\n${redditSection}`,
+      "\nProduce a BRAND AWARENESS REPORT with sections:",
+      "1. Executive Summary",
+      "2. SERP Presence (web search findings)",
+      "3. Social Mentions (X + Reddit)",
+      "4. Competitive Context",
+      "5. Recommended Actions",
+    ].join("\n"),
+  });
+
+  await writeStepAudit(ctx, "WF-120.report", `Brand report generated (${llmText.length} chars)`);
+
+  // 6. Email to Atlas + CC Binky
+  const { to: reportTo } = getReportRecipients("sunday");
+  const binkyEmail = agentEmail("binky");
+  await queueEmail(ctx, {
+    to: reportTo,
+    fromAgent: "sunday",
+    subject: `[WF-120] Brand Mention Sweep — ${today}`,
+    text: [
+      `Brand Mention Sweep Report`,
+      "=".repeat(50),
+      `Agent: SUNDAY (CMO) | Date: ${today}`,
+      `Web results: ${webResults.length} | KB docs: ${kb.items.length}`,
+      `Trace: ${ctx.traceId ?? ctx.intentId}`,
+      `\n${llmText}`,
+    ].join("\n"),
+  });
+  if (binkyEmail) {
+    await queueEmail(ctx, {
+      to: binkyEmail,
+      fromAgent: "sunday",
+      subject: `[CC] [WF-120] Brand Mention Sweep — ${today}`,
+      text: llmText,
+    });
+  }
+
+  await writeStepAudit(ctx, "WF-120.complete", "Brand mention sweep complete");
+  await prisma.ledgerEntry.create({
+    data: {
+      tenantId: ctx.tenantId,
+      entryType: "debit",
+      category: "token_spend",
+      amountCents: BigInt(Math.max(1, Math.round(llmText.length / 100))),
+      description: `WF-120 — Brand mention sweep`,
+      reference_type: "intent",
+      reference_id: ctx.intentId,
+      run_id: ctx.traceId ?? ctx.intentId,
+      meta: { workflowId: "WF-120", agentId: "sunday", webResults: webResults.length },
+    },
+  }).catch(() => null);
+
+  return {
+    ok: true,
+    message: "Brand mention sweep complete",
+    output: { webResults: webResults.length, kbItems: kb.items.length, llmChars: llmText.length },
+  };
+};
+
+// ── WF-121 Competitor Intel Sweep (Archy) ─────────────────────────────────
+// Weekly: web search for competitor terms, produce competitive landscape analysis.
+
+handlers["WF-121"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-121.start", "Competitor intel sweep beginning");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const competitorQueries = [
+    "AI employee platform startup",
+    "autonomous business AI startup 2026",
+    "AI productivity platform comparison",
+    "AI agent workforce platform",
+  ];
+
+  // 1. Web search for competitor terms
+  const allResults: string[] = [];
+  for (const q of competitorQueries) {
+    try {
+      const result = await searchWeb(q, 5);
+      if (result.ok) {
+        for (const r of result.results) {
+          allResults.push(`- [${q}] ${r.title}: ${r.snippet.slice(0, 150)} (${r.url})`);
+        }
+      }
+    } catch { /* non-fatal */ }
+  }
+  const webSection = allResults.length
+    ? allResults.join("\n")
+    : "(No competitor results found)";
+
+  await writeStepAudit(ctx, "WF-121.web", `Competitor web search: ${allResults.length} results`);
+
+  // 2. KB context
+  const kb = await getKbContext({
+    tenantId: ctx.tenantId,
+    agentId: "archy",
+    query: "competitive analysis market intelligence AI platform",
+    intentId: ctx.intentId,
+    requestedBy: ctx.requestedBy,
+  });
+
+  // 3. LLM competitive landscape analysis
+  const llmText = await safeLLM(ctx, {
+    agent: "ARCHY",
+    purpose: "competitor_intel",
+    route: "LONG_CONTEXT_SUMMARY",
+    system: [
+      "You are ARCHY, Atlas UX Instagram & Competitive Intelligence specialist.",
+      "Produce a comprehensive competitive landscape analysis.",
+      kb.text ? `\nKB context (${kb.items.length} docs):\n${kb.text.slice(0, 2000)}` : "",
+    ].join("\n"),
+    user: [
+      `Date: ${today}`,
+      `\nCOMPETITOR WEB SEARCH RESULTS:\n${webSection}`,
+      "\nProduce a COMPETITIVE LANDSCAPE REPORT with sections:",
+      "1. Market Overview — current state of AI employee/agent platforms",
+      "2. Key Competitors — who they are, what they offer, pricing if found",
+      "3. Positioning — how Atlas UX compares (strengths, gaps)",
+      "4. Threats & Opportunities",
+      "5. Strategic Recommendations for Atlas UX",
+    ].join("\n"),
+  });
+
+  await writeStepAudit(ctx, "WF-121.report", `Competitor report generated (${llmText.length} chars)`);
+
+  // 4. Email to Atlas + CC Binky
+  const { to: reportTo } = getReportRecipients("archy");
+  const binkyEmail = agentEmail("binky");
+  await queueEmail(ctx, {
+    to: reportTo,
+    fromAgent: "archy",
+    subject: `[WF-121] Competitor Intel Sweep — ${today}`,
+    text: [
+      `Competitor Intelligence Report`,
+      "=".repeat(50),
+      `Agent: ARCHY | Date: ${today}`,
+      `Web results: ${allResults.length} | KB docs: ${kb.items.length}`,
+      `Trace: ${ctx.traceId ?? ctx.intentId}`,
+      `\n${llmText}`,
+    ].join("\n"),
+  });
+  if (binkyEmail) {
+    await queueEmail(ctx, {
+      to: binkyEmail,
+      fromAgent: "archy",
+      subject: `[CC] [WF-121] Competitor Intel Sweep — ${today}`,
+      text: llmText,
+    });
+  }
+
+  await writeStepAudit(ctx, "WF-121.complete", "Competitor intel sweep complete");
+  await prisma.ledgerEntry.create({
+    data: {
+      tenantId: ctx.tenantId,
+      entryType: "debit",
+      category: "token_spend",
+      amountCents: BigInt(Math.max(1, Math.round(llmText.length / 100))),
+      description: `WF-121 — Competitor intel sweep`,
+      reference_type: "intent",
+      reference_id: ctx.intentId,
+      run_id: ctx.traceId ?? ctx.intentId,
+      meta: { workflowId: "WF-121", agentId: "archy", webResults: allResults.length },
+    },
+  }).catch(() => null);
+
+  return {
+    ok: true,
+    message: "Competitor intel sweep complete",
+    output: { webResults: allResults.length, kbItems: kb.items.length, llmChars: llmText.length },
+  };
+};
+
+// ── WF-122 SEO Rank Tracker (Reynolds) ────────────────────────────────────
+// Weekly: search target keywords, check if Atlas UX appears in top 20.
+
+handlers["WF-122"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-122.start", "SEO rank tracker beginning");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const targetKeywords = [
+    "AI employee platform",
+    "autonomous AI agents for business",
+    "AI productivity automation",
+    "Atlas UX",
+    "AI workforce management platform",
+    "small business AI automation",
+  ];
+
+  // 1. Search each keyword and check Atlas UX position
+  const rankings: Array<{ keyword: string; position: number | null; foundUrl: string | null; topResults: string[] }> = [];
+  for (const keyword of targetKeywords) {
+    try {
+      const result = await searchWeb(keyword, 20);
+      if (result.ok) {
+        const atlasIndex = result.results.findIndex(
+          (r) => r.url.includes("atlasux") || r.title.toLowerCase().includes("atlas ux"),
+        );
+        const topResults = result.results.slice(0, 5).map((r) => `${r.title} (${r.url})`);
+        rankings.push({
+          keyword,
+          position: atlasIndex >= 0 ? atlasIndex + 1 : null,
+          foundUrl: atlasIndex >= 0 ? result.results[atlasIndex].url : null,
+          topResults,
+        });
+      } else {
+        rankings.push({ keyword, position: null, foundUrl: null, topResults: [] });
+      }
+    } catch {
+      rankings.push({ keyword, position: null, foundUrl: null, topResults: [] });
+    }
+  }
+
+  await writeStepAudit(ctx, "WF-122.search", `Searched ${targetKeywords.length} keywords`);
+
+  // 2. Format ranking data
+  const rankingData = rankings.map((r) => {
+    const pos = r.position !== null ? `#${r.position}` : "NOT FOUND";
+    return `Keyword: "${r.keyword}" — Position: ${pos}${r.foundUrl ? ` (${r.foundUrl})` : ""}\n  Top 3: ${r.topResults.slice(0, 3).join("; ")}`;
+  }).join("\n\n");
+
+  // 3. LLM SEO analysis
+  const kb = await getKbContext({
+    tenantId: ctx.tenantId,
+    agentId: "reynolds",
+    query: "SEO strategy blog content optimization",
+    intentId: ctx.intentId,
+    requestedBy: ctx.requestedBy,
+  });
+
+  const llmText = await safeLLM(ctx, {
+    agent: "REYNOLDS",
+    purpose: "seo_tracker",
+    route: "LONG_CONTEXT_SUMMARY",
+    system: [
+      "You are REYNOLDS, Atlas UX Blog Content Writer & SEO specialist.",
+      "Analyze SEO ranking data and produce actionable recommendations.",
+      kb.text ? `\nKB context (${kb.items.length} docs):\n${kb.text.slice(0, 2000)}` : "",
+    ].join("\n"),
+    user: [
+      `Date: ${today}`,
+      `\nSEO RANKING DATA:\n${rankingData}`,
+      "\nProduce an SEO ANALYSIS REPORT with sections:",
+      "1. Ranking Summary — keyword-by-keyword status",
+      "2. Wins — keywords where Atlas UX ranks well",
+      "3. Gaps — keywords where we're missing or low-ranked",
+      "4. Competitor Analysis — who's ranking above us",
+      "5. Action Plan — specific content/SEO actions to improve rankings",
+    ].join("\n"),
+  });
+
+  await writeStepAudit(ctx, "WF-122.report", `SEO report generated (${llmText.length} chars)`);
+
+  // 4. Email to Atlas
+  const { to: reportTo } = getReportRecipients("reynolds");
+  await queueEmail(ctx, {
+    to: reportTo,
+    fromAgent: "reynolds",
+    subject: `[WF-122] SEO Rank Tracker — ${today}`,
+    text: [
+      `SEO Rank Tracker Report`,
+      "=".repeat(50),
+      `Agent: REYNOLDS | Date: ${today}`,
+      `Keywords tracked: ${targetKeywords.length}`,
+      `Trace: ${ctx.traceId ?? ctx.intentId}`,
+      `\n${llmText}`,
+    ].join("\n"),
+  });
+
+  await writeStepAudit(ctx, "WF-122.complete", "SEO rank tracker complete");
+  await prisma.ledgerEntry.create({
+    data: {
+      tenantId: ctx.tenantId,
+      entryType: "debit",
+      category: "token_spend",
+      amountCents: BigInt(Math.max(1, Math.round(llmText.length / 100))),
+      description: `WF-122 — SEO rank tracker`,
+      reference_type: "intent",
+      reference_id: ctx.intentId,
+      run_id: ctx.traceId ?? ctx.intentId,
+      meta: { workflowId: "WF-122", agentId: "reynolds", keywordsTracked: targetKeywords.length },
+    },
+  }).catch(() => null);
+
+  return {
+    ok: true,
+    message: "SEO rank tracker complete",
+    output: {
+      rankings: rankings.map((r) => ({ keyword: r.keyword, position: r.position })),
+      kbItems: kb.items.length,
+      llmChars: llmText.length,
+    },
+  };
+};
+
+// ── WF-123 Lead Enrichment (Mercer) ───────────────────────────────────────
+// On-demand: web search for a contact's company/name, LLM enrichment, update CRM.
+
+handlers["WF-123"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-123.start", "Lead enrichment beginning");
+
+  const contactId = String(ctx.input?.contactId ?? "").trim();
+  const queryHint = String(ctx.input?.query ?? "").trim();
+
+  // 1. Load CRM contact if contactId provided
+  let contact: any = null;
+  if (contactId) {
+    contact = await prisma.crmContact.findFirst({
+      where: { id: contactId, tenantId: ctx.tenantId },
+    }).catch(() => null);
+  }
+
+  const searchName = contact
+    ? [contact.firstName, contact.lastName].filter(Boolean).join(" ")
+    : "";
+  const searchCompany = contact?.company ?? "";
+  const enrichQuery = queryHint
+    || `${searchName} ${searchCompany}`.trim()
+    || "lead enrichment";
+
+  if (!enrichQuery || enrichQuery === "lead enrichment") {
+    return { ok: false, message: "Provide contactId or query for lead enrichment." };
+  }
+
+  await writeStepAudit(ctx, "WF-123.target", `Enriching: ${enrichQuery}`);
+
+  // 2. Web search for company/person
+  const webResults: string[] = [];
+  const searchTerms = [
+    searchCompany ? `"${searchCompany}" company overview` : null,
+    searchName && searchCompany ? `"${searchName}" "${searchCompany}"` : null,
+    enrichQuery,
+  ].filter(Boolean) as string[];
+
+  for (const q of searchTerms) {
+    try {
+      const result = await searchWeb(q, 5);
+      if (result.ok) {
+        for (const r of result.results) {
+          webResults.push(`- ${r.title}: ${r.snippet.slice(0, 200)} (${r.url})`);
+        }
+      }
+    } catch { /* non-fatal */ }
+  }
+
+  await writeStepAudit(ctx, "WF-123.web", `Web search complete: ${webResults.length} results`);
+
+  // 3. LLM enrichment
+  const contactInfo = contact
+    ? `Contact: ${searchName} | Email: ${contact.email ?? "—"} | Company: ${searchCompany} | Tags: ${(contact.tags ?? []).join(", ")}`
+    : `Search query: ${enrichQuery}`;
+
+  const llmText = await safeLLM(ctx, {
+    agent: "MERCER",
+    purpose: "lead_enrichment",
+    route: "CLASSIFY_EXTRACT_VALIDATE",
+    system: [
+      "You are MERCER, Atlas UX Sales & Partnerships agent.",
+      "Enrich lead data from web research. Return structured JSON.",
+    ].join("\n"),
+    user: [
+      contactInfo,
+      `\nWEB RESEARCH:\n${webResults.join("\n") || "(No web data found)"}`,
+      "\nReturn a JSON object with these fields:",
+      '{ "companyName": string, "companySize": string, "industry": string,',
+      '  "fundingStage": string, "decisionMakerLikelihood": "low"|"medium"|"high",',
+      '  "keyInsights": [string], "recommendedApproach": string,',
+      '  "summary": string }',
+    ].join("\n"),
+  });
+
+  await writeStepAudit(ctx, "WF-123.enriched", `Enrichment report generated (${llmText.length} chars)`);
+
+  // 4. Update CRM contact notes if we have a contact
+  if (contact) {
+    try {
+      const existingNotes = String(contact.notes ?? "");
+      const enrichNote = `\n\n--- WF-123 Enrichment (${new Date().toISOString().slice(0, 10)}) ---\n${llmText.slice(0, 1000)}`;
+      await prisma.crmContact.update({
+        where: { id: contact.id },
+        data: { notes: (existingNotes + enrichNote).slice(0, 5000) },
+      });
+      await writeStepAudit(ctx, "WF-123.crm", `CRM contact ${contact.id} notes updated`);
+    } catch (err: any) {
+      await writeStepAudit(ctx, "WF-123.crm-error", `CRM update failed: ${err?.message}`);
+    }
+  }
+
+  // 5. Email to Mercer + CC Atlas
+  const mercerEmail = agentEmail("mercer");
+  const { to: reportTo } = getReportRecipients("mercer");
+  const emailTarget = mercerEmail ?? reportTo;
+
+  await queueEmail(ctx, {
+    to: emailTarget,
+    fromAgent: "mercer",
+    subject: `[WF-123] Lead Enrichment — ${enrichQuery.slice(0, 60)}`,
+    text: [
+      `Lead Enrichment Report`,
+      "=".repeat(50),
+      contactInfo,
+      `Web results: ${webResults.length}`,
+      `Trace: ${ctx.traceId ?? ctx.intentId}`,
+      `\n${llmText}`,
+    ].join("\n"),
+  });
+  if (emailTarget !== reportTo) {
+    await queueEmail(ctx, {
+      to: reportTo,
+      fromAgent: "mercer",
+      subject: `[CC] [WF-123] Lead Enrichment — ${enrichQuery.slice(0, 60)}`,
+      text: llmText,
+    });
+  }
+
+  await writeStepAudit(ctx, "WF-123.complete", "Lead enrichment complete");
+  await prisma.ledgerEntry.create({
+    data: {
+      tenantId: ctx.tenantId,
+      entryType: "debit",
+      category: "token_spend",
+      amountCents: BigInt(Math.max(1, Math.round(llmText.length / 100))),
+      description: `WF-123 — Lead enrichment: ${enrichQuery.slice(0, 40)}`,
+      reference_type: "intent",
+      reference_id: ctx.intentId,
+      run_id: ctx.traceId ?? ctx.intentId,
+      meta: { workflowId: "WF-123", agentId: "mercer", contactId: contactId || null },
+    },
+  }).catch(() => null);
+
+  return {
+    ok: true,
+    message: "Lead enrichment complete",
+    output: {
+      contactId: contactId || null,
+      query: enrichQuery,
+      webResults: webResults.length,
+      llmChars: llmText.length,
+    },
   };
 };
 

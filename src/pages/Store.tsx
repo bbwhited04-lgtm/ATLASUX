@@ -5,8 +5,6 @@ import { webPageSchema } from "../lib/seo/schemas";
 import {
   Zap,
   Crown,
-  Users,
-  Building2,
   CheckCircle2,
   XCircle,
   ArrowRight,
@@ -15,7 +13,6 @@ import {
   ShoppingBag,
   Gift,
   FileText,
-  Star,
   Briefcase,
   Brain,
   PenTool,
@@ -393,17 +390,16 @@ type PlanFeature = {
 };
 
 type PricingPlan = {
-  id: "starter" | "professional" | "business" | "enterprise";
+  id: "starter" | "business-pro";
   name: string;
   icon: any;
   color: string;
   monthlyPrice: number;
-  annualPrice: number;
-  seats: number;
-  pricePerSeat?: number;
-  minSeats?: number;
+  annualMonthlyPrice: number;
+  annualTotal: number;
   popular?: boolean;
-  paymentLink: string;
+  badge?: string;
+  description: string;
   features: PlanFeature[];
 };
 
@@ -413,83 +409,47 @@ const pricingPlans: PricingPlan[] = [
     name: "Starter",
     icon: Zap,
     color: "from-blue-500 to-cyan-500",
-    monthlyPrice: 99,
-    annualPrice: 950,
-    seats: 1,
-    paymentLink: "https://buy.stripe.com/28E5kE4GZdGf622djJ8IU09",
+    monthlyPrice: 34.95,
+    annualMonthlyPrice: 29.95,
+    annualTotal: 359.40,
+    description: "Everything you need to get running — solo operator essentials.",
     features: [
-      { name: "1 user seat", included: true },
-      { name: "AI agent workforce", included: true },
-      { name: "Dashboard access", included: true },
+      { name: "Full AI agent workforce", included: true },
+      { name: "Dashboard & analytics", included: true },
+      { name: "Social media management", included: true },
+      { name: "CRM & contact management", included: true },
       { name: "Email integration", included: true },
-      { name: "Basic social posting", included: true },
+      { name: "Knowledge base", included: true },
       { name: "Mobile companion (coming soon)", included: true },
       { name: "Community support", included: true },
+      { name: "AI receptionist (Lucy)", included: false },
+      { name: "Calendar & scheduling", included: false },
       { name: "API access", included: false },
       { name: "Priority support", included: false },
     ],
   },
   {
-    id: "professional",
-    name: "Professional",
+    id: "business-pro",
+    name: "Business Pro",
     icon: Crown,
     color: "from-cyan-500 to-blue-500",
-    monthlyPrice: 249,
-    annualPrice: 2388,
-    seats: 5,
-    pricePerSeat: 49.8,
-    minSeats: 5,
+    monthlyPrice: 149.95,
+    annualMonthlyPrice: 119.95,
+    annualTotal: 1439.40,
     popular: true,
-    paymentLink: "https://buy.stripe.com/aFabJ25L37hR766frR8IU0b",
+    badge: "Best Value",
+    description: "Unlimited workforce with receptionist, scheduling, and priority support.",
     features: [
-      { name: "5 user seats", included: true },
-      { name: "Growing integration library", included: true },
-      { name: "Unlimited jobs", included: true },
-      { name: "Priority email support", included: true },
-      { name: "Mobile companion (coming soon)", included: true },
+      { name: "Everything in Starter", included: true },
+      { name: "Unlimited AI workforce", included: true },
+      { name: "AI receptionist (Lucy)", included: true },
+      { name: "Social media manager", included: true },
+      { name: "Calendar & scheduling", included: true },
+      { name: "Deep research engine", included: true },
+      { name: "Priority support", included: true },
       { name: "API access", included: true },
       { name: "Advanced analytics", included: true },
-      { name: "Custom integrations (3/year)", included: false },
-    ],
-  },
-  {
-    id: "business",
-    name: "Business",
-    icon: Users,
-    color: "from-purple-500 to-pink-500",
-    monthlyPrice: 45,
-    annualPrice: 432,
-    seats: 10,
-    pricePerSeat: 45,
-    minSeats: 10,
-    paymentLink: "https://buy.stripe.com/28EcN6gpHgSrfCCcfF8IU0a",
-    features: [
-      { name: "10-49 user seats", included: true },
-      { name: "Everything in Professional", included: true },
-      { name: "Growing integration library", included: true },
-      { name: "Custom integrations (3/year)", included: true },
-      { name: "Email support", included: true },
-      { name: "Advanced permissions", included: true },
-    ],
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    icon: Building2,
-    color: "from-orange-500 to-red-500",
-    monthlyPrice: 40,
-    annualPrice: 384,
-    seats: 50,
-    pricePerSeat: 40,
-    minSeats: 50,
-    paymentLink: "https://buy.stripe.com/14A7sM8Xf0Ttbmma7x8IU0c",
-    features: [
-      { name: "50+ user seats", included: true },
-      { name: "Everything in Business", included: true },
-      { name: "Custom pricing", included: true },
-      { name: "Custom integrations (unlimited)", included: true },
-      { name: "Priority support", included: true },
-      { name: "Volume discounts available", included: true },
+      { name: "Custom integrations", included: true },
     ],
   },
 ];
@@ -498,7 +458,8 @@ function formatUSD(amount: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 
@@ -527,6 +488,12 @@ export default function Store() {
             &larr; Back to Home
           </Link>
           <div className="flex items-center gap-3">
+            <Link
+              to="/compare"
+              className="text-sm text-slate-300 hover:text-white"
+            >
+              Compare
+            </Link>
             <Link
               to="/payment"
               className="text-sm text-slate-300 hover:text-white"
@@ -639,10 +606,17 @@ export default function Store() {
 
           <p className="mt-3 text-sm text-slate-400">{subtitle}</p>
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-4">
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
             {pricingPlans.map((plan) => (
               <PlanCard key={plan.id} plan={plan} billing={billing} />
             ))}
+          </div>
+
+          <div className="mt-6 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/5 px-5 py-2 text-sm text-cyan-300">
+              <Zap className="h-3.5 w-3.5" />
+              Use code <span className="font-semibold">BETA50</span> for 50% off your first 6 months
+            </div>
           </div>
         </section>
 
@@ -826,30 +800,49 @@ function PlanCard({
   billing: BillingCycle;
 }) {
   const Icon = plan.icon;
+  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [showEmail, setShowEmail] = useState(false);
 
-  const headline = formatUSD(
-    billing === "annual" ? plan.annualPrice : plan.monthlyPrice,
-  );
-  const priceLabel =
-    plan.id === "starter"
-      ? billing === "annual"
-        ? "/year"
-        : "/month"
-      : billing === "annual"
-        ? "/seat/year"
-        : "/seat/month";
+  const price = billing === "annual" ? plan.annualMonthlyPrice : plan.monthlyPrice;
+  const headline = formatUSD(price);
+  const priceLabel = "/month";
 
-  const minSeats = plan.minSeats ?? plan.seats;
+  async function handleCheckout() {
+    if (!showEmail) {
+      setShowEmail(true);
+      return;
+    }
+    if (!email || !email.includes("@")) return;
+
+    setLoading(true);
+    try {
+      const apiBase = (import.meta as any).env?.VITE_API_BASE_URL ?? "https://atlas-ux.onrender.com";
+      const res = await fetch(`${apiBase}/v1/stripe/checkout-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: plan.id, billing, email }),
+      });
+      const data = await res.json();
+      if (data.ok && data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      // fallback: open store
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <Card className="relative overflow-hidden border border-slate-800 bg-slate-900/20">
+    <Card className={`relative overflow-hidden border ${plan.popular ? "border-cyan-500/30" : "border-slate-800"} bg-slate-900/20`}>
       <div
         className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${plan.color}`}
       />
-      {plan.popular && (
+      {plan.badge && (
         <div className="absolute right-4 top-4">
           <Badge className="bg-cyan-500/20 text-cyan-200 border border-cyan-500/30">
-            Most Popular
+            {plan.badge}
           </Badge>
         </div>
       )}
@@ -861,11 +854,7 @@ function PlanCard({
           </div>
           <div>
             <div className="text-lg font-semibold">{plan.name}</div>
-            <div className="text-xs text-slate-400">
-              {plan.id === "starter"
-                ? "Solo / single seat"
-                : `Minimum ${minSeats} seats`}
-            </div>
+            <div className="text-xs text-slate-400">{plan.description}</div>
           </div>
         </div>
 
@@ -875,11 +864,18 @@ function PlanCard({
             <div className="text-sm text-slate-400">{priceLabel}</div>
           </div>
 
-          <div className="mt-2 text-sm text-slate-400">
-            {plan.id === "starter"
-              ? "All core essentials to get running."
-              : `Checkout is per-seat. Starts at ${minSeats} seats.`}
-          </div>
+          {billing === "annual" ? (
+            <div className="mt-2 text-sm text-slate-400">
+              Billed annually at {formatUSD(plan.annualTotal)}/yr
+              <span className="ml-2 text-emerald-400">
+                Save {formatUSD((plan.monthlyPrice - plan.annualMonthlyPrice) * 12)}/yr
+              </span>
+            </div>
+          ) : (
+            <div className="mt-2 text-sm text-slate-400">
+              Cancel anytime. No long-term contracts.
+            </div>
+          )}
         </div>
 
         <div className="mt-6 space-y-2">
@@ -900,13 +896,25 @@ function PlanCard({
         </div>
 
         <div className="mt-6">
+          {showEmail && (
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCheckout()}
+              className="mb-3 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
+              autoFocus
+            />
+          )}
+
           <Button
-            className="w-full bg-cyan-500 text-slate-950 hover:bg-cyan-400"
-            onClick={() =>
-              window.open(plan.paymentLink, "_blank", "noopener,noreferrer")
-            }
+            className="w-full bg-cyan-500 text-slate-950 hover:bg-cyan-400 disabled:opacity-50"
+            onClick={handleCheckout}
+            disabled={loading}
           >
-            Checkout <ArrowRight className="ml-2 h-4 w-4" />
+            {loading ? "Redirecting..." : showEmail ? "Continue to Checkout" : `Get ${plan.name}`}
+            {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
           </Button>
 
           <div className="mt-3 text-xs text-slate-500">

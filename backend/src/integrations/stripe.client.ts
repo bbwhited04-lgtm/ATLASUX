@@ -90,3 +90,64 @@ export async function stripeCreatePrice(args: StripeCreatePriceArgs): Promise<an
     metadata: parsed.metadata,
   });
 }
+
+export async function stripeCreateCheckoutSession(args: {
+  priceId: string;
+  customerEmail?: string;
+  successUrl: string;
+  cancelUrl: string;
+  metadata?: Record<string, string>;
+  allowPromotionCodes?: boolean;
+}): Promise<any> {
+  return stripePost<any>("/v1/checkout/sessions", {
+    mode: "subscription",
+    "line_items[0][price]": args.priceId,
+    "line_items[0][quantity]": "1",
+    customer_email: args.customerEmail,
+    success_url: args.successUrl,
+    cancel_url: args.cancelUrl,
+    allow_promotion_codes: args.allowPromotionCodes ? "true" : undefined,
+    metadata: args.metadata,
+  });
+}
+
+export async function stripeCreatePortalSession(args: {
+  customerId: string;
+  returnUrl: string;
+}): Promise<any> {
+  return stripePost<any>("/v1/billing_portal/sessions", {
+    customer: args.customerId,
+    return_url: args.returnUrl,
+  });
+}
+
+export async function stripeConstructWebhookEvent(
+  rawBody: string,
+  signature: string,
+  secret: string,
+): Promise<any> {
+  // Stripe webhook signature verification using raw HMAC
+  const crypto = await import("node:crypto");
+  const parts = signature.split(",").reduce<Record<string, string>>((acc, part) => {
+    const [k, v] = part.split("=");
+    if (k && v) acc[k] = v;
+    return acc;
+  }, {});
+
+  const timestamp = parts["t"];
+  const sig = parts["v1"];
+  if (!timestamp || !sig) throw new Error("Invalid Stripe signature header");
+
+  const payload = `${timestamp}.${rawBody}`;
+  const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+    throw new Error("Stripe webhook signature mismatch");
+  }
+
+  // Check timestamp is within 5 minutes
+  const age = Math.abs(Date.now() / 1000 - Number(timestamp));
+  if (age > 300) throw new Error("Stripe webhook timestamp too old");
+
+  return JSON.parse(rawBody);
+}

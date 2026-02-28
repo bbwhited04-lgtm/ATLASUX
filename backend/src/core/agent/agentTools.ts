@@ -22,6 +22,7 @@
  *   delegate_task             — agent-to-agent task handoff: creates a queued AGENT_TASK job for another agent
  *   post_to_x                — post a tweet via X API v2 (Kelly's primary tool)
  *   search_x                 — search recent tweets on X (app-only bearer token)
+ *   deep_research            — multi-query parallel research with cited report synthesis
  *
  * Usage: resolveAgentTools(tenantId, query, agentId) — returns formatted context string.
  */
@@ -32,6 +33,8 @@ import { callGraph }                 from "../../lib/m365Tools.js";
 import { sendTelegramNotification }  from "../../lib/telegramNotify.js";
 import { postTweet, searchRecentTweets } from "../../services/x.js";
 import { getMemory }                 from "./agentMemory.js";
+import { searchWeb, fetchUrlContent, searchReddit } from "../../lib/webSearch.js";
+import { runDeepResearch }                           from "../../lib/deepResearch.js";
 
 export type ToolResult = {
   tool:   string;
@@ -730,6 +733,96 @@ async function flux1GenerateInfo(): Promise<ToolResult> {
   };
 }
 
+// ── Tool: web_search ─────────────────────────────────────────────────────────
+
+async function webSearchTool(query: string): Promise<ToolResult> {
+  try {
+    // Extract search terms from the query
+    const searchMatch = query.match(/(?:search|find|look up|research|google|sweep|what's the latest)\s+(?:the web\s+)?(?:for\s+)?(.+)/is);
+    const searchTerms = searchMatch ? searchMatch[1].trim() : query.trim();
+
+    if (!searchTerms || searchTerms.length < 2) {
+      return { tool: "web_search", data: "No search terms provided. Try: 'search the web for AI agents'", usedAt: new Date().toISOString() };
+    }
+
+    const result = await searchWeb(searchTerms);
+    if (!result.ok) {
+      return { tool: "web_search", data: `Web search failed: ${result.error}`, usedAt: new Date().toISOString() };
+    }
+
+    const lines = result.results.map((r, i) =>
+      `${i + 1}. ${r.title}\n   ${r.snippet.slice(0, 200)}\n   ${r.url}`
+    );
+
+    return {
+      tool: "web_search",
+      data: `Web search results for "${searchTerms}" (${result.results.length} results via ${result.provider}):\n\n${lines.join("\n\n")}`,
+      usedAt: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    return { tool: "web_search", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
+// ── Tool: fetch_url ──────────────────────────────────────────────────────────
+
+async function fetchUrlTool(query: string): Promise<ToolResult> {
+  try {
+    const urlMatch = query.match(/https?:\/\/[^\s)]+/);
+    if (!urlMatch) {
+      return { tool: "fetch_url", data: "No URL found in the request. Provide a valid URL to fetch.", usedAt: new Date().toISOString() };
+    }
+
+    const result = await fetchUrlContent(urlMatch[0]);
+    if (!result.ok) {
+      return { tool: "fetch_url", data: `Failed to fetch URL: ${result.error}`, usedAt: new Date().toISOString() };
+    }
+
+    return {
+      tool: "fetch_url",
+      data: `Content from ${result.url} (${result.text.length} chars):\n\n${result.text}`,
+      usedAt: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    return { tool: "fetch_url", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
+// ── Tool: reddit_search ──────────────────────────────────────────────────────
+
+async function redditSearchTool(query: string): Promise<ToolResult> {
+  try {
+    const searchMatch = query.match(/(?:search|find|check|what's)\s+(?:on\s+)?reddit\s+(?:for\s+)?(.+)/is)
+                      ?? query.match(/reddit\s+(?:posts?\s+)?(?:about|for|on)\s+(.+)/is);
+    const searchTerms = searchMatch ? searchMatch[1].trim() : query.replace(/\b(reddit|search|find|posts?|about|subreddit)\b/gi, "").trim();
+
+    if (!searchTerms || searchTerms.length < 2) {
+      return { tool: "reddit_search", data: "No search terms provided. Try: 'search reddit for AI automation'", usedAt: new Date().toISOString() };
+    }
+
+    const result = await searchReddit(searchTerms);
+    if (!result.ok) {
+      return { tool: "reddit_search", data: `Reddit search failed: ${result.error}`, usedAt: new Date().toISOString() };
+    }
+
+    if (!result.posts.length) {
+      return { tool: "reddit_search", data: `No Reddit posts found for "${searchTerms}".`, usedAt: new Date().toISOString() };
+    }
+
+    const lines = result.posts.map((p, i) =>
+      `${i + 1}. ${p.title} (${p.subreddit}, ${p.score} pts)\n   by ${p.author}\n   ${p.permalink}${p.selftext ? `\n   ${p.selftext.slice(0, 150)}` : ""}`
+    );
+
+    return {
+      tool: "reddit_search",
+      data: `Reddit search for "${searchTerms}" (${result.posts.length} posts):\n\n${lines.join("\n\n")}`,
+      usedAt: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    return { tool: "reddit_search", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
 // ── Pattern detection ─────────────────────────────────────────────────────────
 
 const SUBSCRIPTION_PATTERNS = [
@@ -859,6 +952,32 @@ const FLUX1_PATTERNS = [
   /\b(design|produce)\s+(an?\s+)?(banner|poster|cover|artwork)\b/i,
 ];
 
+const DEEP_RESEARCH_PATTERNS = [
+  /\b(deep research|research report|comprehensive research)\b/i,
+  /\b(investigate|deep dive|thorough analysis)\b/i,
+  /\b(gpt researcher|spawn research|research agent)\b/i,
+  /\b(full report on|detailed report|in-depth analysis)\b/i,
+];
+
+const WEB_SEARCH_PATTERNS = [
+  /\b(search the web|look up online|find information|what'?s the latest|research)\b/i,
+  /\b(google|brand mention|sweep for|web search|search for)\b.*\b(online|web|internet)?\b/i,
+  /\b(search)\s+(for|about)\s+.{3,}/i,
+  /\b(brand sweep|competitive intel|market research|industry report)\b/i,
+];
+
+const FETCH_URL_PATTERNS = [
+  /\b(read|fetch|open|visit|summarize|get)\s+(this\s+)?(url|page|link|site|website)\b/i,
+  /\bhttps?:\/\/[^\s)]+/i,
+];
+
+const REDDIT_SEARCH_PATTERNS = [
+  /\b(search|find|check)\s+(on\s+)?reddit\b/i,
+  /\breddit\s+(posts?|threads?|mentions?|discussions?)\s+(about|for|on)\b/i,
+  /\bwhat'?s reddit saying\b/i,
+  /\bsubreddit\b/i,
+];
+
 const YOUTUBE_SEARCH_PATTERNS = [
   /\b(search|find|look up|trending)\s+(on\s+)?youtube\b/i,
   /\b(youtube)\s+(trends?|search|videos?|topics?|channels?)\b/i,
@@ -877,31 +996,31 @@ const YOUTUBE_UPLOAD_PATTERNS = [
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   // ── Executives ───────────────────────────────────────────────────────
-  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate"],
-  binky:       ["calendar", "knowledge", "telegram", "memory", "delegate"],
-  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate", "deepResearch"],
+  binky:       ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch"],
+  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch"],
   tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory", "delegate"],
   larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "telegram", "memory", "delegate"],
-  jenny:       ["calendar", "legal", "policy", "knowledge", "telegram", "memory", "delegate"],
-  benny:       ["calendar", "legal", "ipRegister", "knowledge", "telegram", "memory", "delegate"],
+  jenny:       ["calendar", "legal", "policy", "knowledge", "telegram", "memory", "delegate", "webSearch"],
+  benny:       ["calendar", "legal", "ipRegister", "knowledge", "telegram", "memory", "delegate", "webSearch"],
 
   // ── Ops & Support ────────────────────────────────────────────────────
   petra:       ["calendar", "planner", "telegram", "memory", "delegate"],
-  mercer:      ["crm", "email", "knowledge", "telegram", "memory", "delegate"],
+  mercer:      ["crm", "email", "knowledge", "telegram", "memory", "delegate", "webSearch"],
   frank:       ["userProfile", "telegram", "memory", "delegate"],
   sandy:       ["calendar", "email", "userProfile", "telegram", "memory", "delegate"],
   claire:      ["calendar", "email", "telegram", "memory", "delegate"],
-  "daily-intel": ["calendar", "email", "knowledge", "telegram", "memory", "delegate"],
+  "daily-intel": ["calendar", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch"],
 
   // ── Content & Comms ──────────────────────────────────────────────────
-  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch"],
-  archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate"],
+  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch"],
+  archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch"],
   venny:       ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1"],
   victor:      ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate"],
-  reynolds:    ["calendar", "knowledge", "telegram", "memory", "delegate"],
+  reynolds:    ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl"],
 
   // ── Social Publishers ────────────────────────────────────────────────
-  kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch"],
+  kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch"],
   fran:        ["calendar", "knowledge", "telegram", "memory", "delegate"],
   dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate"],
   timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate"],
@@ -909,8 +1028,8 @@ const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate"],
   link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate"],
   emma:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate"],
-  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate"],
-  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate"],
+  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate", "redditSearch"],
+  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "webSearch"],
 };
 
 export type ToolNeeds = {
@@ -929,6 +1048,9 @@ export type ToolNeeds = {
   telegram:     boolean;
   memory:       boolean;
   delegate:     boolean;
+  webSearch:      boolean;
+  fetchUrl:       boolean;
+  redditSearch:   boolean;
   xPost:          boolean;
   xSearch:        boolean;
   youtubeSearch:  boolean;
@@ -936,6 +1058,7 @@ export type ToolNeeds = {
   videoCompose:   boolean;
   videoGenerate:  boolean;
   flux1:          boolean;
+  deepResearch:   boolean;
   query:          string;
 };
 
@@ -961,6 +1084,9 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     telegram:     can("telegram")     && TELEGRAM_PATTERNS.some(p => p.test(q)),
     memory:       can("memory")       && MEMORY_PATTERNS.some(p => p.test(q)),
     delegate:     can("delegate")     && DELEGATE_PATTERNS.some(p => p.test(q)),
+    webSearch:      can("webSearch")      && WEB_SEARCH_PATTERNS.some(p => p.test(q)),
+    fetchUrl:       can("fetchUrl")       && FETCH_URL_PATTERNS.some(p => p.test(q)),
+    redditSearch:   can("redditSearch")   && REDDIT_SEARCH_PATTERNS.some(p => p.test(q)),
     xPost:          can("xPost")          && X_POST_PATTERNS.some(p => p.test(q)),
     xSearch:        can("xSearch")        && X_SEARCH_PATTERNS.some(p => p.test(q)),
     youtubeSearch:  can("youtubeSearch")  && YOUTUBE_SEARCH_PATTERNS.some(p => p.test(q)),
@@ -968,6 +1094,7 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     videoCompose:   can("videoCompose")   && VIDEO_COMPOSE_PATTERNS.some(p => p.test(q)),
     videoGenerate:  can("videoGenerate")  && VIDEO_GENERATE_PATTERNS.some(p => p.test(q)),
     flux1:          can("flux1")          && FLUX1_PATTERNS.some(p => p.test(q)),
+    deepResearch:   can("deepResearch")   && DEEP_RESEARCH_PATTERNS.some(p => p.test(q)),
     query:          q,
   };
 }
@@ -1015,6 +1142,42 @@ function formatApprovedTools(
   };
 }
 
+// ── Tool: deep_research ─────────────────────────────────────────────────────
+
+async function deepResearchTool(tenantId: string, agentId: string, query: string): Promise<ToolResult> {
+  try {
+    // Extract topic from query
+    const topicMatch = query.match(
+      /(?:deep research|research report|comprehensive research|investigate|deep dive|thorough analysis|full report|detailed report|in-depth analysis)\s+(?:on|about|for|into|regarding)?\s*(.+)/is,
+    );
+    const topic = topicMatch ? topicMatch[1].trim() : query.trim();
+
+    if (!topic || topic.length < 3) {
+      return { tool: "deep_research", data: "No research topic provided. Try: 'deep research on AI employee platforms'", usedAt: new Date().toISOString() };
+    }
+
+    const result = await runDeepResearch({ tenantId, agentId, topic });
+
+    if (!result.ok) {
+      return { tool: "deep_research", data: `Deep research failed: ${result.error}`, usedAt: new Date().toISOString() };
+    }
+
+    const header = [
+      `Deep Research Report: "${result.topic}"`,
+      `Queries run: ${result.queriesRun} | Sources used: ${result.sourcesUsed} | Provider: ${result.provider} | Duration: ${(result.durationMs / 1000).toFixed(1)}s`,
+      `---`,
+    ].join("\n");
+
+    return {
+      tool: "deep_research",
+      data: `${header}\n\n${result.report}`,
+      usedAt: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    return { tool: "deep_research", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
 // ── resolveAgentTools ─────────────────────────────────────────────────────────
 
 /**
@@ -1058,6 +1221,9 @@ export async function resolveAgentTools(
     needs.telegram     ? sendTelegramMessage(tenantId, needs.query)            : Promise.resolve(null),
     needs.memory       ? searchMyMemories(tenantId, aid, needs.query)          : Promise.resolve(null),
     needs.delegate     ? delegateTask(tenantId, aid, needs.query)              : Promise.resolve(null),
+    needs.webSearch      ? webSearchTool(needs.query)                              : Promise.resolve(null),
+    needs.fetchUrl       ? fetchUrlTool(needs.query)                              : Promise.resolve(null),
+    needs.redditSearch   ? redditSearchTool(needs.query)                          : Promise.resolve(null),
     needs.xPost          ? postToX(tenantId, aid, needs.query)                   : Promise.resolve(null),
     needs.xSearch        ? searchX(tenantId, needs.query)                        : Promise.resolve(null),
     needs.youtubeSearch  ? searchYouTube(tenantId, needs.query)                  : Promise.resolve(null),
@@ -1065,6 +1231,7 @@ export async function resolveAgentTools(
     needs.videoCompose   ? videoComposeInfo()                                     : Promise.resolve(null),
     needs.videoGenerate  ? videoGenerateInfo()                                    : Promise.resolve(null),
     needs.flux1          ? flux1GenerateInfo()                                    : Promise.resolve(null),
+    needs.deepResearch   ? deepResearchTool(tenantId, aid, needs.query)           : Promise.resolve(null),
     approvedToolsPromise,
   ];
 

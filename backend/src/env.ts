@@ -26,6 +26,8 @@ const EnvSchema = z.object({
   OPENROUTER_API_KEY: z.string().optional(),
   CEREBRAS_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
+  PINECONE_API_KEY: z.string().optional(),
+  PINECONE_INDEX: z.string().optional(),
 
   // OAuth providers
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -78,9 +80,15 @@ const EnvSchema = z.object({
   TIKTOK_CLIENT_SECRET: z.string().optional(),
   TIKTOK_REDIRECT_URI: z.string().optional(),
 
-  // Stripe (optional here; can be wired later)
+  // Stripe
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_SUB_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_PRICE_STARTER_MONTHLY: z.string().optional(),
+  STRIPE_PRICE_STARTER_ANNUAL: z.string().optional(),
+  STRIPE_PRICE_BUSINESS_PRO_MONTHLY: z.string().optional(),
+  STRIPE_PRICE_BUSINESS_PRO_ANNUAL: z.string().optional(),
+  STRIPE_BETA_PROMO: z.string().optional(),
 
   // Email sending
   OUTBOUND_EMAIL_PROVIDER: z.string().optional(),  // "microsoft" | "resend"
@@ -119,6 +127,11 @@ const EnvSchema = z.object({
   // Security: virus scanning via VirusTotal
   VIRUS_SCAN_ENABLED: z.string().optional(),
   VIRUSTOTAL_API_KEY: z.string().optional(),
+
+  // Web search providers (multi-provider fallback: You.com → Tavily → SerpAPI)
+  SERP_API_KEY:    z.string().optional(),
+  YOU_COM_API_KEY: z.string().optional(),
+  TAVILY_API_KEY:  z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

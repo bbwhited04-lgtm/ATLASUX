@@ -3,6 +3,8 @@ import { prisma } from "../db/prisma.js";
 import { KbDocumentStatus } from "@prisma/client";
 import { n8nWorkflows } from "../workflows/n8n/manifest.js";
 import { flushKbCache, invalidateKbCache, kbCacheStats } from "../core/kb/kbCache.js";
+import { upsertChunks } from "../lib/pinecone.js";
+import type { PineconeChunk } from "../lib/pinecone.js";
 
 const SYSTEM_ACTOR = "00000000-0000-0000-0000-000000000001";
 
@@ -512,6 +514,86 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
     await prisma.kbDocument.deleteMany({ where: { id, tenantId } });
 
     return reply.send({ ok: true });
+  });
+
+  // ── Pinecone Embed Endpoints ─────────────────────────────────────────────
+
+  // Embed + upsert one document's chunks to Pinecone
+  app.post("/documents/:id/chunks/embed", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string;
+    const role = (req as any).tenantRole;
+    const id = String((req.params as any)?.id ?? "").trim();
+
+    if (!canWrite(role)) {
+      return reply.code(403).send({ ok: false, error: "role_cannot_write_kb" });
+    }
+
+    const doc = await prisma.kbDocument.findFirst({
+      where: { id, tenantId },
+      select: { id: true, title: true, slug: true },
+    });
+    if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
+
+    const chunks = (await prisma.$queryRaw`
+      select id, idx, content
+      from kb_chunks
+      where tenant_id = ${tenantId}::uuid
+        and document_id = ${id}::uuid
+      order by idx asc
+    `) as { id: string; idx: number; content: string }[];
+
+    if (chunks.length === 0) {
+      return reply.send({ ok: true, embedded: 0, message: "no_chunks" });
+    }
+
+    const pineconeChunks: PineconeChunk[] = chunks.map(c => ({
+      id: `${doc.id}::${c.idx}`,
+      content: c.content,
+      tenantId,
+      documentId: doc.id,
+      slug: doc.slug,
+      title: doc.title,
+    }));
+
+    const embedded = await upsertChunks(pineconeChunks);
+
+    return reply.send({ ok: true, documentId: id, embedded });
+  });
+
+  // Bulk embed all chunks for tenant
+  app.post("/embed-all", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string;
+    const role = (req as any).tenantRole;
+
+    if (!canWrite(role)) {
+      return reply.code(403).send({ ok: false, error: "role_cannot_write_kb" });
+    }
+
+    const rows = (await prisma.$queryRaw`
+      select c.idx, c.content, c.document_id as "documentId",
+             d.title, d.slug
+      from kb_chunks c
+      join kb_documents d on d.id = c.document_id
+      where c.tenant_id = ${tenantId}::uuid
+      order by c.document_id, c.idx
+    `) as { idx: number; content: string; documentId: string; title: string; slug: string }[];
+
+    if (rows.length === 0) {
+      return reply.send({ ok: true, embedded: 0, message: "no_chunks" });
+    }
+
+    const pineconeChunks: PineconeChunk[] = rows.map(r => ({
+      id: `${r.documentId}::${r.idx}`,
+      content: r.content,
+      tenantId,
+      documentId: r.documentId,
+      slug: r.slug,
+      title: r.title,
+    }));
+
+    const embedded = await upsertChunks(pineconeChunks);
+
+    return reply.send({ ok: true, embedded, totalChunks: rows.length });
   });
 
   // ── KB Cache Management ───────────────────────────────────────────────────

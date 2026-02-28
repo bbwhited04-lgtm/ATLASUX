@@ -291,6 +291,11 @@ export default function Landing() {
             <li>[Claude Code] 3D Atlas Avatar — replaced SVG wireframe with real sci-fi armor GLB model rendered via Three.js (@react-three/fiber + drei); auto-rotates, floats, status-reactive lighting (cyan/purple/red), subtle vibration when speaking in deep bass voice; Three.js split into its own chunk so it doesn't block page load; click to open chat with voice commands</li>
             <li>[Claude Code] Fixed blank screen crash (web + desktop) — @react-three/fiber v9 and @react-three/drei v10 require React 19, but the project runs React 18.3.1; the fiber reconciler bundled React 19 internals that called __CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE on a React 18 export, causing "Cannot read properties of undefined (reading 'S')" and crashing the entire React tree before any component could render; downgraded to @react-three/fiber v8 + @react-three/drei v9 (last React 18-compatible releases); app now loads correctly on both Vercel cloud and Electron desktop; project backup copied to 1TBWD external drive for safety</li>
             <li>[Claude Code] Removed legacy "Pluto" branding — renamed all user-facing references from old v1 naming (Pluto Job Runner, Pluto Jobs, Track Pluto jobs) to current Atlas branding (Job Runner, Jobs, Job Runner Task Execution) across Dashboard, RootLayout, JobRunner, MobileCompanionSetup, and OnboardingWizard</li>
+            <li>[Claude Code] Pinecone vector search — new `pinecone.ts` module with OpenAI text-embedding-3-small (1536 dims), lazy singleton clients, graceful degradation when no API key; upsert KB chunks in batches of 100 with metadata (tenantId, documentId, slug, title); semantic query filtered by tenant with configurable topK and minScore; integrated into deep research engine Phase 2 parallel execution alongside web/Reddit/KB search; two new KB endpoints for single-doc and bulk embed; vector hits included in synthesis evidence block</li>
+            <li>[Claude Code] Deep research engine upgrades — GPT Researcher-style multi-query parallel research with 3 phases (planning, execution, synthesis); web search with multi-provider fallback (You.com → Tavily → SerpAPI); Reddit search; KB context; Pinecone vector search; LLM generates 5-8 diverse search queries from topic; all queries run in parallel with 30s timeout; URL deduplication; comprehensive cited report with executive summary, key findings, detailed analysis, sources, gaps, and recommendations</li>
+            <li>[Claude Code] Cloud seating &amp; Stripe billing — 2-tier subscription pricing: Starter $34.95/mo ($29.95 annual) and Business Pro $149.95/mo ($119.95 annual); Stripe Checkout Sessions with dynamic price selection; subscription webhook auto-generates 256-bit hex gate key on payment and emails it to customer via Microsoft Graph; customer portal for self-service billing management; seat revocation on subscription cancellation/past_due; BETA50 promo code (50% off for 6 months)</li>
+            <li>[Claude Code] Comparison page — public /compare page benchmarking Atlas UX against 24 competitors (Sintra, Zeely, Holo, Hootsuite, Sprout Social, Sprinklr, Agorapulse, StatusBrew, Sendible, Content Studio, Social Pilot, HubSpot Social, Monday, Canva, Runway, Minta, JoggAI, PictoryAI, InVideo, TopView AI, Tagshop AI, Synthesia, HeyGen, Creatify AI); "cost to replicate" calculator showing $566/mo vs $34.95; head-to-head feature tables by category; pricing summary with both tiers; CTA banner on landing page; footer link</li>
+            <li>[Claude Code] Store page updated — replaced 4-tier pricing ($99/$249/$45/$40 per seat) with 2-tier cloud seating (Starter/Business Pro); email-gated checkout flow that creates Stripe Checkout Sessions; annual billing toggle with savings display; BETA50 promo callout; Compare page link in header</li>
             <li>[Claude Code] Fixed FloatingAtlas chat — clicking chat icon caused the 3D avatar to disappear off-screen; container was using horizontal flex layout pushing avatar and chat panel side-by-side; changed to vertical column stack so chat panel renders above the avatar</li>
             <li>[Claude Code] Fixed "failed to fetch" on desktop — Electron builds had localhost:8787 baked in as API_BASE from .env at build time; added Electron user-agent detection in api.ts to automatically use the production Render backend (atlasux-backend.onrender.com) when running in desktop mode with a localhost URL configured</li>
             <li>[Claude Code] Full SEO/GEO optimization — react-helmet-async on all 11 public pages with unique titles, 150-char descriptions, Open Graph + Twitter Card meta tags, canonical URLs, and JSON-LD structured data (Organization, SoftwareApplication, BlogPosting, FAQ, Breadcrumb, WebPage schemas); static OG fallbacks in index.html for crawlers that don't execute JS; robots.txt with AI crawler permissions (GPTBot, ClaudeBot, Google-Extended); sitemap.xml for all public routes</li>
@@ -315,6 +320,31 @@ export default function Landing() {
             >
               Open app home
             </a>
+          </div>
+        </section>
+
+        {/* Compare CTA */}
+        <section className="mt-10 rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent p-8 text-center">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            One platform. <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">30+ AI agents.</span> Fraction of the cost.
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-sm text-white/60">
+            Atlas UX replaces Hootsuite, Sprout Social, HubSpot, Monday, Sintra, Synthesia, and more — all in one platform starting at $34.95/mo.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-4">
+            <Link
+              to="/compare"
+              className="inline-flex items-center gap-2 rounded-2xl bg-cyan-500 px-8 py-3.5 text-sm font-semibold !text-slate-950 hover:bg-cyan-400"
+            >
+              Compare Us vs 25+ Competitors
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </Link>
+            <Link
+              to="/store"
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white hover:bg-white/10"
+            >
+              View Pricing
+            </Link>
           </div>
         </section>
 
