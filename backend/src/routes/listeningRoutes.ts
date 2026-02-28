@@ -2,6 +2,48 @@ import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
 import { providerForPlatform } from "../lib/providerMapping.js";
 
+
+function detectPlatform(url: string): string {
+  const u = url.toLowerCase();
+  if (u.includes("instagram.com")) return "instagram";
+  if (u.includes("linkedin.com")) return "linkedin";
+  if (u.includes("reddit.com")) return "reddit";
+  if (u.includes("facebook.com")) return "facebook";
+  if (u.includes("whatsapp.com")) return "whatsapp";
+  if (u.includes("x.com") || u.includes("twitter.com")) return "x";
+  if (u.includes("pinterest.com")) return "pinterest";
+  if (u.includes("alignable.com")) return "alignable";
+  if (u.includes("tumblr.com")) return "tumblr";
+  if (u.includes("threads.com")) return "threads";
+  if (u.includes("tiktok.com")) return "tiktok";
+  if (u.includes("discord.com")) return "discord";
+  if (u.includes("t.me") || u.includes("telegram.me")) return "telegram";
+  if (u.includes("youtube.com") || u.includes("youtu.be")) return "youtube";
+  if (u.includes("twitch.tv")) return "twitch";
+  return "web";
+}
+
+function extractUrls(raw: string): string[] {
+  const matches = raw.match(/https?:\/\/[^\s)]+/g) ?? [];
+  const cleaned = matches
+    .map((s) => s.replace(/[),.;]+$/g, "").trim())
+    .filter(Boolean);
+  return Array.from(new Set(cleaned));
+}
+
+function defaultNameForUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "");
+    const parts = u.pathname.split("/").filter(Boolean);
+    const tail = parts[parts.length - 1] ?? host;
+    return `${host}:${tail}`.slice(0, 80);
+  } catch {
+    return url.slice(0, 80);
+  }
+}
+
+
 export const listeningRoutes: FastifyPluginAsync = async (app) => {
   /**
    * GET /v1/listening/plan?tenantId=...
@@ -49,6 +91,80 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /**
+   * POST /v1/listening/sources/import?tenantId=...
+   * Body: { rawText: string }
+   * Extracts http(s) URLs and stores them as Assets (fallback) so /plan can see them.
+   *
+   * NOTE: This is intentionally tolerant: if your Asset model differs, this endpoint will
+   * return a clear error and include the parsed URLs so you can adjust mapping.
+   */
+  app.post("/sources/import", async (req, reply) => {
+    const tenantId = ((req as any).tenantId ?? null) as string | null;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const body = (req.body ?? {}) as any;
+    const rawText = String(body.rawText ?? "");
+    if (!rawText.trim()) return reply.code(400).send({ ok: false, error: "RAW_TEXT_REQUIRED" });
+
+    const urls = extractUrls(rawText);
+    if (!urls.length) return reply.code(400).send({ ok: false, error: "NO_URLS_FOUND" });
+
+    const rows = urls.map((url) => ({
+      tenantId,
+      name: defaultNameForUrl(url),
+      url,
+      platform: detectPlatform(url),
+      type: "social_profile" as any,
+    }));
+
+    let created = 0;
+    let failed: Array<{ url: string; error: string }> = [];
+
+    // Try fast bulk insert first
+    try {
+      const res = await prisma.asset.createMany({
+        data: rows as any,
+        skipDuplicates: true as any,
+      } as any);
+      created = Number((res as any)?.count ?? 0);
+    } catch (e: any) {
+      // Fallback to per-row create with best-effort dedupe (ignore duplicates)
+      for (const r of rows) {
+        try {
+          await prisma.asset.create({ data: r as any } as any);
+          created += 1;
+        } catch (err: any) {
+          const msg = String(err?.message ?? err);
+          // Ignore typical duplicate errors
+          if (msg.toLowerCase().includes("unique") || msg.toLowerCase().includes("duplicate")) continue;
+          failed.push({ url: r.url, error: msg });
+        }
+      }
+    }
+
+    return reply.send({ ok: failed.length === 0, tenantId, found: urls.length, created, failed, urls });
+  });
+
+  /**
+   * GET /v1/listening/sources?tenantId=...
+   * Returns assets that look like social profile sources (from the import endpoint)
+   */
+  app.get("/sources", async (req, reply) => {
+    const tenantId = ((req as any).tenantId ?? null) as string | null;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const sources = await prisma.asset.findMany({
+      where: { tenantId, type: "social_profile" as any },
+      select: { id: true, name: true, url: true, platform: true, type: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: 500,
+    });
+
+    return reply.send({ ok: true, tenantId, sources });
+  });
+
+
+  /**
    * POST /v1/listening/start?tenantId=...
    * Creates a queued job and writes an audit_log entry.
    */
@@ -77,8 +193,6 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
       data: {
         tenantId,
         actorType: "system",
-        actorUserId: null,
-        actorExternalId: null,
         level: "info" as any,
         action: "LISTENING_START_REQUESTED",
         entityType: "job",
@@ -86,8 +200,8 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
         message: disconnected.length
           ? `Listening requested; ${disconnected.length} providers not connected yet.`
           : "Listening requested.",
-        meta: { disconnectedProviders: Array.from(new Set(disconnected.map((d: any) => d.provider))) },
-        timestamp: new Date(),
+        metadata: { disconnectedProviders: Array.from(new Set(disconnected.map((d: any) => d.provider))) },
+        status: "SUCCESS" as any,
       } as any,
     }).catch(() => null);
 

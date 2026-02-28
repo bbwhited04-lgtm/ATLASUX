@@ -7,7 +7,21 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
+model ListenerSource {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  platform          String
+  url               String
+  enabled           Boolean  @default(true)
+  pollIntervalSec   Int      @default(300) @map("poll_interval_sec")
+  lastPolledAt      DateTime? @map("last_polled_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  @@unique([tenantId, url])
+  @@index([tenantId, platform])
+  @@map("listener_sources")
+}
 model Tenant {
   id                                       String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   slug                                     String              @unique
