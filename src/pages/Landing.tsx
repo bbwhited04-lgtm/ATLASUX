@@ -227,6 +227,12 @@ export default function Landing() {
                 {/* CTAs */}
                 <div className="mt-8 flex flex-wrap gap-4">
                   <a
+                    href="#/app"
+                    className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-sm font-semibold !text-black shadow-lg hover:opacity-90 transition"
+                  >
+                    Enter App
+                  </a>
+                  <a
                     href="#contact"
                     className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#3e70a5] to-[#69b2cd] px-8 py-3.5 text-sm font-semibold text-white shadow-lg glow-blue hover:opacity-90 transition"
                   >
