@@ -972,10 +972,54 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
   };
 }
 
+// ── Approved tools inventory (DB-backed, cached) ─────────────────────────────
+
+/**
+ * Query WF-107 approved tools for an agent from tool_proposals.
+ * Cached per tenantId+agentId for 5 minutes to avoid per-message DB queries.
+ */
+const _approvedCache = new Map<string, { ts: number; tools: { toolName: string; toolPurpose: string }[] }>();
+const APPROVED_CACHE_TTL = 5 * 60 * 1000; // 5 min
+
+async function getApprovedTools(tenantId: string, agentId: string): Promise<ToolResult | null> {
+  const key = `${tenantId}:${agentId}`;
+  const cached = _approvedCache.get(key);
+  if (cached && Date.now() - cached.ts < APPROVED_CACHE_TTL) {
+    if (!cached.tools.length) return null;
+    return formatApprovedTools(agentId, cached.tools);
+  }
+
+  try {
+    const rows = await prisma.toolProposal.findMany({
+      where:   { tenantId, agentId, status: "approved" },
+      select:  { toolName: true, toolPurpose: true },
+      orderBy: { decidedAt: "asc" },
+    });
+    _approvedCache.set(key, { ts: Date.now(), tools: rows });
+    if (!rows.length) return null;
+    return formatApprovedTools(agentId, rows);
+  } catch {
+    return null;
+  }
+}
+
+function formatApprovedTools(
+  agentId: string,
+  tools: { toolName: string; toolPurpose: string }[],
+): ToolResult {
+  const lines = tools.map((t, i) => `${i + 1}. ${t.toolName} — ${t.toolPurpose}`);
+  return {
+    tool: "approved_tools_inventory",
+    data: `Approved tools for ${agentId} (${tools.length}):\n${lines.join("\n")}\n\nThese tools were approved via WF-107 and are part of your authorized capabilities.`,
+    usedAt: new Date().toISOString(),
+  };
+}
+
 // ── resolveAgentTools ─────────────────────────────────────────────────────────
 
 /**
  * Run all tools whose patterns match the query (filtered by agent permissions).
+ * Also injects the agent's WF-107 approved tools inventory when available.
  * Returns a formatted [AGENT TOOL RESULTS] block, or "" if nothing matched.
  */
 export async function resolveAgentTools(
@@ -987,7 +1031,16 @@ export async function resolveAgentTools(
   const aid   = agentId ?? "unknown";
 
   const anyNeeded = Object.entries(needs).some(([k, v]) => k !== "query" && v === true);
-  if (!anyNeeded) return "";
+
+  // Always check for approved tools, even when no pattern-based tools triggered
+  const approvedToolsPromise = agentId ? getApprovedTools(tenantId, agentId) : Promise.resolve(null);
+
+  if (!anyNeeded) {
+    // No pattern-based tools, but we may still have an approved tools inventory
+    const approvedResult = await approvedToolsPromise;
+    if (!approvedResult) return "";
+    return `[AGENT TOOL RESULTS]\nThe following live data was retrieved to answer this question accurately:\n\n### Tool: ${approvedResult.tool}\n_Retrieved: ${approvedResult.usedAt}_\n\n${approvedResult.data}`;
+  }
 
   const jobs: Promise<ToolResult | null>[] = [
     needs.subscription ? getSubscriptionInfo(tenantId)                         : Promise.resolve(null),
@@ -1012,6 +1065,7 @@ export async function resolveAgentTools(
     needs.videoCompose   ? videoComposeInfo()                                     : Promise.resolve(null),
     needs.videoGenerate  ? videoGenerateInfo()                                    : Promise.resolve(null),
     needs.flux1          ? flux1GenerateInfo()                                    : Promise.resolve(null),
+    approvedToolsPromise,
   ];
 
   const results = (await Promise.all(jobs)).filter(Boolean) as ToolResult[];
