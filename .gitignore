@@ -102,6 +102,13 @@ venv/
 .github/workflows/*.log
 
 ########################################
+# Removed/deprecated directories
+########################################
+extensions/
+AUTO_DOCS/
+schemas/
+
+########################################
 # Misc
 ########################################
 coverage/

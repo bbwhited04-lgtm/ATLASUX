@@ -160,17 +160,9 @@ export function JobRunner() {
     setJobs(jobs.map(job => {
       if (job.id === jobId) {
         if (job.status === "running") {
-          // Stop Pluto when pausing
-          if ((window as any).plutoStopTask) {
-            (window as any).plutoStopTask();
-          }
           return { ...job, status: "paused" as const };
         }
         if (job.status === "paused") {
-          // Start Pluto when resuming
-          if ((window as any).plutoStartTask) {
-            (window as any).plutoStartTask();
-          }
           return { ...job, status: "running" as const };
         }
       }
@@ -196,9 +188,6 @@ export function JobRunner() {
       void loadJobs();
     }
 
-    if (target.status === "running" && (window as any).plutoStopTask) {
-      (window as any).plutoStopTask();
-    }
   };
 
   const createJob = async () => {
