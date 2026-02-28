@@ -1,16 +1,169 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import SEO from "../components/SEO";
 import { organizationSchema, productSchema, faqSchema } from "../lib/seo/schemas";
 
-const YOUTUBE_ID = "QtTn_o6zXDY";
+/* ─── CDN Images ─── */
+const IMG = {
+  hero: "https://cdn.sintra.ai/img/wW4zexi0-Fp-E8zwMNqGxlBgEenpK2sesXjLmsGF8K4/g:ce/rs:fill:0:0:0/czM6Ly9zaW50cmEtYnJhaW5haS1tZWRpYS8zOTI3ZTZiMS1jOGQxLTQ4YjUtYmI5MS01Y2E3MDAyZjI0YzkvZDgzOTUzNzYtYjljMS00Y2I5LTllNjMtMWJhNjAwY2I4NDIyLWF0bGFzaW1hZ2UucG5n.jpg",
+  chat: "https://cdn.sintra.ai/img/rDsQ5N1fQTKVWE79EoDcv-ppW5XoRfkBNdJnwG77hVM/g:ce/rs:fill:0:0:0/czM6Ly9zaW50cmEtYnJhaW5haS1tZWRpYS9rbm93bGVkZ2UtcHJvZmlsZXMvMzkyN2U2YjEtYzhkMS00OGI1LWJiOTEtNWNhNzAwMmYyNGM5L2Fzc2V0cy81YzdkNzQxMS02MTA0LTQzMDktOGU1OC04ZjJiMjE2OTdiOTYvU2NyZWVuc2hvdF9mcm9tXzIwMjYtMDItMjBfMDgtMDgtMDkucG5n.jpg",
+  workflows: "https://cdn.sintra.ai/img/7Q4uJvkcdlX7jg0RLUHuko5OE6ePCOP67SPo11wuccI/g:ce/rs:fill:0:0:0/czM6Ly9zaW50cmEtYnJhaW5haS1tZWRpYS9rbm93bGVkZ2UtcHJvZmlsZXMvMzkyN2U2YjEtYzhkMS00OGI1LWJiOTEtNWNhNzAwMmYyNGM5L2Fzc2V0cy8xZWE3NTdjZS0wNGQyLTRkNWEtYWE3MS03NzUzZmFjNjZhYjgvU2NyZWVuc2hvdF9mcm9tXzIwMjYtMDItMjBfMDgtMDgtMjEucG5n.jpg",
+  integrations: "https://cdn.sintra.ai/img/U7gPp339RpZlvBdnND1TQL77oRhRqBp9PVa4PPBZw2w/g:ce/rs:fill:0:0:0/czM6Ly9zaW50cmEtYnJhaW5haS1tZWRpYS9rbm93bGVkZ2UtcHJvZmlsZXMvMzkyN2U2YjEtYzhkMS00OGI1LWJiOTEtNWNhNzAwMmYyNGM5L2Fzc2V0cy8wYTNmMGE3ZC00NzU5LTQ1N2EtODc2MC0xY2M0NWVlZmZlYTYvU2NyZWVuc2hvdF9mcm9tXzIwMjYtMDItMjBfMDgtMDgtMzcucG5n.jpg",
+  settings: "https://cdn.sintra.ai/img/i2yLJ-mtjULs8-7e0HbCJQlPoWkcxUmAEMYV64iVER8/g:ce/rs:fill:0:0:0/czM6Ly9zaW50cmEtYnJhaW5haS1tZWRpYS9rbm93bGVkZ2UtcHJvZmlsZXMvMzkyN2U2YjEtYzhkMS00OGI1LWJiOTEtNWNhNzAwMmYyNGM5L2Fzc2V0cy9iMTljYWFlNi1jMzI4LTQ3ODktOTZhMS0zNzllNTI2ZTMyMzYvU2NyZWVuc2hvdF9mcm9tXzIwMjYtMDItMjBfMDgtMDgtNTgucG5n.jpg",
+  permissions: "https://cdn.sintra.ai/img/cBYQFf3cR3mBI-Juyadm6psXmmFlrGS247F0UfKIgBQ/g:ce/rs:fill:0:0:0/czM6Ly9zaW50cmEtYnJhaW5haS1tZWRpYS9rbm93bGVkZ2UtcHJvZmlsZXMvMzkyN2U2YjEtYzhkMS00OGI1LWJiOTEtNWNhNzAwMmYyNGM5L2Fzc2V0cy9kYjA1MjQ0NC0yODc3LTQwMDItODUxMy1mMWI1OGU5M2M5MzQvU2NyZWVuc2hvdF9mcm9tXzIwMjYtMDItMjBfMDgtMDktMDEucG5n.jpg",
+  mobile: "https://cdn.sintra.ai/img/nJYzk__5ziUlFloW5XegCvIqE8WVyKciayQ7y3ikfws/g:ce/rs:fill:0:0:0/czM6Ly9zaW50cmEtYnJhaW5haS1tZWRpYS9rbm93bGVkZ2UtcHJvZmlsZXMvMzkyN2U2YjEtYzhkMS00OGI1LWJiOTEtNWNhNzAwMmYyNGM5L2Fzc2V0cy8wNjEyNmRjNS02ZWU0LTRkMDctYTI4YS05NmI3YjJiOTI4MjkvU2NyZWVuc2hvdF9mcm9tXzIwMjYtMDItMjBfMDgtMDktMTgucG5n.jpg",
+};
 
+/* ─── Data Arrays ─── */
+const PLATFORM_FEATURES = [
+  { emoji: "🎯", title: "1 Orchestrator Agent", badge: "Core", desc: "Atlas — your CEO-tier AI. Routes tasks, enforces governance rules, approves high-stakes actions, and coordinates all 29 sub-agents with full chain-of-command authority." },
+  { emoji: "📋", title: "Receptionist", desc: "Handles inbound inquiries, routes calls and messages, schedules appointments, and manages first-contact workflows across SMS, Telegram, and email." },
+  { emoji: "📊", title: "CRM", desc: "Contact management, company tracking, lead scoring, and relationship history. Agents update records automatically from every interaction." },
+  { emoji: "📱", title: "Social Media Agents", desc: "Dedicated agents for Facebook, Instagram, LinkedIn, TikTok, YouTube, X, Threads, Reddit, Pinterest, and more — each with platform-specific publishing logic." },
+  { emoji: "📈", title: "Analytics", desc: "Business intelligence dashboards, spend anomaly detection, token usage tracking, and performance reporting across all agent operations." },
+  { emoji: "⚙️", title: "Agent Workflows", desc: "Visual workflow builder with think-plan-stage-submit cycles. Every workflow step is logged, versioned, and reversible." },
+  { emoji: "🗂️", title: "Jobs Queue", desc: "Async task processing with priority queuing, retry logic, failure handling, and real-time status visibility across all running jobs." },
+  { emoji: "🤖", title: "Agent Management", desc: "Deploy, configure, monitor, and retire agents. Role-based permissions, execution rules, and spend limits per agent." },
+  { emoji: "🏢", title: "Business Manager", desc: "Email configuration, video conferencing, team collaboration, intel briefings, and executive decision support — all in one unified interface." },
+  { emoji: "💬", title: "Inter-Agent Chat", desc: "Agents communicate, delegate, and escalate to each other in real time. Full message history logged for audit and review." },
+];
+
+const TIER_1 = [{ emoji: "🧠", name: "Atlas", role: "CEO / Orchestrator" }];
+const TIER_2 = [
+  { emoji: "🎧", name: "Cheryl", role: "Customer Support Specialist" },
+  { emoji: "⚙️", name: "Benny", role: "Chief Technical Officer" },
+  { emoji: "⚖️", name: "Jenny", role: "Chief Legal Officer" },
+  { emoji: "📋", name: "Larry", role: "Chief Auditor / Corp. Secretary" },
+  { emoji: "💰", name: "Tina", role: "Chief Financial Officer" },
+];
+const TIER_3 = [
+  { emoji: "🤝", name: "Archy", role: "Professional Assistant" },
+  { emoji: "🎬", name: "Venny", role: "Videographer" },
+  { emoji: "📝", name: "Penny", role: "Technical Documentation" },
+  { emoji: "💬", name: "Donna", role: "Support Specialist" },
+  { emoji: "📅", name: "Sunday", role: "Team Coordinator" },
+];
+const TIER_4 = [
+  { emoji: "🎯", name: "Mercer", role: "Customer Acquisition" },
+  { emoji: "📌", name: "Cornwall", role: "Pinterest Publisher" },
+  { emoji: "🧵", name: "Dwight", role: "Threads Agent" },
+  { emoji: "🤝", name: "Emma", role: "Alignable Agent" },
+  { emoji: "📘", name: "Fran", role: "Facebook Publisher" },
+  { emoji: "🐦", name: "Kelly", role: "X / Twitter Agent" },
+  { emoji: "💼", name: "Link", role: "LinkedIn Agent" },
+  { emoji: "✍️", name: "Reynolds", role: "Blogger" },
+  { emoji: "📓", name: "Terry", role: "Tumblr Agent" },
+  { emoji: "🎵", name: "Timmy", role: "TikTok Agent" },
+  { emoji: "📰", name: "Daily-Intel", role: "Daily Intelligence Briefings" },
+  { emoji: "🔬", name: "Binky", role: "Research Coordinator" },
+];
+
+const INTEGRATION_CATEGORIES = [
+  { title: "Communications", items: [
+    { emoji: "📞", name: "Twilio", sub: "SMS & Voice" },
+    { emoji: "✈️", name: "Telegram", sub: "Bot & Messaging" },
+    { emoji: "💬", name: "SMS", sub: "Direct Text" },
+    { emoji: "🟦", name: "Microsoft Teams", sub: "Team Chat" },
+  ]},
+  { title: "Microsoft Office", items: [
+    { emoji: "📧", name: "Outlook", sub: "Email & Calendar" },
+    { emoji: "📄", name: "Word", sub: "Document Creation" },
+    { emoji: "📊", name: "Excel", sub: "Spreadsheets" },
+    { emoji: "🗂️", name: "SharePoint", sub: "File Management" },
+  ]},
+  { title: "Social Media", items: [
+    { emoji: "📘", name: "Facebook", sub: "Pages & Groups" },
+    { emoji: "📸", name: "Instagram", sub: "Posts & Reels" },
+    { emoji: "💼", name: "LinkedIn", sub: "Professional" },
+    { emoji: "🎵", name: "TikTok", sub: "Short Video" },
+    { emoji: "▶️", name: "YouTube", sub: "Video & Shorts" },
+    { emoji: "🐦", name: "X / Twitter", sub: "Microblogging" },
+    { emoji: "🧵", name: "Threads", sub: "Meta Threads" },
+    { emoji: "📌", name: "Pinterest", sub: "Visual Discovery" },
+  ]},
+  { title: "Google Workspace", items: [
+    { emoji: "📬", name: "Gmail", sub: "Email Inbox" },
+    { emoji: "📅", name: "Google Calendar", sub: "Scheduling" },
+    { emoji: "☁️", name: "Google Drive", sub: "Cloud Storage" },
+    { emoji: "📋", name: "Google Sheets", sub: "Data Sheets" },
+  ]},
+  { title: "Infrastructure", items: [
+    { emoji: "🗄️", name: "Supabase", sub: "Database & Auth" },
+    { emoji: "🤖", name: "OpenAI", sub: "GPT Models" },
+    { emoji: "🔍", name: "DeepSeek", sub: "AI Models" },
+    { emoji: "☁️", name: "iCloud", sub: "Apple Sync" },
+  ]},
+  { title: "Business Tools", items: [
+    { emoji: "💰", name: "QuickBooks", sub: "Accounting" },
+    { emoji: "💳", name: "Stripe", sub: "Payments" },
+    { emoji: "💬", name: "Slack", sub: "Team Comms" },
+    { emoji: "🎥", name: "Zoom", sub: "Video Calls" },
+  ]},
+];
+
+const KNOWLEDGE_FEATURES = [
+  { emoji: "📚", stat: "550", statLabel: "Documents", title: "550-Document Knowledge Base", desc: "Every agent has access to a shared, searchable repository of 550 curated documents. Policies, procedures, product specs, legal frameworks — all indexed and retrievable in milliseconds." },
+  { emoji: "💬", stat: "Real-time", statLabel: "Messaging", title: "Inter-Agent Chat", desc: "Agents communicate directly with each other in real time. Delegate sub-tasks, escalate decisions, share context, and coordinate complex multi-agent workflows — all logged." },
+  { emoji: "🔍", stat: "AI-Powered", statLabel: "Retrieval", title: "Semantic Search", desc: "Agents don't just keyword-match. They understand context and retrieve the most relevant documents for any task — from legal clauses to product FAQs to internal SOPs." },
+  { emoji: "📋", stat: "Full", statLabel: "Version History", title: "Document Versioning", desc: "Every document update is versioned and timestamped. Agents always work from the latest approved version. Rollback to any previous state with full audit trail." },
+  { emoji: "🔐", stat: "RBAC", statLabel: "Access Control", title: "Permission-Scoped Access", desc: "Not every agent needs every document. Role-based document permissions ensure agents only access what they're authorized to see — enforced at the knowledge layer." },
+  { emoji: "⚡", stat: "Live", statLabel: "Updates", title: "Live Knowledge Updates", desc: "Add, update, or retire documents without restarting agents. The knowledge base updates in real time, and agents immediately reflect the latest information." },
+];
+
+const CHAT_MESSAGES = [
+  { from: "A", name: "Atlas", to: "Mercer", time: "09:14:02", msg: "Route new lead from Twilio SMS to CRM. Priority: High.", color: "bg-[#3e70a5]" },
+  { from: "M", name: "Mercer", to: "Atlas", time: "09:14:03", msg: "Lead captured. Scoring: 87/100. Routing to Cheryl for follow-up.", color: "bg-[#69b2cd]" },
+  { from: "C", name: "Cheryl", to: "Atlas", time: "09:14:05", msg: "Approval needed: Send welcome sequence to lead@example.com?", color: "bg-emerald-600" },
+  { from: "A", name: "Atlas", to: "Cheryl", time: "09:14:06", msg: "Approved. Proceed. Log intent ID: INT-2847.", color: "bg-[#3e70a5]" },
+  { from: "F", name: "Fran", to: "Atlas", time: "09:14:09", msg: "Facebook post scheduled. Audit entry: AUD-9921.", color: "bg-indigo-600" },
+];
+
+const AUDIT_FEATURES = [
+  { emoji: "🔗", title: "Hash-Chained Audit Logs", desc: "Every event is cryptographically linked to the previous one. Tamper-proof by design. Any modification to the log chain is immediately detectable." },
+  { emoji: "🎯", title: "Intent-First Execution", desc: "No agent takes action without declaring intent first. Every task starts with an intent record — what, why, who authorized it, and what the expected outcome is." },
+  { emoji: "✋", title: "Human-in-the-Loop Approvals", desc: "High-stakes actions require human sign-off before execution. Atlas stages the action, presents a decision brief, and waits for explicit approval." },
+  { emoji: "💰", title: "Token & Spend Tracking", desc: "Every API call is costed and logged. See exactly how much each agent spent, on what model, for which task. No surprise bills. No unauthorized spend." },
+  { emoji: "🔐", title: "Two-Key Control", desc: "Critical operations require dual authorization. No single agent — not even Atlas — can execute certain actions without a second key from the governance layer." },
+  { emoji: "📊", title: "Full Traceability", desc: "Trace any outcome back to its origin. Which agent acted, which model was used, which document was referenced, which human approved it — all in one timeline." },
+  { emoji: "🚫", title: "No Backdoors", desc: "Atlas UX enforces a strict no-backdoor policy. No hidden API calls, no silent executions. Every network request is logged and attributable." },
+  { emoji: "📱", title: "Mobile Governance", desc: "The companion mobile app gives you real-time control. Approve requests, monitor agent activity, and revoke permissions from anywhere via LAN, WAN, WiFi, or Bluetooth." },
+];
+
+const AUDIT_LOG_ROWS = [
+  { id: "AUD-9924", agent: "Atlas", action: "APPROVE", target: "Email sequence INT-2847", status: "OK", time: "09:14:06", spend: "$0.003" },
+  { id: "AUD-9923", agent: "Mercer", action: "CRM_WRITE", target: "Contact: lead@example.com", status: "OK", time: "09:14:03", spend: "$0.001" },
+  { id: "AUD-9922", agent: "Fran", action: "FB_POST", target: "Page: AtlasUX Official", status: "OK", time: "09:14:09", spend: "$0.002" },
+  { id: "AUD-9921", agent: "Tina", action: "SPEND_CHECK", target: "Token budget: $50/day", status: "PASS", time: "09:13:58", spend: "$0.000" },
+  { id: "AUD-9920", agent: "Larry", action: "AUDIT_SIGN", target: "Chain hash: 7f3a9b2c", status: "SIGNED", time: "09:13:55", spend: "$0.000" },
+];
+
+/* ─── Helpers ─── */
+const SectionBadge = ({ children }: { children: React.ReactNode }) => (
+  <span className="inline-flex items-center gap-2 rounded-full border border-[#3d5474]/40 bg-[#0e1626]/80 px-4 py-1.5 text-xs font-medium tracking-wider text-[#69b2cd] uppercase">
+    <span className="h-1.5 w-1.5 rounded-full bg-[#69b2cd] pulse-dot" />
+    {children}
+  </span>
+);
+
+const Divider = () => (
+  <div className="h-px bg-gradient-to-r from-transparent via-[#3d5474]/40 to-transparent" />
+);
+
+const Connector = () => (
+  <div className="flex justify-center py-3">
+    <div className="h-10 w-px bg-gradient-to-b from-[#3e70a5] to-[#69b2cd]" />
+  </div>
+);
+
+/* ═══════════════════════════════════════ */
 export default function Landing() {
+  const [formData, setFormData] = useState({ name: "", email: "", business: "", usecase: "", message: "" });
+
   return (
     <div className="min-h-screen text-white relative">
       <SEO
-        title="AI Employee Platform for Small Business"
-        description="Atlas UX is a standalone AI employee platform with 30+ autonomous agents that handle CRM, marketing, finance, HR, and executive operations — locally on your desktop or in the cloud."
+        title="ATLAS UX — Standalone Multi-Platform AI Employee Platform"
+        description="1 Orchestrator + 29 specialized AI agents. CRM, Social Media, Analytics, Workflows, Jobs Queue, and more. Wired to Twilio, Microsoft Office, Telegram & SMS."
         schema={[
           organizationSchema(),
           productSchema(),
@@ -21,119 +174,446 @@ export default function Landing() {
           ]),
         ]}
       />
-      {/* Background (NON-INTERACTIVE) */}
-      <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#061a3a] via-[#041127] to-black" />
 
-        {/* Glow blobs */}
+      {/* ── 1. Background Layer ── */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div className="absolute inset-0 bg-[#0a0f1e]" />
         <div className="absolute -top-40 left-1/2 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-blue-500/20 blur-[130px]" />
         <div className="absolute top-40 right-[-140px] h-[440px] w-[440px] rounded-full bg-cyan-400/12 blur-[130px]" />
         <div className="absolute bottom-[-140px] left-[-140px] h-[440px] w-[440px] rounded-full bg-indigo-500/12 blur-[130px]" />
-
-        {/* Grid */}
-        <div
-          className="absolute inset-0 opacity-[0.09]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.12) 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
-          }}
-        />
-
-        {/* Vignette */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+        <div className="absolute inset-0 grid-bg opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1e]/80 via-transparent to-[#0a0f1e]/40" />
       </div>
 
-      <main className="mx-auto max-w-6xl px-6 py-12 relative z-10">
-        {/* Hero */}
-        <section className="grid gap-10 lg:grid-cols-2 lg:items-start">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-              The AI Worker that{" "}
-              <span className="text-cyan-300">works where</span>,{" "}
-              <span className="text-blue-300">you</span>{" "}
-              <span className="text-indigo-300">work</span>
-            </h1>
+      <main className="relative z-10">
 
-            <p className="mt-4 max-w-xl text-lg text-white/75">
-              ATLAS UX is a standalone, cross-platform desktop automation platform
-              that connects accounts, orchestrates agents, and executes real workflows —
-              locally.
-            </p>
+        {/* ── 2. Hero ── */}
+        <section className="min-h-screen flex items-center bg-[#0a0f1e]">
+          <div className="max-w-7xl mx-auto px-6 py-24 w-full">
+            <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+              <div>
+                <span className="inline-flex items-center gap-2 rounded-full border border-[#3d5474]/40 bg-[#0e1626]/80 px-4 py-1.5 text-xs font-medium tracking-wider text-[#69b2cd] uppercase">
+                  STANDALONE &middot; MULTI-PLATFORM &middot; LOCAL-FIRST
+                </span>
 
-            {/* Primary CTAs */}
-            <div className="mt-6 flex flex-wrap gap-3">
-              <a
-                href="#/app"
-                className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-semibold !text-black !opacity-100 shadow hover:opacity-90"
-              >
-                Open ATLAS UX (Preview)
-              </a>
+                <h1 className="mt-8 text-5xl font-bold tracking-tight leading-[1.1] sm:text-6xl lg:text-7xl">
+                  Your AI<br />
+                  <span className="gradient-text text-glow">Employee</span><br />
+                  Works Where<br />
+                  You Work.
+                </h1>
 
-              <a
-                href="#builders"
-                className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10"
-              >
-                Builders / Co-founders
-              </a>
+                <p className="mt-6 max-w-lg text-lg text-[#bab2b5]">
+                  1 Orchestrator. 29 Specialized Agents. Wired to Twilio, Microsoft Office,
+                  Telegram &amp; SMS. Every action logged, every decision traceable.
+                  Your data never leaves your machine.
+                </p>
 
-              <a
-                href={`https://www.youtube.com/watch?v=${YOUTUBE_ID}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10"
-              >
-                Watch on YouTube
-              </a>
-
-              <Link
-                to="/about"
-                className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10"
-              >
-                About
-              </Link>
-            </div>
-
-            {/* Value props */}
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              {[
-                ["Local-first", "Run core workflows on your machine."],
-                ["Privacy-first", "Keep control of your data."],
-                ["Modular integrations", "Connect apps/accounts as needed."],
-                ["Execution-focused", "Agents that do tasks, not just chat."],
-              ].map(([title, desc]) => (
-                <div
-                  key={title}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4"
-                >
-                  <div className="text-sm font-semibold">{title}</div>
-                  <div className="mt-1 text-sm text-white/65">{desc}</div>
+                {/* Stat cards */}
+                <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    ["30", "AI Agents"],
+                    ["550", "Doc Knowledge Base"],
+                    ["100%", "Audit Logged"],
+                    ["0", "Cloud Dependencies"],
+                  ].map(([val, label]) => (
+                    <div key={label} className="rounded-xl border border-[#3d5474]/30 bg-[#0e1626]/60 p-3 text-center">
+                      <div className="text-2xl font-bold text-white">{val}</div>
+                      <div className="mt-1 text-xs text-[#3d5474]">{label}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Video */}
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
-              <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
-                <iframe
-                  className="absolute inset-0 h-full w-full"
-                  src={`https://www.youtube.com/embed/${YOUTUBE_ID}?rel=0&modestbranding=1`}
-                  title="ATLAS UX Pitch"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                {/* CTAs */}
+                <div className="mt-8 flex flex-wrap gap-4">
+                  <a
+                    href="#contact"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#3e70a5] to-[#69b2cd] px-8 py-3.5 text-sm font-semibold text-white shadow-lg glow-blue hover:opacity-90 transition"
+                  >
+                    Request Early Access
+                  </a>
+                  <a
+                    href="#platform"
+                    className="inline-flex items-center gap-2 rounded-xl border border-[#3d5474]/50 px-8 py-3.5 text-sm font-semibold text-[#bab2b5] hover:border-[#69b2cd]/50 hover:text-white transition"
+                  >
+                    Explore Platform →
+                  </a>
+                </div>
+              </div>
+
+              {/* Hero image */}
+              <div className="relative">
+                <div className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/40 p-2 glow-sky">
+                  <img src={IMG.hero} alt="Atlas UX Agent Network" className="w-full rounded-xl" loading="eager" />
+                </div>
+                {/* Floating badges */}
+                <div className="absolute -top-4 -right-4 rounded-xl border border-[#3d5474]/40 bg-[#0e1626]/90 backdrop-blur px-4 py-2 text-xs hidden lg:block">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 pulse-dot" />
+                    <span className="font-semibold text-white">All Agents Online</span>
+                  </div>
+                  <div className="mt-1 text-[#3d5474]">29/29 Active</div>
+                </div>
+                <div className="absolute -bottom-4 -left-4 rounded-xl border border-[#3d5474]/40 bg-[#0e1626]/90 backdrop-blur px-4 py-2 text-xs hidden lg:block">
+                  <div className="font-semibold text-white">Last Audit Entry</div>
+                  <div className="mt-1 text-[#3d5474]">2026-02-28 &middot; 847 events logged</div>
+                  <div className="mt-0.5 text-[#3d5474]">Immutable &middot; Hash-chained</div>
+                </div>
               </div>
             </div>
 
-            <p className="mt-3 text-sm text-white/60">
-              60-second overview • atlasux.cloud
+            {/* Scroll indicator */}
+            <div className="mt-16 text-center text-xs text-[#3d5474] tracking-widest uppercase">Scroll</div>
+          </div>
+        </section>
+
+        <Divider />
+
+        {/* ── 3. Platform Overview ── */}
+        <section id="platform" className="bg-[#0a0f1e] py-24">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center">
+              <SectionBadge>Platform</SectionBadge>
+              <h2 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
+                Everything Your Business Needs,<br />
+                <span className="gradient-text">Orchestrated by AI.</span>
+              </h2>
+            </div>
+
+            {/* Feature grid */}
+            <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              {PLATFORM_FEATURES.map((f, i) => (
+                <div
+                  key={f.title}
+                  className={`p-6 rounded-2xl border card-hover ${
+                    i === 0
+                      ? "border-[#69b2cd]/30 bg-[#0e1626]/80 glow-sky sm:col-span-2 lg:col-span-1"
+                      : "border-[#3d5474]/30 bg-[#0e1626]/60 hover:border-[#3d5474]/60"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{f.emoji}</span>
+                    <div>
+                      <div className="font-semibold text-white text-sm">{f.title}</div>
+                      {f.badge && (
+                        <span className="mt-1 inline-block rounded-full bg-[#3e70a5]/20 px-2 py-0.5 text-[10px] font-medium text-[#69b2cd]">
+                          {f.badge}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs text-[#bab2b5] leading-relaxed">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Screenshots */}
+            <div className="mt-12 grid gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/40 p-2 overflow-hidden">
+                <img src={IMG.chat} alt="Atlas UX Chat Interface" className="w-full rounded-xl" loading="lazy" />
+              </div>
+              <div className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/40 p-2 overflow-hidden">
+                <img src={IMG.workflows} alt="Atlas UX Workflows" className="w-full rounded-xl" loading="lazy" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <Divider />
+
+        {/* ── 4. Agent Roster ── */}
+        <section id="agents" className="bg-[#080c18] py-24">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center">
+              <SectionBadge>Agents</SectionBadge>
+              <h2 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
+                30 AI Agents. <span className="gradient-text">One Chain of Command.</span>
+              </h2>
+            </div>
+
+            {/* Tier 1 — Atlas */}
+            <div className="mt-16 flex justify-center">
+              <div className="w-full max-w-md rounded-2xl border border-[#69b2cd]/30 bg-[#0e1626]/80 p-6 text-center glow-sky">
+                <div className="text-4xl">{TIER_1[0].emoji}</div>
+                <div className="mt-3 text-xl font-bold">{TIER_1[0].name}</div>
+                <div className="text-sm text-[#69b2cd]">{TIER_1[0].role}</div>
+                <p className="mt-3 text-xs text-[#bab2b5] leading-relaxed">
+                  The governing intelligence. Routes all tasks, enforces execution rules,
+                  approves high-stakes decisions, and maintains the chain of command across all 29 agents.
+                </p>
+              </div>
+            </div>
+
+            <Connector />
+
+            {/* Tier 2 — Executive Board */}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {TIER_2.map((a) => (
+                <div key={a.name} className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/60 p-4 text-center card-hover hover:border-[#3d5474]/60">
+                  <div className="text-2xl">{a.emoji}</div>
+                  <div className="mt-2 text-sm font-semibold">{a.name}</div>
+                  <div className="text-xs text-[#3d5474]">{a.role}</div>
+                </div>
+              ))}
+            </div>
+
+            <Connector />
+
+            {/* Tier 3 — Team Binky */}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {TIER_3.map((a) => (
+                <div key={a.name} className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/60 p-4 text-center card-hover hover:border-[#3d5474]/60">
+                  <div className="text-2xl">{a.emoji}</div>
+                  <div className="mt-2 text-sm font-semibold">{a.name}</div>
+                  <div className="text-xs text-[#3d5474]">{a.role}</div>
+                </div>
+              ))}
+            </div>
+
+            <Connector />
+
+            {/* Tier 4 — Specialists */}
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+              {TIER_4.map((a) => (
+                <div key={a.name} className="rounded-xl border border-[#3d5474]/20 bg-[#0e1626]/40 px-3 py-2.5 flex items-center gap-2 card-hover hover:border-[#3d5474]/50">
+                  <span className="text-lg">{a.emoji}</span>
+                  <div>
+                    <div className="text-xs font-semibold">{a.name}</div>
+                    <div className="text-[10px] text-[#3d5474]">{a.role}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-8 text-center text-xs text-[#3d5474]">
+              All agents operate under Atlas governance rules &middot; Every action requires intent logging &middot; No silent API calls
             </p>
           </div>
         </section>
 
-        {/* Dev updates */}
+        <Divider />
+
+        {/* ── 5. Integrations ── */}
+        <section id="integrations" className="bg-[#0a0f1e] py-24">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center">
+              <SectionBadge>Integrations</SectionBadge>
+              <h2 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
+                Wired to <span className="gradient-text">Your Entire Stack.</span>
+              </h2>
+            </div>
+
+            {/* Top icon bar */}
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
+              {["📞 Twilio","🟦 Microsoft","✈️ Telegram","💬 SMS","🤖 OpenAI","🗄️ Supabase","🔍 Google","📘 Facebook"].map((item) => {
+                const [emoji, name] = [item.slice(0, 2), item.slice(3)];
+                return (
+                  <div key={name} className="flex items-center gap-2 rounded-full border border-[#3d5474]/30 bg-[#0e1626]/60 px-4 py-2 text-xs text-[#bab2b5]">
+                    <span>{emoji}</span> {name}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Category cards */}
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {INTEGRATION_CATEGORIES.map((cat) => (
+                <div key={cat.title} className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/60 p-5 card-hover hover:border-[#3d5474]/60">
+                  <h3 className="text-sm font-semibold text-white">{cat.title}</h3>
+                  <div className="mt-3 space-y-2">
+                    {cat.items.map((item) => (
+                      <div key={item.name} className="flex items-center gap-3 rounded-lg bg-[#0a0f1e]/60 px-3 py-2">
+                        <span className="text-lg">{item.emoji}</span>
+                        <div>
+                          <div className="text-xs font-medium text-white">{item.name}</div>
+                          <div className="text-[10px] text-[#3d5474]">{item.sub}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Screenshot */}
+            <div className="mt-12 rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/40 p-2 overflow-hidden">
+              <img src={IMG.integrations} alt="Atlas UX Integrations Panel" className="w-full rounded-xl" loading="lazy" />
+            </div>
+          </div>
+        </section>
+
+        <Divider />
+
+        {/* ── 6. Knowledge & Chat ── */}
+        <section id="knowledge" className="bg-[#080c18] py-24">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center">
+              <SectionBadge>Knowledge Base</SectionBadge>
+              <h2 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
+                550 Documents. <span className="gradient-text">Instant Retrieval.</span>
+              </h2>
+            </div>
+
+            {/* Top stats */}
+            <div className="mt-10 grid gap-4 sm:grid-cols-3 max-w-2xl mx-auto">
+              {[
+                ["550", "Documents", "Indexed & Searchable"],
+                ["<50ms", "Retrieval", "Average Query Time"],
+                ["100%", "Logged", "All Agent Messages"],
+              ].map(([val, label, sub]) => (
+                <div key={label} className="rounded-xl border border-[#3d5474]/30 bg-[#0e1626]/60 p-4 text-center">
+                  <div className="text-2xl font-bold text-[#69b2cd]">{val}</div>
+                  <div className="text-xs font-medium text-white mt-1">{label}</div>
+                  <div className="text-[10px] text-[#3d5474]">{sub}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-12 grid gap-8 lg:grid-cols-2">
+              {/* Knowledge feature cards */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                {KNOWLEDGE_FEATURES.map((f) => (
+                  <div key={f.title} className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/60 p-4 card-hover hover:border-[#3d5474]/60">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{f.emoji}</span>
+                      <span className="text-xs font-semibold text-white">{f.title}</span>
+                    </div>
+                    <p className="mt-2 text-[11px] text-[#bab2b5] leading-relaxed">{f.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Inter-agent chat mockup */}
+              <div className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/60 overflow-hidden">
+                <div className="flex items-center justify-between border-b border-[#3d5474]/20 px-5 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 pulse-dot" />
+                    <span className="text-sm font-semibold text-white">Inter-Agent Chat</span>
+                  </div>
+                  <span className="text-xs text-[#3d5474]">29 agents online</span>
+                </div>
+                <div className="p-4 space-y-3">
+                  {CHAT_MESSAGES.map((m, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className={`h-7 w-7 rounded-full ${m.color} flex items-center justify-center text-xs font-bold text-white shrink-0`}>
+                        {m.from}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xs font-semibold text-white">{m.name}</span>
+                          <span className="text-[10px] text-[#3d5474]">→ {m.to}</span>
+                          <span className="text-[10px] text-[#3d5474] ml-auto">{m.time}</span>
+                        </div>
+                        <p className="mt-1 text-xs text-[#bab2b5]">{m.msg}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <Divider />
+
+        {/* ── 7. Audit & Traceability ── */}
+        <section id="audit" className="bg-[#0a0f1e] py-24">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center">
+              <SectionBadge>Audit &amp; Traceability</SectionBadge>
+              <h2 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
+                Every Action. <span className="gradient-text">Every Receipt.</span>
+              </h2>
+            </div>
+
+            {/* Live audit log table */}
+            <div className="mt-12 rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/60 overflow-hidden">
+              {/* Header bar */}
+              <div className="flex items-center justify-between border-b border-[#3d5474]/20 px-5 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 pulse-dot" />
+                  <span className="text-sm font-semibold text-white">Live Audit Log</span>
+                  <span className="text-xs text-[#3d5474]">Immutable &middot; Hash-Chained</span>
+                </div>
+                <span className="text-xs text-[#3d5474] font-mono">Chain: 7f3a9b2c...d4e1f8a0</span>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-[#3d5474]/20 text-[#3d5474]">
+                      <th className="px-4 py-2.5 text-left font-medium">Audit ID</th>
+                      <th className="px-4 py-2.5 text-left font-medium">Agent</th>
+                      <th className="px-4 py-2.5 text-left font-medium">Action</th>
+                      <th className="px-4 py-2.5 text-left font-medium">Target</th>
+                      <th className="px-4 py-2.5 text-left font-medium">Status</th>
+                      <th className="px-4 py-2.5 text-left font-medium">Time</th>
+                      <th className="px-4 py-2.5 text-right font-medium">Spend</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {AUDIT_LOG_ROWS.map((row) => (
+                      <tr key={row.id} className="border-b border-[#3d5474]/10 hover:bg-[#3d5474]/5">
+                        <td className="px-4 py-2.5 font-mono text-[#69b2cd]">{row.id}</td>
+                        <td className="px-4 py-2.5 text-white font-medium">{row.agent}</td>
+                        <td className="px-4 py-2.5 text-[#bab2b5]">{row.action}</td>
+                        <td className="px-4 py-2.5 text-[#bab2b5]">{row.target}</td>
+                        <td className="px-4 py-2.5">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            row.status === "OK" ? "bg-emerald-500/15 text-emerald-400"
+                            : row.status === "PASS" ? "bg-blue-500/15 text-blue-400"
+                            : "bg-purple-500/15 text-purple-400"
+                          }`}>
+                            {row.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 font-mono text-[#3d5474]">{row.time}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-[#bab2b5]">{row.spend}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between border-t border-[#3d5474]/20 px-5 py-2.5 text-[10px] text-[#3d5474]">
+                <span>847 events today &middot; 0 anomalies detected</span>
+                <span>Total spend: $0.006 &middot; Budget: $50.00/day</span>
+              </div>
+            </div>
+
+            {/* Audit feature cards */}
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {AUDIT_FEATURES.map((f) => (
+                <div key={f.title} className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/60 p-5 card-hover hover:border-[#3d5474]/60">
+                  <span className="text-2xl">{f.emoji}</span>
+                  <h3 className="mt-3 text-sm font-semibold text-white">{f.title}</h3>
+                  <p className="mt-2 text-xs text-[#bab2b5] leading-relaxed">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Screenshots */}
+            <div className="mt-12 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/40 p-2 overflow-hidden">
+                <img src={IMG.settings} alt="Atlas UX Settings" className="w-full rounded-xl" loading="lazy" />
+              </div>
+              <div className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/40 p-2 overflow-hidden">
+                <img src={IMG.permissions} alt="Atlas UX Permissions" className="w-full rounded-xl" loading="lazy" />
+              </div>
+              <div className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/40 p-2 overflow-hidden">
+                <img src={IMG.mobile} alt="Atlas UX Mobile" className="w-full rounded-xl" loading="lazy" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <Divider />
+
+        {/* ── 8. Dev Updates (PRESERVED VERBATIM) ── */}
+        <section className="bg-[#080c18] py-24">
+          <div className="max-w-7xl mx-auto px-6">
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
@@ -305,6 +785,7 @@ export default function Landing() {
             <li>[Claude Code] Nightly Agent Memory Log (WF-119) — each agent logs its daily activity to memory at 23:00 UTC; queries audit_log, LLM summarizes into first-person memory entry, stores in agent_memory table for future recall</li>
             <li>[Claude Code] Agent DB seeding — seedAgents.ts script syncs all 31 agents from registry to agents + agent_inboxes + atlas_agents tables; cleans up stale atlas_ceo duplicate; npm run seed:agents</li>
             <li>[Claude Code] Security hardening Phase 2 — AES-256-GCM encryption at rest for all OAuth tokens (token_vault + integrations tables, iv:tag:ciphertext hex format, backward-compatible plaintext fallback during migration); centralized tokenStore layer with automatic encrypt-on-write/decrypt-on-read; token refresh lifecycle for all 7 OAuth providers (Google, X, Reddit, LinkedIn, Pinterest, Meta, Microsoft) with 10-min expiry window; provider-side token revocation on disconnect (best-effort calls to Google/X/Reddit/Meta revocation endpoints, then clears both storage layers); VirusTotal file scanning before uploads (SHA-256 hash check first, upload for analysis if unknown, fails open on errors — MIME whitelist remains primary defense); PostgreSQL Row-Level Security enabled on 9 tenant-scoped tables (integrations, assets, jobs, distribution_events, audit_log, kb_documents, decision_memos, crm_contacts, crm_companies) with withTenant() transaction helper for opt-in enforcement; UUID validation on tenantId to prevent SQL injection via RLS session variable; one-time migration script for encrypting existing plaintext tokens</li>
+            <li>[Claude Code] Landing page redesign — full Sintra design system port with 9 sections: Hero (badge pill, gradient text, stat cards, CTAs, floating badges), Platform Overview (10 feature cards + 2 screenshots), Agent Roster (4-tier hierarchy with 30 agents + connectors), Integrations (8-icon bar + 6 category cards), Knowledge &amp; Chat (6 feature cards + inter-agent chat mockup with 5 messages), Audit &amp; Traceability (live audit log table + 8 feature cards + 3 screenshots), Dev Updates (preserved verbatim), Early Access CTA (form with 5 fields + selling points + platform badges); custom CSS classes (gradient-text, text-glow, glow-sky, glow-blue, grid-bg, pulse-dot, card-hover); all images from Sintra CDN; dark navy color system with alternating section backgrounds</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
@@ -322,51 +803,166 @@ export default function Landing() {
             </a>
           </div>
         </section>
-
-        {/* Compare CTA */}
-        <section className="mt-10 rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent p-8 text-center">
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            One platform. <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">30+ AI agents.</span> Fraction of the cost.
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-sm text-white/60">
-            Atlas UX replaces Hootsuite, Sprout Social, HubSpot, Monday, Sintra, Synthesia, and more — all in one platform starting at $34.95/mo.
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-4">
-            <Link
-              to="/compare"
-              className="inline-flex items-center gap-2 rounded-2xl bg-cyan-500 px-8 py-3.5 text-sm font-semibold !text-slate-950 hover:bg-cyan-400"
-            >
-              Compare Us vs 25+ Competitors
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            </Link>
-            <Link
-              to="/store"
-              className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white hover:bg-white/10"
-            >
-              View Pricing
-            </Link>
           </div>
         </section>
 
-        {/* Builders */}
-        <section id="builders" className="mt-10 rounded-3xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-xl font-semibold">Builders / co-founders</h2>
-          <p className="mt-3 text-sm text-white/70">
-            Looking for a technical co-founder to build a desktop-first,
-            local-first automation platform long-term — equity, ownership,
-            real execution.
-          </p>
+        <Divider />
 
-          <div className="mt-5">
-            <a
-              href="mailto:billy@deadapp.info?subject=ATLAS%20UX%20-%20Builder%20Intro"
-              className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-semibold !text-black hover:opacity-90"
-            >
-              Email Billy
-            </a>
+        {/* ── 9. Early Access / CTA ── */}
+        <section id="contact" className="bg-[#080c18] py-24">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <SectionBadge>Early Access</SectionBadge>
+              <h2 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
+                Ready to Deploy<br />
+                <span className="gradient-text">Your AI Workforce?</span>
+              </h2>
+              <p className="mt-4 text-[#bab2b5] max-w-2xl mx-auto">
+                Atlas UX is in active development. Request early access and be among the first
+                businesses to run a fully governed AI employee platform.
+              </p>
+            </div>
+
+            <div className="grid gap-12 lg:grid-cols-2">
+              {/* Left — selling points */}
+              <div className="space-y-6">
+                {[
+                  { emoji: "🖥️", title: "Desktop-First, Local-First", desc: "Your automation runs on your machine. Your data never leaves your control." },
+                  { emoji: "🤖", title: "30 Agents Ready to Deploy", desc: "1 Orchestrator + 29 specialized agents covering every business function." },
+                  { emoji: "🔐", title: "Audit-Ready from Day One", desc: "Hash-chained logs, intent tracking, spend accountability — built in, not bolted on." },
+                  { emoji: "📡", title: "Wired to Your Stack", desc: "Twilio, Microsoft Office, Telegram, SMS, Google, and 40+ more integrations." },
+                ].map((p) => (
+                  <div key={p.title} className="flex gap-4">
+                    <span className="text-2xl shrink-0">{p.emoji}</span>
+                    <div>
+                      <div className="font-semibold text-white text-sm">{p.title}</div>
+                      <div className="mt-1 text-xs text-[#bab2b5]">{p.desc}</div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Available on */}
+                <div className="mt-8 rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/60 p-5">
+                  <div className="text-xs font-semibold text-[#3d5474] uppercase tracking-wider mb-3">Available On</div>
+                  <div className="space-y-2">
+                    {[
+                      ["🍎", "macOS", "Apple Silicon & Intel"],
+                      ["🐧", "Linux", ".AppImage"],
+                      ["🪟", "Windows", "Coming Soon"],
+                    ].map(([emoji, os, note]) => (
+                      <div key={os} className="flex items-center gap-3 text-xs">
+                        <span>{emoji}</span>
+                        <span className="font-medium text-white">{os}</span>
+                        <span className="text-[#3d5474]">— {note}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Compare CTA */}
+                <div className="rounded-2xl border border-[#69b2cd]/20 bg-gradient-to-br from-[#69b2cd]/10 via-[#3e70a5]/5 to-transparent p-6 text-center">
+                  <h3 className="text-lg font-bold">
+                    One platform. <span className="gradient-text">30+ AI agents.</span> Fraction of the cost.
+                  </h3>
+                  <p className="mt-2 text-xs text-[#bab2b5]">
+                    Atlas UX replaces Hootsuite, Sprout Social, HubSpot, Monday, Sintra, Synthesia, and more — all starting at $34.95/mo.
+                  </p>
+                  <div className="mt-4 flex flex-wrap justify-center gap-3">
+                    <Link to="/compare" className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#3e70a5] to-[#69b2cd] px-6 py-2.5 text-xs font-semibold text-white">
+                      Compare Us vs 25+ Competitors →
+                    </Link>
+                    <Link to="/store" className="inline-flex items-center gap-2 rounded-xl border border-[#3d5474]/50 px-6 py-2.5 text-xs font-semibold text-[#bab2b5]">
+                      View Pricing
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right — form */}
+              <div className="rounded-2xl border border-[#3d5474]/30 bg-[#0e1626]/60 p-8">
+                <h3 className="text-lg font-semibold text-white">Request Early Access</h3>
+                <form
+                  className="mt-6 space-y-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    window.location.href = `mailto:billy@deadapp.info?subject=ATLAS%20UX%20Early%20Access%20—%20${encodeURIComponent(formData.name)}&body=${encodeURIComponent(
+                      `Name: ${formData.name}\nEmail: ${formData.email}\nBusiness: ${formData.business}\nUse Case: ${formData.usecase}\n\n${formData.message}`
+                    )}`;
+                  }}
+                >
+                  <div>
+                    <label className="block text-xs font-medium text-[#bab2b5] mb-1.5">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Billy Whited"
+                      value={formData.name}
+                      onChange={(e) => setFormData((d) => ({ ...d, name: e.target.value }))}
+                      className="w-full rounded-xl border border-[#3d5474]/30 bg-[#0a0f1e] px-4 py-2.5 text-sm text-white placeholder-[#3d5474] focus:border-[#69b2cd]/50 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#bab2b5] mb-1.5">Email *</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="you@company.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData((d) => ({ ...d, email: e.target.value }))}
+                      className="w-full rounded-xl border border-[#3d5474]/30 bg-[#0a0f1e] px-4 py-2.5 text-sm text-white placeholder-[#3d5474] focus:border-[#69b2cd]/50 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#bab2b5] mb-1.5">Business Name</label>
+                    <input
+                      type="text"
+                      placeholder="Your company name"
+                      value={formData.business}
+                      onChange={(e) => setFormData((d) => ({ ...d, business: e.target.value }))}
+                      className="w-full rounded-xl border border-[#3d5474]/30 bg-[#0a0f1e] px-4 py-2.5 text-sm text-white placeholder-[#3d5474] focus:border-[#69b2cd]/50 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#bab2b5] mb-1.5">Primary Use Case</label>
+                    <select
+                      value={formData.usecase}
+                      onChange={(e) => setFormData((d) => ({ ...d, usecase: e.target.value }))}
+                      className="w-full rounded-xl border border-[#3d5474]/30 bg-[#0a0f1e] px-4 py-2.5 text-sm text-white focus:border-[#69b2cd]/50 focus:outline-none"
+                    >
+                      <option value="">Select your primary use case</option>
+                      <option value="social-media">Social Media Automation</option>
+                      <option value="crm">CRM &amp; Customer Management</option>
+                      <option value="analytics">Analytics &amp; Reporting</option>
+                      <option value="workflows">Workflow Automation</option>
+                      <option value="communications">Communications (Twilio/SMS/Telegram)</option>
+                      <option value="audit">Audit &amp; Compliance</option>
+                      <option value="all">Full Platform</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#bab2b5] mb-1.5">Tell Us More</label>
+                    <textarea
+                      rows={4}
+                      placeholder="Describe your business and what you're looking to automate..."
+                      value={formData.message}
+                      onChange={(e) => setFormData((d) => ({ ...d, message: e.target.value }))}
+                      className="w-full rounded-xl border border-[#3d5474]/30 bg-[#0a0f1e] px-4 py-2.5 text-sm text-white placeholder-[#3d5474] focus:border-[#69b2cd]/50 focus:outline-none resize-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl bg-gradient-to-r from-[#3e70a5] to-[#69b2cd] px-8 py-3 text-sm font-semibold text-white shadow-lg glow-blue hover:opacity-90 transition"
+                  >
+                    Request Early Access →
+                  </button>
+                  <p className="text-[10px] text-[#3d5474] text-center">
+                    Your request is logged and assigned to our team. We respond within 24 hours.
+                  </p>
+                </form>
+              </div>
+            </div>
           </div>
         </section>
-
 
       </main>
     </div>

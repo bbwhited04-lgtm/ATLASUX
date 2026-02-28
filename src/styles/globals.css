@@ -80,3 +80,39 @@
     background: #f87171;
   }
 }
+
+/* Sintra-style design utilities */
+.gradient-text {
+  background: linear-gradient(to right, #3e70a5, #69b2cd);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-glow {
+  filter: drop-shadow(0 0 20px rgba(105, 178, 205, 0.3));
+}
+.glow-sky {
+  box-shadow: 0 0 40px rgba(105, 178, 205, 0.08), 0 0 80px rgba(105, 178, 205, 0.04);
+}
+.glow-blue {
+  box-shadow: 0 0 20px rgba(62, 112, 165, 0.15);
+}
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(61, 84, 116, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(61, 84, 116, 0.1) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.card-hover {
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+}
