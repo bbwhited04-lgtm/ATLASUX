@@ -61,6 +61,10 @@ import { outlookRoutes } from "./routes/outlookRoutes.js";
 import { calendarRoutes } from "./routes/calendarRoutes.js";
 import { linkedinRoutes } from "./routes/linkedinRoutes.js";
 import { alignableRoutes } from "./routes/alignableRoutes.js";
+import { xRoutes } from "./routes/xRoutes.js";
+import { tiktokRoutes } from "./routes/tiktokRoutes.js";
+import { tumblrRoutes } from "./routes/tumblrRoutes.js";
+import { pinterestRoutes } from "./routes/pinterestRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -268,6 +272,18 @@ await app.register(linkedinRoutes, { prefix: "/v1/linkedin" });
 
 // Alignable — inbound webhook for Zapier/Make/n8n triggers
 await app.register(alignableRoutes, { prefix: "/v1/alignable" });
+
+// X (Twitter) — Account Activity API webhook
+await app.register(xRoutes, { prefix: "/v1/x" });
+
+// TikTok — webhook for video/engagement events
+await app.register(tiktokRoutes, { prefix: "/v1/tiktok" });
+
+// Tumblr — inbound webhook for Zapier/Make/n8n triggers
+await app.register(tumblrRoutes, { prefix: "/v1/tumblr" });
+
+// Pinterest — inbound webhook for Zapier/Make/n8n triggers
+await app.register(pinterestRoutes, { prefix: "/v1/pinterest" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
