@@ -137,7 +137,7 @@ export default function Landing() {
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Feb 27, 2026</span>
+            <span className="text-sm text-white/60">Last updated: Feb 28, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
             <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
@@ -293,6 +293,12 @@ export default function Landing() {
             <li>[Claude Code] Removed legacy "Pluto" branding — renamed all user-facing references from old v1 naming (Pluto Job Runner, Pluto Jobs, Track Pluto jobs) to current Atlas branding (Job Runner, Jobs, Job Runner Task Execution) across Dashboard, RootLayout, JobRunner, MobileCompanionSetup, and OnboardingWizard</li>
             <li>[Claude Code] Fixed FloatingAtlas chat — clicking chat icon caused the 3D avatar to disappear off-screen; container was using horizontal flex layout pushing avatar and chat panel side-by-side; changed to vertical column stack so chat panel renders above the avatar</li>
             <li>[Claude Code] Fixed "failed to fetch" on desktop — Electron builds had localhost:8787 baked in as API_BASE from .env at build time; added Electron user-agent detection in api.ts to automatically use the production Render backend (atlasux-backend.onrender.com) when running in desktop mode with a localhost URL configured</li>
+            <li>[Claude Code] Full SEO/GEO optimization — react-helmet-async on all 11 public pages with unique titles, 150-char descriptions, Open Graph + Twitter Card meta tags, canonical URLs, and JSON-LD structured data (Organization, SoftwareApplication, BlogPosting, FAQ, Breadcrumb, WebPage schemas); static OG fallbacks in index.html for crawlers that don't execute JS; robots.txt with AI crawler permissions (GPTBot, ClaudeBot, Google-Extended); sitemap.xml for all public routes</li>
+            <li>[Claude Code] Public footer with social profiles — new PublicLayout wraps all public routes with shared footer; 3-column layout with nav links, social platform buttons (37 profiles across 15 platforms), quick links; dialog picker for multi-profile platforms; react-icons integration; Organization schema sameAs array updated with all social URLs</li>
+            <li>[Claude Code] Social Monitoring wired to live backend — overview, listening, and analytics tabs now fetch real data from /v1/listening/mentions and /v1/listening/sources; tracked sources list with platform badges; recent mentions feed with channel tags and external links; mentions-by-platform analytics breakdown; listening state persists across tab switches via sessionStorage; refresh button; removed all demo/placeholder labels</li>
+            <li>[Claude Code] Lucy (Agent #31) — professional secretary &amp; receptionist agent; full M365 access (all 13 tools); reports to Atlas; 7 workflows (WF-112 through WF-118) for call triage, appointment booking, voicemail transcription, lead capture, chat widget; email lucy@deadapp.info</li>
+            <li>[Claude Code] Nightly Agent Memory Log (WF-119) — each agent logs its daily activity to memory at 23:00 UTC; queries audit_log, LLM summarizes into first-person memory entry, stores in agent_memory table for future recall</li>
+            <li>[Claude Code] Agent DB seeding — seedAgents.ts script syncs all 31 agents from registry to agents + agent_inboxes + atlas_agents tables; cleans up stale atlas_ceo duplicate; npm run seed:agents</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

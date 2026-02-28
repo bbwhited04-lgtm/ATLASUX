@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useActiveTenant } from "@/lib/activeTenant";
 import { API_BASE } from "@/lib/api";
@@ -8,6 +8,9 @@ import {
   Activity,
   BarChart3,
   MessageCircle,
+  ExternalLink,
+  Globe,
+  RefreshCw,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,50 +28,121 @@ import {
 } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
+type Mention = {
+  id: string;
+  channel: string;
+  url: string | null;
+  meta: any;
+  occurredAt: string;
+};
+
+type Source = {
+  id: string;
+  name: string;
+  url: string;
+  platform: string;
+  createdAt: string;
+};
+
+const hdrs = (tid: string) => ({ "x-tenant-id": tid, "Content-Type": "application/json" });
+
 export function SocialMonitoring() {
   const { tenantId } = useActiveTenant();
   const [activeTab, setActiveTab] = useState("overview");
-  const [isListening, setIsListening] = useState(false);
+  const [isListening, setIsListening] = useState(() => {
+    try { return sessionStorage.getItem("listening_active") === "true"; } catch { return false; }
+  });
   const [alertsOpen, setAlertsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Demo / placeholder stats (safe while backend is offline)
+  // Live data
+  const [mentions, setMentions] = useState<Mention[]>([]);
+  const [mentionTotal, setMentionTotal] = useState(0);
+  const [sources, setSources] = useState<Source[]>([]);
+
   const stats = {
     alerts: 0,
-    sentiment: 0,
-    mentions: 0,
-    sources: 0,
+    sentiment: mentionTotal > 0 ? "—" : "0%",
+    mentions: mentionTotal,
+    sources: sources.length,
+  };
+
+  // Fetch mentions from backend
+  const fetchMentions = useCallback(async () => {
+    if (!tenantId) return;
+    try {
+      const r = await fetch(
+        `${API_BASE}/v1/listening/mentions?tenantId=${encodeURIComponent(tenantId)}&limit=50`,
+        { headers: hdrs(tenantId) }
+      );
+      const j = await r.json();
+      if (j.ok) {
+        setMentions(j.mentions ?? []);
+        setMentionTotal(j.total ?? 0);
+      }
+    } catch { /* silent */ }
+  }, [tenantId]);
+
+  // Fetch sources from backend
+  const fetchSources = useCallback(async () => {
+    if (!tenantId) return;
+    try {
+      const r = await fetch(
+        `${API_BASE}/v1/listening/sources?tenantId=${encodeURIComponent(tenantId)}`,
+        { headers: hdrs(tenantId) }
+      );
+      const j = await r.json();
+      if (j.ok) setSources(j.sources ?? []);
+    } catch { /* silent */ }
+  }, [tenantId]);
+
+  // Persist listening state across tab switches
+  useEffect(() => {
+    try { sessionStorage.setItem("listening_active", String(isListening)); } catch { /* noop */ }
+  }, [isListening]);
+
+  // Load data on mount and when tenantId changes
+  useEffect(() => {
+    fetchMentions();
+    fetchSources();
+  }, [fetchMentions, fetchSources]);
+
+  // Refresh all data
+  const refresh = async () => {
+    setLoading(true);
+    await Promise.all([fetchMentions(), fetchSources()]);
+    setLoading(false);
   };
 
   const toggleListening = async () => {
-  // If no business selected, keep it safe and clear.
-  if (!tenantId) {
-    toast.error("Select a business in Business Manager first.");
-    return;
-  }
-  try {
-    if (!isListening) {
-      const r = await fetch(`${API_BASE}/v1/listening/start?tenantId=${encodeURIComponent(tenantId)}`, {
-        method: "POST",
-        headers: tenantId ? { "x-tenant-id": tenantId } : {},
-      });
-      const j = await r.json();
-      if (j?.disconnectedProviders?.length) {
-        toast.warning(`Listening queued — these providers are not connected: ${j.disconnectedProviders.join(", ")}. Go to Settings → Integrations.`);
-      } else {
-        toast.success("Listening is queued.");
-      }
-    } else {
-      // stop is UI-only for now (worker stop will be added later)
+    if (!tenantId) {
+      toast.error("Select a business in Business Manager first.");
+      return;
     }
-    setIsListening((prev) => !prev);
-  } catch {
-    toast.error("Failed to start listening.");
-  }
-};
-
-  const toggleAlerts = () => {
-    setAlertsOpen((prev) => !prev);
+    try {
+      if (!isListening) {
+        const r = await fetch(
+          `${API_BASE}/v1/listening/start?tenantId=${encodeURIComponent(tenantId)}`,
+          { method: "POST", headers: hdrs(tenantId) }
+        );
+        const j = await r.json();
+        if (j?.disconnectedProviders?.length) {
+          toast.warning(
+            `Listening queued — these providers are not connected: ${j.disconnectedProviders.join(", ")}. Go to Settings → Integrations.`
+          );
+        } else {
+          toast.success("Listening started.");
+        }
+        // Refresh data after starting
+        setTimeout(refresh, 2000);
+      }
+      setIsListening((prev) => !prev);
+    } catch {
+      toast.error("Failed to start listening.");
+    }
   };
+
+  const toggleAlerts = () => setAlertsOpen((prev) => !prev);
 
   return (
     <div className="space-y-6">
@@ -84,6 +158,17 @@ export function SocialMonitoring() {
         </div>
 
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="border-cyan-500/20"
+            onClick={refresh}
+            disabled={loading}
+            title="Refresh"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+
           <Button
             variant="outline"
             className="border-cyan-500/20"
@@ -117,8 +202,8 @@ export function SocialMonitoring() {
             </Badge>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            No alerts yet. Once the listening service is live, alerts will
-            appear here for sentiment drops, spikes, or keyword triggers.
+            No alerts yet. Alerts will appear here for sentiment drops,
+            volume spikes, or keyword triggers.
           </CardContent>
         </Card>
       )}
@@ -143,10 +228,10 @@ export function SocialMonitoring() {
         {/* Overview */}
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <MetricCard title="Alerts" value={stats.alerts} />
-            <MetricCard title="Sentiment" value={`${stats.sentiment}%`} />
-            <MetricCard title="Mentions" value={stats.mentions} />
-            <MetricCard title="Sources" value={stats.sources} />
+            <MetricCard title="Alerts" value={stats.alerts} sub="No active alerts" />
+            <MetricCard title="Sentiment" value={stats.sentiment} sub={mentionTotal > 0 ? "Awaiting analysis" : "No data yet"} />
+            <MetricCard title="Mentions" value={stats.mentions} sub={mentionTotal > 0 ? "From all platforms" : "Waiting for data"} />
+            <MetricCard title="Sources" value={stats.sources} sub={sources.length > 0 ? "Profiles tracked" : "Import sources below"} />
           </div>
 
           <Card className="border-cyan-500/20">
@@ -154,63 +239,174 @@ export function SocialMonitoring() {
               <CardTitle className="text-base">Status</CardTitle>
               <Badge
                 variant="outline"
-                className={
-                  isListening
-                    ? "border-red-500/40"
-                    : "border-cyan-500/20"
-                }
+                className={isListening ? "border-green-500/40 text-green-400" : "border-cyan-500/20"}
               >
-                {isListening
-                  ? "Listening: ON (demo)"
-                  : "Listening: OFF"}
+                {isListening ? "Listening: ON" : "Listening: OFF"}
               </Badge>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              Listening is rolling out in waves. Some workspaces may see limited functionality during onboarding.
+              {isListening
+                ? `Monitoring ${sources.length} sources across ${new Set(sources.map(s => s.platform)).size} platforms.`
+                : "Press Start Listening to begin monitoring your social profiles."}
             </CardContent>
           </Card>
+
+          {/* Recent Mentions */}
+          {mentions.length > 0 && (
+            <Card className="border-cyan-500/20">
+              <CardHeader>
+                <CardTitle className="text-base">Recent Mentions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {mentions.slice(0, 10).map((m) => (
+                  <div key={m.id} className="flex items-start justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] p-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="border-cyan-500/20 text-xs">
+                          {m.channel}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(m.occurredAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="mt-1 truncate text-sm text-muted-foreground">
+                        {m.meta?.text || m.meta?.title || m.url || "Mention detected"}
+                      </p>
+                    </div>
+                    {m.url && (
+                      <a href={m.url} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Listening */}
-        <TabsContent value="listening">
+        <TabsContent value="listening" className="space-y-4">
           <Card className="border-cyan-500/20">
             <CardHeader>
-              <CardTitle className="text-base">
-                Listening Controls
-              </CardTitle>
+              <CardTitle className="text-base">Listening Controls</CardTitle>
             </CardHeader>
             <CardContent className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="font-medium">Stream Status</p>
                 <p className="text-sm text-muted-foreground">
                   {isListening
-                    ? "Listening is active."
+                    ? `Listening is active — tracking ${sources.length} sources.`
                     : "Listening is not active for this workspace."}
                 </p>
               </div>
               <Button
                 onClick={toggleListening}
-                className={ isListening ? "bg-red-500 hover:bg-red-400" : "bg-cyan-500 hover:bg-cyan-400" }>
+                className={isListening ? "bg-red-500 hover:bg-red-400" : "bg-cyan-500 hover:bg-cyan-400"}
+              >
                 <Radio className="w-4 h-4 mr-2" />
                 {isListening ? "Stop" : "Start"}
               </Button>
             </CardContent>
           </Card>
+
+          {/* Sources List */}
+          <Card className="border-cyan-500/20">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Tracked Sources</CardTitle>
+              <Badge variant="outline" className="border-cyan-500/20">
+                {sources.length} sources
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              {sources.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No sources imported yet. Add social profile URLs via Settings → Integrations or the import endpoint.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {sources.map((s) => (
+                    <div
+                      key={s.id}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{s.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">{s.url}</p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="border-cyan-500/20 text-xs shrink-0">
+                        {s.platform}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Analytics */}
-        <TabsContent value="analytics">
-          <Card className="border-cyan-500/20">
-            <CardHeader>
-              <CardTitle className="text-base">
-                Analytics
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Analytics will populate here once live data is flowing:
-              sentiment trends, volume over time, and alert history.
-            </CardContent>
-          </Card>
+        <TabsContent value="analytics" className="space-y-4">
+          {mentionTotal > 0 ? (
+            <>
+              <div className="grid gap-4 md:grid-cols-3">
+                <MetricCard title="Total Mentions" value={mentionTotal} sub="All time" />
+                <MetricCard
+                  title="Platforms"
+                  value={new Set(mentions.map(m => m.channel)).size}
+                  sub="Active channels"
+                />
+                <MetricCard
+                  title="Last Mention"
+                  value={mentions[0] ? new Date(mentions[0].occurredAt).toLocaleDateString() : "—"}
+                  sub="Most recent"
+                />
+              </div>
+
+              {/* Mentions by platform */}
+              <Card className="border-cyan-500/20">
+                <CardHeader>
+                  <CardTitle className="text-base">Mentions by Platform</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {Object.entries(
+                      mentions.reduce<Record<string, number>>((acc, m) => {
+                        acc[m.channel] = (acc[m.channel] || 0) + 1;
+                        return acc;
+                      }, {})
+                    )
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([platform, count]) => (
+                        <div key={platform} className="flex items-center justify-between">
+                          <span className="text-sm capitalize">{platform}</span>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-2 rounded-full bg-cyan-500"
+                              style={{ width: `${Math.max(24, (count / mentionTotal) * 200)}px` }}
+                            />
+                            <span className="text-sm text-muted-foreground w-8 text-right">{count}</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <Card className="border-cyan-500/20">
+              <CardHeader>
+                <CardTitle className="text-base">Analytics</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                Analytics will populate here once mentions start flowing in:
+                platform breakdown, volume over time, and sentiment trends.
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>
@@ -222,22 +418,20 @@ export function SocialMonitoring() {
 function MetricCard({
   title,
   value,
+  sub,
 }: {
   title: string;
   value: number | string;
+  sub?: string;
 }) {
   return (
     <Card className="border-cyan-500/20">
       <CardHeader>
-        <CardTitle className="text-sm font-medium">
-          {title}
-        </CardTitle>
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-semibold">{value}</div>
-        <p className="text-xs text-muted-foreground">
-          Placeholder value
-        </p>
+        <p className="text-xs text-muted-foreground">{sub ?? ""}</p>
       </CardContent>
     </Card>
   );
