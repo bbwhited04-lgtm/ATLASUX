@@ -66,3 +66,28 @@ export const SEAT_LIMITS: Record<SeatTier, SeatLimits> = {
 export function getLimits(seatType?: string): SeatLimits {
   return SEAT_LIMITS[(seatType as SeatTier) ?? "free_beta"] ?? SEAT_LIMITS.free_beta;
 }
+
+/**
+ * Agents restricted to pro / enterprise tiers only.
+ * free_beta and starter users cannot chat with or invoke these agents.
+ */
+export const PRO_ONLY_AGENTS: ReadonlySet<string> = new Set([
+  "lucy",
+  "claire",
+  "sandy",
+]);
+
+/**
+ * Backend features restricted to pro / enterprise tiers.
+ */
+export const PRO_ONLY_FEATURES: ReadonlySet<string> = new Set([
+  "calendar",
+  "premium-screens",
+]);
+
+/**
+ * Returns true if the given tier has access to pro-only features.
+ */
+export function hasPremiumAccess(tier: SeatTier): boolean {
+  return tier === "pro" || tier === "enterprise";
+}

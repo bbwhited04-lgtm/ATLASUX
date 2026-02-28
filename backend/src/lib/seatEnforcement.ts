@@ -6,7 +6,7 @@
  */
 
 import { prisma } from "../db/prisma.js";
-import { getLimits, type SeatTier } from "./seatLimits.js";
+import { getLimits, hasPremiumAccess, PRO_ONLY_AGENTS, type SeatTier } from "./seatLimits.js";
 
 function currentPeriod(): string {
   const d = new Date();
@@ -88,6 +88,38 @@ export async function enforceStorageLimit(
     };
   }
   return { allowed: true };
+}
+
+/** Check if user's tier allows access to a pro-only agent (lucy, claire, sandy) */
+export async function enforceAgentAccess(
+  userId: string,
+  tenantId: string,
+  agentId: string,
+): Promise<EnforceResult> {
+  if (!PRO_ONLY_AGENTS.has(agentId.toLowerCase())) return { allowed: true };
+
+  const tier = await resolveTier(userId, tenantId);
+  if (hasPremiumAccess(tier)) return { allowed: true };
+
+  return {
+    allowed: false,
+    reason: `Agent "${agentId}" requires a Pro or Enterprise plan. Upgrade to unlock Lucy, Claire, Sandy, and all premium features.`,
+  };
+}
+
+/** Check if user's tier allows access to a pro-only feature (calendar, premium screens) */
+export async function enforceFeatureAccess(
+  userId: string,
+  tenantId: string,
+  feature: string,
+): Promise<EnforceResult> {
+  const tier = await resolveTier(userId, tenantId);
+  if (hasPremiumAccess(tier)) return { allowed: true };
+
+  return {
+    allowed: false,
+    reason: `The ${feature} feature requires a Pro or Enterprise plan. Upgrade to unlock all premium features.`,
+  };
 }
 
 /** Check daily job limit before creating a job */

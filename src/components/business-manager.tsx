@@ -88,6 +88,27 @@ interface Tenant {
 
 const VALID_TABS = ["assets", "intelligence", "media", "security", "suite", "decisions", "budgets", "tickets", "blog"] as const;
 
+/** Gate component — shown in place of premium screens for free_beta/starter users */
+function UpgradeGate({ feature }: { feature: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="text-5xl mb-4">🔒</div>
+      <h3 className="text-xl font-semibold text-white">Pro Feature</h3>
+      <p className="mt-2 text-sm text-slate-400 max-w-md">
+        <strong>{feature}</strong> requires a Pro or Enterprise plan.
+        Upgrade to unlock all premium features including Lucy, Claire, Sandy,
+        Calendar, and the full Operations Suite.
+      </p>
+      <RouterLink
+        to="/store"
+        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition"
+      >
+        View Plans & Upgrade
+      </RouterLink>
+    </div>
+  );
+}
+
 export function BusinessManager() {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -95,6 +116,24 @@ export function BusinessManager() {
 
   const { tenantId: activeTenantId, setTenantId: setActiveTenantId } = useActiveTenant();
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(activeTenantId ?? null);
+
+  // Seat tier — determines premium screen access
+  const [seatTier, setSeatTier] = useState<string>("free_beta");
+  const isPro = seatTier === "pro" || seatTier === "enterprise";
+
+  useEffect(() => {
+    const token = localStorage.getItem("supabase_token") || localStorage.getItem("sb-token");
+    if (!token || !activeTenantId) return;
+    fetch(`${API_BASE}/v1/user/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "x-tenant-id": activeTenantId,
+      },
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d.ok && d.currentSeat) setSeatTier(d.currentSeat); })
+      .catch(() => {});
+  }, [activeTenantId]);
 
   async function selectBusiness(tenantId: string) {
     setSelectedBusiness(tenantId);
@@ -1283,15 +1322,15 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
             </div>
           )}
 
-          {suiteView === 'video-conferencing' && <VideoConferencing />}
-          {suiteView === 'communication' && <CommunicationSuite />}
-          {suiteView === 'team-collaboration' && <TeamCollaboration />}
-          {suiteView === 'business-intelligence' && <BusinessIntelligence />}
-          {suiteView === 'spreadsheet-analysis' && <SpreadsheetAnalysis />}
-          {suiteView === 'calendar-scheduling' && <CalendarScheduling />}
-          {suiteView === 'financial-management' && <FinancialManagement />}
-          {suiteView === 'smart-automation' && <SmartAutomation />}
-          {suiteView === 'email-client' && <EmailClient />}
+          {suiteView === 'video-conferencing' && (isPro ? <VideoConferencing /> : <UpgradeGate feature="Video Conferencing" />)}
+          {suiteView === 'communication' && (isPro ? <CommunicationSuite /> : <UpgradeGate feature="Communication Suite" />)}
+          {suiteView === 'team-collaboration' && (isPro ? <TeamCollaboration /> : <UpgradeGate feature="Team Collaboration" />)}
+          {suiteView === 'business-intelligence' && (isPro ? <BusinessIntelligence /> : <UpgradeGate feature="Business Intelligence" />)}
+          {suiteView === 'spreadsheet-analysis' && (isPro ? <SpreadsheetAnalysis /> : <UpgradeGate feature="Spreadsheet Analysis" />)}
+          {suiteView === 'calendar-scheduling' && (isPro ? <CalendarScheduling /> : <UpgradeGate feature="Calendar & Scheduling" />)}
+          {suiteView === 'financial-management' && (isPro ? <FinancialManagement /> : <UpgradeGate feature="Financial Management" />)}
+          {suiteView === 'smart-automation' && (isPro ? <SmartAutomation /> : <UpgradeGate feature="Smart Automation" />)}
+          {suiteView === 'email-client' && (isPro ? <EmailClient /> : <UpgradeGate feature="Email Client" />)}
 
           {suiteView === 'hub' && (
             <div className="space-y-6">

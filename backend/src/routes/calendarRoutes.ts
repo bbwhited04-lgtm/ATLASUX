@@ -11,6 +11,7 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
+import { enforceFeatureAccess } from "../lib/seatEnforcement.js";
 
 const tenantId = process.env.MS_TENANT_ID ?? "";
 const clientId = process.env.MS_CLIENT_ID ?? "";
@@ -71,6 +72,18 @@ async function graphGet(path: string, token: string): Promise<any> {
 // ── Routes ───────────────────────────────────────────────────────────────────
 
 export const calendarRoutes: FastifyPluginAsync = async (app) => {
+  // ── Seat tier gate — calendar is pro/enterprise only ────────────────────
+  app.addHook("preHandler", async (req, reply) => {
+    const userId = (req as any).auth?.userId as string | undefined;
+    const userTenantId = (req as any).tenantId as string | undefined;
+    if (userId && userTenantId) {
+      const check = await enforceFeatureAccess(userId, userTenantId, "Calendar");
+      if (!check.allowed) {
+        return reply.code(403).send({ ok: false, error: check.reason });
+      }
+    }
+  });
+
   // ── GET /status ──────────────────────────────────────────────────────────
   app.get("/status", async (_req, reply) => {
     if (!tenantId || !clientId || !clientSecret) {

@@ -10,7 +10,7 @@ import { classifyQuery } from "../core/kb/queryClassifier.js";
 import { resolveAgentTools } from "../core/agent/agentTools.js";
 import { agentRegistry } from "../agents/registry.js";
 import { meterTokens } from "../lib/usageMeter.js";
-import { enforceTokenBudget } from "../lib/seatEnforcement.js";
+import { enforceTokenBudget, enforceAgentAccess } from "../lib/seatEnforcement.js";
 import { runDeepAgent } from "../core/agent/deepAgentPipeline.js";
 
 // Load all SKILL.md files into memory at module init (runs once at server boot).
@@ -113,6 +113,14 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
       try {
         const msgs: any[] = Array.isArray(body?.messages) ? [...body.messages] : [];
         const agentId     = String(body?.agentId || "atlas").toLowerCase();
+
+        // ── Agent tier gate — lucy, claire, sandy require pro/enterprise ──
+        if (userId && tenantId) {
+          const agentCheck = await enforceAgentAccess(userId, tenantId, agentId);
+          if (!agentCheck.allowed) {
+            return reply.code(403).send({ ok: false, error: agentCheck.reason });
+          }
+        }
 
         // Extract last user message for query classification
         const lastUser = [...msgs].reverse().find((m: any) => m.role === "user");
