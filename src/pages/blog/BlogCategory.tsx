@@ -3,6 +3,8 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import PublicHeader from "../../components/public/PublicHeader";
 import BlogCard from "../../components/blog/BlogCard";
 import BlogSidebar from "../../components/blog/BlogSidebar";
+import SEO from "../../components/SEO";
+import { breadcrumbSchema, webPageSchema } from "../../lib/seo/schemas";
 import { getCategories, loadAllBlogPosts, loadApiPosts } from "../../lib/blog/loadPosts";
 import type { BlogPost } from "../../lib/blog/types";
 
@@ -36,6 +38,15 @@ export default function BlogCategory() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      <SEO
+        title={`${decoded} — Atlas UX Blog`}
+        description={`Browse ${decoded} articles on the Atlas UX blog. AI automation insights, workflow playbooks, and practical guides for small businesses.`}
+        path={`blog/category/${category}`}
+        schema={[
+          webPageSchema(`${decoded} — Atlas UX Blog`, `${decoded} articles and guides.`),
+          breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Blog", path: "/blog" }, { name: decoded, path: `/blog/category/${category}` }]),
+        ]}
+      />
       <PublicHeader />
 
       <main className="mx-auto max-w-6xl px-4 py-8">

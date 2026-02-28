@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import PublicHeader from "../../components/public/PublicHeader";
 import BlogCard from "../../components/blog/BlogCard";
 import BlogSidebar from "../../components/blog/BlogSidebar";
+import SEO from "../../components/SEO";
+import { breadcrumbSchema, webPageSchema } from "../../lib/seo/schemas";
 import { getCategories, loadAllBlogPosts, loadApiPosts } from "../../lib/blog/loadPosts";
 import type { BlogPost } from "../../lib/blog/types";
 
@@ -29,6 +31,15 @@ export default function BlogHome() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      <SEO
+        title="Blog — AI & Business Automation"
+        description="Practical updates, workflow playbooks, and real build logs from the Atlas UX team. AI automation, agent workflows, and small business productivity."
+        path="blog"
+        schema={[
+          webPageSchema("Atlas UX Blog", "AI automation insights, workflow playbooks, and build logs."),
+          breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Blog", path: "/blog" }]),
+        ]}
+      />
       <PublicHeader />
 
       <main className="mx-auto max-w-6xl px-4 py-8">

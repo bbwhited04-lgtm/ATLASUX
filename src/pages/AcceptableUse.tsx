@@ -1,9 +1,17 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import SEO from "../components/SEO";
+import { webPageSchema } from "../lib/seo/schemas";
 
 export default function AcceptableUse() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
+      <SEO
+        title="Acceptable Use Policy"
+        description="Atlas UX acceptable use policy — guidelines for responsible use of the AI employee platform. Keep it safe, ethical, and constructive."
+        path="acceptable-use"
+        schema={[webPageSchema("Acceptable Use Policy", "Guidelines for responsible use of Atlas UX.")]}
+      />
       <header className="mx-auto max-w-4xl px-6 pt-10">
         <div className="flex items-center justify-between">
           <Link to="/" className="text-sm text-slate-300 hover:text-white">

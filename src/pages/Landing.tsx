@@ -1,11 +1,26 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import SEO from "../components/SEO";
+import { organizationSchema, productSchema, faqSchema } from "../lib/seo/schemas";
 
 const YOUTUBE_ID = "QtTn_o6zXDY";
 
 export default function Landing() {
   return (
     <div className="min-h-screen text-white relative">
+      <SEO
+        title="AI Employee Platform for Small Business"
+        description="Atlas UX is a standalone AI employee platform with 30+ autonomous agents that handle CRM, marketing, finance, HR, and executive operations — locally on your desktop or in the cloud."
+        schema={[
+          organizationSchema(),
+          productSchema(),
+          faqSchema([
+            { question: "What is Atlas UX?", answer: "Atlas UX is a cross-platform AI employee platform that connects your accounts, orchestrates autonomous agents, and executes real business workflows with human-in-the-loop safety." },
+            { question: "How many AI agents does Atlas UX have?", answer: "Atlas UX includes 30+ specialized AI agents covering CRM, marketing, finance, HR, legal, IT, and executive operations." },
+            { question: "Is Atlas UX safe to use?", answer: "Yes. Every risky or paid action requires a decision memo with human approval. All actions are logged to an immutable audit trail." },
+          ]),
+        ]}
+      />
       {/* Background (NON-INTERACTIVE) */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-[#061a3a] via-[#041127] to-black" />
@@ -315,20 +330,6 @@ export default function Landing() {
           </div>
         </section>
 
-        <footer className="mt-24 border-t border-slate-800 pt-8 text-sm text-slate-400">
-          <div className="flex flex-wrap gap-6 justify-center">
-            <Link to="/about" className="hover:text-white">About</Link>
-            <Link to="/blog" className="hover:text-white">Blog</Link>
-            <Link to="/store" className="hover:text-white">Store</Link>
-            <Link to="/payment" className="hover:text-white">Payment</Link>
-            <Link to="/privacy" className="hover:text-white">Privacy</Link>
-            <Link to="/terms" className="hover:text-white">Terms</Link>
-            <Link to="/acceptable-use" className="hover:text-white">Acceptable Use</Link>
-          </div>
-  <p className="mt-6 text-center text-xs text-slate-500">
-    © {new Date().getFullYear()} Atlas UX — a product of DEAD APP CORP, a Missouri closed corporation owned by THE DEAD APP CORP TRUST. All rights reserved.
-  </p>
-</footer>
 
       </main>
     </div>

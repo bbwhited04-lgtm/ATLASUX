@@ -1,11 +1,19 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import SEO from "../components/SEO";
+import { webPageSchema } from "../lib/seo/schemas";
 
 export default function Privacy() {
   const effectiveDate = "February 12, 2026"; // update any time
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
+      <SEO
+        title="Privacy Policy"
+        description="Atlas UX privacy policy — how we collect, use, and protect your data. Transparent data practices for our AI employee platform."
+        path="privacy"
+        schema={[webPageSchema("Privacy Policy", "Atlas UX privacy policy and data practices.")]}
+      />
       <header className="mx-auto max-w-4xl px-6 pt-10">
         <div className="flex items-center justify-between">
           <Link to="/" className="text-sm text-slate-300 hover:text-white">

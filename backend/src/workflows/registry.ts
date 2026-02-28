@@ -4,6 +4,7 @@ import { getKbContext } from "../core/kb/getKbContext.js";
 import { runLLM, type AuditHook } from "../core/engine/brainllm.js";
 import { agentRegistry } from "../agents/registry.js";
 import { getSkill } from "../core/kb/skillLoader.js";
+import { appendMemory } from "../core/agent/agentMemory.js";
 
 export type WorkflowContext = {
   tenantId: string;
@@ -33,6 +34,14 @@ export const workflowCatalog = [
   { id: "WF-108", name: "Reynolds Blog Writer & Publisher", description: "SERP research → LLM drafts full blog post → publishes to KB → emails confirmation.",  ownerAgent: "reynolds" },
   { id: "WF-110", name: "Venny YouTube Video Scraper & KB Ingest", description: "Search YouTube by keyword/channel → pull metadata + transcripts → store in KB for team retrieval.", ownerAgent: "venny" },
   { id: "WF-111", name: "Venny YouTube Shorts Auto-Publisher", description: "Download Victor's exported video from OneDrive → upload to YouTube via Data API v3 → audit trail.", ownerAgent: "venny" },
+  { id: "WF-112", name: "Lucy Morning Reception Open",          description: "Open reception → check voicemails → sync calendar → morning summary to Atlas.",                    ownerAgent: "lucy" },
+  { id: "WF-113", name: "Lucy Inbound Call Triage & Routing",   description: "Greet caller → identify purpose → route to agent/executive → log to audit.",                        ownerAgent: "lucy" },
+  { id: "WF-114", name: "Lucy Appointment Booking",             description: "Book via Bookings → check conflicts → confirm parties → log to CRM.",                               ownerAgent: "lucy" },
+  { id: "WF-115", name: "Lucy Voicemail Transcription",         description: "Transcribe voicemail → summarize → deliver to recipient → audit log.",                               ownerAgent: "lucy" },
+  { id: "WF-116", name: "Lucy Lead Capture & CRM",              description: "Capture lead info from call/chat/email → CRM entry → route to Mercer.",                             ownerAgent: "lucy" },
+  { id: "WF-117", name: "Lucy End-of-Day Reception Summary",    description: "Compile daily log → calls, bookings, leads, messages → summary email to Atlas.",                    ownerAgent: "lucy" },
+  { id: "WF-118", name: "Lucy Chat Widget First Response",      description: "Greet chat visitor → identify intent → FAQ or escalate to Cheryl/specialist.",                      ownerAgent: "lucy" },
+  { id: "WF-119", name: "Nightly Agent Memory Log",             description: "Each agent logs a summary of their daily activity to memory for future recall.",                    ownerAgent: "atlas" },
 ] as const;
 
 export { n8nWorkflows };
@@ -1857,6 +1866,80 @@ handlers["WF-111"] = async (ctx) => {
     ok: true,
     message: `Video "${title}" uploaded to YouTube`,
     output: { videoId: result.videoId, url: result.url },
+  };
+};
+
+// ── WF-119 — Nightly Agent Memory Log ───────────────────────────────────────
+// Runs once per night. For every agent, queries their day's audit trail,
+// summarises via LLM, and appends to agent_memory so they can recall it later.
+
+handlers["WF-119"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-119.start", "Nightly agent memory log beginning");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const dayStart = new Date(`${today}T00:00:00Z`);
+  const dayEnd   = new Date(`${today}T23:59:59Z`);
+  const sessionId = `daily-log`;
+
+  let logged = 0;
+  let skipped = 0;
+
+  for (const agent of agentRegistry) {
+    try {
+      // Pull this agent's audit activity for today
+      const actions = await prisma.auditLog.findMany({
+        where: {
+          actorExternalId: agent.id,
+          timestamp: { gte: dayStart, lte: dayEnd },
+        },
+        orderBy: { timestamp: "asc" },
+        take: 50,
+        select: { action: true, message: true, entityType: true, timestamp: true, meta: true },
+      });
+
+      if (actions.length === 0) {
+        skipped++;
+        continue;
+      }
+
+      // Build a plain-text activity log
+      const activityLines = actions.map((a) => {
+        const ts = a.timestamp ? new Date(a.timestamp).toISOString().slice(11, 16) : "??:??";
+        const wfId = (a.meta as any)?.workflowId ?? "";
+        return `[${ts}] ${a.action}${wfId ? ` (${wfId})` : ""}: ${a.message ?? ""}`;
+      }).join("\n");
+
+      // LLM summarises into a concise memory entry
+      const summary = await safeLLM(ctx, {
+        agent: agent.id.toUpperCase(),
+        purpose: `daily_memory_${agent.id}`,
+        route: "CLASSIFY_EXTRACT_VALIDATE",
+        system: [
+          `You are ${agent.name}, ${agent.title} at Atlas UX.`,
+          `Summarise your daily activity into a concise memory entry (max 500 chars).`,
+          `Focus on: what you accomplished, key decisions, items pending, and anything to remember for tomorrow.`,
+          `Write in first person. Be specific and factual. No filler.`,
+        ].join("\n"),
+        user: `Date: ${today}\n\nMy activity log (${actions.length} actions):\n${activityLines}`,
+      });
+
+      // Write to agent_memory under the "daily-log" session
+      const entry = `[${today}] ${summary}`;
+      await appendMemory(ctx.tenantId, agent.id, sessionId, "assistant", entry);
+      logged++;
+    } catch (err: any) {
+      await writeStepAudit(ctx, "WF-119.agent-error", `Failed for ${agent.id}: ${err?.message ?? err}`);
+    }
+  }
+
+  await writeStepAudit(ctx, "WF-119.complete", `Memory log complete — ${logged} agents logged, ${skipped} had no activity`, {
+    logged, skipped, date: today,
+  });
+
+  return {
+    ok: true,
+    message: `WF-119 complete — ${logged} agents logged daily memory, ${skipped} had no activity`,
+    output: { logged, skipped, date: today },
   };
 };
 

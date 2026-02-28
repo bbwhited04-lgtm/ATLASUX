@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Sitemap: https://atlasux.cloud/sitemap.xml
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /

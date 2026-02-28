@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from "react";
 import { createHashRouter, Navigate, useParams } from "react-router-dom";
 import Landing from "./pages/Landing";
+import PublicLayout from "./components/public/PublicLayout";
 import { Dashboard } from "./components/Dashboard";
 import AppGate from "./components/AppGate";
 import { RootLayout } from "./components/RootLayout";
@@ -69,20 +70,23 @@ function S(props: { children: React.ReactNode }) {
 }
 
 export const router = createHashRouter([
-  // Landing at "#/"
-  { path: "/", Component: Landing },
-
-  // Public pages (lazy-loaded)
-  { path: "/about", Component: () => React.createElement(S, null, React.createElement(About)) },
-  { path: "/privacy", Component: () => React.createElement(S, null, React.createElement(Privacy)) },
-  { path: "/terms", Component: () => React.createElement(S, null, React.createElement(Terms)) },
-  { path: "/acceptable-use", Component: () => React.createElement(S, null, React.createElement(AcceptableUse)) },
-  { path: "/payment", Component: () => React.createElement(S, null, React.createElement(Payment)) },
-  { path: "/store", Component: () => React.createElement(S, null, React.createElement(Store)) },
-  { path: "/product", Component: () => React.createElement(S, null, React.createElement(Product)) },
-  { path: "/blog", Component: () => React.createElement(S, null, React.createElement(BlogHome)) },
-  { path: "/blog/category/:category", Component: () => React.createElement(S, null, React.createElement(BlogCategory)) },
-  { path: "/blog/:slug", Component: () => React.createElement(S, null, React.createElement(BlogPost)) },
+  // Public pages wrapped in PublicLayout (shared footer)
+  {
+    Component: PublicLayout,
+    children: [
+      { path: "/", Component: Landing },
+      { path: "/about", Component: () => React.createElement(S, null, React.createElement(About)) },
+      { path: "/privacy", Component: () => React.createElement(S, null, React.createElement(Privacy)) },
+      { path: "/terms", Component: () => React.createElement(S, null, React.createElement(Terms)) },
+      { path: "/acceptable-use", Component: () => React.createElement(S, null, React.createElement(AcceptableUse)) },
+      { path: "/payment", Component: () => React.createElement(S, null, React.createElement(Payment)) },
+      { path: "/store", Component: () => React.createElement(S, null, React.createElement(Store)) },
+      { path: "/product", Component: () => React.createElement(S, null, React.createElement(Product)) },
+      { path: "/blog", Component: () => React.createElement(S, null, React.createElement(BlogHome)) },
+      { path: "/blog/category/:category", Component: () => React.createElement(S, null, React.createElement(BlogCategory)) },
+      { path: "/blog/:slug", Component: () => React.createElement(S, null, React.createElement(BlogPost)) },
+    ],
+  },
 
   // App at "#/app"
   {

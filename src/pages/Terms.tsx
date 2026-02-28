@@ -1,11 +1,19 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import SEO from "../components/SEO";
+import { webPageSchema } from "../lib/seo/schemas";
 
 export default function Terms() {
   const effectiveDate = "February 12, 2026";
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
+      <SEO
+        title="Terms of Service"
+        description="Atlas UX terms of service — usage rules, licensing, liability, and subscription terms for the AI employee platform."
+        path="terms"
+        schema={[webPageSchema("Terms of Service", "Atlas UX terms of service and usage agreement.")]}
+      />
       <header className="mx-auto max-w-4xl px-6 pt-10">
         <div className="flex items-center justify-between">
           <Link to="/" className="text-sm text-slate-300 hover:text-white">

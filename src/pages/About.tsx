@@ -3,6 +3,8 @@ import {
   Zap, Shield, Globe, Users, Code2, Heart,
   Mail, ExternalLink, Cpu, Database, Layers, Rocket,
 } from "lucide-react";
+import SEO from "../components/SEO";
+import { organizationSchema, webPageSchema } from "../lib/seo/schemas";
 
 const FOUNDER = {
   name: "Billy Whited",
@@ -32,6 +34,12 @@ const TIMELINE = [
 export default function About() {
   return (
     <div className="min-h-screen text-white relative">
+      <SEO
+        title="About Atlas UX — Meet the Team"
+        description="Atlas UX was built from scratch by Billy Whited — from Figma wireframe to live product. Learn about the mission, tech stack, and timeline behind the AI employee platform."
+        path="about"
+        schema={[organizationSchema(), webPageSchema("About Atlas UX", "Learn about the founder, tech stack, and mission behind Atlas UX.")]}
+      />
       {/* Background */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-[#061a3a] via-[#041127] to-black" />

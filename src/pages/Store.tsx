@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import SEO from "../components/SEO";
+import { webPageSchema } from "../lib/seo/schemas";
 import {
   Zap,
   Crown,
@@ -513,6 +515,12 @@ export default function Store() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
+      <SEO
+        title="Store — Plans & Pricing"
+        description="Atlas UX plans, digital prompt packs, and subscription tiers. Free starter pack, solo, team, and enterprise options for AI-powered business automation."
+        path="store"
+        schema={[webPageSchema("Atlas UX Store", "Plans, pricing, and digital products for AI-powered business automation.")]}
+      />
       <header className="mx-auto max-w-6xl px-6 pt-10">
         <div className="flex items-center justify-between">
           <Link to="/" className="text-sm text-slate-300 hover:text-white">

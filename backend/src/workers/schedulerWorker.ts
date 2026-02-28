@@ -29,6 +29,7 @@
  *   06:15  Venny YouTube Scraper          WF-110  daily
  *   07:00  Daily-Intel Morning Brief       WF-033  daily
  *   07:30  Archy Research Deep-Dive        WF-034  daily
+ *   07:45  Lucy Morning Reception Open     WF-112  daily
  *   08:00  Claire Calendar Prep            WF-088  daily
  *   08:30  Daily Executive Brief (Atlas)   WF-010  daily
  *   09:00  Timmy TikTok Content Draft      WF-054  daily
@@ -46,6 +47,8 @@
  *   17:00  Penny Multi-Platform Content    WF-040  daily
  *   18:00  Sunday Technical Brief Writer   WF-058  daily
  *   19:00  Victor Video Production Check   WF-089  daily
+ *   22:00  Lucy End-of-Day Summary        WF-117  daily
+ *   23:00  Nightly Agent Memory Log       WF-119  daily
  *
  *   Monday 07:00  Mercer Acquisition Intel WF-063  weekly
  *   Monday 07:30  Petra Sprint Planning    WF-084  weekly
@@ -290,7 +293,14 @@ function buildJobs(): ScheduledJob[] {
       hourUTC: 7, minuteUTC: 30,
     },
 
-    // ── Daily: Calendar & Operations ─────────────────────────────────────────
+    // ── Daily: Reception & Calendar ──────────────────────────────────────────
+    {
+      id: "lucy-morning-open",
+      label: "Lucy Morning Reception Open (WF-112)",
+      agentId: "lucy", workflowId: "WF-112",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 7, minuteUTC: 45,
+    },
     {
       id: "claire-calendar",
       label: "Claire Calendar Prep & Agenda Builder (WF-088)",
@@ -407,6 +417,22 @@ function buildJobs(): ScheduledJob[] {
       agentId: "victor", workflowId: "WF-089",
       payload: { triggeredBy: "scheduler", topic: "daily video production check" },
       hourUTC: 19, minuteUTC: 0,
+    },
+    {
+      id: "lucy-eod-summary",
+      label: "Lucy End-of-Day Reception Summary (WF-117)",
+      agentId: "lucy", workflowId: "WF-117",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 22, minuteUTC: 0,
+    },
+
+    // ── Nightly: Agent Memory Logging ──────────────────────────────────────
+    {
+      id: "nightly-memory-log",
+      label: "Nightly Agent Memory Log (WF-119)",
+      agentId: "atlas", workflowId: "WF-119",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 23, minuteUTC: 0,
     },
 
     // ── Weekly (Monday): Strategy & Planning ─────────────────────────────────

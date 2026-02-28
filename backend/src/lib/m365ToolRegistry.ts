@@ -355,6 +355,45 @@ export const AGENT_M365_PERMISSIONS: Record<string, string[]> = {
     "m365.planner.read",
     "m365.word.read",
   ],
+  // Lucy: full M365 access — receptionist needs visibility across everything
+  lucy: [
+    // Outlook
+    "m365.outlook.read",
+    "m365.outlook.draft",
+    "m365.outlook.send",
+    "m365.outlook.calendar.read",
+    "m365.outlook.calendar.write",
+    // Teams
+    "m365.teams.read",
+    "m365.teams.draft",
+    "m365.teams.send",
+    "m365.teams.meeting.read",
+    "m365.teams.meeting.create",
+    // Documents
+    "m365.word.read",
+    "m365.word.write",
+    "m365.excel.read",
+    "m365.excel.write",
+    "m365.powerpoint.read",
+    "m365.powerpoint.write",
+    "m365.onenote.read",
+    "m365.onenote.write",
+    // Storage
+    "m365.onedrive.read",
+    "m365.onedrive.write",
+    "m365.sharepoint.read",
+    "m365.sharepoint.write",
+    // Clipchamp
+    "m365.clipchamp.read",
+    "m365.clipchamp.write",
+    // Apps
+    "m365.forms.read",
+    "m365.forms.create",
+    "m365.planner.read",
+    "m365.planner.write",
+    "m365.bookings.read",
+    "m365.bookings.manage",
+  ],
 };
 
 /**

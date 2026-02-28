@@ -2,6 +2,7 @@
 import React, { Component, ReactNode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { router } from "./routes";
 import "./index.css";
 import { ActiveTenantProvider } from "./lib/activeTenant";
@@ -38,11 +39,13 @@ document.documentElement.classList.add("dark");
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ErrorBoundary>
-      <ActiveTenantProvider>
-        <RouterProvider router={router} />
-        <FloatingAtlas />
-      </ActiveTenantProvider>
-    </ErrorBoundary>
+    <HelmetProvider>
+      <ErrorBoundary>
+        <ActiveTenantProvider>
+          <RouterProvider router={router} />
+          <FloatingAtlas />
+        </ActiveTenantProvider>
+      </ErrorBoundary>
+    </HelmetProvider>
   </React.StrictMode>
 );

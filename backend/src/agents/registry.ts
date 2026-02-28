@@ -362,4 +362,15 @@ export const agentRegistry: AgentSummary[] = [
     toolsForbidden: ["Execution tools"],
     escalationTargets: ["emma", "mercer", "atlas"],
   }),
+  withM365("lucy", {
+    id: "lucy",
+    name: "Lucy",
+    title: "Professional Secretary & Receptionist",
+    tier: "Subagent",
+    reportsTo: "atlas",
+    summary: "Front-door receptionist — answers calls, triages inquiries, routes to the right agent/executive, schedules appointments, captures leads, and manages voicemail.",
+    toolsAllowed: ["Twilio voice", "Chat widget", "CRM create", "Full M365 access — Outlook/Teams/Calendar/Bookings/Word/Excel/PowerPoint/OneNote/Planner/OneDrive/SharePoint/Clipchamp/Forms"],
+    toolsForbidden: ["Spending"],
+    escalationTargets: ["cheryl", "mercer", "sandy", "claire", "atlas"],
+  }),
 ];

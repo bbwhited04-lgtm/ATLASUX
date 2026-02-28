@@ -1,9 +1,17 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import SEO from "../components/SEO";
+import { webPageSchema } from "../lib/seo/schemas";
 
 export default function Payment() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
+      <SEO
+        title="Billing & Payment"
+        description="Atlas UX billing and payment information — checkout instructions, Stripe integration, refund policy, and subscription management."
+        path="payment"
+        schema={[webPageSchema("Billing & Payment", "Atlas UX billing information and checkout instructions.")]}
+      />
       <header className="mx-auto max-w-4xl px-6 pt-10">
         <div className="flex items-center justify-between">
           <Link to="/" className="text-sm text-slate-300 hover:text-white">

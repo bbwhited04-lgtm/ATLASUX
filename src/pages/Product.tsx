@@ -1,8 +1,16 @@
 import PublicHeader from "../components/public/PublicHeader";
+import SEO from "../components/SEO";
+import { productSchema } from "../lib/seo/schemas";
 
 export default function Product() {
   return (
     <div className="min-h-screen text-white relative">
+      <SEO
+        title="Product — Autonomous AI Agents"
+        description="A governed AI coworker system built for real workflows: auditability, cost control, decision memos, and repeatable execution. Simple, safe, and business-friendly."
+        path="product"
+        schema={[productSchema()]}
+      />
       {/* Background */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-[#061a3a] via-[#041127] to-black" />

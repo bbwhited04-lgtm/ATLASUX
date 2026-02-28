@@ -5,6 +5,8 @@ import Markdown from "../../components/blog/Markdown";
 import PublicHeader from "../../components/public/PublicHeader";
 import BlogSidebar from "../../components/blog/BlogSidebar";
 import RelatedPosts from "../../components/blog/RelatedPosts";
+import SEO from "../../components/SEO";
+import { blogPostSchema, breadcrumbSchema } from "../../lib/seo/schemas";
 import { getCategories, getPostBySlug, getApiPostBySlug, loadAllBlogPosts, loadApiPosts } from "../../lib/blog/loadPosts";
 import type { BlogPost as BlogPostType } from "../../lib/blog/types";
 import { isDefaultCover, categoryGradient, categoryInitial } from "../../lib/blog/categoryGradient";
@@ -54,6 +56,17 @@ export default function BlogPost() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      <SEO
+        title={fm.title}
+        description={fm.excerpt}
+        path={`blog/${post.slug}`}
+        image={fm.coverImage.startsWith("http") ? fm.coverImage : undefined}
+        type="article"
+        schema={[
+          blogPostSchema({ title: fm.title, slug: post.slug, date: fm.date, excerpt: fm.excerpt, coverImage: fm.coverImage, author: fm.author }),
+          breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Blog", path: "/blog" }, { name: fm.category, path: `/blog/category/${encodeURIComponent(fm.category)}` }, { name: fm.title, path: `/blog/${post.slug}` }]),
+        ]}
+      />
       <PublicHeader />
 
       <main className="mx-auto max-w-6xl px-4 py-8">
