@@ -8,7 +8,9 @@ import "dotenv/config";
 import auditPlugin from "./plugins/auditPlugin.js";
 import { authPlugin } from "./plugins/authPlugin.js";
 import { tenantPlugin } from "./plugins/tenantPlugin.js";
-import csrfPlugin from "./plugins/csrfPlugin.js";
+// CSRF double-submit cookies don't work cross-origin (Vercel→Render).
+// CORS origin whitelist already prevents cross-site request forgery.
+// import csrfPlugin from "./plugins/csrfPlugin.js";
 import { engineRoutes } from "./routes/engineRoutes.js";
 import { healthRoutes } from "./routes/healthRoutes.js";
 import { agentsRoutes } from "./routes/agentsRoutes.js";
@@ -169,7 +171,7 @@ await app.register(helmet, {
       fontSrc: ["'self'"],
       connectSrc: [
         "'self'",
-        "https://atlasux-backend.onrender.com",
+        "https://atlas-ux.onrender.com",
         "https://*.supabase.co",
         "wss://*.supabase.co",
       ],
@@ -189,7 +191,7 @@ await app.register(gateRoutes, { prefix: "/v1/gate" });
 // Plugins (order matters)
 await app.register(auditPlugin);
 await app.register(authPlugin);
-await app.register(csrfPlugin);
+// await app.register(csrfPlugin); // disabled — see note at import
 await app.register(tenantPlugin);
 await app.register(engineRoutes, { prefix: "/v1/engine" });
 await app.register(healthRoutes, { prefix: "/v1" });
