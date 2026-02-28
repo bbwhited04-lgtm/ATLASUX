@@ -60,6 +60,7 @@ import { videoRoutes } from "./routes/videoRoutes.js";
 import { outlookRoutes } from "./routes/outlookRoutes.js";
 import { calendarRoutes } from "./routes/calendarRoutes.js";
 import { linkedinRoutes } from "./routes/linkedinRoutes.js";
+import { alignableRoutes } from "./routes/alignableRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -264,6 +265,9 @@ await app.register(calendarRoutes, { prefix: "/v1/calendar" });
 
 // LinkedIn — webhook + API
 await app.register(linkedinRoutes, { prefix: "/v1/linkedin" });
+
+// Alignable — inbound webhook for Zapier/Make/n8n triggers
+await app.register(alignableRoutes, { prefix: "/v1/alignable" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
