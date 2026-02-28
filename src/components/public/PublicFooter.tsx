@@ -9,20 +9,24 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
-  Instagram,
-  Linkedin,
-  Facebook,
-  MessageCircle,
-  X,
-  Handshake,
-  Hash,
-  Music2,
-  MessagesSquare,
-  Send,
-  Youtube,
-  Globe,
-  ExternalLink,
-} from "lucide-react";
+  FaInstagram,
+  FaLinkedinIn,
+  FaRedditAlien,
+  FaFacebookF,
+  FaWhatsapp,
+  FaXTwitter,
+  FaPinterestP,
+  FaHandshake,
+  FaTumblr,
+  FaHashtag,
+  FaTiktok,
+  FaDiscord,
+  FaTelegramPlane,
+  FaYoutube,
+  FaTwitch,
+  FaGlobe,
+} from "react-icons/fa6";
+import { FiExternalLink } from "react-icons/fi";
 
 type SocialProfile = {
   name: string;
@@ -33,7 +37,7 @@ type SocialProfile = {
 type SocialPlatform = {
   key: string;
   label: string;
-  Icon: any;
+  Icon: React.ComponentType<{ className?: string }>;
   profiles: SocialProfile[];
 };
 
@@ -41,7 +45,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "instagram",
     label: "Instagram",
-    Icon: Instagram,
+    Icon: FaInstagram,
     profiles: [
       { name: "Billy", href: "https://www.instagram.com/billyw6160/" },
       { name: "Atlas UX", href: "https://www.instagram.com/atlas.ux/" },
@@ -54,7 +58,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "linkedin",
     label: "LinkedIn",
-    Icon: Linkedin,
+    Icon: FaLinkedinIn,
     profiles: [
       { name: "Billy (Profile)", href: "https://www.linkedin.com/in/ruralcowboy/" },
       { name: "Company Page #1", href: "https://www.linkedin.com/company/109020222" },
@@ -64,13 +68,13 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "reddit",
     label: "Reddit",
-    Icon: Globe,
+    Icon: FaRedditAlien,
     profiles: [{ name: "BuffaloHerde", href: "https://www.reddit.com/user/Buffaloherde/" }],
   },
   {
     key: "facebook",
     label: "Facebook",
-    Icon: Facebook,
+    Icon: FaFacebookF,
     profiles: [
       { name: "Billy Whited", href: "https://www.facebook.com/billy.whited" },
       { name: "Profile 1", href: "https://www.facebook.com/profile.php?id=61587240537503" },
@@ -84,7 +88,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "whatsapp",
     label: "WhatsApp",
-    Icon: MessageCircle,
+    Icon: FaWhatsapp,
     profiles: [
       { name: "BuffaloHerde Channel", href: "https://whatsapp.com/channel/0029Vb7pxOu0LKZCAyaXet3H" },
     ],
@@ -92,7 +96,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "x",
     label: "X",
-    Icon: Globe,
+    Icon: FaXTwitter,
     profiles: [
       { name: "BuffaloHerde", href: "https://x.com/buffaloherde" },
       { name: "Atlas UX", href: "https://x.com/atlas_ux" },
@@ -102,25 +106,25 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "pinterest",
     label: "Pinterest",
-    Icon: Pinterest,
+    Icon: FaPinterestP,
     profiles: [{ name: "bbwhited", href: "https://www.pinterest.com/bbwhited" }],
   },
   {
     key: "alignable",
     label: "Alignable",
-    Icon: Handshake,
+    Icon: FaHandshake,
     profiles: [{ name: "BNW Services LLC", href: "https://alignable.com/saint-joseph-mo/bnw-services-llc" }],
   },
   {
     key: "tumblr",
     label: "Tumblr",
-    Icon: Globe,
+    Icon: FaTumblr,
     profiles: [{ name: "buffaloherde", href: "https://buffaloherde.tumblr.com" }],
   },
   {
     key: "threads",
     label: "Threads",
-    Icon: Hash,
+    Icon: FaHashtag,
     profiles: [
       { name: "BuffaloHerde", href: "https://threads.com/@buffaloherde" },
       { name: "Atlas UX", href: "https://threads.com/@atlas.ux" },
@@ -130,7 +134,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "tiktok",
     label: "TikTok",
-    Icon: Music2,
+    Icon: FaTiktok,
     profiles: [
       { name: "BuffaloHerde", href: "https://www.tiktok.com/@buffaloherde" },
       { name: "ShortyPro", href: "https://www.tiktok.com/@shortypro2" },
@@ -140,19 +144,19 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "discord",
     label: "Discord",
-    Icon: MessagesSquare,
+    Icon: FaDiscord,
     profiles: [{ name: "User Profile", href: "https://discord.com/users/609924892657451008" }],
   },
   {
     key: "telegram",
     label: "Telegram",
-    Icon: Send,
+    Icon: FaTelegramPlane,
     profiles: [{ name: "BuffaloHerde", href: "https://t.me/@Buffaloherde" }],
   },
   {
     key: "youtube",
     label: "YouTube",
-    Icon: Youtube,
+    Icon: FaYoutube,
     profiles: [
       { name: "Billy Whited", href: "https://www.youtube.com/@billywhited4442" },
       { name: "ShortyPro2", href: "https://www.youtube.com/@ShortyPro2" },
@@ -163,8 +167,14 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "twitch",
     label: "Twitch",
-    Icon: Globe,
+    Icon: FaTwitch,
     profiles: [{ name: "buffaloherde", href: "https://twitch.tv/buffaloherde" }],
+  },
+  {
+    key: "web",
+    label: "More",
+    Icon: FaGlobe,
+    profiles: [],
   },
 ];
 
@@ -175,7 +185,7 @@ function PlatformButton({
   platform: SocialPlatform;
   onClick: () => void;
 }) {
-  const Icon = platform.Icon ?? Globe;
+  const Icon = platform.Icon ?? FaGlobe;
 
   return (
     <Button
@@ -190,9 +200,11 @@ function PlatformButton({
     >
       <Icon className="h-4 w-4" />
       <span className="text-sm">{platform.label}</span>
-      <span className="ml-1 rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-white/80">
-        {platform.profiles.length}
-      </span>
+      {platform.profiles.length > 0 ? (
+        <span className="ml-1 rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-white/80">
+          {platform.profiles.length}
+        </span>
+      ) : null}
     </Button>
   );
 }
@@ -246,7 +258,7 @@ export default function PublicFooter() {
               Click a platform to choose the exact page/profile to visit.
             </p>
             <div className="flex flex-wrap gap-2">
-              {SOCIAL_PLATFORMS.map((p) => (
+              {SOCIAL_PLATFORMS.filter((p) => p.profiles.length > 0).map((p) => (
                 <PlatformButton
                   key={p.key}
                   platform={p}
@@ -267,7 +279,8 @@ export default function PublicFooter() {
                 target="_blank"
                 rel="noreferrer"
               >
-                <X className="h-4 w-4" /> Atlas UX on X <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                <FaXTwitter className="h-4 w-4" /> Atlas UX on X{" "}
+                <FiExternalLink className="h-3.5 w-3.5 opacity-70" />
               </a>
               <a
                 className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white"
@@ -275,8 +288,8 @@ export default function PublicFooter() {
                 target="_blank"
                 rel="noreferrer"
               >
-                <Instagram className="h-4 w-4" /> Atlas UX on Instagram{" "}
-                <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                <FaInstagram className="h-4 w-4" /> Atlas UX on Instagram{" "}
+                <FiExternalLink className="h-3.5 w-3.5 opacity-70" />
               </a>
               <a
                 className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white"
@@ -284,8 +297,8 @@ export default function PublicFooter() {
                 target="_blank"
                 rel="noreferrer"
               >
-                <Youtube className="h-4 w-4" /> ViralDead Engine on YouTube{" "}
-                <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                <FaYoutube className="h-4 w-4" /> ViralDead Engine on YouTube{" "}
+                <FiExternalLink className="h-3.5 w-3.5 opacity-70" />
               </a>
             </div>
           </div>
@@ -305,14 +318,14 @@ export default function PublicFooter() {
         <DialogContent className="border-white/10 bg-black text-white sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {(activePlatform?.Icon ?? Globe) && (
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
-                  {activePlatform ? <activePlatform.Icon className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
-                </span>
-              )}
-              <span>
-                {activePlatform?.label ?? "Social"} profiles
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
+                {activePlatform ? (
+                  <activePlatform.Icon className="h-4 w-4" />
+                ) : (
+                  <FaGlobe className="h-4 w-4" />
+                )}
               </span>
+              <span>{activePlatform?.label ?? "Social"} profiles</span>
             </DialogTitle>
           </DialogHeader>
 
@@ -337,14 +350,14 @@ export default function PublicFooter() {
                   </div>
                 </div>
                 <span className="ml-3 inline-flex items-center gap-1 text-xs text-white/70 group-hover:text-white">
-                  Open <ExternalLink className="h-3.5 w-3.5" />
+                  Open <FiExternalLink className="h-3.5 w-3.5" />
                 </span>
               </a>
             ))}
           </div>
 
           <div className="mt-3 text-xs text-white/50">
-            Tip: rename any placeholder profiles (“Profile 1”, “Company Page #1”) once you confirm the correct page names.
+            Tip: rename placeholder profiles (“Profile 1”, “Company Page #1”) once you confirm the real page names.
           </div>
         </DialogContent>
       </Dialog>
