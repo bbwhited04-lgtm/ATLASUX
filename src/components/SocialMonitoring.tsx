@@ -11,9 +11,13 @@ import {
   ExternalLink,
   Globe,
   RefreshCw,
+  Trash2,
+  Plus,
+  Tag,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -41,6 +45,7 @@ type Source = {
   name: string;
   url: string;
   platform: string;
+  type: string;
   createdAt: string;
 };
 
@@ -49,9 +54,7 @@ const hdrs = (tid: string) => ({ "x-tenant-id": tid, "Content-Type": "applicatio
 export function SocialMonitoring() {
   const { tenantId } = useActiveTenant();
   const [activeTab, setActiveTab] = useState("overview");
-  const [isListening, setIsListening] = useState(() => {
-    try { return sessionStorage.getItem("listening_active") === "true"; } catch { return false; }
-  });
+  const [isListening, setIsListening] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -59,6 +62,14 @@ export function SocialMonitoring() {
   const [mentions, setMentions] = useState<Mention[]>([]);
   const [mentionTotal, setMentionTotal] = useState(0);
   const [sources, setSources] = useState<Source[]>([]);
+
+  // Add source form
+  const [newUrl, setNewUrl] = useState("");
+  const [addingUrl, setAddingUrl] = useState(false);
+
+  // Add keyword form
+  const [newKeywords, setNewKeywords] = useState("");
+  const [addingKeywords, setAddingKeywords] = useState(false);
 
   const stats = {
     alerts: 0,
@@ -96,21 +107,30 @@ export function SocialMonitoring() {
     } catch { /* silent */ }
   }, [tenantId]);
 
-  // Persist listening state across tab switches
-  useEffect(() => {
-    try { sessionStorage.setItem("listening_active", String(isListening)); } catch { /* noop */ }
-  }, [isListening]);
+  // Fetch listening status from backend
+  const fetchStatus = useCallback(async () => {
+    if (!tenantId) return;
+    try {
+      const r = await fetch(
+        `${API_BASE}/v1/listening/status?tenantId=${encodeURIComponent(tenantId)}`,
+        { headers: hdrs(tenantId) }
+      );
+      const j = await r.json();
+      if (j.ok) setIsListening(j.active);
+    } catch { /* silent */ }
+  }, [tenantId]);
 
   // Load data on mount and when tenantId changes
   useEffect(() => {
     fetchMentions();
     fetchSources();
-  }, [fetchMentions, fetchSources]);
+    fetchStatus();
+  }, [fetchMentions, fetchSources, fetchStatus]);
 
   // Refresh all data
   const refresh = async () => {
     setLoading(true);
-    await Promise.all([fetchMentions(), fetchSources()]);
+    await Promise.all([fetchMentions(), fetchSources(), fetchStatus()]);
     setLoading(false);
   };
 
@@ -120,7 +140,21 @@ export function SocialMonitoring() {
       return;
     }
     try {
-      if (!isListening) {
+      if (isListening) {
+        // Stop listening
+        const r = await fetch(
+          `${API_BASE}/v1/listening/stop?tenantId=${encodeURIComponent(tenantId)}`,
+          { method: "POST", headers: hdrs(tenantId) }
+        );
+        const j = await r.json();
+        if (j.ok) {
+          setIsListening(false);
+          toast.success("Listening stopped.");
+        } else {
+          toast.error("Failed to stop listening.");
+        }
+      } else {
+        // Start listening
         const r = await fetch(
           `${API_BASE}/v1/listening/start?tenantId=${encodeURIComponent(tenantId)}`,
           { method: "POST", headers: hdrs(tenantId) }
@@ -133,12 +167,84 @@ export function SocialMonitoring() {
         } else {
           toast.success("Listening started.");
         }
-        // Refresh data after starting
+        setIsListening(true);
         setTimeout(refresh, 2000);
       }
-      setIsListening((prev) => !prev);
     } catch {
-      toast.error("Failed to start listening.");
+      toast.error("Failed to toggle listening.");
+    }
+  };
+
+  const addSource = async () => {
+    if (!tenantId || !newUrl.trim()) return;
+    setAddingUrl(true);
+    try {
+      const r = await fetch(
+        `${API_BASE}/v1/listening/sources/import?tenantId=${encodeURIComponent(tenantId)}`,
+        {
+          method: "POST",
+          headers: hdrs(tenantId),
+          body: JSON.stringify({ rawText: newUrl.trim() }),
+        }
+      );
+      const j = await r.json();
+      if (j.ok || j.created > 0) {
+        toast.success(`Added ${j.created} source${j.created !== 1 ? "s" : ""}.`);
+        setNewUrl("");
+        fetchSources();
+      } else {
+        toast.error(j.error === "NO_URLS_FOUND" ? "No valid URL found. Paste a full URL (e.g. https://twitter.com/handle)." : "Failed to add source.");
+      }
+    } catch {
+      toast.error("Failed to add source.");
+    } finally {
+      setAddingUrl(false);
+    }
+  };
+
+  const addKeywords = async () => {
+    if (!tenantId || !newKeywords.trim()) return;
+    setAddingKeywords(true);
+    try {
+      const r = await fetch(
+        `${API_BASE}/v1/listening/keywords?tenantId=${encodeURIComponent(tenantId)}`,
+        {
+          method: "POST",
+          headers: hdrs(tenantId),
+          body: JSON.stringify({ keywords: newKeywords.trim() }),
+        }
+      );
+      const j = await r.json();
+      if (j.ok) {
+        toast.success(`Added ${j.created} keyword${j.created !== 1 ? "s" : ""}.`);
+        setNewKeywords("");
+        fetchSources();
+      } else {
+        toast.error(j.error === "NO_VALID_KEYWORDS" ? "Enter at least one keyword." : "Failed to add keywords.");
+      }
+    } catch {
+      toast.error("Failed to add keywords.");
+    } finally {
+      setAddingKeywords(false);
+    }
+  };
+
+  const deleteSource = async (id: string) => {
+    if (!tenantId) return;
+    try {
+      const r = await fetch(
+        `${API_BASE}/v1/listening/sources/${id}?tenantId=${encodeURIComponent(tenantId)}`,
+        { method: "DELETE", headers: hdrs(tenantId) }
+      );
+      const j = await r.json();
+      if (j.ok) {
+        setSources((prev) => prev.filter((s) => s.id !== id));
+        toast.success("Source removed.");
+      } else {
+        toast.error("Failed to delete source.");
+      }
+    } catch {
+      toast.error("Failed to delete source.");
     }
   };
 
@@ -310,6 +416,68 @@ export function SocialMonitoring() {
             </CardContent>
           </Card>
 
+          {/* Add Source Form */}
+          <Card className="border-cyan-500/20">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Source
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* URL input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Social Profile URL</label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="https://twitter.com/AtlasUX"
+                    value={newUrl}
+                    onChange={(e) => setNewUrl(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") addSource(); }}
+                    className="flex-1 border-cyan-500/20"
+                  />
+                  <Button
+                    onClick={addSource}
+                    disabled={addingUrl || !newUrl.trim()}
+                    className="bg-cyan-500 hover:bg-cyan-400"
+                  >
+                    {addingUrl ? "Adding..." : "Add URL"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Paste a social media profile URL — Twitter, Reddit, Instagram, LinkedIn, etc.
+                </p>
+              </div>
+
+              {/* Keywords input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-1">
+                  <Tag className="h-3 w-3" />
+                  Keywords
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="atlas ux, ai automation, atlasux"
+                    value={newKeywords}
+                    onChange={(e) => setNewKeywords(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") addKeywords(); }}
+                    className="flex-1 border-cyan-500/20"
+                  />
+                  <Button
+                    onClick={addKeywords}
+                    disabled={addingKeywords || !newKeywords.trim()}
+                    className="bg-cyan-500 hover:bg-cyan-400"
+                  >
+                    {addingKeywords ? "Adding..." : "Add Keywords"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Comma-separated terms to monitor (e.g. brand name, product names, competitor names).
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Sources List */}
           <Card className="border-cyan-500/20">
             <CardHeader className="flex flex-row items-center justify-between">
@@ -321,7 +489,7 @@ export function SocialMonitoring() {
             <CardContent>
               {sources.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No sources imported yet. Add social profile URLs via Settings → Integrations or the import endpoint.
+                  No sources yet. Add social profile URLs or keywords above to start monitoring.
                 </p>
               ) : (
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
@@ -331,15 +499,30 @@ export function SocialMonitoring() {
                       className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        {s.type === "keyword" ? (
+                          <Tag className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        ) : (
+                          <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        )}
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium">{s.name}</p>
-                          <p className="truncate text-xs text-muted-foreground">{s.url}</p>
+                          {s.url && <p className="truncate text-xs text-muted-foreground">{s.url}</p>}
                         </div>
                       </div>
-                      <Badge variant="outline" className="border-cyan-500/20 text-xs shrink-0">
-                        {s.platform}
-                      </Badge>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant="outline" className="border-cyan-500/20 text-xs">
+                          {s.type === "keyword" ? "keyword" : s.platform}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-red-400"
+                          onClick={() => deleteSource(s.id)}
+                          title="Remove source"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

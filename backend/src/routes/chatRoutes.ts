@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 import { runChat } from "../ai.js";
 import { sglEvaluate } from "../core/sgl.js";
 import { prisma } from "../db/prisma.js";
@@ -14,6 +15,17 @@ import { runDeepAgent } from "../core/agent/deepAgentPipeline.js";
 
 // Load all SKILL.md files into memory at module init (runs once at server boot).
 loadAllSkills();
+
+const ChatBody = z.object({
+  messages: z.array(z.object({
+    role: z.enum(["system", "user", "assistant"]),
+    content: z.string().max(100_000),
+  })).min(1).max(200),
+  agentId: z.string().max(100).optional(),
+  provider: z.string().max(100).optional(),
+  model: z.string().max(100).optional(),
+  sessionId: z.string().max(200).optional(),
+}).passthrough();
 
 const MAX_DOC_CHARS = 12_000;
 const BUDGET_CHARS  = 60_000;
@@ -39,10 +51,16 @@ function packDocs(
 }
 
 export const chatRoutes: FastifyPluginAsync = async (app) => {
-  app.post("/", async (req, reply) => {
+  app.post("/", { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } }, async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
     const userId   = (req as any).auth?.userId as string;
-    const body     = req.body as any;
+
+    let body: any;
+    try {
+      body = ChatBody.parse(req.body);
+    } catch (e: any) {
+      return reply.code(400).send({ ok: false, error: "Invalid request body", details: e.errors });
+    }
 
     // ── Seat limit enforcement ──────────────────────────────────────────────
     if (userId && tenantId) {

@@ -11,12 +11,46 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import multipart from "@fastify/multipart";
 import { meterStorage } from "../lib/usageMeter.js";
 import { enforceStorageLimit } from "../lib/seatEnforcement.js";
 import { Readable } from "stream";
 import { prisma } from "../db/prisma.js";
+
+const ALLOWED_MIME = new Set([
+  "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
+  "application/pdf",
+  "text/plain", "text/csv", "text/markdown",
+  "application/json",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "audio/mpeg", "audio/wav", "audio/ogg",
+  "video/mp4", "video/webm",
+]);
+
+const MIME_EXT_MAP: Record<string, string[]> = {
+  "image/jpeg": [".jpg", ".jpeg"],
+  "image/png": [".png"],
+  "image/gif": [".gif"],
+  "image/webp": [".webp"],
+  "image/svg+xml": [".svg"],
+  "application/pdf": [".pdf"],
+  "text/plain": [".txt", ".text", ".log"],
+  "text/csv": [".csv"],
+  "text/markdown": [".md", ".markdown"],
+  "application/json": [".json"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+  "audio/mpeg": [".mp3"],
+  "audio/wav": [".wav"],
+  "audio/ogg": [".ogg"],
+  "video/mp4": [".mp4"],
+  "video/webm": [".webm"],
+};
 
 const BUCKET = process.env.KB_UPLOAD_BUCKET ?? "kb_uploads";
 const SIGNED_URL_TTL = 3600; // 1 hour
@@ -39,6 +73,10 @@ async function streamToBuffer(readable: Readable): Promise<Buffer> {
   for await (const chunk of readable) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   return Buffer.concat(chunks);
 }
+
+const FilePathQuery = z.object({
+  path: z.string().min(1).max(500),
+});
 
 export const filesRoutes: FastifyPluginAsync = async (app) => {
   await app.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } }); // 50 MB max
@@ -93,6 +131,18 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
       const data = await req.file();
       if (!data) return reply.code(400).send({ ok: false, error: "No file in request" });
 
+      // MIME type validation
+      if (!ALLOWED_MIME.has(data.mimetype)) {
+        return reply.code(415).send({ ok: false, error: `File type '${data.mimetype}' is not allowed` });
+      }
+
+      // Extension ↔ MIME consistency check
+      const ext = (data.filename.match(/\.[^.]+$/) ?? [""])[0].toLowerCase();
+      const allowedExts = MIME_EXT_MAP[data.mimetype];
+      if (allowedExts && ext && !allowedExts.includes(ext)) {
+        return reply.code(415).send({ ok: false, error: `Extension '${ext}' does not match MIME type '${data.mimetype}'` });
+      }
+
       const buf = await streamToBuffer(data.file as unknown as Readable);
 
       // Seat-level storage enforcement
@@ -132,7 +182,9 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
   // ── GET /v1/files/url?path=... ─────────────────────────────────────────────
   app.get("/url", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
-    const path = String((req.query as any)?.path ?? "");
+    const parsed = FilePathQuery.safeParse(req.query);
+    if (!parsed.success) return reply.code(400).send({ ok: false, error: "path query parameter required" });
+    const path = parsed.data.path;
 
     if (!tenantId || !path) return reply.code(400).send({ ok: false, error: "tenantId and path required" });
     // Ensure the path belongs to this tenant (basic auth check)
@@ -153,7 +205,9 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
   // ── DELETE /v1/files?path=... ─────────────────────────────────────────────
   app.delete("/", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
-    const path = String((req.query as any)?.path ?? "");
+    const parsed = FilePathQuery.safeParse(req.query);
+    if (!parsed.success) return reply.code(400).send({ ok: false, error: "path query parameter required" });
+    const path = parsed.data.path;
 
     if (!tenantId || !path) return reply.code(400).send({ ok: false, error: "tenantId and path required" });
     if (!path.startsWith(tenantPrefix(tenantId))) {

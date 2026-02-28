@@ -1,4 +1,5 @@
 
+import "./lib/api"; // Side-effect: installs CSRF fetch interceptor
 import React, { Component, ReactNode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider } from "react-router-dom";

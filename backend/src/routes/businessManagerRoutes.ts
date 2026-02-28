@@ -1,5 +1,19 @@
 import type { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 import { prisma } from "../db/prisma.js";
+
+const DisconnectBody = z.object({
+  org_id: z.string().min(1, "org_id is required").max(200),
+  provider: z.string().min(1, "provider is required").max(100),
+});
+
+const MarkConnectedBody = z.object({
+  org_id: z.string().min(1, "org_id is required").max(200),
+  provider: z.string().min(1, "provider is required").max(100),
+  scopes: z.array(z.string()).optional(),
+  status: z.record(z.unknown()).optional(),
+  config: z.record(z.unknown()).optional(),
+});
 
 /**
  * Providers we want Business Manager to show.
@@ -182,12 +196,10 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
    * Body: { org_id, provider }
    */
   app.post("/disconnect", async (req, reply) => {
-    const body = (req.body ?? {}) as any;
-    const orgSlug = s(body.org_id);
-    const provider = s(body.provider);
-
-    if (!orgSlug) return reply.code(400).send({ ok: false, error: "org_id is required" });
-    if (!provider) return reply.code(400).send({ ok: false, error: "provider required" });
+    const parsed = DisconnectBody.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ ok: false, error: "Validation failed", details: parsed.error.errors });
+    const orgSlug = parsed.data.org_id;
+    const provider = parsed.data.provider;
 
     const tenant = await ensureTenant(orgSlug);
 
@@ -219,12 +231,9 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
    * (Use this today to flip a provider on without OAuth while you wire flows.)
    */
   app.post("/mark_connected", async (req, reply) => {
-    const body = (req.body ?? {}) as any;
-    const orgSlug = s(body.org_id);
-    const provider = s(body.provider);
-
-    if (!orgSlug) return reply.code(400).send({ ok: false, error: "org_id is required" });
-    if (!provider) return reply.code(400).send({ ok: false, error: "provider required" });
+    const parsed = MarkConnectedBody.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ ok: false, error: "Validation failed", details: parsed.error.errors });
+    const { org_id: orgSlug, provider, scopes, status, config } = parsed.data;
 
     const tenant = await ensureTenant(orgSlug);
 
@@ -232,17 +241,17 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
       where: { tenantId_provider: { tenantId: tenant.id, provider: provider as any } },
       update: {
         connected: true,
-        scopes: Array.isArray(body.scopes) ? body.scopes : undefined,
-        status: body.status && typeof body.status === "object" ? body.status : undefined,
-        config: body.config && typeof body.config === "object" ? body.config : undefined,
+        scopes: scopes ?? undefined,
+        status: (status ?? undefined) as any,
+        config: (config ?? undefined) as any,
       },
       create: {
         tenantId: tenant.id,
         provider: provider as any,
         connected: true,
-        scopes: Array.isArray(body.scopes) ? body.scopes : [],
-        status: body.status && typeof body.status === "object" ? body.status : {},
-        config: body.config && typeof body.config === "object" ? body.config : {},
+        scopes: scopes ?? [],
+        status: (status ?? {}) as any,
+        config: (config ?? {}) as any,
       },
     });
 

@@ -8,6 +8,7 @@ import "dotenv/config";
 import auditPlugin from "./plugins/auditPlugin.js";
 import { authPlugin } from "./plugins/authPlugin.js";
 import { tenantPlugin } from "./plugins/tenantPlugin.js";
+import csrfPlugin from "./plugins/csrfPlugin.js";
 import { engineRoutes } from "./routes/engineRoutes.js";
 import { healthRoutes } from "./routes/healthRoutes.js";
 import { agentsRoutes } from "./routes/agentsRoutes.js";
@@ -132,9 +133,11 @@ await app.register(async (discordScope) => {
 const allowed = new Set([
   "https://www.atlasux.cloud",
   "https://atlasux.cloud",
-  "http://localhost:5173",
-  "http://localhost:3000",
 ]);
+if (process.env.NODE_ENV !== "production") {
+  allowed.add("http://localhost:5173");
+  allowed.add("http://localhost:3000");
+}
 
 await app.register(cors, {
   origin: (origin, cb) => {
@@ -152,15 +155,33 @@ await app.register(cors, {
     "x-request-id",
     "x-client-source",
     "x-inbound-secret",
+    "x-csrf-token",
   ],
 });
 
 await app.register(helmet, {
-  contentSecurityPolicy: false, // CSP managed by frontend/CDN
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://widget.trustpilot.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*.supabase.co", "https://atlasux.cloud"],
+      fontSrc: ["'self'"],
+      connectSrc: [
+        "'self'",
+        "https://atlasux-backend.onrender.com",
+        "https://*.supabase.co",
+        "wss://*.supabase.co",
+      ],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+    },
+  },
   crossOriginEmbedderPolicy: false,
 });
 
-await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
+await app.register(rateLimit, { max: 60, timeWindow: "1 minute" });
 
 // Gate routes — registered before auth (public validate + admin key-based)
 await app.register(gateRoutes, { prefix: "/v1/gate" });
@@ -168,6 +189,7 @@ await app.register(gateRoutes, { prefix: "/v1/gate" });
 // Plugins (order matters)
 await app.register(auditPlugin);
 await app.register(authPlugin);
+await app.register(csrfPlugin);
 await app.register(tenantPlugin);
 await app.register(engineRoutes, { prefix: "/v1/engine" });
 await app.register(healthRoutes, { prefix: "/v1" });

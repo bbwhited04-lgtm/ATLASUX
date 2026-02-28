@@ -84,7 +84,9 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
   // ── Google ────────────────────────────────────────────────────────────────
 
-  app.get("/google/start", async (req, reply) => {
+  const oauthRateLimit = { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } };
+
+  app.get("/google/start", oauthRateLimit, async (req, reply) => {
     const q = (req.query ?? {}) as any;
     const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
     const user_id = String(q.user_id ?? q.userId ?? "");
@@ -140,7 +142,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
   // ── Meta ──────────────────────────────────────────────────────────────────
 
-  app.get("/meta/start", async (req, reply) => {
+  app.get("/meta/start", oauthRateLimit, async (req, reply) => {
     const q = (req.query ?? {}) as any;
     const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
     const user_id = String(q.user_id ?? q.userId ?? "");
@@ -190,7 +192,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
   // ── X (Twitter) OAuth2 PKCE ───────────────────────────────────────────────
 
-  app.get("/x/start", async (req, reply) => {
+  app.get("/x/start", oauthRateLimit, async (req, reply) => {
     const q = (req.query ?? {}) as any;
     const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
     const user_id = String(q.user_id ?? q.userId ?? "");
@@ -239,7 +241,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
   // ── Tumblr OAuth 1.0a ─────────────────────────────────────────────────────
 
-  app.get("/tumblr/start", async (req, reply) => {
+  app.get("/tumblr/start", oauthRateLimit, async (req, reply) => {
     const q = (req.query ?? {}) as any;
     const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
     const user_id = String(q.user_id ?? q.userId ?? "");
@@ -272,7 +274,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
   // ── Reddit ────────────────────────────────────────────────────────────────
 
-  app.get("/reddit/start", async (req, reply) => {
+  app.get("/reddit/start", oauthRateLimit, async (req, reply) => {
     const q = (req.query ?? {}) as any;
     const org_id = String(q.org_id ?? q.tenantId ?? (req as any).tenantId ?? "");
     const user_id = String(q.user_id ?? "");
@@ -322,7 +324,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
   // ── Pinterest OAuth2 ──────────────────────────────────────────────────────
 
-  app.get("/pinterest/start", async (req, reply) => {
+  app.get("/pinterest/start", oauthRateLimit, async (req, reply) => {
     const q = (req.query ?? {}) as any;
     const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
     const user_id = String(q.user_id ?? q.userId ?? "");
@@ -372,7 +374,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
   // ── LinkedIn OAuth2 ────────────────────────────────────────────────────────
 
-  app.get("/linkedin/start", async (req, reply) => {
+  app.get("/linkedin/start", oauthRateLimit, async (req, reply) => {
     const q = (req.query ?? {}) as any;
     const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
     const user_id = String(q.user_id ?? q.userId ?? "");
@@ -423,7 +425,7 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
 
   // ── Microsoft 365 ─────────────────────────────────────────────────────────
 
-  app.get("/microsoft/start", async (req, reply) => {
+  app.get("/microsoft/start", oauthRateLimit, async (req, reply) => {
     const q = (req.query ?? {}) as any;
     const org_id = String(q.org_id ?? q.tenantId ?? (req as any).tenantId ?? "");
     const user_id = String(q.user_id ?? "");
