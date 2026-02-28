@@ -227,14 +227,18 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
    * On checkout.session.completed: generates 256-bit gate key, creates
    * cloud_seat + subscription record, emails the key to the customer.
    * On customer.subscription.deleted: revokes the cloud seat.
+   *
+   * Encapsulated in its own register() so the raw-body content type parser
+   * doesn't interfere with JSON parsing on other routes.
    * ─────────────────────────────────────────────────────────────────────────*/
-  app.addContentTypeParser(
-    "application/json",
-    { parseAs: "string", bodyLimit: 1048576 },
-    (_req: any, body: any, done: any) => { done(null, body); },
-  );
+  app.register(async (webhook) => {
+    webhook.addContentTypeParser(
+      "application/json",
+      { parseAs: "string", bodyLimit: 1048576 },
+      (_req: any, body: any, done: any) => { done(null, body); },
+    );
 
-  app.post("/subscription-webhook", async (req, reply) => {
+    webhook.post("/subscription-webhook", async (req, reply) => {
     const env = loadEnv(process.env);
     const secret = env.STRIPE_SUB_WEBHOOK_SECRET;
     if (!secret) {
@@ -416,5 +420,6 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
 
     // Unhandled event type — acknowledge anyway
     return reply.send({ ok: true, event: type, handled: false });
-  });
+    });
+  }); // end app.register (webhook scope)
 };
