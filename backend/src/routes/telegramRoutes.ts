@@ -244,13 +244,15 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
   //   4. Route through the chat engine
   //   5. Send Atlas's reply back via the bot
   app.post("/webhook", async (req, reply) => {
-    // ── Secret token validation ───────────────────────────────────────────
-    const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET ?? "";
-    if (webhookSecret) {
-      const provided = String(req.headers["x-telegram-bot-api-secret-token"] ?? "");
-      if (provided !== webhookSecret) {
-        return reply.code(403).send({ ok: false, error: "invalid_webhook_secret" });
-      }
+    // ── Secret token validation (fail-closed: reject if secret not configured) ──
+    const webhookSecret = (process.env.TELEGRAM_WEBHOOK_SECRET ?? "").trim();
+    if (!webhookSecret) {
+      req.log.error("TELEGRAM_WEBHOOK_SECRET not configured — rejecting webhook");
+      return reply.code(503).send({ ok: false, error: "webhook_not_configured" });
+    }
+    const provided = String(req.headers["x-telegram-bot-api-secret-token"] ?? "");
+    if (provided !== webhookSecret) {
+      return reply.code(403).send({ ok: false, error: "invalid_webhook_secret" });
     }
 
     const body = req.body as any;

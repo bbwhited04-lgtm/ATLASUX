@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { timingSafeEqual } from "crypto";
 import { prisma } from "../db/prisma.js";
 
 /**
@@ -18,7 +19,8 @@ function isAdmin(req: any): boolean {
   const key = process.env.GATE_ADMIN_KEY?.trim();
   if (!key) return false;
   const header = (req.headers["x-gate-admin-key"] ?? "").toString().trim();
-  return header === key;
+  if (header.length !== key.length) return false;
+  return timingSafeEqual(Buffer.from(header), Buffer.from(key));
 }
 
 export const gateRoutes: FastifyPluginAsync = async (app) => {

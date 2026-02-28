@@ -47,7 +47,6 @@ import * as adminAuth from "../utils/admin-auth";
 // Import existing feature components
 import Integrations from './Integrations';
 import { FileManagement } from './FileManagement';
-import { ProcessingSettings } from './ProcessingSettings';
 import AtlasAgentSettings from './AtlasAgentSettings';
 import { MobileIntegration } from './premium/MobileIntegration';
 import { getOrgUser } from "../lib/org";
@@ -372,10 +371,6 @@ export function Settings() {
             <FileText className="w-4 h-4 mr-2" />
             Audit Log
           </TabsTrigger>
-          <TabsTrigger value="performance" className="text-slate-300 data-[state=active]:text-cyan-400">
-            <Gauge className="w-4 h-4 mr-2" />
-            Performance
-          </TabsTrigger>
           <TabsTrigger value="files" className="text-slate-300 data-[state=active]:text-cyan-400">
             <FolderOpen className="w-4 h-4 mr-2" />
             Files
@@ -624,10 +619,6 @@ export function Settings() {
           <Integrations />
         </TabsContent>
         
-        {/* Performance Tab */}
-        <TabsContent value="performance">
-          <ProcessingSettings />
-        </TabsContent>
         
         {/* Files Tab */}
         <TabsContent value="files">

@@ -84,6 +84,10 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
     const id = String((req.params as any).id);
 
+    // Verify tenant boundary BEFORE performing update (prevent TOCTOU)
+    const existing = await prisma.ticket.findFirst({ where: { id, tenantId } });
+    if (!existing) return reply.code(404).send({ ok: false, error: "not_found" });
+
     const data: any = {};
     if (body.status) data.status = String(body.status);
     if (body.severity) data.severity = String(body.severity);
@@ -99,9 +103,7 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
       data,
     }).catch(() => null);
 
-    if (!ticket) return reply.code(404).send({ ok: false, error: "not_found" });
-    // Enforce tenant boundary after update (Prisma update uses id only)
-    if (ticket.tenantId !== tenantId) return reply.code(403).send({ ok: false, error: "forbidden" });
+    if (!ticket) return reply.code(500).send({ ok: false, error: "update_failed" });
     return reply.send({ ok: true, ticket });
   });
 

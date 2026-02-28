@@ -79,12 +79,25 @@ export const metaRoutes: FastifyPluginAsync = async (app) => {
       },
     } as any).catch(() => null);
 
-    // Delete any stored tokens for this Meta user
+    // Delete stored tokens for this Meta user — scoped to matching external ID only.
+    // Meta sends us the Facebook user_id; find integrations whose config references it.
     try {
-      await prisma.integration.updateMany({
-        where: { provider: "meta" },
-        data: { connected: false, access_token: null, refresh_token: null },
+      const metaIntegrations = await prisma.integration.findMany({
+        where: { provider: "meta", connected: true },
+        select: { id: true, config: true },
       });
+      const matchingIds = metaIntegrations
+        .filter(i => {
+          const cfg = (i.config ?? {}) as Record<string, any>;
+          return String(cfg.user_id ?? cfg.facebook_user_id ?? "") === userId;
+        })
+        .map(i => i.id);
+      if (matchingIds.length > 0) {
+        await prisma.integration.updateMany({
+          where: { id: { in: matchingIds } },
+          data: { connected: false, access_token: null, refresh_token: null },
+        });
+      }
     } catch { /* best effort */ }
 
     // Meta requires this exact response format

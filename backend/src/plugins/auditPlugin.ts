@@ -2,12 +2,12 @@ import fp from "fastify-plugin";
 import { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
 
-let auditDisabled = false;
+let auditPausedUntil = 0;       // epoch ms — pause window, not permanent
 let warnedOnce = false;
+const AUDIT_PAUSE_MS = 60_000;  // pause for 60s on schema error, then retry
 
-function shouldDisableAudit(err: any): boolean {
+function isSchemaError(err: any): boolean {
   const msg = String(err?.message ?? err);
-  // Supabase/PG: type "public.AuditLevel" does not exist (code 42704)
   if (msg.includes('type "public.AuditLevel" does not exist')) return true;
   if (msg.includes("AuditLevel") && msg.includes("does not exist")) return true;
   if (String(err?.code) === "42704") return true;
@@ -19,7 +19,8 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
   app.log.info("AUDIT PLUGIN LOADED");
 
   app.addHook("onSend", async (req, reply, payload) => {
-    if (auditDisabled) return payload;
+    // Temporary pause (not permanent disable) — auto-retries after window
+    if (auditPausedUntil > Date.now()) return payload;
 
     try {
       const level =
@@ -68,13 +69,14 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
       // Never fail the request because audit logging failed.
       app.log.error({ err }, "AUDIT DB WRITE FAILED (non-fatal)");
 
-      // If the database schema isn't ready (missing enum type), disable audit to stop spamming logs.
-      if (shouldDisableAudit(err)) {
-        auditDisabled = true;
+      // If the database schema isn't ready (missing enum type), pause briefly then auto-retry.
+      // Never permanently disable — SOC2 requires continuous audit logging.
+      if (isSchemaError(err)) {
+        auditPausedUntil = Date.now() + AUDIT_PAUSE_MS;
         if (!warnedOnce) {
           warnedOnce = true;
           app.log.warn(
-            "Audit logging disabled because AuditLevel enum/type is missing in Postgres. Run prisma migrations/db push to create it."
+            `Audit logging paused for ${AUDIT_PAUSE_MS / 1000}s — AuditLevel enum missing. Run prisma migrations/db push to fix.`
           );
         }
       }

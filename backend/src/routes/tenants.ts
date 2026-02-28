@@ -66,8 +66,14 @@ function auditMeta(before: any, after: any, extra?: Record<string, any>) {
 }
 
 export async function tenantsRoutes(app: FastifyInstance) {
-  // ✅ GET all tenants
-  app.get("/", async (_req, reply) => {
+  // GET all tenants — restricted to admin only
+  app.get("/", async (req, reply) => {
+    const adminKey = (process.env.GATE_ADMIN_KEY ?? "").trim();
+    const provided = (req.headers["x-gate-admin-key"] ?? "").toString().trim();
+    if (!adminKey || provided !== adminKey) {
+      return reply.code(403).send({ ok: false, error: "forbidden" });
+    }
+
     const tenants = await prisma.tenant.findMany({
       orderBy: { createdAt: "desc" },
       take: 100,
