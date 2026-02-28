@@ -58,6 +58,7 @@ import { gateRoutes } from "./routes/gateRoutes.js";
 import { youtubeRoutes } from "./routes/youtubeRoutes.js";
 import { videoRoutes } from "./routes/videoRoutes.js";
 import { outlookRoutes } from "./routes/outlookRoutes.js";
+import { calendarRoutes } from "./routes/calendarRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -256,6 +257,9 @@ await app.register(videoRoutes, { prefix: "/v1/video" });
 
 // Outlook — M365 inbox reading via Graph API (app-only credentials)
 await app.register(outlookRoutes, { prefix: "/v1/outlook" });
+
+// Calendar — M365 calendar events via Graph API (app-only credentials)
+await app.register(calendarRoutes, { prefix: "/v1/calendar" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";
