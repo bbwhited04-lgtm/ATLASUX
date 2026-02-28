@@ -21,7 +21,6 @@ import {
   FaHashtag,
   FaTiktok,
   FaDiscord,
-  FaTelegramPlane,
   FaYoutube,
   FaTwitch,
   FaGlobe,
@@ -150,7 +149,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "telegram",
     label: "Telegram",
-    Icon: FaTelegramPlane,
+    Icon: Globe,
     profiles: [{ name: "BuffaloHerde", href: "https://t.me/@Buffaloherde" }],
   },
   {
