@@ -11,19 +11,15 @@ import { cn } from "@/lib/utils";
 import {
   Instagram,
   Linkedin,
-  Reddit,
   Facebook,
   MessageCircle,
   X,
-  Pinterest,
   Handshake,
-  Tumblr,
   Hash,
   Music2,
   MessagesSquare,
   Send,
   Youtube,
-  Twitch,
   Globe,
   ExternalLink,
 } from "lucide-react";
@@ -68,7 +64,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "reddit",
     label: "Reddit",
-    Icon: Reddit,
+    Icon: Globe,
     profiles: [{ name: "BuffaloHerde", href: "https://www.reddit.com/user/Buffaloherde/" }],
   },
   {
@@ -96,7 +92,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "x",
     label: "X",
-    Icon: X,
+    Icon: Globe,
     profiles: [
       { name: "BuffaloHerde", href: "https://x.com/buffaloherde" },
       { name: "Atlas UX", href: "https://x.com/atlas_ux" },
@@ -118,7 +114,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "tumblr",
     label: "Tumblr",
-    Icon: Tumblr,
+    Icon: Globe,
     profiles: [{ name: "buffaloherde", href: "https://buffaloherde.tumblr.com" }],
   },
   {
@@ -167,7 +163,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "twitch",
     label: "Twitch",
-    Icon: Twitch,
+    Icon: Globe,
     profiles: [{ name: "buffaloherde", href: "https://twitch.tv/buffaloherde" }],
   },
 ];
