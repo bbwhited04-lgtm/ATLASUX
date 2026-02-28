@@ -149,7 +149,6 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
     key: "telegram",
     label: "Telegram",
-    Icon: Globe,
     profiles: [{ name: "BuffaloHerde", href: "https://t.me/@Buffaloherde" }],
   },
   {
