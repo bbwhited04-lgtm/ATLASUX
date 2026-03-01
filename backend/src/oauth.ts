@@ -3,7 +3,7 @@ import { makeSupabase } from "./supabase.js";
 import { webcrypto } from "node:crypto";
 import { writeTokenVault } from "./lib/tokenStore.js";
 
-export type Provider = "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin";
+export type Provider = "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "zoom";
 
 export function oauthEnabled(provider: Provider, env: Env): boolean {
   if (provider === "google") return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI);
@@ -30,6 +30,9 @@ export function oauthEnabled(provider: Provider, env: Env): boolean {
   }
   if (provider === "linkedin") {
     return !!(env.LINKEDIN_CLIENT_ID && env.LINKEDIN_CLIENT_SECRET && env.LINKEDIN_REDIRECT_URI);
+  }
+  if (provider === "zoom") {
+    return !!(env.ZOOM_CLIENT_ID && env.ZOOM_CLIENT_SECRET && env.ZOOM_REDIRECT_URI);
   }
   return false;
 }
@@ -354,6 +357,40 @@ export async function exchangeLinkedInCode(env: Env, code: string) {
   const data = await r.json().catch(() => ({})) as any;
   if (!r.ok || data.error) throw new Error(`LinkedIn token exchange failed: ${data.error_description ?? data.error ?? JSON.stringify(data)}`);
   return data as { access_token: string; expires_in?: number; scope?: string; token_type?: string };
+}
+
+// ── Zoom OAuth 2.0 ─────────────────────────────────────────────────────────────
+
+const ZOOM_SCOPES = ["meeting:read", "meeting:write", "webinar:read", "recording:read", "user:read"].join(" ");
+
+export function buildZoomAuthUrl(env: Env, state: string) {
+  const params = new URLSearchParams({
+    response_type: "code",
+    client_id: env.ZOOM_CLIENT_ID!,
+    redirect_uri: env.ZOOM_REDIRECT_URI!,
+    state,
+  });
+  return `https://zoom.us/oauth/authorize?${params.toString()}`;
+}
+
+export async function exchangeZoomCode(env: Env, code: string) {
+  const basic = Buffer.from(`${env.ZOOM_CLIENT_ID!}:${env.ZOOM_CLIENT_SECRET!}`).toString("base64");
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    code,
+    redirect_uri: env.ZOOM_REDIRECT_URI!,
+  });
+  const r = await fetch("https://zoom.us/oauth/token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  const data = await r.json().catch(() => ({})) as any;
+  if (!r.ok || data.error) throw new Error(`Zoom token exchange failed: ${data.reason ?? data.error ?? JSON.stringify(data)}`);
+  return data as { access_token: string; refresh_token?: string; expires_in?: number; token_type?: string; scope?: string };
 }
 
 // Token vault storage (Supabase table: token_vault)

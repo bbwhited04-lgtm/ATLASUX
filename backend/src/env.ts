@@ -75,6 +75,12 @@ const EnvSchema = z.object({
   LINKEDIN_CLIENT_SECRET: z.string().optional(),
   LINKEDIN_REDIRECT_URI: z.string().optional(),
 
+  // Zoom OAuth2 + Webhook
+  ZOOM_CLIENT_ID: z.string().optional(),
+  ZOOM_CLIENT_SECRET: z.string().optional(),
+  ZOOM_REDIRECT_URI: z.string().optional(),
+  ZOOM_WEBHOOK_SECRET: z.string().optional(),
+
   // TikTok OAuth2 (for Timmy TikTok agent)
   TIKTOK_CLIENT_KEY: z.string().optional(),
   TIKTOK_CLIENT_SECRET: z.string().optional(),

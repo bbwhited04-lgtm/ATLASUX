@@ -28,7 +28,7 @@ type Integration = {
   name: string;
   description: string;
   category: Category;
-  oauth: "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin" | null;
+  oauth: "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "zoom" | null;
   /** Sub-services unlocked by this OAuth connection */
   covers?: string[];
   /** Priority groups sort above everything else */
@@ -102,7 +102,7 @@ const INTEGRATIONS: Integration[] = [
   { id: "box",      name: "Box",         category: "Storage",  description: "Enterprise storage.",                         oauth: null },
 
   // ── Video / Conferencing ──────────────────────────────────────────────
-  { id: "zoom",     name: "Zoom",        category: "Video",    description: "Meetings, webinars, recordings.",             oauth: null },
+  { id: "zoom",     name: "Zoom",        category: "Video",    description: "Meetings, webinars, recordings.",             oauth: "zoom" },
 
   // ── CRM ───────────────────────────────────────────────────────────────
   { id: "hubspot",  name: "HubSpot",     category: "CRM",      description: "Contacts, deals, pipelines.",                 oauth: null },
@@ -230,6 +230,7 @@ export default function Integrations() {
       : i.oauth === "reddit"    ? `${BACKEND_URL}/v1/oauth/reddit/start`
       : i.oauth === "pinterest" ? `${BACKEND_URL}/v1/oauth/pinterest/start`
       : i.oauth === "linkedin"  ? `${BACKEND_URL}/v1/oauth/linkedin/start`
+      : i.oauth === "zoom"      ? `${BACKEND_URL}/v1/oauth/zoom/start`
       : `${BACKEND_URL}/v1/oauth/x/start`;
 
     const params = new URLSearchParams({ tenantId: realTenantId, org_id: realTenantId, user_id });

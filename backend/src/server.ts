@@ -70,6 +70,7 @@ import { tiktokRoutes } from "./routes/tiktokRoutes.js";
 import { tumblrRoutes } from "./routes/tumblrRoutes.js";
 import { pinterestRoutes } from "./routes/pinterestRoutes.js";
 import { browserRoutes } from "./routes/browserRoutes.js";
+import { zoomRoutes } from "./routes/zoomRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -313,6 +314,9 @@ await app.register(tumblrRoutes, { prefix: "/v1/tumblr" });
 
 // Pinterest — inbound webhook for Zapier/Make/n8n triggers
 await app.register(pinterestRoutes, { prefix: "/v1/pinterest" });
+
+// Zoom — webhook for meeting/webinar events
+await app.register(zoomRoutes, { prefix: "/v1/zoom" });
 
 // Browser automation — governed headless Chromium (SGL + decision memos)
 await app.register(browserRoutes, { prefix: "/v1/browser" });
