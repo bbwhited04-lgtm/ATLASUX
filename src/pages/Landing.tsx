@@ -197,8 +197,8 @@ export default function Landing() {
                 </span>
 
                 <h1 className="mt-8 text-5xl font-bold tracking-tight leading-[1.1] sm:text-6xl lg:text-7xl">
-                  Your AI<br />
-                  <span className="gradient-text text-glow">Employee</span><br />
+                  <span className="gradient-text text-glow">Atlas UX</span><br />
+                  Your AI Employee<br />
                   Works Where<br />
                   You Work.
                 </h1>
