@@ -623,7 +623,7 @@ export default function Landing() {
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Mar 4, 2026</span>
+            <span className="text-sm text-white/60">Last updated: Mar 5, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
             <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
@@ -799,6 +799,7 @@ export default function Landing() {
             <li>[Claude Code] Landing page redesign — full Sintra design system port with 9 sections: Hero (badge pill, gradient text, stat cards, CTAs, floating badges), Platform Overview (10 feature cards + 2 screenshots), Agent Roster (4-tier hierarchy with 30 agents + connectors), Integrations (8-icon bar + 6 category cards), Knowledge &amp; Chat (6 feature cards + inter-agent chat mockup with 5 messages), Audit &amp; Traceability (live audit log table + 8 feature cards + 3 screenshots), Dev Updates (preserved verbatim), Early Access CTA (form with 5 fields + selling points + platform badges); custom CSS classes (gradient-text, text-glow, glow-sky, glow-blue, grid-bg, pulse-dot, card-hover); all images from Sintra CDN; dark navy color system with alternating section backgrounds</li>
             <li>Submitted to Y Combinator — Atlas UX application sent; sourcing senior full-stack dev on Gun.io for TypeScript/Fastify/Prisma/React stack</li>
             <li>[Claude Code] Compliance hardening — hash-chained audit logs (tamper-evident, per-tenant SHA-256 chains with verification endpoint), DB-backed CSRF protection (synchronizer token via oauth_state, works cross-origin), PostgreSQL RLS on 12 tables (consent_records, data_subject_requests, data_breaches added), per-tenant rate limiting (3-tier: auth 10/min, mutation 30/min, read 120/min), session termination with token blacklist (SHA-256 hash + daily prune), HSTS enforcement (1-year max-age + strict referrer policy), Zod input validation across all compliance routes, HTML sanitization utility; rewritten policy docs for SOC 2, ISO 27001, HIPAA, PCI DSS, NIST 800-53, GDPR, and HITRUST CSF with honest control-to-code traceability and gap analysis</li>
+            <li>Listed on Product Hunt — Atlas UX is now live on Product Hunt for community discovery and upvotes</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
