@@ -9,7 +9,7 @@ import type { FastifyPluginAsync } from "fastify";
 import crypto from "crypto";
 import { prisma } from "../db/prisma.js";
 
-const consumerSecret = process.env.X_CLIENT_SECRET ?? "";
+const consumerSecret = process.env.X_CONSUMER_SECRET ?? "";
 
 export const xRoutes: FastifyPluginAsync = async (app) => {
   // ── GET /webhook — Twitter CRC challenge verification ───────────────────
@@ -24,7 +24,7 @@ export const xRoutes: FastifyPluginAsync = async (app) => {
     }
 
     if (!consumerSecret) {
-      app.log.warn("X_CLIENT_SECRET not set — cannot respond to CRC challenge");
+      app.log.warn("X_CONSUMER_SECRET not set — cannot respond to CRC challenge");
       return reply.status(500).send({ error: "Consumer secret not configured" });
     }
 
