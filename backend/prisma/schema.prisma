@@ -187,10 +187,14 @@ model AuditLog {
   app_users       app_users? @relation(fields: [actorUserId], references: [id], onUpdate: NoAction)
   tenant          Tenant?    @relation("TenantAudits", fields: [tenantId], references: [id], onUpdate: NoAction)
 
+  prevHash    String?  @map("prev_hash")
+  recordHash  String?  @map("record_hash")
+
   @@index([action])
   @@index([createdAt(sort: Desc)])
   @@index([entityType, entityId], map: "audit_log_entity_idx")
   @@index([tenantId, createdAt(sort: Desc)], map: "audit_log_tenant_time_idx")
+  @@index([recordHash], map: "audit_log_record_hash_idx")
   @@map("audit_log")
 }
 
@@ -1314,4 +1318,14 @@ model BrowserAction {
 
   @@index([sessionId, executedAt])
   @@map("browser_actions")
+}
+
+model RevokedToken {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  revokedAt DateTime @default(now()) @map("revoked_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  @@index([expiresAt])
+  @@map("revoked_tokens")
 }

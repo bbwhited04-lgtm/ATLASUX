@@ -1,461 +1,367 @@
-# ISO 27001 Compliance Framework
+# ISO 27001:2022 Compliance Framework -- Atlas UX
 
-## Overview
-Atlas UX maintains ISO 27001:2022 Information Security Management System (ISMS) certification, implementing comprehensive information security controls based on Annex A controls and continuous improvement processes.
+**Effective Date:** March 1, 2026
+**Last Updated:** March 1, 2026
+**Owner:** DEAD APP CORP
+**Scope:** Atlas UX platform -- Fastify API (Render), React SPA (Vercel), Supabase PostgreSQL, all third-party integrations
+**Standard:** ISO/IEC 27001:2022 Information Security Management Systems
 
-## Information Security Management System (ISMS)
+---
+
+## 1. Framework Overview
+
+ISO 27001:2022 specifies requirements for establishing, implementing, maintaining, and continually improving an Information Security Management System (ISMS). The 2022 revision reorganizes Annex A into four control themes (Organizational, People, Physical, Technological) containing 93 controls.
+
+Atlas UX is a multi-tenant AI employee productivity platform. This document maps each applicable Annex A control to its concrete implementation in our codebase, identifies gaps honestly, and provides a remediation timeline where controls are partial or planned.
 
 ### ISMS Scope
-- **Organizational Scope**: Atlas UX entire organization and operations
-- **System Scope**: All information systems, applications, and infrastructure
-- **Physical Scope**: All data centers, offices, and remote work locations
-- **Process Scope**: All business processes involving information assets
-
-### Information Security Policy
-- **Policy Statement**: Comprehensive information security policy
-- **Policy Objectives**: Clear, measurable security objectives
-- **Policy Commitment**: Management commitment to information security
-- **Policy Review**: Annual policy review and updates
-
-### Risk Management
-- **Risk Assessment Methodology**: Systematic risk assessment approach
-- **Risk Treatment**: Risk acceptance, avoidance, mitigation, transfer
-- **Risk Acceptance Criteria**: Documented risk acceptance criteria
-- **Risk Monitoring**: Ongoing risk monitoring and review
-
-### Information Security Objectives
-- **SMART Objectives**: Specific, Measurable, Achievable, Relevant, Time-bound
-- **Objective Alignment**: Alignment with business objectives
-- **Objective Tracking**: Regular objective progress tracking
-- **Objective Review**: Annual objective review and updates
-
-## Annex A Controls Implementation
-
-### A.5 Organizational Security Policies (2 controls)
-#### A.5.1 Policies for Information Security
-- **Information Security Policy**: Approved and communicated policy
-- **Policy Review**: Annual policy review and updates
-- **Policy Communication**: Policy communication to all interested parties
-- **Policy Compliance**: Policy compliance monitoring
-
-#### A.5.2 Policy Review
-- **Review Schedule**: Annual policy review schedule
-- **Review Triggers**: Event-driven policy reviews
-- **Review Documentation**: Comprehensive review documentation
-- **Review Approval**: Management approval of policy changes
-
-### A.6 People Security (8 controls)
-#### A.6.1 Screening
-- **Background Checks**: Background verification for all employees
-- **Contractor Screening**: Third-party contractor screening
-- **Role-Based Screening**: Screening based on role sensitivity
-- **Screening Documentation**: Comprehensive screening records
-
-#### A.6.2 Terms and Conditions of Employment
-- **Employment Contracts**: Security clauses in employment contracts
-- **Security Responsibilities**: Clear security responsibilities
-- **Disciplinary Procedures**: Security violation disciplinary procedures
-- **Contract Termination**: Secure termination procedures
-
-#### A.6.3 Information Security Awareness, Education and Training
-- **Awareness Programs**: Regular security awareness programs
-- **Role-Based Training**: Role-specific security training
-- **Training Records**: Comprehensive training documentation
-- **Training Effectiveness**: Training effectiveness measurement
-
-#### A.6.4 Disciplinary Process
-- **Disciplinary Policy**: Documented disciplinary process
-- **Violation Reporting**: Security violation reporting procedures
-- **Investigation Process**: Security incident investigation procedures
-- **Consistent Application**: Consistent disciplinary action application
-
-#### A.6.5 Responsibilities for Off-Duty
-- **Off-Duty Security**: Security responsibilities outside work hours
-- **Remote Work Security**: Secure remote work practices
-- **Personal Device Security**: Personal device security requirements
-- **Social Media Security**: Social media security guidelines
-
-#### A.6.6 Confirmation of Employment
-- **Employment Changes**: Security measures for employment changes
-- **Role Changes**: Security updates for role changes
-- **Termination Process**: Secure employment termination
-- **Access Revocation**: Immediate access revocation upon termination
-
-#### A.6.7 Removal of Assets
-- **Asset Return**: Asset return procedures upon termination
-- **Data Deletion**: Secure data deletion from personal devices
-- **Access Documentation**: Documentation of access removal
-- **Verification**: Verification of complete access removal
-
-#### A.6.8 Return of Assets
-- **Asset Tracking**: Comprehensive asset tracking system
-- **Return Procedures**: Documented asset return procedures
-- **Damage Assessment**: Asset damage assessment procedures
-- **Replacement**: Asset replacement procedures
-
-### A.7 Physical Security (15 controls)
-#### A.7.1 Physical Security Perimeter
-- **Perimeter Security**: Secure physical perimeter controls
-- **Access Control**: Physical access control systems
-- **Visitor Management**: Comprehensive visitor management
-- **Perimeter Monitoring**: 24/7 perimeter monitoring
-
-#### A.7.2 Physical Entry
-- **Access Control**: Multi-factor physical access control
-- **Access Logs**: Comprehensive access logging
-- **Visitor Registration**: Mandatory visitor registration
-- **Escort Requirements**: Visitor escort requirements
-
-#### A.7.3 Securing Offices, Rooms and Facilities
-- **Secure Areas**: Designated secure areas
-- **Room Security**: Individual room security controls
-- **Clean Desk Policy**: Clean desk policy implementation
-- **Document Security**: Secure document storage
-
-#### A.7.4 Physical Security Monitoring
-- **Surveillance Systems**: CCTV surveillance systems
-- **Alarm Systems**: Intrusion detection alarm systems
-- **Monitoring Staff**: 24/7 security monitoring
-- **Incident Response**: Physical security incident response
-
-#### A.7.5 Protecting Against Physical and Environmental Threats
-- **Environmental Controls**: Temperature, humidity, power controls
-- **Fire Protection**: Fire detection and suppression systems
-- **Water Protection**: Water damage prevention systems
-- **Natural Disasters**: Natural disaster protection measures
-
-#### A.7.6 Working in Secure Areas
-- **Access Authorization**: Authorization for secure area access
-- **Security Procedures**: Secure area security procedures
-- **Visitor Restrictions**: Visitor access restrictions
-- **Monitoring**: Secure area activity monitoring
-
-#### A.7.7 Clear Desk and Clear Screen Policy
-- **Clear Desk**: Mandatory clear desk policy
-- **Clear Screen**: Automatic screen lock procedures
-- **Document Security**: Secure document handling
-- **Media Security**: Secure media handling
-
-#### A.7.8 Equipment Location and Protection
-- **Equipment Placement**: Secure equipment placement
-- **Environmental Protection**: Equipment environmental protection
-- **Access Restriction**: Equipment access restrictions
-- **Maintenance Security**: Secure equipment maintenance
-
-#### A.7.9 Security of Assets Off-Premises
-- **Off-Site Security**: Security measures for off-site assets
-- **Transport Security**: Secure asset transportation
-- **Remote Work Security**: Secure remote work practices
-- **Personal Device Security**: Personal device security
-
-#### A.7.10 Storage Media
-- **Media Storage**: Secure storage media handling
-- **Media Disposal**: Secure media disposal procedures
-- **Media Tracking**: Storage media inventory and tracking
-- **Media Access**: Controlled media access
-
-#### A.7.11 Supporting Utilities
-- **Utility Security**: Secure utility infrastructure
-- **Backup Power**: Uninterruptible power supply systems
-- **Climate Control**: Environmental control systems
-- **Utility Monitoring**: Utility system monitoring
-
-#### A.7.12 Cabling Security
-- **Cable Protection**: Physical cable protection measures
-- **Cable Documentation**: Comprehensive cable documentation
-- **Access Control**: Restricted cable access
-- **Cable Monitoring**: Cable system monitoring
-
-#### A.7.13 Secure Disposal or Re-use of Equipment
-- **Data Sanitization**: Secure data sanitization procedures
-- **Equipment Disposal**: Secure equipment disposal
-- **Verification**: Data destruction verification
-- **Documentation**: Disposal documentation
-
-#### A.7.14 Physical Unauthorised Presence
-- **Unauthorized Access**: Detection of unauthorized presence
-- **Response Procedures**: Unauthorized presence response
-- **Monitoring**: Physical presence monitoring
-- **Reporting**: Unauthorized presence reporting
-
-#### A.7.15 Physical Security Information
-- **Security Information**: Physical security information protection
-- **Access Control**: Security information access control
-- **Information Sharing**: Controlled security information sharing
-- **Classification**: Security information classification
-
-### A.8 Technology Security (34 controls)
-#### A.8.1 User Endpoint Devices
-- **Device Security**: Secure endpoint device configuration
-- **Device Management**: Comprehensive device management
-- **Access Control**: Device access control measures
-- **Monitoring**: Endpoint device monitoring
-
-#### A.8.2 Privileged Access Rights
-- **Privileged Accounts**: Secure privileged account management
-- **Access Review**: Regular privileged access reviews
-- **Justification**: Privileged access justification
-- **Monitoring**: Privileged access monitoring
-
-#### A.8.3 Information Access Restriction
-- **Access Control**: Role-based access control implementation
-- **Access Review**: Regular access rights reviews
-- **Least Privilege**: Principle of least privilege
-- **Access Logging**: Comprehensive access logging
-
-#### A.8.4 Access to Source Code
-- **Code Access**: Controlled source code access
-- **Development Environment**: Secure development environment
-- **Code Review**: Code access review procedures
-- **Change Management**: Code change management
-
-#### A.8.5 Secure Authentication
-- **Authentication Policies**: Strong authentication policies
-- **Multi-Factor Authentication**: MFA implementation
-- **Password Policies**: Secure password policies
-- **Authentication Logging**: Authentication event logging
-
-#### A.8.6 Management of Identity and Authentication Information
-- **Identity Management**: Comprehensive identity management
-- **Authentication Data**: Secure authentication data handling
-- **Identity Lifecycle**: Identity lifecycle management
-- **Authentication Review**: Regular authentication review
-
-#### A.8.7 Authentication Information
-- **Password Security**: Secure password storage and handling
-- **Token Security**: Secure authentication token management
-- **Biometric Security**: Secure biometric data handling
-- **Key Security**: Secure cryptographic key management
-
-#### A.8.8 Asset Management
-- **Asset Inventory**: Comprehensive asset inventory
-- **Asset Classification**: Asset classification procedures
-- **Asset Ownership**: Clear asset ownership assignment
-- **Asset Tracking**: Asset lifecycle tracking
-
-#### A.8.9 Acceptable Use of Information and Other Associated Assets
-- **Acceptable Use Policy**: Comprehensive acceptable use policy
-- **Policy Communication**: Policy communication to all users
-- **Policy Enforcement**: Acceptable use policy enforcement
-- **Policy Review**: Regular policy review
-
-#### A.8.10 Return of Assets
-- **Asset Return**: Secure asset return procedures
-- **Data Removal**: Secure data removal from assets
-- **Return Documentation**: Asset return documentation
-- **Verification**: Return verification procedures
-
-#### A.8.11 Classification of Information
-- **Classification Scheme**: Information classification framework
-- **Classification Guidelines**: Classification guidelines and procedures
-- **Classification Review**: Regular classification review
-- **Classification Training**: Classification training programs
-
-#### A.8.12 Labelling of Information
-- **Labeling Requirements**: Information labeling requirements
-- **Labeling Procedures**: Information labeling procedures
-- **Digital Labeling**: Digital information labeling
-- **Physical Labeling**: Physical document labeling
-
-#### A.8.13 Information Transfer
-- **Transfer Controls**: Secure information transfer procedures
-- **Transfer Agreements**: Information transfer agreements
-- **Transfer Monitoring**: Information transfer monitoring
-- **Transfer Documentation**: Transfer documentation
-
-#### A.8.14 Information Storage
-- **Storage Security**: Secure information storage procedures
-- **Storage Classification**: Classification-based storage
-- **Storage Access**: Controlled storage access
-- **Storage Monitoring**: Storage system monitoring
-
-#### A.8.15 Data Leakage Prevention
-- **DLP Controls**: Data leakage prevention controls
-- **Content Monitoring**: Content monitoring and filtering
-- **Channel Control**: Communication channel control
-- **Incident Response**: DLP incident response
-
-#### A.8.16 Monitoring Activities
-- **Activity Monitoring**: Comprehensive system activity monitoring
-- **Log Management**: Centralized log management
-- **Anomaly Detection**: Security anomaly detection
-- **Alert Management**: Security alert management
-
-#### A.8.17 Alignment of Cybersecurity with Business Continuity
-- **BCMS Integration**: Business continuity management system integration
-- **Cyber Resilience**: Cyber resilience planning
-- **Incident Response**: Cybersecurity incident response
-- **Recovery Planning**: Cybersecurity recovery planning
-
-#### A.8.18 Information Security Incident Management
-- **Incident Management**: Comprehensive incident management procedures
-- **Incident Classification**: Incident classification procedures
-- **Incident Response**: Incident response procedures
-- **Incident Reporting**: Incident reporting procedures
-
-#### A.8.19 Collection of Evidence
-- **Evidence Collection**: Secure evidence collection procedures
-- **Evidence Preservation**: Evidence preservation procedures
-- **Chain of Custody**: Chain of custody maintenance
-- **Legal Requirements**: Legal evidence requirements
-
-#### A.8.20 Information Security During Disruption
-- **Disruption Planning**: Information security disruption planning
-- **Alternative Processing**: Alternative processing arrangements
-- **Security Maintenance**: Security maintenance during disruption
-- **Recovery Security**: Secure recovery procedures
-
-#### A.8.21 ICT Readiness for Business Continuity
-- **ICT Continuity**: ICT continuity planning
-- **Alternative Sites**: Alternative processing sites
-- **Continuity Testing**: Regular continuity testing
-- **Continuity Documentation**: Continuity documentation
-
-#### A.8.22 Availability of Information Processing Facilities
-- **Availability Requirements**: Information availability requirements
-- **Availability Monitoring**: System availability monitoring
-- **Capacity Planning**: System capacity planning
-- **Performance Monitoring**: System performance monitoring
-
-#### A.8.23 Information Security Event Logging
-- **Logging Policy**: Comprehensive security event logging policy
-- **Log Protection**: Log protection procedures
-- **Log Analysis**: Regular log analysis procedures
-- **Log Retention**: Log retention procedures
-
-#### A.8.24 Protection of Log Information
-- **Log Security**: Secure log storage and protection
-- **Log Access**: Controlled log access
-- **Log Integrity**: Log integrity verification
-- **Log Backup**: Secure log backup procedures
-
-#### A.8.25 Administrator and Operator Logs
-- **Admin Logging**: Comprehensive administrator activity logging
-- **Operator Logging**: System operator activity logging
-- **Log Review**: Regular admin/operator log review
-- **Log Analysis**: Admin/operator log analysis
-
-#### A.8.26 Fault Logging
-- **Fault Management**: System fault logging procedures
-- **Fault Analysis**: Fault analysis procedures
-- **Fault Resolution**: Fault resolution procedures
-- **Fault Documentation**: Fault documentation
-
-#### A.8.27 Software Installation Verification
-- **Installation Controls**: Controlled software installation
-- **Installation Verification**: Software installation verification
-- **Unauthorized Software**: Unauthorized software detection
-- **Software Inventory**: Software inventory management
-
-#### A.8.28 Cryptographic Controls
-- **Cryptography Policy**: Cryptographic controls policy
-- **Key Management**: Secure cryptographic key management
-- **Algorithm Selection**: Secure cryptographic algorithm selection
-- **Cryptographic Review**: Regular cryptographic review
-
-#### A.8.29 Secure Development Life Cycle
-- **Secure Development**: Secure software development lifecycle
-- **Development Security**: Development environment security
-- **Code Review**: Secure code review procedures
-- **Security Testing**: Security testing procedures
-
-#### A.8.30 Application Security Requirements
-- **Security Requirements**: Application security requirements
-- **Security Architecture**: Secure application architecture
-- **Security Testing**: Application security testing
-- **Security Review**: Regular security reviews
-
-#### A.8.31 Secure System Engineering
-- **System Security**: Secure system engineering principles
-- **Security Architecture**: System security architecture
-- **Security Integration**: Security integration in systems
-- **Security Validation**: Security validation procedures
-
-#### A.8.32 Security Testing in Development and Acceptance
-- **Development Testing**: Security testing during development
-- **Acceptance Testing**: Security acceptance testing
-- **Penetration Testing**: Regular penetration testing
-- **Vulnerability Assessment**: Vulnerability assessment procedures
-
-#### A.8.33 Outsourced Development
-- **Outsourcing Security**: Security for outsourced development
-- **Supplier Assessment**: Supplier security assessment
-- **Contract Requirements**: Security requirements in contracts
-- **Development Monitoring**: Outsourced development monitoring
-
-#### A.8.34 Separation of Development, Testing and Production Environments
-- **Environment Separation**: Development, testing, production separation
-- **Access Control**: Environment-specific access control
-- **Data Separation**: Environment data separation
-- **Change Management**: Environment change management
-
-## Information Security Risk Management
-
-### Risk Assessment Process
-- **Risk Identification**: Systematic risk identification procedures
-- **Risk Analysis**: Risk likelihood and impact analysis
-- **Risk Evaluation**: Risk level evaluation against criteria
-- **Risk Documentation**: Comprehensive risk documentation
-
-### Risk Treatment
-- **Treatment Options**: Risk treatment option evaluation
-- **Treatment Plans**: Detailed risk treatment plans
-- **Treatment Implementation**: Risk treatment implementation
-- **Treatment Monitoring**: Risk treatment effectiveness monitoring
-
-### Risk Acceptance
-- **Acceptance Criteria**: Documented risk acceptance criteria
-- **Acceptance Process**: Risk acceptance approval process
-- **Acceptance Documentation**: Risk acceptance documentation
-- **Acceptance Review**: Regular risk acceptance review
-
-## Information Security Continual Improvement
-
-### PDCA Cycle Implementation
-- **Plan**: ISMS planning and risk assessment
-- **Do**: ISMS implementation and operation
-- **Check**: ISMS monitoring and review
-- **Act**: ISMS maintenance and improvement
-
-### Management Review
-- **Review Schedule**: Regular management review schedule
-- **Review Inputs**: Comprehensive management review inputs
-- **Review Outputs**: Management review decisions and actions
-- **Review Documentation**: Management review documentation
-
-### Internal Audit
-- **Audit Program**: Comprehensive internal audit program
-- **Audit Execution**: Internal audit execution procedures
-- **Audit Reporting**: Internal audit reporting procedures
-- **Audit Follow-up**: Audit finding follow-up procedures
-
-### Corrective Actions
-- **Nonconformity Management**: Nonconformity identification and documentation
-- **Corrective Action Planning**: Corrective action planning procedures
-- **Corrective Action Implementation**: Corrective action implementation
-- **Effectiveness Evaluation**: Corrective action effectiveness evaluation
-
-## ISO 27001 Certification
-
-### Certification Process
-- **Stage 1 Audit**: Documentation review audit
-- **Stage 2 Audit**: Implementation audit
-- **Certification Decision**: Certification decision process
-- **Surveillance Audits**: Annual surveillance audits
-
-### Certification Maintenance
-- **Surveillance Program**: Annual surveillance audit program
-- **Recertification**: Three-year recertification cycle
-- **Certificate Maintenance**: Certificate maintenance procedures
-- **Nonconformity Resolution**: Audit nonconformity resolution
-
-## Contact Information
-- **Information Security Manager**: ism@atlasux.com
-- **ISO 27001 Compliance**: iso27001@atlasux.com
-- **Security Team**: security@atlasux.com
-- **Incident Reporting**: incidents@atlasux.com
-
-Last updated: February 27, 2026
-Next review: February 27, 2027
-ISO 27001 Certificate Number: [Certificate Number]
-Certification Body: [Certification Body Name]
+
+- **Systems in scope:** Fastify 5 backend (Render), React 18 SPA (Vercel), Supabase PostgreSQL 16, Supabase Auth, Stripe billing, 15+ OAuth provider integrations, AI inference (OpenAI, DeepSeek, OpenRouter, Cerebras), Supabase Storage (`kb_uploads` bucket)
+- **Processes in scope:** User authentication, tenant provisioning, AI agent orchestration, job execution, audit logging, DSAR processing, consent management, breach response, vendor assessment, payment processing
+- **Exclusions:** Physical data center security (delegated to Render, Vercel, and Supabase/AWS infrastructure providers -- see vendor assessments). Atlas UX is a cloud-native SaaS with no owned physical infrastructure.
+
+---
+
+## 2. Annex A Control Mapping
+
+### A.5 -- Organizational Controls
+
+| Control ID | Control Name | Implementation | File Path | Status |
+|------------|-------------|---------------|-----------|--------|
+| A.5.1 | Policies for information security | 12 policy documents covering security, compliance, data retention, incident response, risk management, vendor management, SGL governance | `policies/*.md` | Implemented |
+| A.5.2 | Information security roles and responsibilities | Agent roster defines roles (CEO, CFO, CLO, etc.) with SGL-enforced boundaries; `tenantPlugin` enforces role-based membership | `backend/src/plugins/tenantPlugin.ts`, `policies/SGL.md` | Implemented |
+| A.5.3 | Segregation of duties | SGL policy requires human approval for high-risk actions (spend above `AUTO_SPEND_LIMIT_USD`, risk tier >= 2); decision memos separate proposer from approver | `policies/SGL.md`, `policies/EXECUTION_CONSTITUTION.md`, `backend/src/routes/decisionRoutes.ts` | Implemented |
+| A.5.4 | Management responsibilities | Execution Constitution defines management accountability; SGL non-overridable prohibitions cannot be bypassed by any actor including founders | `policies/EXECUTION_CONSTITUTION.md`, `policies/SGL.md` | Implemented |
+| A.5.5 | Contact with authorities | Breach register auto-calculates GDPR 72-hour authority notification deadline and HIPAA 60-day individual notification deadline | `backend/src/routes/complianceRoutes.ts` (POST `/v1/compliance/breaches`) | Implemented |
+| A.5.6 | Contact with special interest groups | Not applicable -- no formal special interest group memberships | -- | N/A |
+| A.5.7 | Threat intelligence | Platform intel sweep workflows (WF-093 through WF-105) scan external sources daily at 05:00 UTC; Atlas Daily Aggregation (WF-106) processes at 05:45 UTC | `backend/src/routes/workflowsRoutes.ts` | Implemented |
+| A.5.8 | Information security in project management | CLAUDE.md enforces mandatory build rules for all code changes; SGL evaluates every agent intent before execution | `CLAUDE.md`, `policies/SGL.md` | Partial |
+| A.5.9 | Inventory of information and other associated assets | Prisma schema defines 50+ models with explicit tenant ownership; `assets` table tracks tenant assets | `backend/prisma/schema.prisma`, `backend/src/routes/assets.ts` | Implemented |
+| A.5.10 | Acceptable use of information and other associated assets | SGL non-overridable prohibitions define unacceptable uses; daily action cap (`MAX_ACTIONS_PER_DAY`) enforced | `policies/SGL.md`, `backend/src/core/engine/engine.ts` | Implemented |
+| A.5.11 | Return of assets | OAuth token revocation lifecycle handles provider-side token cleanup on disconnect; integration tokens cleared from both `token_vault` and `integration` table | `backend/src/lib/tokenLifecycle.ts` | Implemented |
+| A.5.12 | Classification of information | Not formalized -- no classification labels applied to data at rest | -- | Planned |
+| A.5.13 | Labelling of information | Not implemented -- no labeling scheme | -- | Planned |
+| A.5.14 | Information transfer | All API communication over HTTPS (TLS terminated at Render/Vercel); CORS whitelist restricts origins to `atlasux.cloud` + localhost in dev | `backend/src/server.ts` (lines 140-167) | Implemented |
+| A.5.15 | Access control | JWT authentication via Supabase Auth; tenant membership verified per request; UUID format validation on tenant IDs | `backend/src/plugins/authPlugin.ts`, `backend/src/plugins/tenantPlugin.ts` | Implemented |
+| A.5.16 | Identity management | Supabase Auth handles identity lifecycle; auto-provisioned `User` record on first auth; `TenantMember` links users to tenants with roles | `backend/src/plugins/authPlugin.ts` (lines 31-44), `backend/src/routes/authRoutes.ts` | Implemented |
+| A.5.17 | Authentication information | Bearer tokens issued by Supabase Auth (JWT); no plaintext credential storage in application layer | `backend/src/plugins/authPlugin.ts` | Implemented |
+| A.5.18 | Access rights | Role-based: `tenantPlugin` checks `TenantMember` for role and seat type; unauthenticated users rejected with 403 | `backend/src/plugins/tenantPlugin.ts` (lines 42-57) | Implemented |
+| A.5.19 | Information security in supplier relationships | Vendor risk assessment register with risk levels, compliance certifications, DPA tracking, BAA tracking, annual reassessment schedule | `backend/src/routes/complianceRoutes.ts` (vendor endpoints), `policies/VENDOR_MANAGEMENT.md` | Implemented |
+| A.5.20 | Addressing information security within supplier agreements | Vendor assessment tracks `hasDataProcessingAgreement` and `hasBaa` per vendor; annual reassessment enforced via `nextAssessmentDue` | `backend/src/routes/complianceRoutes.ts` (lines 611-671) | Implemented |
+| A.5.21 | Managing information security in the ICT supply chain | Vendor categories cover infrastructure, AI, payment, and integration providers; all assessed with risk levels | `policies/VENDOR_MANAGEMENT.md` | Implemented |
+| A.5.22 | Monitoring, review and change management of supplier services | `GET /v1/compliance/vendors/due` returns vendors past reassessment deadline; compliance dashboard aggregates vendor status | `backend/src/routes/complianceRoutes.ts` (lines 674-688) | Implemented |
+| A.5.23 | Information security for use of cloud services | Infrastructure runs on Render (backend), Vercel (frontend), Supabase (database/auth/storage) -- all SOC 2 certified providers documented in vendor register | `policies/VENDOR_MANAGEMENT.md` | Implemented |
+| A.5.24 | Information security incident management planning and preparation | Incident Response Plan defines P0-P3 severity levels, response procedures, containment steps; `IncidentReport` model in database | `policies/INCIDENT_RESPONSE.md`, `backend/src/routes/complianceRoutes.ts` (incident endpoints) | Implemented |
+| A.5.25 | Assessment and decision on information security events | Incidents classified by severity (p0-p3) and category; audit log captures all API requests with status codes | `backend/src/plugins/auditPlugin.ts`, `backend/src/routes/complianceRoutes.ts` (lines 496-555) | Implemented |
+| A.5.26 | Response to information security incidents | Incident lifecycle: open -> investigating -> contained -> resolved -> closed; root cause and resolution tracked | `backend/src/routes/complianceRoutes.ts` (PATCH `/v1/compliance/incidents/:id`) | Implemented |
+| A.5.27 | Learning from information security incidents | `lessonsLearned` field on incident reports; post-mortem URL tracked on breach records | `backend/src/routes/complianceRoutes.ts` (lines 558-592, 430-465) | Implemented |
+| A.5.28 | Collection of evidence | Audit log captures every API request with method, URL, status code, request ID, IP address, user agent, actor ID | `backend/src/plugins/auditPlugin.ts` | Partial |
+| A.5.29 | Information security during disruption | Health check endpoint at `/health` monitored by Render; engine loop has independent tick with error isolation | `backend/src/server.ts` (line 207), `backend/src/workers/engineLoop.ts` | Partial |
+| A.5.30 | ICT readiness for business continuity | Supabase provides automated PostgreSQL backups; Render provides zero-downtime deploys; no formal BC plan documented | -- | Planned |
+| A.5.31 | Legal, statutory, regulatory and contractual requirements | GDPR (DSAR, consent, breach), HIPAA (BAA tracking), PCI DSS (Stripe delegation) endpoints implemented; SGL blocks statutory violations | `backend/src/routes/complianceRoutes.ts`, `policies/SGL.md` | Implemented |
+| A.5.32 | Intellectual property rights | SGL blocks copyright and trademark infringement as non-overridable prohibitions | `policies/SGL.md` (line 23-24) | Implemented |
+| A.5.33 | Protection of records | Audit logs retained per GDPR Article 17(3)(e) legal obligation; erasure endpoint explicitly preserves audit trail | `backend/src/routes/complianceRoutes.ts` (line 220) | Implemented |
+| A.5.34 | Privacy and protection of PII | DSAR endpoints (access, erasure, portability, restriction, rectification, objection); consent management with lawful basis tracking; 30-day GDPR deadline enforcement | `backend/src/routes/complianceRoutes.ts` (lines 15-238) | Implemented |
+| A.5.35 | Independent review of information security | No formal independent security review program | -- | Planned |
+| A.5.36 | Compliance with policies, rules and standards for information security | Compliance dashboard (`GET /v1/compliance/dashboard`) provides unified status across GDPR, breach management, incident response, and vendor management | `backend/src/routes/complianceRoutes.ts` (lines 694-745) | Implemented |
+| A.5.37 | Documented operating procedures | CLAUDE.md documents all build, deploy, and operational commands; SGL documents execution rules | `CLAUDE.md`, `policies/SGL.md` | Partial |
+
+### A.6 -- People Controls
+
+| Control ID | Control Name | Implementation | File Path | Status |
+|------------|-------------|---------------|-----------|--------|
+| A.6.1 | Screening | Not applicable -- Atlas UX is a startup with no formal HR screening process for AI agents; human team screening is an organizational process outside the codebase | -- | N/A (organizational) |
+| A.6.2 | Terms and conditions of employment | Not applicable -- organizational HR process | -- | N/A (organizational) |
+| A.6.3 | Information security awareness, education and training | SGL policy and Execution Constitution serve as mandatory awareness documents for all agents and operators; no formal training program | `policies/SGL.md`, `policies/EXECUTION_CONSTITUTION.md` | Partial |
+| A.6.4 | Disciplinary process | SGL BLOCK decisions prevent policy violations at execution time rather than relying on after-the-fact discipline | `policies/SGL.md` | Partial |
+| A.6.5 | Responsibilities after termination or change of employment | Token revocation lifecycle clears all provider tokens on disconnect; no formal offboarding procedure for human staff | `backend/src/lib/tokenLifecycle.ts` | Partial |
+| A.6.6 | Confidentiality or non-disclosure agreements | Not implemented in codebase -- organizational process | -- | Planned |
+| A.6.7 | Remote working | All infrastructure is cloud-native; CORS restrictions and JWT auth protect against unauthorized remote access | `backend/src/server.ts`, `backend/src/plugins/authPlugin.ts` | Partial |
+| A.6.8 | Information security event reporting | Incident creation endpoint allows any authenticated user to report security events; audit logging captures all API activity | `backend/src/routes/complianceRoutes.ts` (POST `/v1/compliance/incidents`) | Implemented |
+
+### A.7 -- Physical Controls
+
+| Control ID | Control Name | Implementation | File Path | Status |
+|------------|-------------|---------------|-----------|--------|
+| A.7.1 - A.7.14 | Physical security controls | Delegated to infrastructure providers: Render (SOC 2 Type II), Vercel (SOC 2 Type II), Supabase/AWS (SOC 2, ISO 27001). Atlas UX owns no physical infrastructure. | `policies/VENDOR_MANAGEMENT.md` | N/A (delegated) |
+
+### A.8 -- Technological Controls
+
+| Control ID | Control Name | Implementation | File Path | Status |
+|------------|-------------|---------------|-----------|--------|
+| A.8.1 | User endpoint devices | Electron desktop app available but no MDM enforcement; web SPA runs in user's browser | `electron/` | Partial |
+| A.8.2 | Privileged access rights | Supabase service role key used only server-side; Prisma connects as DB superuser; no separate admin role in application layer beyond `owner` seat type | `backend/src/plugins/authPlugin.ts`, `backend/src/db/prisma.ts` | Partial |
+| A.8.3 | Information access restriction | Row-Level Security enabled on 9 tables (`integrations`, `assets`, `jobs`, `distribution_events`, `audit_log`, `kb_documents`, `decision_memos`, `crm_contacts`, `crm_companies`); `withTenant()` helper sets PostgreSQL session variable for RLS policy enforcement | `backend/prisma/migrations/20260228120000_rls_policies/migration.sql`, `backend/src/db/prisma.ts` (lines 30-41) | Partial |
+| A.8.4 | Access to source code | GitHub repository with branch protection (main branch); CLAUDE.md enforces build-before-commit rule | `CLAUDE.md` | Partial |
+| A.8.5 | Secure authentication | JWT-based via Supabase Auth; bearer token required on all authenticated routes; `authPlugin` validates token via `supabase.auth.getUser()` on every request | `backend/src/plugins/authPlugin.ts` (lines 15-51) | Implemented |
+| A.8.6 | Capacity management | Per-tenant quotas: `MAX_FILES_PER_TENANT` (500), `MAX_STORAGE_MB_PER_TENANT` (500), `MAX_ACTIONS_PER_DAY`, daily posting cap; global rate limit 60 req/min | `backend/src/routes/filesRoutes.ts`, `backend/src/server.ts` (line 191) | Implemented |
+| A.8.7 | Protection against malware | Not directly applicable -- server-side Node.js; no file execution from uploads; Supabase Storage serves files with signed URLs only | `backend/src/routes/filesRoutes.ts` | Partial |
+| A.8.8 | Management of technical vulnerabilities | No formal vulnerability management program; `npm audit` not automated in CI | -- | Planned |
+| A.8.9 | Configuration management | Environment variables defined in `env.ts` (185 vars); Helmet security headers configured in `server.ts`; Render `render.yaml` for deployment config | `backend/src/env.ts`, `backend/src/server.ts` (lines 169-189) | Implemented |
+| A.8.10 | Information deletion | GDPR Right to Erasure endpoint: `DELETE /v1/compliance/dsar/:email/erase` deletes CRM contacts, consent records, clears integration tokens; audit logs retained per legal obligation | `backend/src/routes/complianceRoutes.ts` (lines 182-221) | Implemented |
+| A.8.11 | Data masking | Not implemented -- no data masking or pseudonymization in application layer | -- | Planned |
+| A.8.12 | Data leakage prevention | CORS whitelist restricts API access to known origins; CSP headers restrict script/connect/frame sources; SGL blocks unauthorized data sharing | `backend/src/server.ts` (lines 140-189) | Partial |
+| A.8.13 | Information backup | Delegated to Supabase (automated PostgreSQL backups); no application-level backup strategy documented | -- | Partial |
+| A.8.14 | Redundancy of information processing facilities | Render provides container orchestration; Supabase provides database HA; no multi-region deployment | -- | Partial |
+| A.8.15 | Logging | Audit plugin logs every API request: method, URL, status code, actor ID, IP address, user agent, request ID; stored in `audit_log` table | `backend/src/plugins/auditPlugin.ts` | Implemented |
+| A.8.16 | Monitoring activities | Engine loop ticks every 5 seconds; compliance dashboard aggregates DSAR, breach, incident, and vendor status; Agent Watcher polls audit log every 4 seconds | `backend/src/workers/engineLoop.ts`, `backend/src/routes/complianceRoutes.ts` (GET `/v1/compliance/dashboard`), `src/components/AgentWatcher.tsx` | Implemented |
+| A.8.17 | Clock synchronization | All timestamps use JavaScript `new Date()` (system clock); database timestamps use PostgreSQL `now()` | -- | Implemented |
+| A.8.18 | Use of privileged utility programs | Supabase service role key restricted to backend; `SUPABASE_SERVICE_ROLE_KEY` never exposed to frontend; Prisma client uses connection pooling via Pgbouncer | `backend/src/plugins/authPlugin.ts` (lines 6-11), `backend/src/db/prisma.ts` | Implemented |
+| A.8.19 | Installation of software on operational systems | Render builds from `package.json` lockfile; no arbitrary software installation; dependencies pinned in `package-lock.json` | `backend/package.json`, `backend/package-lock.json` | Implemented |
+| A.8.20 | Networks security | Render provides network isolation; Supabase Pgbouncer for connection pooling; no direct database exposure to internet | `backend/src/db/prisma.ts` | Partial |
+| A.8.21 | Security of network services | HTTPS enforced on all endpoints (Render TLS termination, Vercel TLS termination); HSTS not explicitly configured in application (relies on infrastructure providers) | `backend/src/server.ts` | Partial |
+| A.8.22 | Segregation of networks | Separate services: web API, email worker, engine worker, scheduler -- each runs as independent Render service with its own process | `backend/src/server.ts`, `backend/src/workers/emailSender.ts`, `backend/src/workers/engineLoop.ts` | Implemented |
+| A.8.23 | Web filtering | CSP directives restrict `script-src`, `connect-src`, `frame-src`, `object-src`; `frame-src: 'none'`, `object-src: 'none'` | `backend/src/server.ts` (lines 170-189) | Implemented |
+| A.8.24 | Use of cryptography | Supabase Auth handles JWT signing; OAuth tokens stored in `TokenVault`; Discord webhook uses Ed25519 signature verification; no application-level encryption at rest | `backend/src/server.ts` (lines 92-139), `backend/src/lib/tokenLifecycle.ts` | Partial |
+| A.8.25 | Secure development life cycle | CLAUDE.md mandates: build before commit, no phantom imports, no stub code, real Prisma models only, correct import paths, proper Fastify logger signatures | `CLAUDE.md` | Partial |
+| A.8.26 | Application security requirements | Input validation with Zod on 15 route files; tenant ID UUID format validation; CORS origin whitelist; rate limiting at 60 req/min global | See Zod usage list below | Partial |
+| A.8.27 | Secure system architecture and engineering principles | Multi-tenancy via `tenant_id` FK on all tables; plugin architecture (audit, auth, tenant, CSRF); RLS policies for defense-in-depth | `backend/src/server.ts`, `backend/src/db/prisma.ts`, `backend/prisma/migrations/20260228120000_rls_policies/migration.sql` | Implemented |
+| A.8.28 | Secure coding | Prisma ORM prevents SQL injection for standard queries; `withTenant()` validates UUID format before `SET LOCAL`; parameterized queries throughout; `as any` casts documented as technical debt | `backend/src/db/prisma.ts` (lines 33-36) | Partial |
+| A.8.29 | Security testing in development and acceptance | No automated security testing (SAST, DAST, dependency scanning); manual testing only | -- | Planned |
+| A.8.30 | Outsourced development | All AI-assisted development governed by CLAUDE.md mandatory build rules; no third-party development contractors | `CLAUDE.md` | Partial |
+| A.8.31 | Separation of development, test and production environments | Separate environment variables for dev vs production; `NODE_ENV` check gates dev-only CORS origins and cookie settings; no formal staging environment | `backend/src/server.ts` (lines 144-147) | Partial |
+| A.8.32 | Change management | Git-based: all changes committed to main branch; Render and Vercel deploy from main; build must pass before commit (CLAUDE.md rule) | `CLAUDE.md` | Partial |
+| A.8.33 | Test information | No formal test data management policy | -- | Planned |
+| A.8.34 | Protection of information systems during audit testing | Audit log cannot be deleted via API; GDPR erasure explicitly preserves audit trail per Article 17(3)(e) | `backend/src/routes/complianceRoutes.ts` (line 220) | Implemented |
+
+---
+
+## 3. Key Control Deep Dives
+
+### 3.1 Access Control (A.5.15, A.5.16, A.5.18, A.8.3, A.8.5)
+
+**Authentication chain:**
+1. Frontend sends Supabase JWT in `Authorization: Bearer <token>` header
+2. `authPlugin` validates token via `supabase.auth.getUser(token)` -- rejects with 401 if invalid
+3. `authPlugin` auto-provisions a `User` record on first successful auth
+4. `tenantPlugin` reads `x-tenant-id` header, validates UUID format against regex, checks `TenantMember` table for membership
+5. Non-members rejected with 403 `TENANT_ACCESS_DENIED`
+
+**Row-Level Security:**
+- RLS enabled on 9 tenant-scoped tables via migration `20260228120000`
+- Policy: `tenant_id = current_setting('app.tenant_id', true)::uuid`
+- `withTenant()` helper in `backend/src/db/prisma.ts` wraps queries in a transaction with `SET LOCAL app.tenant_id`
+- Phase 2 (current): RLS enabled without `FORCE` -- superuser bypass for migrations
+- Phase 3 (planned): `FORCE ROW LEVEL SECURITY` once all routes use `withTenant()`
+
+**Evidence files:**
+- `backend/src/plugins/authPlugin.ts`
+- `backend/src/plugins/tenantPlugin.ts`
+- `backend/src/db/prisma.ts`
+- `backend/prisma/migrations/20260228120000_rls_policies/migration.sql`
+
+### 3.2 Audit Logging (A.5.28, A.8.15, A.8.16)
+
+**What is logged:**
+- Every HTTP request/response via `auditPlugin` `onSend` hook
+- Actor type, actor user ID, log level (info/warn/error based on status code)
+- HTTP method and URL as `action`
+- IP address, user agent, request ID, status code in metadata
+- All compliance mutations (DSAR, consent, breach, incident, vendor) explicitly logged with domain-specific actions
+
+**Resilience:**
+- Audit failures never block the request (wrapped in try/catch)
+- Schema errors (missing enum) trigger a 10-second pause, then auto-retry -- never permanently disabled
+- Comment in code: "SOC2 requires continuous audit logging"
+
+**Gap -- Hash-chained audit logs:**
+- `prev_hash` and `record_hash` columns not yet added
+- Chain verification endpoint (`GET /v1/compliance/audit/verify`) not yet implemented
+- Tamper detection not possible without hash chains
+- Planned per compliance hardening design document
+
+**Evidence files:**
+- `backend/src/plugins/auditPlugin.ts`
+- `backend/src/routes/complianceRoutes.ts`
+- `backend/src/routes/auditRoutes.ts`
+
+### 3.3 Communications Security (A.5.14, A.8.20, A.8.21, A.8.23)
+
+**Transport security:**
+- TLS termination handled by Render (backend) and Vercel (frontend)
+- No explicit HSTS header in application code -- relies on infrastructure providers
+- Planned: Helmet HSTS with `maxAge: 31536000, includeSubDomains: true`
+
+**CORS configuration (server.ts lines 140-167):**
+- Whitelist: `https://www.atlasux.cloud`, `https://atlasux.cloud`
+- Dev additions: `http://localhost:5173`, `http://localhost:3000`
+- Credentials: enabled
+- Allowed headers: `Content-Type`, `Authorization`, `x-tenant-id`, `x-user-id`, `x-device-id`, `x-request-id`, `x-client-source`, `x-inbound-secret`, `x-csrf-token`
+
+**Content Security Policy (server.ts lines 170-189):**
+- `default-src: 'self'`
+- `script-src: 'self' 'unsafe-inline' https://widget.trustpilot.com`
+- `frame-src: 'none'`
+- `object-src: 'none'`
+- `base-uri: 'self'`
+- Gap: `'unsafe-inline'` in `script-src` weakens CSP
+
+**Rate limiting:**
+- Global: 60 requests per minute (`@fastify/rate-limit`)
+- Per-route overrides on sensitive endpoints (auth, chat)
+- Gap: IP-based only -- no per-tenant rate limiting yet
+
+**Evidence files:**
+- `backend/src/server.ts`
+
+### 3.4 System Development Security (A.8.25, A.8.26, A.8.27, A.8.28)
+
+**Input validation:**
+Zod schemas are used in the following route files:
+- `backend/src/routes/decisionRoutes.ts`
+- `backend/src/routes/browserRoutes.ts`
+- `backend/src/routes/meetingRoutes.ts`
+- `backend/src/routes/chatRoutes.ts`
+- `backend/src/routes/stripeRoutes.ts`
+- `backend/src/routes/filesRoutes.ts`
+- `backend/src/routes/listeningRoutes.ts`
+- `backend/src/routes/businessManagerRoutes.ts`
+- `backend/src/routes/blogRoutes.ts`
+- `backend/src/routes/redditRoutes.ts`
+- `backend/src/routes/distributionRoutes.ts`
+- `backend/src/routes/growthRoutes.ts`
+
+Gap: Many routes still use `req.body as any` without Zod validation, including `complianceRoutes.ts` itself.
+
+**CSRF protection:**
+- `csrfPlugin.ts` exists with double-submit cookie pattern
+- Currently **disabled** in `server.ts` (commented out) because double-submit cookies do not work cross-origin (Vercel frontend -> Render backend)
+- CORS origin whitelist provides partial mitigation
+- Planned: DB-backed synchronizer token pattern per compliance hardening design
+
+**Secure coding rules (CLAUDE.md):**
+1. Build before commit -- always
+2. Never import files that do not exist
+3. Use only real Prisma models (verified against schema)
+4. No stub/simulated code in production
+5. Correct Prisma import path (`../db/prisma.js`)
+6. Correct Fastify logger signature (`{ err }` object pattern)
+7. Route registration pattern (export as `FastifyPluginAsync`, register under `/v1`)
+8. No duplicate functionality
+
+**Evidence files:**
+- `CLAUDE.md`
+- `backend/src/plugins/csrfPlugin.ts`
+- `backend/src/server.ts` (lines 11-13, 199)
+
+---
+
+## 4. CSRF Protection -- Detailed Status
+
+The CSRF plugin (`backend/src/plugins/csrfPlugin.ts`) implements the double-submit cookie pattern:
+- Sets `csrf_token` cookie on non-mutating requests
+- Validates `x-csrf-token` header matches cookie on POST/PUT/PATCH/DELETE
+- Exempts webhook endpoints from third-party services
+
+**Current state:** Disabled. The plugin is imported but commented out in `server.ts` (line 199) because double-submit cookies require `SameSite` cookie sharing between frontend and backend, which does not work when the frontend (Vercel) and backend (Render) are on different origins.
+
+**Planned remediation:** Replace with DB-backed synchronizer token pattern using the existing `OAuthState` table (1-hour TTL), returned via `x-csrf-token` response header. Frontend captures header and sends on all state-changing requests. This works cross-origin.
+
+---
+
+## 5. Session Termination -- Detailed Status
+
+**Current state:** No session termination mechanism exists. There is no logout endpoint, no token blacklist table, and no way to revoke a compromised Supabase JWT.
+
+The `authPlugin` validates tokens by calling `supabase.auth.getUser(token)` on every request, which provides implicit revocation if Supabase itself revokes the token. However, there is no application-level mechanism to force session termination.
+
+**Planned remediation:**
+- `revoked_tokens` table with `token_hash`, `revoked_at`, `expires_at`
+- `POST /v1/auth/logout` endpoint: calls `supabase.auth.signOut()` + adds token hash to revoked table
+- `authPlugin` checks `revoked_tokens` before accepting bearer tokens
+- Daily prune of expired revocations
+
+---
+
+## 6. Gap Analysis
+
+### Critical Gaps (Must Address for Certification)
+
+| Gap | Controls Affected | Risk | Remediation |
+|-----|------------------|------|-------------|
+| No hash-chained audit logs | A.5.28, A.8.15 | Tamper detection impossible; audit integrity unverifiable | Add `prev_hash`/`record_hash` columns; SHA-256 chain per tenant; verification endpoint |
+| CSRF protection disabled | A.8.26, A.8.28 | State-changing request forgery possible despite CORS | Implement DB-backed synchronizer token pattern |
+| No session termination | A.5.18, A.8.5 | Cannot revoke compromised sessions | Add `revoked_tokens` table and logout endpoint |
+| No HSTS header | A.8.21 | Transport downgrade attacks possible if infra HSTS fails | Configure Helmet HSTS: `maxAge: 31536000, includeSubDomains: true` |
+| RLS not forced | A.8.3 | Superuser queries bypass RLS; single point of failure for tenant isolation | Add `FORCE ROW LEVEL SECURITY` once all routes use `withTenant()` |
+
+### Moderate Gaps
+
+| Gap | Controls Affected | Risk | Remediation |
+|-----|------------------|------|-------------|
+| IP-only rate limiting | A.8.6 | Per-tenant resource exhaustion possible | Add `rate_limit_buckets` table with per-tenant, per-endpoint-group limits |
+| Inconsistent input validation | A.8.26 | Injection/XSS on unvalidated routes | Add Zod schemas to all routes using `req.body as any` |
+| `unsafe-inline` in CSP | A.8.23 | XSS mitigation weakened | Remove `unsafe-inline` from `script-src`; use nonces or hashes |
+| No automated security testing | A.8.29 | Vulnerabilities may go undetected | Integrate SAST/DAST in CI pipeline |
+| No formal staging environment | A.8.31 | Changes go directly to production | Add staging deployment target |
+
+### Accepted / Low Priority Gaps
+
+| Gap | Controls Affected | Risk Level | Rationale |
+|-----|------------------|------------|-----------|
+| No data classification scheme | A.5.12, A.5.13 | Low | All tenant data treated as confidential by default; classification adds value at scale |
+| No formal BC plan | A.5.30 | Medium | Supabase backups + Render container orchestration provide base resilience |
+| No vulnerability management program | A.8.8 | Medium | Manual `npm audit` runs; no automated scanning |
+| Physical security | A.7.1-A.7.14 | N/A | Fully delegated to SOC 2 certified infrastructure providers |
+
+---
+
+## 7. Statement of Applicability Summary
+
+| Control Theme | Total Controls | Implemented | Partial | Planned | N/A |
+|--------------|---------------|-------------|---------|---------|-----|
+| A.5 Organizational | 37 | 25 | 5 | 4 | 3 |
+| A.6 People | 8 | 1 | 4 | 1 | 2 |
+| A.7 Physical | 14 | 0 | 0 | 0 | 14 |
+| A.8 Technological | 34 | 16 | 13 | 5 | 0 |
+| **Totals** | **93** | **42** | **22** | **10** | **19** |
+
+**Applicable controls:** 74 (93 minus 19 N/A)
+**Implemented or partial:** 64 of 74 applicable (86%)
+**Fully implemented:** 42 of 74 applicable (57%)
+
+---
+
+## 8. Evidence Reference Index
+
+| Evidence Type | Location | Description |
+|--------------|----------|-------------|
+| Authentication plugin | `backend/src/plugins/authPlugin.ts` | JWT validation via Supabase Auth |
+| Tenant isolation plugin | `backend/src/plugins/tenantPlugin.ts` | Multi-tenant access control with membership verification |
+| Audit logging plugin | `backend/src/plugins/auditPlugin.ts` | Per-request audit trail with resilience |
+| Database RLS migration | `backend/prisma/migrations/20260228120000_rls_policies/migration.sql` | Row-Level Security on 9 tables |
+| RLS helper | `backend/src/db/prisma.ts` | `withTenant()` function for RLS session variable |
+| CSRF plugin (disabled) | `backend/src/plugins/csrfPlugin.ts` | Double-submit cookie pattern (not active) |
+| Server security config | `backend/src/server.ts` | CORS, Helmet CSP, rate limiting, plugin registration |
+| Compliance routes | `backend/src/routes/complianceRoutes.ts` | DSAR, consent, breach, incident, vendor endpoints |
+| Auth routes | `backend/src/routes/authRoutes.ts` | Tenant provisioning |
+| Token lifecycle | `backend/src/lib/tokenLifecycle.ts` | OAuth token refresh and revocation |
+| SGL policy | `policies/SGL.md` | Non-overridable execution boundaries |
+| Execution Constitution | `policies/EXECUTION_CONSTITUTION.md` | Agent execution rules and accountability |
+| Incident Response Plan | `policies/INCIDENT_RESPONSE.md` | P0-P3 severity definitions and procedures |
+| Risk Management Framework | `policies/RISK_MANAGEMENT.md` | Risk assessment methodology |
+| Data Retention Policy | `policies/DATA_RETENTION.md` | Data lifecycle and deletion rules |
+| Vendor Management Policy | `policies/VENDOR_MANAGEMENT.md` | Third-party vendor assessment process |
+| Prisma schema | `backend/prisma/schema.prisma` | 50+ models defining data architecture |
+| Build rules | `CLAUDE.md` | Mandatory development practices |
+| Compliance hardening plan | `docs/plans/2026-03-03-compliance-hardening-design.md` | Remediation design for all identified gaps |
+
+---
+
+## 9. Remediation Timeline
+
+| Phase | Work Item | Target Date | Controls Addressed |
+|-------|-----------|-------------|-------------------|
+| 1 | Hash-chained audit logs | 2026-03-10 | A.5.28, A.8.15 |
+| 2 | Database-level RLS (FORCE) | 2026-03-10 | A.8.3 |
+| 3 | CSRF protection (DB-backed) | 2026-03-14 | A.8.26, A.8.28 |
+| 4 | Session termination + token blacklist | 2026-03-14 | A.5.18, A.8.5 |
+| 5 | Per-tenant rate limiting | 2026-03-17 | A.8.6 |
+| 6 | Input validation sweep (Zod on all routes) | 2026-03-17 | A.8.26 |
+| 7 | HSTS + transport security hardening | 2026-03-21 | A.8.21 |
+| 8 | Automated security testing (CI) | 2026-03-28 | A.8.29 |
+
+---
+
+Last updated: March 1, 2026
+Next review: June 1, 2026

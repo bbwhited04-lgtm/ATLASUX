@@ -25,6 +25,18 @@ export const authPlugin: FastifyPluginAsync = async (app) => {
       return reply.code(401).send({ ok: false, error: "invalid_token" });
     }
 
+    // Check token blacklist (HIPAA §164.312(d), NIST IA-11)
+    const { createHash } = await import("node:crypto");
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+    try {
+      const revoked = await prisma.revokedToken.findUnique({ where: { tokenHash } });
+      if (revoked && revoked.expiresAt > new Date()) {
+        return reply.code(401).send({ ok: false, error: "token_revoked" });
+      }
+    } catch {
+      // Fail-open: if blacklist table doesn't exist yet, allow the request
+    }
+
     const userId = data.user.id;
     const email = data.user.email ?? null;
 

@@ -7,6 +7,52 @@
 
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
+import { z } from "zod";
+
+// ── Zod Schemas (PCI 6.5.1, NIST SI-10, SOC 2 CC6.1) ──────────────────────
+
+const DsarCreateSchema = z.object({
+  requestType: z.enum(["access", "erasure", "portability", "restriction", "rectification", "objection"]),
+  subjectEmail: z.string().email().max(320),
+  subjectName: z.string().max(200).optional(),
+  reason: z.string().max(2000).optional(),
+});
+
+const DsarUpdateSchema = z.object({
+  status: z.enum(["pending", "in_progress", "completed", "denied"]).optional(),
+  response: z.string().max(5000).optional(),
+});
+
+const ConsentSchema = z.object({
+  subjectEmail: z.string().email().max(320),
+  purpose: z.enum(["marketing", "analytics", "ai_processing", "data_sharing", "communications"]),
+  lawfulBasis: z.enum(["consent", "contract", "legal_obligation", "vital_interest", "public_task", "legitimate_interest"]),
+});
+
+const BreachSchema = z.object({
+  title: z.string().min(1).max(500),
+  description: z.string().min(1).max(5000),
+  severity: z.enum(["low", "medium", "high", "critical"]),
+  dataTypesAffected: z.array(z.string()).optional(),
+  individualsAffected: z.number().int().min(0).optional(),
+  incidentCommander: z.string().max(200).optional(),
+});
+
+const IncidentSchema = z.object({
+  title: z.string().min(1).max(500),
+  description: z.string().min(1).max(5000),
+  severity: z.enum(["P0", "P1", "P2", "P3"]),
+  category: z.string().max(100).optional(),
+});
+
+const VendorSchema = z.object({
+  name: z.string().min(1).max(300),
+  category: z.string().max(100).optional(),
+  riskLevel: z.enum(["low", "medium", "high", "critical"]).optional(),
+  hasDpa: z.boolean().optional(),
+  hasBaa: z.boolean().optional(),
+  notes: z.string().max(5000).optional(),
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data Subject Requests (GDPR Articles 15-22)
@@ -36,15 +82,10 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId;
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
-    const { requestType, subjectEmail, subjectName, reason } = req.body as any;
-    if (!requestType || !subjectEmail) {
-      return reply.status(400).send({ ok: false, error: "requestType and subjectEmail required" });
-    }
-
-    const validTypes = ["access", "erasure", "portability", "restriction", "rectification", "objection"];
-    if (!validTypes.includes(requestType)) {
-      return reply.status(400).send({ ok: false, error: `requestType must be one of: ${validTypes.join(", ")}` });
-    }
+    let body;
+    try { body = DsarCreateSchema.parse(req.body); }
+    catch (e: any) { return reply.status(400).send({ ok: false, error: "validation_failed", details: e.errors }); }
+    const { requestType, subjectEmail, subjectName, reason } = body;
 
     // GDPR: 30-day deadline from submission
     const dueBy = new Date();
@@ -85,14 +126,12 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
   app.patch("/dsar/:id", async (req, reply) => {
     const tenantId = (req as any).tenantId;
     const { id } = req.params as any;
-    const { status, response } = req.body as any;
-
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
-    const validStatuses = ["pending", "in_progress", "completed", "denied"];
-    if (status && !validStatuses.includes(status)) {
-      return reply.status(400).send({ ok: false, error: `status must be one of: ${validStatuses.join(", ")}` });
-    }
+    let body;
+    try { body = DsarUpdateSchema.parse(req.body); }
+    catch (e: any) { return reply.status(400).send({ ok: false, error: "validation_failed", details: e.errors }); }
+    const { status, response } = body;
 
     const data: any = {};
     if (status) data.status = status;
@@ -259,20 +298,10 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId;
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
-    const { subjectEmail, purpose, lawfulBasis } = req.body as any;
-    if (!subjectEmail || !purpose || !lawfulBasis) {
-      return reply.status(400).send({ ok: false, error: "subjectEmail, purpose, and lawfulBasis required" });
-    }
-
-    const validPurposes = ["marketing", "analytics", "ai_processing", "data_sharing", "communications"];
-    const validBases = ["consent", "contract", "legal_obligation", "vital_interest", "public_task", "legitimate_interest"];
-
-    if (!validPurposes.includes(purpose)) {
-      return reply.status(400).send({ ok: false, error: `purpose must be one of: ${validPurposes.join(", ")}` });
-    }
-    if (!validBases.includes(lawfulBasis)) {
-      return reply.status(400).send({ ok: false, error: `lawfulBasis must be one of: ${validBases.join(", ")}` });
-    }
+    let body;
+    try { body = ConsentSchema.parse(req.body); }
+    catch (e: any) { return reply.status(400).send({ ok: false, error: "validation_failed", details: e.errors }); }
+    const { subjectEmail, purpose, lawfulBasis } = body;
 
     const record = await prisma.consentRecord.upsert({
       where: { tenantId_subjectEmail_purpose: { tenantId, subjectEmail, purpose } },
@@ -370,10 +399,10 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId;
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
-    const { severity, title, description, dataTypesAffected, individualsAffected, incidentCommander } = req.body as any;
-    if (!severity || !title || !description) {
-      return reply.status(400).send({ ok: false, error: "severity, title, and description required" });
-    }
+    let breachBody;
+    try { breachBody = BreachSchema.parse(req.body); }
+    catch (e: any) { return reply.status(400).send({ ok: false, error: "validation_failed", details: e.errors }); }
+    const { severity, title, description, dataTypesAffected, individualsAffected, incidentCommander } = breachBody;
 
     const detectedAt = new Date();
 
@@ -517,16 +546,20 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId;
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
-    const { severity, category, title, description, impactSummary, affectedSystems, assignedTo } = req.body as any;
-    if (!severity || !category || !title || !description) {
-      return reply.status(400).send({ ok: false, error: "severity, category, title, and description required" });
-    }
+    let incBody;
+    try { incBody = IncidentSchema.extend({
+      impactSummary: z.string().max(2000).optional(),
+      affectedSystems: z.array(z.string()).optional(),
+      assignedTo: z.string().max(200).optional(),
+    }).parse(req.body); }
+    catch (e: any) { return reply.status(400).send({ ok: false, error: "validation_failed", details: e.errors }); }
+    const { severity, category, title, description, impactSummary, affectedSystems, assignedTo } = incBody;
 
     const incident = await prisma.incidentReport.create({
       data: {
         tenantId,
         severity,
-        category,
+        category: category ?? "uncategorized",
         title,
         description,
         impactSummary: impactSummary || null,
@@ -541,7 +574,7 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
         tenantId,
         actorType: "user",
         actorUserId: (req as any).auth?.userId || null,
-        level: severity === "p0" ? "error" : "warn",
+        level: severity === "P0" ? "error" : "warn",
         action: "INCIDENT_CREATED",
         entityType: "incident_report",
         entityId: incident.id,
@@ -613,10 +646,15 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId;
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
-    const { vendorName, category, riskLevel, dataAccess, complianceCerts, hasDataProcessingAgreement, hasBaa, notes } = req.body as any;
-    if (!vendorName || !category || !riskLevel) {
-      return reply.status(400).send({ ok: false, error: "vendorName, category, and riskLevel required" });
-    }
+    let vendorBody;
+    try { vendorBody = VendorSchema.extend({
+      vendorName: z.string().min(1).max(300),
+      dataAccess: z.array(z.string()).optional(),
+      complianceCerts: z.array(z.string()).optional(),
+      hasDataProcessingAgreement: z.boolean().optional(),
+    }).parse(req.body); }
+    catch (e: any) { return reply.status(400).send({ ok: false, error: "validation_failed", details: e.errors }); }
+    const { vendorName, category, riskLevel, dataAccess, complianceCerts, hasDpa: hasDataProcessingAgreement, hasBaa, notes } = vendorBody as any;
 
     // Next assessment due in 1 year
     const nextAssessmentDue = new Date();
@@ -740,6 +778,25 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
           assessmentsDue: vendorsDue,
           status: vendorsDue > 0 ? "review_needed" : "current",
         },
+      },
+    };
+  });
+
+  // ── Audit Chain Verification (SOC 2 CC7.2, NIST AU-10) ─────────────────
+  app.get("/audit/verify", async (req, reply) => {
+    const tenantId = (req as any).tenantId;
+    if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
+
+    const { verifyAuditChain } = await import("../lib/auditChain.js");
+    const result = await verifyAuditChain(tenantId);
+
+    return {
+      ok: true,
+      chain: {
+        total: result.total,
+        verified: result.verified,
+        intact: result.broken.length === 0,
+        brokenLinks: result.broken.slice(0, 50),
       },
     };
   });

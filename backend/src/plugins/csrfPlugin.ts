@@ -1,9 +1,23 @@
+/**
+ * CSRF Protection — DB-backed synchronizer token pattern.
+ *
+ * Works cross-origin (Vercel frontend → Render backend) without cookies.
+ * Uses the oauth_state table for token storage with 1-hour TTL.
+ *
+ * Flow:
+ *   1. Any authenticated response includes x-csrf-token header
+ *   2. Frontend reads it and sends on all state-changing requests
+ *   3. Backend validates token exists in DB before processing mutations
+ *
+ * Controls: PCI DSS 6.5.9, NIST SC-23, HITRUST 09.m, SOC 2 CC6.6, ISO A.14.1.2
+ */
+import fp from "fastify-plugin";
 import type { FastifyPluginAsync } from "fastify";
 import { randomBytes } from "crypto";
-import cookie from "@fastify/cookie";
+import { setOAuthState, getOAuthState } from "../lib/oauthState.js";
 
-const CSRF_COOKIE = "csrf_token";
 const CSRF_HEADER = "x-csrf-token";
+const CSRF_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 const SKIP_PREFIXES = [
   "/v1/billing/stripe/webhook",
@@ -20,43 +34,54 @@ const SKIP_PREFIXES = [
   "/v1/tumblr/webhook",
   "/v1/pinterest/webhook",
   "/v1/teams/webhook",
+  "/v1/gate/",
+  "/v1/health",
+  "/v1/auth/provision",
 ];
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 const csrfPlugin: FastifyPluginAsync = async (app) => {
-  await app.register(cookie);
+  // Issue a new CSRF token on every authenticated response
+  app.addHook("onSend", async (req, reply, payload) => {
+    const userId = (req as any).auth?.userId;
+    if (!userId) return payload;
 
-  app.addHook("onRequest", async (req, reply) => {
-    const method = req.method.toUpperCase();
+    // Generate token and store in DB
+    const token = randomBytes(32).toString("hex");
+    const key = `csrf:${userId}:${token}`;
+    await setOAuthState(key, { userId }, CSRF_TTL_MS).catch(() => null);
 
-    // Non-mutating: set the cookie so the frontend can read it
-    if (!MUTATING_METHODS.has(method)) {
-      if (!req.cookies[CSRF_COOKIE]) {
-        const token = randomBytes(32).toString("hex");
-        reply.setCookie(CSRF_COOKIE, token, {
-          path: "/",
-          httpOnly: false,
-          sameSite: "strict",
-          secure: process.env.NODE_ENV === "production",
-        });
-      }
-      return;
-    }
+    reply.header(CSRF_HEADER, token);
+    return payload;
+  });
 
-    // Mutating: check if this route is exempt
+  // Validate CSRF token on mutating requests
+  app.addHook("preHandler", async (req, reply) => {
+    if (!MUTATING_METHODS.has(req.method.toUpperCase())) return;
+
+    // Skip exempt routes (webhooks, OAuth callbacks, public endpoints)
     for (const prefix of SKIP_PREFIXES) {
       if (req.url.startsWith(prefix)) return;
     }
 
-    // Validate double-submit
-    const cookieToken = req.cookies[CSRF_COOKIE];
-    const headerToken = req.headers[CSRF_HEADER] as string | undefined;
+    // Skip if no auth context (unauthenticated routes handle their own security)
+    const userId = (req as any).auth?.userId;
+    if (!userId) return;
 
-    if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-      return reply.code(403).send({ ok: false, error: "CSRF token mismatch" });
+    const token = req.headers[CSRF_HEADER] as string | undefined;
+    if (!token) {
+      return reply.code(403).send({ ok: false, error: "csrf_token_missing" });
     }
+
+    const key = `csrf:${userId}:${token}`;
+    const data = await getOAuthState(key);
+    if (!data || data.userId !== userId) {
+      return reply.code(403).send({ ok: false, error: "csrf_token_invalid" });
+    }
+
+    // Token is valid — don't delete it (allow reuse within TTL window)
   });
 };
 
-export default csrfPlugin;
+export default fp(csrfPlugin);

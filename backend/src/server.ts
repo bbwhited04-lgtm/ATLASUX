@@ -3,14 +3,14 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import "dotenv/config";
+import { prisma } from "./db/prisma.js";
 
 // Plugins
 import auditPlugin from "./plugins/auditPlugin.js";
 import { authPlugin } from "./plugins/authPlugin.js";
 import { tenantPlugin } from "./plugins/tenantPlugin.js";
-// CSRF double-submit cookies don't work cross-origin (Vercel→Render).
-// CORS origin whitelist already prevents cross-site request forgery.
-// import csrfPlugin from "./plugins/csrfPlugin.js";
+import csrfPlugin from "./plugins/csrfPlugin.js";
+import tenantRateLimitPlugin from "./plugins/tenantRateLimit.js";
 import { engineRoutes } from "./routes/engineRoutes.js";
 import { healthRoutes } from "./routes/healthRoutes.js";
 import { agentsRoutes } from "./routes/agentsRoutes.js";
@@ -152,6 +152,7 @@ await app.register(cors, {
     cb(null, allowed.has(origin));
   },
   credentials: true,
+  exposedHeaders: ["x-csrf-token"],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
     "Content-Type",
@@ -170,15 +171,16 @@ await app.register(helmet, {
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://widget.trustpilot.com"],
+      scriptSrc: ["'self'", "https://widget.trustpilot.com", "https://connect.facebook.net"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "blob:", "https://*.supabase.co", "https://atlasux.cloud"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*.supabase.co", "https://atlasux.cloud", "https://www.facebook.com"],
       fontSrc: ["'self'"],
       connectSrc: [
         "'self'",
         "https://atlas-ux.onrender.com",
         "https://*.supabase.co",
         "wss://*.supabase.co",
+        "https://www.facebook.com",
       ],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
@@ -186,6 +188,15 @@ await app.register(helmet, {
     },
   },
   crossOriginEmbedderPolicy: false,
+  // HSTS: 1 year max-age, include subdomains (PCI 4.1, NIST SC-8, SOC 2 CC6.7)
+  strictTransportSecurity: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+  },
+  // Strict referrer policy (GDPR Art. 32)
+  referrerPolicy: {
+    policy: "strict-origin-when-cross-origin",
+  },
 });
 
 await app.register(rateLimit, { max: 60, timeWindow: "1 minute" });
@@ -196,8 +207,9 @@ await app.register(gateRoutes, { prefix: "/v1/gate" });
 // Plugins (order matters)
 await app.register(auditPlugin);
 await app.register(authPlugin);
-// await app.register(csrfPlugin); // disabled — see note at import
+await app.register(csrfPlugin);
 await app.register(tenantPlugin);
+await app.register(tenantRateLimitPlugin);
 
 // Auth routes — post-login provisioning (needs authPlugin for JWT, before tenant-dependent routes)
 await app.register(authRoutes, { prefix: "/v1/auth" });
@@ -349,6 +361,14 @@ if (engineEnabled) {
 } else {
   app.log.info("Engine disabled (ENGINE_ENABLED != true)");
 }
+
+// Prune expired revoked tokens daily (HIPAA §164.312(d))
+setInterval(async () => {
+  try {
+    await prisma.revokedToken.deleteMany({ where: { expiresAt: { lt: new Date() } } });
+  } catch { /* table may not exist yet */ }
+}, 24 * 60 * 60 * 1000);
+
 app.listen({ port, host }).then(() => {
   app.log.info(`AtlasUX backend listening on :${port}`);
 });

@@ -1,6 +1,7 @@
 import fp from "fastify-plugin";
 import { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
+import { computeAuditHash } from "../lib/auditChain.js";
 
 let auditPausedUntil = 0;       // epoch ms — pause window, not permanent
 let warnedOnce = false;
@@ -27,13 +28,34 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
         reply.statusCode >= 500 ? "error" : reply.statusCode >= 400 ? "warn" : "info";
 
       const requestId = String(req.headers["x-request-id"] ?? req.id ?? "");
+      const now = new Date();
+      const tenantId = (req as any).tenantId ?? null;
+      const actorUserId = (req as any).auth?.userId ?? null;
+      const action = `${req.method} ${req.url}`;
+
+      // Compute hash chain fields (SOC 2 CC7.2, NIST AU-10)
+      let hashFields = { prevHash: "", recordHash: "" };
+      try {
+        hashFields = await computeAuditHash({
+          tenantId,
+          action,
+          entityId: null,
+          timestamp: now,
+          actorUserId,
+        });
+      } catch {
+        // Non-fatal — hash chain columns may not exist yet
+      }
 
       const base = {
         actorType: "system",
-        actorUserId: (req as any).auth?.userId ?? null,
+        actorUserId,
         actorExternalId: null,
         level: level as any,
-        action: `${req.method} ${req.url}`,
+        action,
+        timestamp: now,
+        prevHash: hashFields.prevHash || undefined,
+        recordHash: hashFields.recordHash || undefined,
       };
 
       const sharedMeta = {
@@ -69,8 +91,6 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
       // Never fail the request because audit logging failed.
       app.log.error({ err }, "AUDIT DB WRITE FAILED (non-fatal)");
 
-      // If the database schema isn't ready (missing enum type), pause briefly then auto-retry.
-      // Never permanently disable — SOC2 requires continuous audit logging.
       if (isSchemaError(err)) {
         auditPausedUntil = Date.now() + AUDIT_PAUSE_MS;
         if (!warnedOnce) {
