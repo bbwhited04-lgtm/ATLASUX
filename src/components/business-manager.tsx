@@ -122,17 +122,28 @@ export function BusinessManager() {
   const isPro = seatTier === "pro" || seatTier === "enterprise";
 
   useEffect(() => {
+    if (!activeTenantId) return;
     const token = localStorage.getItem("supabase_token") || localStorage.getItem("sb-token");
-    if (!token || !activeTenantId) return;
-    fetch(`${API_BASE}/v1/user/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "x-tenant-id": activeTenantId,
-      },
-    })
-      .then((r) => r.json())
-      .then((d) => { if (d.ok && d.currentSeat) setSeatTier(d.currentSeat); })
-      .catch(() => {});
+    if (token) {
+      // Auth flow — query /me for seat type
+      fetch(`${API_BASE}/v1/user/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-tenant-id": activeTenantId,
+        },
+      })
+        .then((r) => r.json())
+        .then((d) => { if (d.ok && d.currentSeat) setSeatTier(d.currentSeat); })
+        .catch(() => {});
+    } else {
+      // Gate code flow — query seat tier directly by tenant ID
+      fetch(`${API_BASE}/v1/user/seat-tier`, {
+        headers: { "x-tenant-id": activeTenantId },
+      })
+        .then((r) => r.json())
+        .then((d) => { if (d.ok && d.seatType) setSeatTier(d.seatType); })
+        .catch(() => {});
+    }
   }, [activeTenantId]);
 
   async function selectBusiness(tenantId: string) {

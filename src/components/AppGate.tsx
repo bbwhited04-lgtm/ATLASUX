@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { API_BASE } from "@/lib/api";
+import { supabase, supabaseSignIn, supabaseSignUp, getSupabaseToken } from "@/lib/supabase";
+import { useActiveTenant } from "@/lib/activeTenant";
 
 const SESSION_KEY = "atlasux_gate_ok";
 const SEAT_KEY    = "atlasux_seat_info";
@@ -38,7 +40,33 @@ async function validateRemote(code: string): Promise<{
   }
 }
 
+/** Provision tenant after Supabase login */
+async function provisionTenant(token: string): Promise<{
+  ok: boolean;
+  tenantId?: string;
+  seatType?: string;
+  role?: string;
+  error?: string;
+}> {
+  try {
+    const res = await fetch(`${API_BASE}/v1/auth/provision`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return await res.json();
+  } catch {
+    return { ok: false, error: "backend_unreachable" };
+  }
+}
+
+type Tab = "code" | "signin";
+
 export default function AppGate({ children }: { children: React.ReactNode }) {
+  const { setTenantId } = useActiveTenant();
+
   // Support comma-separated codes (owner + cloud seats baked at build time)
   const bakedCodes = useMemo(() => {
     const raw = normalize(import.meta.env.VITE_APP_GATE_CODE ?? "");
@@ -46,14 +74,74 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
     return raw.split(",").map((c) => c.trim()).filter(Boolean);
   }, []);
 
+  const [authed, setAuthed] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
+
+  // Access code tab state
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [authed, setAuthed] = useState(false);
   const [checking, setChecking] = useState(false);
   const [lockedUntil, setLockedUntil] = useState<number>(0);
   const [fails, setFails] = useState(0);
 
-  // Fail closed if not configured (safer)
+  // Sign in tab state
+  const [tab, setTab] = useState<Tab>("code");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [signUpDone, setSignUpDone] = useState(false);
+
+  const grantAccess = (seatInfo?: { label: string; role: string }) => {
+    try {
+      sessionStorage.setItem(SESSION_KEY, "1");
+      if (seatInfo) sessionStorage.setItem(SEAT_KEY, JSON.stringify(seatInfo));
+    } catch {
+      // ignore storage failures; authed state still lets user in
+    }
+    setError(null);
+    setAuthError(null);
+    setAuthed(true);
+  };
+
+  // Auto-check for existing Supabase session on load
+  useEffect(() => {
+    if (authed || isGateOpen()) {
+      setSessionChecked(true);
+      return;
+    }
+    let cancelled = false;
+
+    (async () => {
+      const token = getSupabaseToken();
+      if (!token) {
+        setSessionChecked(true);
+        return;
+      }
+      try {
+        const { data } = await supabase.auth.getUser(token);
+        if (cancelled) return;
+        if (data?.user) {
+          const prov = await provisionTenant(token);
+          if (cancelled) return;
+          if (prov.ok && prov.tenantId) {
+            setTenantId(prov.tenantId);
+          }
+          grantAccess({ label: prov.seatType ?? "free_beta", role: prov.role ?? "owner" });
+          return;
+        }
+      } catch {
+        // token invalid or expired, fall through to gate
+      }
+      if (!cancelled) setSessionChecked(true);
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fail closed if not configured
   if (!bakedCodes.length) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-6">
@@ -72,29 +160,19 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
   // Allow through once authorized (session + immediate state)
   if (authed || isGateOpen()) return <>{children}</>;
 
+  // Still checking for existing session — show nothing to avoid flash
+  if (!sessionChecked) return null;
+
   const now = Date.now();
   const isLocked = now < lockedUntil;
 
-  const grantAccess = (seatInfo?: { label: string; role: string }) => {
-    try {
-      sessionStorage.setItem(SESSION_KEY, "1");
-      if (seatInfo) sessionStorage.setItem(SEAT_KEY, JSON.stringify(seatInfo));
-    } catch {
-      // ignore storage failures; authed state still lets user in
-    }
-    setError(null);
-    setAuthed(true);
-  };
-
-  const onSubmit = async () => {
+  const onSubmitCode = async () => {
     if (isLocked || checking) return;
 
     const trimmed = normalize(code);
 
     // 1. Check baked-in codes (instant, works offline)
     if (bakedCodes.includes(trimmed)) {
-      // For baked codes, also check backend for revocation (non-blocking)
-      // If backend is down, baked codes still work (graceful degradation)
       const remote = await validateRemote(trimmed).catch(() => null);
       if (remote && !remote.valid && remote.error === "seat_revoked") {
         setError("This access code has been revoked.");
@@ -104,7 +182,7 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 2. Check backend cloud seats DB (for codes not baked in)
+    // 2. Check backend cloud seats DB
     setChecking(true);
     const result = await validateRemote(trimmed);
     setChecking(false);
@@ -120,77 +198,222 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
 
     if (result.error === "seat_revoked") {
       setError("This access code has been revoked.");
-    } else if (result.error === "backend_unreachable") {
-      setError("Invalid access code.");
     } else {
       setError("Invalid access code.");
     }
 
-    // Simple lockout friction after 5 failures (30s)
     if (nextFails >= 5) {
       setLockedUntil(Date.now() + 30_000);
       setFails(0);
     }
   };
 
+  const onSubmitAuth = async () => {
+    if (authLoading) return;
+    setAuthError(null);
+    setAuthLoading(true);
+
+    try {
+      if (isSignUp) {
+        await supabaseSignUp(email, password);
+        setSignUpDone(true);
+        setAuthLoading(false);
+        return;
+      }
+
+      const { session } = await supabaseSignIn(email, password);
+      if (!session?.access_token) {
+        setAuthError("Login succeeded but no session was returned.");
+        setAuthLoading(false);
+        return;
+      }
+
+      // Provision tenant
+      const prov = await provisionTenant(session.access_token);
+      if (prov.ok && prov.tenantId) {
+        setTenantId(prov.tenantId);
+      }
+      grantAccess({ label: prov.seatType ?? "free_beta", role: prov.role ?? "owner" });
+    } catch (err: any) {
+      setAuthError(err?.message ?? "Authentication failed.");
+    }
+    setAuthLoading(false);
+  };
+
+  const tabClass = (t: Tab) =>
+    `flex-1 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+      tab === t
+        ? "text-cyan-400 border-b-2 border-cyan-400"
+        : "text-slate-400 hover:text-slate-300"
+    }`;
+
   return (
     <div className="min-h-[70vh] flex items-center justify-center p-6">
       <Card className="w-full max-w-md border-cyan-500/20">
         <CardHeader>
           <CardTitle>Private Beta</CardTitle>
+          {/* Tab bar */}
+          <div className="flex mt-2 border-b border-slate-700">
+            <button className={tabClass("code")} onClick={() => setTab("code")}>
+              Access Code
+            </button>
+            <button className={tabClass("signin")} onClick={() => setTab("signin")}>
+              Sign In
+            </button>
+          </div>
         </CardHeader>
 
         <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Enter your access code to continue.
-          </p>
+          {tab === "code" && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Enter your access code to continue.
+              </p>
 
-          <Input
-            value={code}
-            onChange={(e) => {
-              setCode(e.target.value);
-              if (error) setError(null);
-            }}
-            placeholder="Access code"
-            type="password"
-            autoComplete="off"
-            disabled={isLocked || checking}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onSubmit();
-            }}
-          />
+              <Input
+                value={code}
+                onChange={(e) => {
+                  setCode(e.target.value);
+                  if (error) setError(null);
+                }}
+                placeholder="Access code"
+                type="password"
+                autoComplete="off"
+                disabled={isLocked || checking}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onSubmitCode();
+                }}
+              />
 
-          {error && <div className="text-sm text-red-500">{error}</div>}
+              {error && <div className="text-sm text-red-500">{error}</div>}
 
-          {isLocked && (
-            <div className="text-xs text-muted-foreground">
-              Too many attempts. Try again in{" "}
-              {Math.ceil((lockedUntil - now) / 1000)}s.
-            </div>
+              {isLocked && (
+                <div className="text-xs text-muted-foreground">
+                  Too many attempts. Try again in{" "}
+                  {Math.ceil((lockedUntil - now) / 1000)}s.
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  className="bg-cyan-500 hover:bg-cyan-400"
+                  onClick={onSubmitCode}
+                  disabled={isLocked || checking}
+                >
+                  {checking ? "Checking..." : "Continue"}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    window.location.hash = "#/";
+                  }}
+                >
+                  Back
+                </Button>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                Access is stored for this session.
+              </div>
+            </>
           )}
 
-          <div className="flex gap-2">
-            <Button
-              className="bg-cyan-500 hover:bg-cyan-400"
-              onClick={onSubmit}
-              disabled={isLocked || checking}
-            >
-              {checking ? "Checking..." : "Continue"}
-            </Button>
+          {tab === "signin" && (
+            <>
+              {signUpDone ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-emerald-400">
+                    Check your email for a confirmation link, then come back and sign in.
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSignUpDone(false);
+                      setIsSignUp(false);
+                    }}
+                  >
+                    Back to Sign In
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {isSignUp
+                      ? "Create an account to get started."
+                      : "Sign in with your email and password."}
+                  </p>
 
-            <Button
-              variant="outline"
-              onClick={() => {
-                window.location.hash = "#/";
-              }}
-            >
-              Back
-            </Button>
-          </div>
+                  <Input
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (authError) setAuthError(null);
+                    }}
+                    placeholder="Email"
+                    type="email"
+                    autoComplete="email"
+                    disabled={authLoading}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") onSubmitAuth();
+                    }}
+                  />
 
-          <div className="text-xs text-muted-foreground">
-            Access is stored for this session.
-          </div>
+                  <Input
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (authError) setAuthError(null);
+                    }}
+                    placeholder="Password"
+                    type="password"
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                    disabled={authLoading}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") onSubmitAuth();
+                    }}
+                  />
+
+                  {authError && <div className="text-sm text-red-500">{authError}</div>}
+
+                  <div className="flex gap-2">
+                    <Button
+                      className="bg-cyan-500 hover:bg-cyan-400"
+                      onClick={onSubmitAuth}
+                      disabled={authLoading}
+                    >
+                      {authLoading
+                        ? "Please wait..."
+                        : isSignUp
+                          ? "Sign Up"
+                          : "Sign In"}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        window.location.hash = "#/";
+                      }}
+                    >
+                      Back
+                    </Button>
+                  </div>
+
+                  <button
+                    className="text-xs text-cyan-400 hover:text-cyan-300 underline"
+                    onClick={() => {
+                      setIsSignUp(!isSignUp);
+                      setAuthError(null);
+                    }}
+                  >
+                    {isSignUp
+                      ? "Already have an account? Sign in"
+                      : "Don't have an account? Sign up"}
+                  </button>
+                </>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

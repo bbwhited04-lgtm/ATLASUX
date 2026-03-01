@@ -48,6 +48,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
+    "@supabase/supabase-js": "^2.98.0",
     "@tailwindcss/vite": "^4.1.18",
     "class-variance-authority": "^0.7.1",
     "dompurify": "^3.3.1",
@@ -70,7 +71,8 @@
     "slick-carousel": "^1.8.1",
     "sonner": "^1.7.3",
     "tailwind-merge": "^3.4.0",
-    "three": "^0.183.1"
+    "three": "^0.183.1",
+    "worker": "^0.4.0"
   },
   "devDependencies": {
     "@types/dompurify": "^3.0.5",

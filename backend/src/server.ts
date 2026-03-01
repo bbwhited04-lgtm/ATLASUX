@@ -57,6 +57,7 @@ import { googleRoutes } from "./routes/googleRoutes.js";
 import { runtimeRoutes } from "./routes/runtimeRoutes.js";
 import { atlasRoutes } from "./routes/atlasRoutes.js";
 import { complianceRoutes } from "./routes/complianceRoutes.js";
+import { authRoutes } from "./routes/authRoutes.js";
 import { gateRoutes } from "./routes/gateRoutes.js";
 import { youtubeRoutes } from "./routes/youtubeRoutes.js";
 import { videoRoutes } from "./routes/videoRoutes.js";
@@ -197,6 +198,9 @@ await app.register(auditPlugin);
 await app.register(authPlugin);
 // await app.register(csrfPlugin); // disabled — see note at import
 await app.register(tenantPlugin);
+
+// Auth routes — post-login provisioning (needs authPlugin for JWT, before tenant-dependent routes)
+await app.register(authRoutes, { prefix: "/v1/auth" });
 await app.register(engineRoutes, { prefix: "/v1/engine" });
 await app.register(healthRoutes, { prefix: "/v1" });
 // Root-level health check for Render's healthCheckPath: /health

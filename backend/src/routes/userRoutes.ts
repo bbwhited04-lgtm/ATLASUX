@@ -323,4 +323,24 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
 
     return { ok: true, seatType: updated.seatType };
   });
+
+  /**
+   * GET /seat-tier — returns the owner's seat type for a tenant.
+   * Works without auth (gate code flow). Uses x-tenant-id header.
+   */
+  app.get("/seat-tier", async (req, reply) => {
+    const tenantId = (req.headers["x-tenant-id"] as string ?? "").trim()
+      || (req.query as any)?.tenantId;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "x-tenant-id required" });
+
+    const owner = await prisma.tenantMember.findFirst({
+      where: { tenantId, role: "owner" },
+      select: { seatType: true },
+    });
+
+    return {
+      ok: true,
+      seatType: owner?.seatType ?? "free_beta",
+    };
+  });
 };
