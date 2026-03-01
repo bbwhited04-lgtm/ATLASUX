@@ -232,18 +232,18 @@ export default function Landing() {
                   >
                     Enter App
                   </a>
-                  <a
-                    href="#contact"
+                  <button
+                    onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
                     className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#3e70a5] to-[#69b2cd] px-8 py-3.5 text-sm font-semibold text-white shadow-lg glow-blue hover:opacity-90 transition"
                   >
                     Request Early Access
-                  </a>
-                  <a
-                    href="#platform"
+                  </button>
+                  <button
+                    onClick={() => document.getElementById("platform")?.scrollIntoView({ behavior: "smooth" })}
                     className="inline-flex items-center gap-2 rounded-xl border border-[#3d5474]/50 px-8 py-3.5 text-sm font-semibold text-[#bab2b5] hover:border-[#69b2cd]/50 hover:text-white transition"
                   >
                     Explore Platform →
-                  </a>
+                  </button>
                 </div>
               </div>
 

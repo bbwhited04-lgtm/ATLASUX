@@ -57,6 +57,8 @@ model Tenant {
   dataBreaches                             DataBreach[]
   incidentReports                          IncidentReport[]
   vendorAssessments                        VendorAssessment[]
+  meetingNotes                             MeetingNote[]
+  browserSessions                          BrowserSession[]
 
   @@map("tenants")
 }
@@ -1224,4 +1226,75 @@ model AtlasConversation {
   @@index([tenantId])
   @@index([createdAt])
   @@map("atlas_conversations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Meeting Notes — Teams/Zoom/Meet transcript capture + AI summarization
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Meeting notes — stores manually added or calendar-imported meetings,
+/// with optional transcript + AI-generated summary & action items.
+model MeetingNote {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  platform        String    // zoom, microsoft-teams, google-meet, webex, etc.
+  title           String
+  meetingUrl      String?   @map("meeting_url")
+  scheduledAt     DateTime  @map("scheduled_at") @db.Timestamptz(6)
+  durationMinutes Int?      @map("duration_minutes")
+  attendees       Json      @default("[]") // [{ name, email }]
+  transcript      String?   // raw transcript text
+  summary         String?   // AI-generated summary
+  actionItems     Json      @default("[]") @map("action_items") // [{ text, assignee?, done }]
+  keyPoints       Json      @default("[]") @map("key_points")   // string[]
+  status          String    @default("scheduled") // scheduled, in_progress, completed, processed, failed
+  processedAt     DateTime? @map("processed_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, scheduledAt(sort: Desc)])
+  @@index([tenantId, status])
+  @@map("meeting_notes")
+}
+
+model BrowserSession {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  intentId    String?         @map("intent_id") @db.Uuid
+  jobId       String?         @map("job_id") @db.Uuid
+  agentId     String          @map("agent_id")
+  targetUrl   String          @map("target_url")
+  purpose     String
+  status      String          @default("pending") // pending | running | paused_approval | completed | failed
+  riskTier    Int             @default(1) @map("risk_tier")
+  result      Json            @default("{}")
+  startedAt   DateTime?       @map("started_at") @db.Timestamptz(6)
+  finishedAt  DateTime?       @map("finished_at") @db.Timestamptz(6)
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  actions     BrowserAction[]
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("browser_sessions")
+}
+
+model BrowserAction {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId       String         @map("session_id") @db.Uuid
+  actionType      String         @map("action_type") // navigate | click | type | extract | screenshot | submit | scroll
+  target          String?        // CSS selector or URL
+  value           String?        // text input or extracted data
+  riskLevel       String         @default("low") @map("risk_level") // low | medium | high
+  screenshotPath  String?        @map("screenshot_path")
+  domSnapshot     String?        @map("dom_snapshot")
+  approved        Boolean        @default(true)
+  memoId          String?        @map("memo_id") @db.Uuid
+  result          Json           @default("{}")
+  executedAt      DateTime       @default(now()) @map("executed_at") @db.Timestamptz(6)
+  session         BrowserSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, executedAt])
+  @@map("browser_actions")
 }

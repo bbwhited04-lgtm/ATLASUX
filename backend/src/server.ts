@@ -62,12 +62,14 @@ import { youtubeRoutes } from "./routes/youtubeRoutes.js";
 import { videoRoutes } from "./routes/videoRoutes.js";
 import { outlookRoutes } from "./routes/outlookRoutes.js";
 import { calendarRoutes } from "./routes/calendarRoutes.js";
+import { meetingRoutes } from "./routes/meetingRoutes.js";
 import { linkedinRoutes } from "./routes/linkedinRoutes.js";
 import { alignableRoutes } from "./routes/alignableRoutes.js";
 import { xRoutes } from "./routes/xRoutes.js";
 import { tiktokRoutes } from "./routes/tiktokRoutes.js";
 import { tumblrRoutes } from "./routes/tumblrRoutes.js";
 import { pinterestRoutes } from "./routes/pinterestRoutes.js";
+import { browserRoutes } from "./routes/browserRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -291,6 +293,9 @@ await app.register(outlookRoutes, { prefix: "/v1/outlook" });
 // Calendar — M365 calendar events via Graph API (app-only credentials)
 await app.register(calendarRoutes, { prefix: "/v1/calendar" });
 
+// Meetings — meeting notes, transcript fetch, AI summarization
+await app.register(meetingRoutes, { prefix: "/v1/meetings" });
+
 // LinkedIn — webhook + API
 await app.register(linkedinRoutes, { prefix: "/v1/linkedin" });
 
@@ -308,6 +313,9 @@ await app.register(tumblrRoutes, { prefix: "/v1/tumblr" });
 
 // Pinterest — inbound webhook for Zapier/Make/n8n triggers
 await app.register(pinterestRoutes, { prefix: "/v1/pinterest" });
+
+// Browser automation — governed headless Chromium (SGL + decision memos)
+await app.register(browserRoutes, { prefix: "/v1/browser" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

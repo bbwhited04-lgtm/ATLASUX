@@ -991,13 +991,22 @@ const YOUTUBE_UPLOAD_PATTERNS = [
   /\b(create|make|compose)\s+(a\s+)?(youtube\s+)?short\b/i,
 ];
 
+const BROWSER_PATTERNS = [
+  /\b(browse|visit|open|check)\s+(the\s+)?(website|page|portal|dashboard|site)\b/i,
+  /\bno\s+(api|integration|connection)\b/i,
+  /\b(screenshot|screen\s*capture)\b/i,
+  /\b(fill\s+out|complete|submit)\s+(the\s+)?(form|application)\b/i,
+  /\bbrowser\s+(task|session|automation)\b/i,
+  /\bheadless\s+browser\b/i,
+];
+
 // ── Agent → allowed tools map (from WF-107 approved proposals) ───────────────
 // Controls which tools can fire for which agent — prevents unnecessary DB hits.
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   // ── Executives ───────────────────────────────────────────────────────
-  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate", "deepResearch"],
-  binky:       ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate", "deepResearch", "browser"],
+  binky:       ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser"],
   cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch"],
   tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory", "delegate"],
   larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "telegram", "memory", "delegate"],
@@ -1021,15 +1030,15 @@ const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
 
   // ── Social Publishers ────────────────────────────────────────────────
   kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch"],
-  fran:        ["calendar", "knowledge", "telegram", "memory", "delegate"],
-  dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate"],
-  timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate"],
-  terry:       ["calendar", "knowledge", "telegram", "memory", "delegate"],
-  cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate"],
-  link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate"],
-  emma:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate"],
-  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate", "redditSearch"],
-  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "webSearch"],
+  fran:        ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
+  dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
+  timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
+  terry:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
+  cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
+  link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser"],
+  emma:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser"],
+  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate", "redditSearch", "browser"],
+  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "webSearch", "browser"],
 };
 
 export type ToolNeeds = {
@@ -1059,6 +1068,7 @@ export type ToolNeeds = {
   videoGenerate:  boolean;
   flux1:          boolean;
   deepResearch:   boolean;
+  browser:        boolean;
   query:          string;
 };
 
@@ -1095,6 +1105,7 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     videoGenerate:  can("videoGenerate")  && VIDEO_GENERATE_PATTERNS.some(p => p.test(q)),
     flux1:          can("flux1")          && FLUX1_PATTERNS.some(p => p.test(q)),
     deepResearch:   can("deepResearch")   && DEEP_RESEARCH_PATTERNS.some(p => p.test(q)),
+    browser:        can("browser")        && BROWSER_PATTERNS.some(p => p.test(q)),
     query:          q,
   };
 }
@@ -1178,6 +1189,23 @@ async function deepResearchTool(tenantId: string, agentId: string, query: string
   }
 }
 
+// ── Tool: browser (informational — actual execution goes through /v1/browser) ─
+
+function browserToolInfo(agentId: string): ToolResult {
+  return {
+    tool: "browser_automation",
+    data: [
+      `Browser automation is available for ${agentId}.`,
+      `To execute a browser task, delegate to Atlas with workflow WF-130 (Browser Task Execution).`,
+      `Provide: targetUrl, purpose, and an actions array [{type, target?, value?, description}].`,
+      `Action types: navigate, click, type, extract, screenshot, submit, scroll.`,
+      `All browser sessions require human approval via decision memo before execution.`,
+      `Submit actions pause for additional approval. Password/payment fields are always blocked.`,
+    ].join("\n"),
+    usedAt: new Date().toISOString(),
+  };
+}
+
 // ── resolveAgentTools ─────────────────────────────────────────────────────────
 
 /**
@@ -1232,6 +1260,7 @@ export async function resolveAgentTools(
     needs.videoGenerate  ? videoGenerateInfo()                                    : Promise.resolve(null),
     needs.flux1          ? flux1GenerateInfo()                                    : Promise.resolve(null),
     needs.deepResearch   ? deepResearchTool(tenantId, aid, needs.query)           : Promise.resolve(null),
+    needs.browser        ? Promise.resolve(browserToolInfo(aid))                    : Promise.resolve(null),
     approvedToolsPromise,
   ];
 

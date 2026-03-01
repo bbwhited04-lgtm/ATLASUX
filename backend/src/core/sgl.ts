@@ -17,6 +17,8 @@ export function sglEvaluate(intent: Intent): { decision: SglDecision; reasons: s
   const regulated = new Set(["GOV_FILING_IRS", "BANK_TRANSFER", "CRYPTO_TRADE_EXECUTE"]);
   if (regulated.has(intent.type)) return { decision: "REVIEW", reasons: ["REGULATED_ACTION"], needsHuman: true };
 
+  if (intent.type === "BROWSER_TASK") return { decision: "REVIEW", reasons: ["BROWSER_AUTOMATION"], needsHuman: true };
+
   if (intent.dataClass === "PHI") return { decision: "REVIEW", reasons: ["PHI_PRESENT"], needsHuman: true };
 
   if ((intent.spendUsd ?? 0) >= 250) return { decision: "REVIEW", reasons: ["SPEND_THRESHOLD"], needsHuman: true };

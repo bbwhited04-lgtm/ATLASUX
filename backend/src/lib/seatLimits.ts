@@ -82,7 +82,9 @@ export const PRO_ONLY_AGENTS: ReadonlySet<string> = new Set([
  */
 export const PRO_ONLY_FEATURES: ReadonlySet<string> = new Set([
   "calendar",
+  "meetings",
   "premium-screens",
+  "browser",
 ]);
 
 /**

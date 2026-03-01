@@ -7,6 +7,9 @@ import { getSkill } from "../core/kb/skillLoader.js";
 import { appendMemory } from "../core/agent/agentMemory.js";
 import { searchWeb, searchReddit } from "../lib/webSearch.js";
 import { searchRecentTweets } from "../services/x.js";
+import { executeBrowserSession, resumeBrowserSession } from "../tools/browser/browserService.js";
+import { validateSessionConfig, createBrowserSessionMemo } from "../tools/browser/browserGovernance.js";
+import { calculateSessionRiskTier, type BrowserSessionConfig, type BrowserActionStep } from "../tools/browser/browserActions.js";
 
 export type WorkflowContext = {
   tenantId: string;
@@ -48,6 +51,8 @@ export const workflowCatalog = [
   { id: "WF-121", name: "Competitor Intel Sweep (Archy)",      description: "Weekly competitive landscape analysis: web search for AI employee platforms + competitor terms.",        ownerAgent: "archy" },
   { id: "WF-122", name: "SEO Rank Tracker (Reynolds)",         description: "Weekly SEO check: search target keywords, track Atlas UX ranking position in top 20.",                  ownerAgent: "reynolds" },
   { id: "WF-123", name: "Lead Enrichment (Mercer)",            description: "On-demand lead enrichment: web search company/contact, LLM profile, update CRM.",                       ownerAgent: "mercer" },
+  { id: "WF-130", name: "Browser Task Execution (Atlas)",     description: "Governed headless browser automation — navigate, extract, interact with web pages via Playwright.", ownerAgent: "atlas" },
+  { id: "WF-131", name: "Browser Session Resume (Atlas)",     description: "Resume a paused browser session after decision memo approval for HIGH-risk action.",               ownerAgent: "atlas" },
 ] as const;
 
 export { n8nWorkflows };
@@ -2441,6 +2446,110 @@ handlers["WF-123"] = async (ctx) => {
       query: enrichQuery,
       webResults: webResults.length,
       llmChars: llmText.length,
+    },
+  };
+};
+
+// ── WF-130 Browser Task Execution ────────────────────────────────────────────
+
+handlers["WF-130"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-130.start", "Browser task execution starting");
+
+  const targetUrl = String(ctx.input?.targetUrl ?? "").trim();
+  const purpose   = String(ctx.input?.purpose ?? "").trim();
+  const actions   = (ctx.input?.actions ?? []) as BrowserActionStep[];
+
+  if (!targetUrl || !purpose || actions.length === 0) {
+    return { ok: false, message: "targetUrl, purpose, and actions array are required" };
+  }
+
+  const config: BrowserSessionConfig = {
+    tenantId: ctx.tenantId,
+    agentId: ctx.agentId,
+    intentId: ctx.intentId,
+    targetUrl,
+    purpose,
+    actions,
+  };
+
+  // Validate
+  const validation = validateSessionConfig(config);
+  if (!validation.valid) {
+    await writeStepAudit(ctx, "WF-130.validation_failed", validation.errors.join("; "));
+    return { ok: false, message: `Validation failed: ${validation.errors.join("; ")}` };
+  }
+
+  const riskTier = calculateSessionRiskTier(actions);
+  await writeStepAudit(ctx, "WF-130.validated", `Risk tier ${riskTier}, ${actions.length} actions`, {
+    targetUrl, riskTier, actionCount: actions.length,
+  });
+
+  // Execute session
+  const result = await executeBrowserSession(config);
+
+  await writeStepAudit(ctx, "WF-130.complete", `Browser session ${result.status}: ${result.actions.length} actions`, {
+    sessionId: result.sessionId,
+    status: result.status,
+    actionsExecuted: result.actions.length,
+    error: result.error,
+  });
+
+  // Report email
+  const { to: reportTo } = getReportRecipients(ctx.agentId);
+  await queueEmail(ctx, {
+    to: reportTo,
+    fromAgent: ctx.agentId,
+    subject: `[WF-130] Browser Task ${result.status} — ${purpose.slice(0, 50)}`,
+    text: [
+      `Browser Task Execution Report`,
+      `${"═".repeat(50)}`,
+      `URL: ${targetUrl}`,
+      `Purpose: ${purpose}`,
+      `Status: ${result.status}`,
+      `Actions: ${result.actions.length}`,
+      result.error ? `Error: ${result.error}` : "",
+      result.extractedData ? `\nExtracted data:\n${String(result.extractedData).slice(0, 2000)}` : "",
+      `\nSession ID: ${result.sessionId}`,
+      `Trace: ${ctx.traceId ?? ctx.intentId}`,
+    ].filter(Boolean).join("\n"),
+  });
+
+  return {
+    ok: result.status !== "failed",
+    message: `Browser task ${result.status}`,
+    output: {
+      sessionId: result.sessionId,
+      status: result.status,
+      actionsExecuted: result.actions.length,
+      extractedData: result.extractedData,
+      error: result.error,
+    },
+  };
+};
+
+// ── WF-131 Browser Session Resume ────────────────────────────────────────────
+
+handlers["WF-131"] = async (ctx) => {
+  const sessionId = String(ctx.input?.sessionId ?? "").trim();
+  if (!sessionId) return { ok: false, message: "sessionId required" };
+
+  await writeStepAudit(ctx, "WF-131.start", `Resuming browser session ${sessionId}`);
+
+  const result = await resumeBrowserSession(sessionId);
+
+  await writeStepAudit(ctx, "WF-131.complete", `Resume ${result.status}`, {
+    sessionId, status: result.status, error: result.error,
+  });
+
+  return {
+    ok: result.status !== "failed",
+    message: `Browser session resume ${result.status}`,
+    output: {
+      sessionId: result.sessionId,
+      status: result.status,
+      actionsExecuted: result.actions.length,
+      extractedData: result.extractedData,
+      error: result.error,
     },
   };
 };
