@@ -423,7 +423,9 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
   async function loadTenants() {
     setTenantsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/v1/tenants`, { method: "GET" });
+      const tid = activeTenantId ?? org_id;
+      const hdr: Record<string, string> = tid ? { "x-tenant-id": tid } : {};
+      const res = await fetch(`${API_BASE}/v1/tenants`, { method: "GET", headers: hdr });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || json?.ok === false) {
         throw new Error(json?.error || json?.message || "Failed to load businesses");

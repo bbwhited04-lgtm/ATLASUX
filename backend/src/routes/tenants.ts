@@ -66,22 +66,34 @@ function auditMeta(before: any, after: any, extra?: Record<string, any>) {
 }
 
 export async function tenantsRoutes(app: FastifyInstance) {
-  // GET all tenants — restricted to admin only
+  // GET tenants — admin key returns ALL tenants, otherwise returns the caller's tenant only
   app.get("/", async (req, reply) => {
     const adminKey = (process.env.GATE_ADMIN_KEY ?? "").trim();
     const provided = (req.headers["x-gate-admin-key"] ?? "").toString().trim();
-    const adminBuf = Buffer.from(adminKey);
-    const providedBuf = Buffer.from(provided);
-    if (!adminKey || adminBuf.length !== providedBuf.length || !timingSafeEqual(adminBuf, providedBuf)) {
-      return reply.code(403).send({ ok: false, error: "forbidden" });
+
+    // Admin mode: return all tenants
+    if (adminKey && provided) {
+      const adminBuf = Buffer.from(adminKey);
+      const providedBuf = Buffer.from(provided);
+      if (adminBuf.length === providedBuf.length && timingSafeEqual(adminBuf, providedBuf)) {
+        const tenants = await prisma.tenant.findMany({
+          orderBy: { createdAt: "desc" },
+          take: 100,
+        });
+        return reply.send({ ok: true, tenants });
+      }
     }
 
-    const tenants = await prisma.tenant.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    });
+    // User mode: return only the tenant from x-tenant-id header
+    const reqTenantId = (req as any).tenantId as string | undefined;
+    if (reqTenantId) {
+      const tenant = await prisma.tenant.findUnique({ where: { id: reqTenantId } });
+      if (tenant) {
+        return reply.send({ ok: true, tenants: [tenant] });
+      }
+    }
 
-    return reply.send({ ok: true, tenants });
+    return reply.code(403).send({ ok: false, error: "forbidden" });
   });
 
   // ✅ CREATE tenant (audited + ledger marker)
