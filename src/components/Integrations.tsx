@@ -90,7 +90,7 @@ const INTEGRATIONS: Integration[] = [
   // ── Social platforms ──────────────────────────────────────────────────
   { id: "x",        name: "X (Twitter)", category: "Social",   description: "Tweet, schedule, and monitor.",                oauth: "x" },
   { id: "tumblr",   name: "Tumblr",      category: "Social",   description: "Publish blog posts and track distribution.",   oauth: "tumblr" },
-  { id: "linkedin", name: "LinkedIn",    category: "Social",   description: "Company + personal publishing.",               oauth: "linkedin", pendingNote: "App approval pending — credentials not yet configured." },
+  { id: "linkedin", name: "LinkedIn",    category: "Social",   description: "Company + personal publishing.",               oauth: "linkedin" },
   { id: "pinterest",name: "Pinterest",   category: "Social",   description: "Pins, boards, and trends.",                   oauth: "pinterest" },
   { id: "tiktok",   name: "TikTok",      category: "Social",   description: "Post videos and view analytics.",             oauth: null, pendingNote: "Pending TikTok for Business approval." },
   { id: "reddit",   name: "Reddit",      category: "Social",   description: "Post, comment, monitor mentions.",            oauth: "reddit" },
