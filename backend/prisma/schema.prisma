@@ -153,6 +153,23 @@ model Integration {
   @@map("integrations")
 }
 
+model TokenVault {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId         String   @map("org_id") @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  provider      String
+  accessToken   String   @map("access_token")
+  refreshToken  String?  @map("refresh_token")
+  expiresAt     String?  @map("expires_at")
+  scope         String?
+  meta          Json?
+  updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([orgId, userId, provider])
+  @@index([orgId, provider])
+  @@map("token_vault")
+}
+
 model AuditLog {
   id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId        String?    @map("tenant_id") @db.Uuid
