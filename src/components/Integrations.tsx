@@ -113,9 +113,9 @@ const INTEGRATIONS: Integration[] = [
   // ── Messaging ─────────────────────────────────────────────────────────
   { id: "slack",    name: "Slack",       category: "Messaging",description: "Channels, alerts, workflows.",                oauth: null },
   { id: "discord",  name: "Discord",     category: "Messaging",description: "Bots, webhooks, community.",                  oauth: null },
-  { id: "telegram", name: "Telegram",    category: "Messaging",description: "Channels, bots, automations.",               oauth: null },
+  { id: "telegram", name: "Telegram",    category: "Messaging",description: "Channels, bots, automations.",               oauth: null, pendingNote: "Connected via Bot API — no OAuth needed." },
   { id: "whatsapp", name: "WhatsApp Business", category: "Messaging", description: "Messaging and templates.",            oauth: null },
-  { id: "twilio",   name: "Twilio SMS",  category: "Messaging",description: "Text messaging & verification.",              oauth: null },
+  { id: "twilio",   name: "Twilio SMS",  category: "Messaging",description: "Text messaging & verification.",              oauth: null, pendingNote: "Connected via API key — no OAuth needed." },
 
   // ── Payments ──────────────────────────────────────────────────────────
   { id: "stripe",   name: "Stripe",      category: "Payments", description: "Payments, subscriptions, webhooks.",          oauth: null },
