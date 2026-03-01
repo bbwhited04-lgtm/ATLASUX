@@ -10,7 +10,7 @@ import { prisma } from "../db/prisma.js";
 import { readTokenVault, updateTokenVaultAccessToken, clearTokenVault } from "./tokenStore.js";
 import { refreshRedditToken } from "../oauth.js";
 
-type Provider = "google" | "meta" | "x" | "microsoft" | "reddit" | "pinterest" | "linkedin";
+type Provider = "google" | "meta" | "x" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square";
 
 const REFRESH_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -121,6 +121,79 @@ async function refreshMicrosoft(env: Env, refreshToken: string) {
   return { access_token: data.access_token as string, expires_in: data.expires_in as number };
 }
 
+async function refreshAirtable(env: Env, refreshToken: string) {
+  const basic = Buffer.from(`${env.AIRTABLE_CLIENT_ID!}:${env.AIRTABLE_CLIENT_SECRET!}`).toString("base64");
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+  const r = await fetch("https://airtable.com/oauth2/v1/token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  const data = (await r.json()) as any;
+  if (!r.ok) throw new Error(`Airtable refresh failed: ${data?.error_description ?? data?.error ?? JSON.stringify(data)}`);
+  return { access_token: data.access_token as string, expires_in: data.expires_in as number };
+}
+
+async function refreshDropbox(env: Env, refreshToken: string) {
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+    client_id: env.DROPBOX_APP_KEY!,
+    client_secret: env.DROPBOX_APP_SECRET!,
+  });
+  const r = await fetch("https://api.dropboxapi.com/oauth2/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const data = (await r.json()) as any;
+  if (!r.ok) throw new Error(`Dropbox refresh failed: ${data?.error_description ?? data?.error ?? JSON.stringify(data)}`);
+  return { access_token: data.access_token as string, expires_in: data.expires_in as number };
+}
+
+async function refreshPayPal(env: Env, refreshToken: string) {
+  const basic = Buffer.from(`${env.PAYPAL_CLIENT_ID!}:${env.PAYPAL_CLIENT_SECRET!}`).toString("base64");
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+  const r = await fetch("https://api-m.paypal.com/v1/oauth2/token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  const data = (await r.json()) as any;
+  if (!r.ok) throw new Error(`PayPal refresh failed: ${data?.error_description ?? data?.error ?? JSON.stringify(data)}`);
+  return { access_token: data.access_token as string, expires_in: data.expires_in as number };
+}
+
+async function refreshSquare(_env: Env, refreshToken: string) {
+  const r = await fetch("https://connect.squareup.com/oauth2/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: _env.SQUARE_APP_ID!,
+      client_secret: _env.SQUARE_APP_SECRET!,
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+    }),
+  });
+  const data = (await r.json()) as any;
+  if (!r.ok || data.errors) throw new Error(`Square refresh failed: ${data?.errors?.[0]?.detail ?? JSON.stringify(data)}`);
+  // Square returns expires_at ISO; convert to expires_in for consistency
+  const expiresIn = data.expires_at ? Math.floor((new Date(data.expires_at).getTime() - Date.now()) / 1000) : 3600;
+  return { access_token: data.access_token as string, expires_in: expiresIn };
+}
+
 /**
  * Check token expiry and refresh if within REFRESH_WINDOW_MS.
  * Returns the current (or refreshed) access_token, or null if unavailable.
@@ -171,6 +244,26 @@ export async function refreshTokenIfNeeded(
         if (!vault.refresh_token) return vault.access_token;
         result = await refreshMicrosoft(env, vault.refresh_token);
         break;
+      case "airtable":
+        if (!vault.refresh_token) return vault.access_token;
+        result = await refreshAirtable(env, vault.refresh_token);
+        break;
+      case "dropbox":
+        if (!vault.refresh_token) return vault.access_token;
+        result = await refreshDropbox(env, vault.refresh_token);
+        break;
+      case "paypal":
+        if (!vault.refresh_token) return vault.access_token;
+        result = await refreshPayPal(env, vault.refresh_token);
+        break;
+      case "square":
+        if (!vault.refresh_token) return vault.access_token;
+        result = await refreshSquare(env, vault.refresh_token);
+        break;
+      // Notion and Slack tokens don't expire — no refresh needed
+      case "notion":
+      case "slack":
+        return vault.access_token;
       default:
         return vault.access_token;
     }
@@ -242,6 +335,37 @@ async function revokePinterest(_token: string) {
   // Tokens expire naturally.
 }
 
+async function revokeDropbox(token: string) {
+  await fetch("https://api.dropboxapi.com/2/auth/token/revoke", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+async function revokeSlack(token: string) {
+  await fetch("https://slack.com/api/auth.revoke", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ token }),
+  });
+}
+
+async function revokeNotion(_token: string) {
+  // Notion doesn't support programmatic token revocation.
+}
+
+async function revokeAirtable(_token: string) {
+  // Airtable doesn't have a public revocation endpoint.
+}
+
+async function revokePayPal(_token: string) {
+  // PayPal doesn't have a self-service token revocation endpoint.
+}
+
+async function revokeSquare(_token: string) {
+  // Square revocation requires the client credentials; tokens expire naturally.
+}
+
 /**
  * Revoke a provider token (best-effort), then clear from both
  * token_vault and integration table.
@@ -279,6 +403,24 @@ export async function revokeToken(
           break;
         case "pinterest":
           await revokePinterest(token);
+          break;
+        case "dropbox":
+          await revokeDropbox(token);
+          break;
+        case "slack":
+          await revokeSlack(token);
+          break;
+        case "notion":
+          await revokeNotion(token);
+          break;
+        case "airtable":
+          await revokeAirtable(token);
+          break;
+        case "paypal":
+          await revokePayPal(token);
+          break;
+        case "square":
+          await revokeSquare(token);
           break;
       }
     } catch {

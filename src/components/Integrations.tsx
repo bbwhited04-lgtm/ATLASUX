@@ -28,7 +28,7 @@ type Integration = {
   name: string;
   description: string;
   category: Category;
-  oauth: "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "zoom" | null;
+  oauth: "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "zoom" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square" | null;
   /** Sub-services unlocked by this OAuth connection */
   covers?: string[];
   /** Priority groups sort above everything else */
@@ -98,7 +98,7 @@ const INTEGRATIONS: Integration[] = [
   { id: "twitch",   name: "Twitch",      category: "Social",   description: "Streams, clips, channel ops.",                oauth: null },
 
   // ── Storage ───────────────────────────────────────────────────────────
-  { id: "dropbox",  name: "Dropbox",     category: "Storage",  description: "Files, folders, links.",                      oauth: null },
+  { id: "dropbox",  name: "Dropbox",     category: "Storage",  description: "Files, folders, links.",                      oauth: "dropbox" },
   { id: "box",      name: "Box",         category: "Storage",  description: "Enterprise storage.",                         oauth: null },
 
   // ── Video / Conferencing ──────────────────────────────────────────────
@@ -111,7 +111,7 @@ const INTEGRATIONS: Integration[] = [
   { id: "pipedrive",name: "Pipedrive",   category: "CRM",      description: "Deals and stages.",                           oauth: null },
 
   // ── Messaging ─────────────────────────────────────────────────────────
-  { id: "slack",    name: "Slack",       category: "Messaging",description: "Channels, alerts, workflows.",                oauth: null },
+  { id: "slack",    name: "Slack",       category: "Messaging",description: "Channels, alerts, workflows.",                oauth: "slack" },
   { id: "discord",  name: "Discord",     category: "Messaging",description: "Bots, webhooks, community.",                  oauth: null },
   { id: "telegram", name: "Telegram",    category: "Messaging",description: "Channels, bots, automations.",               oauth: null, pendingNote: "Connected via Bot API — no OAuth needed." },
   { id: "whatsapp", name: "WhatsApp Business", category: "Messaging", description: "Messaging and templates.",            oauth: null },
@@ -119,8 +119,8 @@ const INTEGRATIONS: Integration[] = [
 
   // ── Payments ──────────────────────────────────────────────────────────
   { id: "stripe",   name: "Stripe",      category: "Payments", description: "Payments, subscriptions, webhooks.",          oauth: null },
-  { id: "paypal",   name: "PayPal",      category: "Payments", description: "Payments and invoices.",                      oauth: null },
-  { id: "square",   name: "Square",      category: "Payments", description: "POS and payments.",                           oauth: null },
+  { id: "paypal",   name: "PayPal",      category: "Payments", description: "Payments and invoices.",                      oauth: "paypal" },
+  { id: "square",   name: "Square",      category: "Payments", description: "POS and payments.",                           oauth: "square" },
 
   // ── Marketing ─────────────────────────────────────────────────────────
   { id: "mailchimp",name: "Mailchimp",   category: "Marketing",description: "Email campaigns and lists.",                  oauth: null },
@@ -144,8 +144,8 @@ const INTEGRATIONS: Integration[] = [
   { id: "cloudflare",name:"Cloudflare",  category: "Dev",      description: "DNS, Workers, security.",                    oauth: null },
 
   // ── Other ─────────────────────────────────────────────────────────────
-  { id: "notion",   name: "Notion",      category: "Other",    description: "Docs and databases.",                         oauth: null },
-  { id: "airtable", name: "Airtable",    category: "Other",    description: "Base records and views.",                     oauth: null },
+  { id: "notion",   name: "Notion",      category: "Other",    description: "Docs and databases.",                         oauth: "notion" },
+  { id: "airtable", name: "Airtable",    category: "Other",    description: "Base records and views.",                     oauth: "airtable" },
 ];
 
 const ALL_CATEGORIES: Array<Category | "All"> = [
@@ -231,6 +231,12 @@ export default function Integrations() {
       : i.oauth === "pinterest" ? `${BACKEND_URL}/v1/oauth/pinterest/start`
       : i.oauth === "linkedin"  ? `${BACKEND_URL}/v1/oauth/linkedin/start`
       : i.oauth === "zoom"      ? `${BACKEND_URL}/v1/oauth/zoom/start`
+      : i.oauth === "notion"    ? `${BACKEND_URL}/v1/oauth/notion/start`
+      : i.oauth === "airtable"  ? `${BACKEND_URL}/v1/oauth/airtable/start`
+      : i.oauth === "dropbox"   ? `${BACKEND_URL}/v1/oauth/dropbox/start`
+      : i.oauth === "slack"     ? `${BACKEND_URL}/v1/oauth/slack/start`
+      : i.oauth === "paypal"    ? `${BACKEND_URL}/v1/oauth/paypal/start`
+      : i.oauth === "square"    ? `${BACKEND_URL}/v1/oauth/square/start`
       : `${BACKEND_URL}/v1/oauth/x/start`;
 
     const params = new URLSearchParams({ tenantId: realTenantId, org_id: realTenantId, user_id });

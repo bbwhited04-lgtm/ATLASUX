@@ -5,11 +5,12 @@
  * Providers match the integration_provider enum:
  *   meta | google | x | tumblr | pinterest | linkedin
  */
-export type OAuthProvider = "meta" | "google" | "x" | "tumblr" | "pinterest" | "linkedin" | "microsoft" | "reddit";
+export type OAuthProvider = "meta" | "google" | "x" | "tumblr" | "pinterest" | "linkedin" | "microsoft" | "reddit" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square";
 
 export const SUPPORTED_PROVIDERS: OAuthProvider[] = [
   "google", "meta", "microsoft",
   "x", "reddit", "tumblr", "pinterest", "linkedin",
+  "notion", "airtable", "dropbox", "slack", "paypal", "square",
 ];
 
 const EXACT: Record<string, OAuthProvider> = {
@@ -71,6 +72,32 @@ const EXACT: Record<string, OAuthProvider> = {
   onedrive:               "microsoft",
   sharepoint:             "microsoft",
   teams:                  "microsoft",
+
+  // Notion
+  notion:                 "notion",
+  notion_database:        "notion",
+  notion_page:            "notion",
+
+  // Airtable
+  airtable:               "airtable",
+  airtable_base:          "airtable",
+
+  // Dropbox
+  dropbox:                "dropbox",
+  dropbox_folder:         "dropbox",
+
+  // Slack
+  slack:                  "slack",
+  slack_workspace:        "slack",
+  slack_channel:          "slack",
+
+  // PayPal
+  paypal:                 "paypal",
+  paypal_business:        "paypal",
+
+  // Square
+  square:                 "square",
+  square_pos:             "square",
 };
 
 /** Maps an asset platform string to the canonical OAuth provider, or null. */
@@ -92,6 +119,12 @@ export function providerForPlatform(p: string | null | undefined): OAuthProvider
   if (s.includes("linkedin")) return "linkedin";
   if (s.includes("reddit")) return "reddit";
   if (s.includes("microsoft") || s.includes("outlook") || s.includes("onedrive") || s.includes("sharepoint") || s === "teams") return "microsoft";
+  if (s.includes("notion")) return "notion";
+  if (s.includes("airtable")) return "airtable";
+  if (s.includes("dropbox")) return "dropbox";
+  if (s.includes("slack")) return "slack";
+  if (s.includes("paypal")) return "paypal";
+  if (s.includes("square")) return "square";
 
   return null;
 }

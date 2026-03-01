@@ -137,6 +137,35 @@ const EnvSchema = z.object({
   // Anthropic (local vision agent)
   ANTHROPIC_API_KEY: z.string().optional(),
 
+  // Notion OAuth2
+  NOTION_CLIENT_ID: z.string().optional(),
+  NOTION_CLIENT_SECRET: z.string().optional(),
+  NOTION_REDIRECT_URI: z.string().optional(),
+
+  // Airtable OAuth2 (PKCE)
+  AIRTABLE_CLIENT_ID: z.string().optional(),
+  AIRTABLE_CLIENT_SECRET: z.string().optional(),
+  AIRTABLE_REDIRECT_URI: z.string().optional(),
+
+  // Dropbox OAuth2
+  DROPBOX_APP_KEY: z.string().optional(),
+  DROPBOX_APP_SECRET: z.string().optional(),
+  DROPBOX_REDIRECT_URI: z.string().optional(),
+
+  // Slack OAuth2 v2 (redirect built from APP_URL at runtime)
+  SLACK_CLIENT_ID: z.string().optional(),
+  SLACK_CLIENT_SECRET: z.string().optional(),
+
+  // PayPal OAuth2
+  PAYPAL_CLIENT_ID: z.string().optional(),
+  PAYPAL_CLIENT_SECRET: z.string().optional(),
+  PAYPAL_REDIRECT_URI: z.string().optional(),
+
+  // Square OAuth2
+  SQUARE_APP_ID: z.string().optional(),
+  SQUARE_APP_SECRET: z.string().optional(),
+  SQUARE_REDIRECT_URI: z.string().optional(),
+
   // Web search providers (multi-provider fallback: You.com → Tavily → SerpAPI)
   SERP_API_KEY:    z.string().optional(),
   YOU_COM_API_KEY: z.string().optional(),

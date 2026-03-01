@@ -10,6 +10,12 @@ import {
   buildPinterestAuthUrl, exchangePinterestCode,
   buildLinkedInAuthUrl, exchangeLinkedInCode,
   buildZoomAuthUrl, exchangeZoomCode,
+  buildNotionAuthUrl, exchangeNotionCode,
+  buildAirtableAuthUrl, exchangeAirtableCode,
+  buildDropboxAuthUrl, exchangeDropboxCode,
+  buildSlackAuthUrl, exchangeSlackCode,
+  buildPayPalAuthUrl, exchangePayPalCode,
+  buildSquareAuthUrl, exchangeSquareCode,
 } from "../oauth.js";
 import { tumblrAccessToken, tumblrAuthorizeUrl, tumblrRequestToken } from "../integrations/tumblr.client.js";
 import { prisma } from "../db/prisma.js";
@@ -471,6 +477,317 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
       return reply.redirect(buildReturnUrl({ connected: "zoom", org_id, user_id }));
     } catch (e: any) {
       return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "zoom_token_exchange_failed" }));
+    }
+  });
+
+  // ── Notion OAuth2 ───────────────────────────────────────────────────────
+
+  app.get("/notion/start", oauthRateLimit, async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
+    const user_id = String(q.user_id ?? q.userId ?? "");
+
+    if (!oauthEnabled("notion", env)) {
+      return reply.redirect(stubConnectUrl(req, "notion"));
+    }
+
+    const nonce = genNonce();
+    await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
+    const state = b64urlJson({ org_id, user_id, nonce });
+    return reply.redirect(buildNotionAuthUrl(env, state));
+  });
+
+  app.get("/notion/callback", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    if (q.error) return reply.redirect(buildReturnUrl({ oauth_error: String(q.error_description ?? q.error) }));
+
+    let state: any = {};
+    try { state = parseState(String(q.state || "")); } catch {}
+    const org_id = String(state.org_id || "");
+    const user_id = String(state.user_id || "");
+
+    const nonce = String(state.nonce || "");
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    await deleteOAuthState(`csrf:${nonce}`);
+
+    try {
+      const tok = await exchangeNotionCode(env, String(q.code || ""));
+      // Notion tokens don't expire
+      await storeTokenVault(env, {
+        org_id, user_id, provider: "notion" as any,
+        access_token: tok.access_token,
+        refresh_token: null,
+        expires_at: null,
+        scope: null,
+        meta: { token_type: tok.token_type, workspace_id: tok.workspace_id, workspace_name: tok.workspace_name, bot_id: tok.bot_id },
+      });
+      await markConnected(org_id, "notion");
+      return reply.redirect(buildReturnUrl({ connected: "notion", org_id, user_id }));
+    } catch (e: any) {
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "notion_token_exchange_failed" }));
+    }
+  });
+
+  // ── Airtable OAuth2 (PKCE) ─────────────────────────────────────────────
+
+  app.get("/airtable/start", oauthRateLimit, async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
+    const user_id = String(q.user_id ?? q.userId ?? "");
+
+    if (!oauthEnabled("airtable", env)) {
+      return reply.redirect(stubConnectUrl(req, "airtable"));
+    }
+
+    const nonce = randomBytes(32).toString("hex");
+    const pair = await makePkcePair();
+    await setOAuthState(`pkce:${nonce}`, { code_verifier: pair.code_verifier, org_id, user_id });
+
+    const state = b64urlJson({ org_id, user_id, nonce });
+    const url = buildAirtableAuthUrl(env, { state, code_challenge: pair.code_challenge });
+    reply.redirect(url);
+  });
+
+  app.get("/airtable/callback", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const code = q.code;
+    const stateRaw = q.state;
+    const error = q.error;
+
+    if (error) return reply.redirect(buildReturnUrl({ oauth_error: String(error) }));
+    if (!code || !stateRaw) return reply.redirect(buildReturnUrl({ oauth_error: "missing_code_or_state" }));
+
+    let state: any;
+    try { state = parseState(String(stateRaw)); } catch { return reply.redirect(buildReturnUrl({ oauth_error: "bad_state" })); }
+
+    const nonce = String(state.nonce || "");
+    const pkceData = nonce ? await getOAuthState<{ code_verifier: string; org_id: string; user_id: string }>(`pkce:${nonce}`) : null;
+    const verifier = pkceData?.code_verifier;
+    const org_id = pkceData?.org_id ?? String(state.org_id || "");
+    const user_id = pkceData?.user_id ?? String(state.user_id || "");
+
+    if (!verifier) return reply.redirect(buildReturnUrl({ oauth_error: "pkce_expired" }));
+
+    try {
+      const tok = await exchangeAirtableCode(env, { code: String(code), code_verifier: verifier });
+      await deleteOAuthState(`pkce:${nonce}`);
+      const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
+      await storeTokenVault(env, {
+        org_id, user_id, provider: "airtable" as any,
+        access_token: tok.access_token,
+        refresh_token: tok.refresh_token ?? null,
+        expires_at, scope: tok.scope ?? null,
+        meta: { token_type: tok.token_type },
+      });
+      await markConnected(org_id, "airtable");
+      return reply.redirect(buildReturnUrl({ connected: "airtable", org_id, user_id }));
+    } catch (e: any) {
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "airtable_token_exchange_failed" }));
+    }
+  });
+
+  // ── Dropbox OAuth2 ─────────────────────────────────────────────────────
+
+  app.get("/dropbox/start", oauthRateLimit, async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
+    const user_id = String(q.user_id ?? q.userId ?? "");
+
+    if (!oauthEnabled("dropbox", env)) {
+      return reply.redirect(stubConnectUrl(req, "dropbox"));
+    }
+
+    const nonce = genNonce();
+    await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
+    const state = b64urlJson({ org_id, user_id, nonce });
+    return reply.redirect(buildDropboxAuthUrl(env, state));
+  });
+
+  app.get("/dropbox/callback", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    if (q.error) return reply.redirect(buildReturnUrl({ oauth_error: String(q.error_description ?? q.error) }));
+
+    let state: any = {};
+    try { state = parseState(String(q.state || "")); } catch {}
+    const org_id = String(state.org_id || "");
+    const user_id = String(state.user_id || "");
+
+    const nonce = String(state.nonce || "");
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    await deleteOAuthState(`csrf:${nonce}`);
+
+    try {
+      const tok = await exchangeDropboxCode(env, String(q.code || ""));
+      const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
+      await storeTokenVault(env, {
+        org_id, user_id, provider: "dropbox" as any,
+        access_token: tok.access_token,
+        refresh_token: tok.refresh_token ?? null,
+        expires_at, scope: null,
+        meta: { token_type: tok.token_type, uid: tok.uid, account_id: tok.account_id },
+      });
+      await markConnected(org_id, "dropbox");
+      return reply.redirect(buildReturnUrl({ connected: "dropbox", org_id, user_id }));
+    } catch (e: any) {
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "dropbox_token_exchange_failed" }));
+    }
+  });
+
+  // ── Slack OAuth v2 ─────────────────────────────────────────────────────
+
+  app.get("/slack/start", oauthRateLimit, async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
+    const user_id = String(q.user_id ?? q.userId ?? "");
+
+    if (!oauthEnabled("slack", env)) {
+      return reply.redirect(stubConnectUrl(req, "slack"));
+    }
+
+    const nonce = genNonce();
+    await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
+    const state = b64urlJson({ org_id, user_id, nonce });
+    return reply.redirect(buildSlackAuthUrl(env, state));
+  });
+
+  app.get("/slack/callback", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    if (q.error) return reply.redirect(buildReturnUrl({ oauth_error: String(q.error_description ?? q.error) }));
+
+    let state: any = {};
+    try { state = parseState(String(q.state || "")); } catch {}
+    const org_id = String(state.org_id || "");
+    const user_id = String(state.user_id || "");
+
+    const nonce = String(state.nonce || "");
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    await deleteOAuthState(`csrf:${nonce}`);
+
+    try {
+      const tok = await exchangeSlackCode(env, String(q.code || ""));
+      // Slack tokens don't expire
+      await storeTokenVault(env, {
+        org_id, user_id, provider: "slack" as any,
+        access_token: tok.access_token,
+        refresh_token: null,
+        expires_at: null,
+        scope: tok.scope ?? null,
+        meta: { token_type: tok.token_type, team_id: tok.team.id, team_name: tok.team.name, bot_user_id: tok.bot_user_id, app_id: tok.app_id },
+      });
+      await markConnected(org_id, "slack");
+      return reply.redirect(buildReturnUrl({ connected: "slack", org_id, user_id }));
+    } catch (e: any) {
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "slack_token_exchange_failed" }));
+    }
+  });
+
+  // ── PayPal OAuth2 ──────────────────────────────────────────────────────
+
+  app.get("/paypal/start", oauthRateLimit, async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
+    const user_id = String(q.user_id ?? q.userId ?? "");
+
+    if (!oauthEnabled("paypal", env)) {
+      return reply.redirect(stubConnectUrl(req, "paypal"));
+    }
+
+    const nonce = genNonce();
+    await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
+    const state = b64urlJson({ org_id, user_id, nonce });
+    return reply.redirect(buildPayPalAuthUrl(env, state));
+  });
+
+  app.get("/paypal/callback", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    if (q.error) return reply.redirect(buildReturnUrl({ oauth_error: String(q.error_description ?? q.error) }));
+
+    let state: any = {};
+    try { state = parseState(String(q.state || "")); } catch {}
+    const org_id = String(state.org_id || "");
+    const user_id = String(state.user_id || "");
+
+    const nonce = String(state.nonce || "");
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    await deleteOAuthState(`csrf:${nonce}`);
+
+    try {
+      const tok = await exchangePayPalCode(env, String(q.code || ""));
+      const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
+      await storeTokenVault(env, {
+        org_id, user_id, provider: "paypal" as any,
+        access_token: tok.access_token,
+        refresh_token: tok.refresh_token ?? null,
+        expires_at, scope: tok.scope ?? null,
+        meta: { token_type: tok.token_type },
+      });
+      await markConnected(org_id, "paypal");
+      return reply.redirect(buildReturnUrl({ connected: "paypal", org_id, user_id }));
+    } catch (e: any) {
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "paypal_token_exchange_failed" }));
+    }
+  });
+
+  // ── Square OAuth2 ──────────────────────────────────────────────────────
+
+  app.get("/square/start", oauthRateLimit, async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
+    const user_id = String(q.user_id ?? q.userId ?? "");
+
+    if (!oauthEnabled("square", env)) {
+      return reply.redirect(stubConnectUrl(req, "square"));
+    }
+
+    const nonce = genNonce();
+    await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
+    const state = b64urlJson({ org_id, user_id, nonce });
+    return reply.redirect(buildSquareAuthUrl(env, state));
+  });
+
+  app.get("/square/callback", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    if (q.error) return reply.redirect(buildReturnUrl({ oauth_error: String(q.error_description ?? q.error) }));
+
+    let state: any = {};
+    try { state = parseState(String(q.state || "")); } catch {}
+    const org_id = String(state.org_id || "");
+    const user_id = String(state.user_id || "");
+
+    const nonce = String(state.nonce || "");
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    await deleteOAuthState(`csrf:${nonce}`);
+
+    try {
+      const tok = await exchangeSquareCode(env, String(q.code || ""));
+      // Square returns expires_at (ISO string) directly
+      await storeTokenVault(env, {
+        org_id, user_id, provider: "square" as any,
+        access_token: tok.access_token,
+        refresh_token: tok.refresh_token ?? null,
+        expires_at: tok.expires_at ?? null,
+        scope: tok.scope ?? null,
+        meta: { token_type: tok.token_type, merchant_id: tok.merchant_id },
+      });
+      await markConnected(org_id, "square");
+      return reply.redirect(buildReturnUrl({ connected: "square", org_id, user_id }));
+    } catch (e: any) {
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "square_token_exchange_failed" }));
     }
   });
 
