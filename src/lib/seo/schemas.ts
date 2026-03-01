@@ -38,6 +38,7 @@ export function organizationSchema() {
       "https://www.pinterest.com/bbwhited",
       "https://twitch.tv/buffaloherde",
       "https://buffaloherde.tumblr.com",
+      "https://wa.me/15557610593",
     ],
   };
 }

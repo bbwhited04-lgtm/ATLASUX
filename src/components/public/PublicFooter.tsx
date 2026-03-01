@@ -90,6 +90,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
     Icon: FaWhatsapp,
     profiles: [
       { name: "BuffaloHerde Channel", href: "https://whatsapp.com/channel/0029Vb7pxOu0LKZCAyaXet3H" },
+      { name: "Direct Message", href: "https://wa.me/15557610593" },
     ],
   },
   {
