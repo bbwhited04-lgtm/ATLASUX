@@ -62,7 +62,7 @@ The table below maps GDPR Articles to their requirements, the Atlas UX implement
 | **Art. 32** | Security of processing | Helmet CSP, CORS whitelist, rate limiting (60 req/min default), JWT auth via Supabase, tenant-scoped queries | `backend/src/server.ts` (Helmet, CORS, rate-limit), `backend/src/plugins/authPlugin.ts` | Partial |
 | **Art. 33** | Breach notification to authority | Breach register with automatic 72-hour deadline calculation from detection time | `POST /v1/compliance/breaches` -- `notifyAuthorityBy` field, `GET /v1/compliance/breaches/deadlines` | Implemented |
 | **Art. 34** | Breach notification to data subjects | Breach record tracks individual notification deadline (60-day HIPAA window also applied), notification timestamps recorded | `PATCH /v1/compliance/breaches/:id` -- `individualsNotified` flag sets `individualsNotifiedAt` | Implemented |
-| **Art. 35** | Data Protection Impact Assessment | DPIA considerations documented below; not yet automated | Section 6 of this document | Planned |
+| **Art. 35** | Data Protection Impact Assessment | DPIA conducted for AI processing: covers all LLM providers, autonomous agent execution, KB RAG, outbound comms, social publishing. Identifies 10 risks with mitigation measures and residual risk recommendations. | `policies/DPIA.md` | Implemented |
 | **Art. 37-39** | Data Protection Officer | DPO designation: `dpo@atlasux.com` | Contact section below | Partial |
 | **Art. 44-49** | International transfers | Supabase (AWS us-east-1), Render (Oregon, US), Vercel (edge). Standard Contractual Clauses required for EEA data | Section 7 of this document | Partial |
 
@@ -355,29 +355,38 @@ Status logic:
 
 ---
 
-## 6. Data Protection Impact Assessment (DPIA) Considerations
+## 6. Data Protection Impact Assessment (DPIA)
 
-### 6.1 Processing Activities Requiring DPIA
+### 6.1 DPIA Document
 
-The following Atlas UX processing activities may require a DPIA under Art. 35:
+A full Data Protection Impact Assessment has been conducted for Atlas UX AI processing and is documented in `policies/DPIA.md`. The DPIA covers:
 
 | Activity | DPIA Trigger | Risk Level | Status |
 |----------|-------------|-----------|--------|
-| AI agent autonomous processing | Automated decision-making (Art. 35(3)(a)) -- agents make tool proposals, draft content, execute workflows | High | DPIA not yet conducted |
-| Large-scale CRM processing | Systematic monitoring of data subjects' behavior if used for marketing automation | Medium | DPIA not yet conducted |
-| Cross-platform social media publishing | Processing of social media profile data across multiple platforms | Medium | DPIA not yet conducted |
-| Audit log collection | Systematic recording of user activity including IP addresses and user agents | Low-Medium | DPIA not yet conducted |
+| AI agent autonomous processing | Automated decision-making (Art. 35(3)(a)) -- agents make tool proposals, draft content, execute workflows | High | **DPIA conducted** (`policies/DPIA.md`) |
+| Knowledge base RAG | Personal data in tenant documents sent to third-party LLMs | High | **DPIA conducted** |
+| Cross-border transfer to DeepSeek (China) | No adequacy decision, no SCCs (Art. 44-49) | High | **DPIA conducted** -- critical risk identified |
+| Outbound communications (email, Telegram) | Autonomous sending of messages to individuals | Medium | **DPIA conducted** |
+| Cross-platform social media publishing | Processing of social media profile data across multiple platforms | Medium | **DPIA conducted** |
+| Web research and intelligence gathering | Systematic monitoring of publicly accessible data | Medium | **DPIA conducted** |
 
-### 6.2 DPIA Process (Planned)
+### 6.2 Key Findings
 
-When conducted, each DPIA will document:
-1. Systematic description of the processing operation and its purposes
-2. Assessment of necessity and proportionality
-3. Assessment of risks to data subjects' rights and freedoms
-4. Measures to mitigate identified risks
-5. Consultation with the DPO (and supervisory authority if required under Art. 36)
+The DPIA identified 10 risks (3 critical, 5 high/medium, 2 low) and documented existing mitigation measures including SGL governance, HIL approval workflows, tenant isolation, audit trail, spend/rate limits, and the Execution Constitution. Three critical recommendations require immediate action:
 
-**Current gap:** No DPIAs have been formally conducted. The AI agent processing activity is the highest priority candidate given that agents can autonomously execute actions on behalf of users.
+1. **C1:** Disable or restrict DeepSeek as a provider for EEA tenant data
+2. **C2:** Formally appoint a DPO with documented qualifications and independence
+3. **C3:** Enforce `ai_processing` consent as a runtime gate before LLM calls
+
+### 6.3 Review Schedule
+
+The DPIA is scheduled for review every 6 months or when any of the following changes occur:
+- A new AI provider is added to `backend/src/ai.ts`
+- A new agent tool is added to `backend/src/core/agent/agentTools.ts`
+- A new agent with external action capabilities is added to the registry
+- A new category of personal data is processed by the AI pipeline
+
+**Pending:** DPO review of the DPIA (blocked on formal DPO appointment).
 
 ---
 
@@ -504,7 +513,7 @@ All compliance endpoints are registered under `/v1/compliance` in `backend/src/s
 
 | Item | Gap | Priority |
 |------|-----|----------|
-| DPIA for AI agents (Art. 35) | No DPIA conducted for autonomous agent processing | High -- agents make automated decisions affecting data subjects |
+| DPIA for AI agents (Art. 35) | **COMPLETED** -- see `policies/DPIA.md`. Pending DPO review. | Done -- 3 critical, 5 high/medium, 2 low residual risks identified |
 | Session termination (Art. 32) | No token revocation / logout endpoint | Medium -- planned in design doc Section 6 |
 | Per-tenant rate limiting (Art. 32) | Only IP-based rate limiting currently | Medium -- planned in design doc Section 4 |
 | Automated DSAR fulfillment | DSARs are tracked but require manual processing by admin | Medium -- could automate access/export responses |

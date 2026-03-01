@@ -1,8 +1,10 @@
 # HIPAA Compliance Framework — Atlas UX
 
-**Last updated:** 2026-03-01
-**Next review:** 2026-06-01
+**Last updated:** 2026-03-05
+**Next review:** 2026-06-05
 **Document owner:** Atlas UX Engineering
+**HIPAA Security Officer:** Billy Whited, DEAD APP CORP / THE DEAD APP CORP TRUST
+**Contact:** 510 E Washington Street, Vandalia, MO 63382 | (816) 747-6150
 
 ---
 
@@ -33,9 +35,9 @@ Atlas UX would function as a **Business Associate** if a Covered Entity tenant u
 |---|---|---|---|---|
 | 164.308(a)(1)(i) | Security Management Process — Risk Analysis | Compliance design doc identifies 7 gap areas with framework mappings | `docs/plans/2026-03-03-compliance-hardening-design.md` | **Partial** — design doc exists, formal risk analysis not yet conducted |
 | 164.308(a)(1)(ii)(C) | Security Management Process — Sanction Policy | Not documented | N/A | **Not Implemented** |
-| 164.308(a)(2) | Assigned Security Responsibility | No designated HIPAA Security Officer in code or org chart | N/A | **Not Implemented** |
+| 164.308(a)(2) | Assigned Security Responsibility | Billy Whited designated as HIPAA Security Officer and Privacy Officer. Contact: 510 E Washington Street, Vandalia, MO 63382, (816) 747-6150. Entity: DEAD APP CORP / THE DEAD APP CORP TRUST | `policies/HIPAA_COMPLIANCE.md` (document header) | **Implemented** |
 | 164.308(a)(3) | Workforce Security — Authorization & Supervision | Tenant membership enforced via `tenantPlugin.ts`: authenticated users must be a `tenantMember` to access any tenant's data. Role field (`owner`, etc.) exists on `tenant_members` table. Non-members receive HTTP 403 | `backend/src/plugins/tenantPlugin.ts` (lines 42-51) | **Implemented** (technical control); **Not Implemented** (workforce policy) |
-| 164.308(a)(3)(ii)(C) | Workforce Security — Termination Procedures | No automated access revocation on termination. No `revoked_tokens` table or logout endpoint exists | `backend/src/plugins/authPlugin.ts` | **Not Implemented** |
+| 164.308(a)(3)(ii)(C) | Workforce Security — Termination Procedures | `POST /v1/auth/logout` revokes JWT by SHA-256 hashing and inserting into `revoked_tokens` table. `authPlugin.ts` checks blacklist on every request. Daily prune job clears expired entries. No automated HR-triggered revocation yet | `backend/src/routes/authRoutes.ts`, `backend/src/plugins/authPlugin.ts` | **Partial** — token revocation implemented, no HR integration |
 | 164.308(a)(4) | Information Access Management | Role-based access via `tenantMember.role` field; API usage metered per-user via `meterApiCall()` in `tenantPlugin.ts` | `backend/src/plugins/tenantPlugin.ts` (line 60), `backend/src/lib/usageMeter.ts` | **Partial** — role exists but no fine-grained permission matrix |
 | 164.308(a)(5) | Security Awareness and Training | Not implemented | N/A | **Not Implemented** |
 | 164.308(a)(6) | Security Incident Procedures | Incident report CRUD: `POST/GET/PATCH /v1/compliance/incidents`. Severity levels (p0-p3), categories (security, data_integrity, etc.), resolution tracking | `backend/src/routes/complianceRoutes.ts` (lines 496-592) | **Implemented** (technical tooling); **Not Implemented** (procedural response plan) |
@@ -48,18 +50,18 @@ Atlas UX would function as a **Business Associate** if a Covered Entity tenant u
 | HIPAA Section | Safeguard | Implementation | File Path | Status |
 |---|---|---|---|---|
 | **164.312(a)(1)** | **Access Control** — Unique User Identification | Supabase Auth issues per-user JWTs. `authPlugin.ts` validates bearer tokens via `supabase.auth.getUser(token)`, extracts unique `userId` and `email`. Auto-provisions `User` record on first auth | `backend/src/plugins/authPlugin.ts` (lines 15-51) | **Implemented** |
-| 164.312(a)(1) | Access Control — Row-Level Security | RLS enabled on 9 tables via migration `20260228120000`: `integrations`, `assets`, `jobs`, `distribution_events`, `audit_log`, `kb_documents`, `decision_memos`, `crm_contacts`, `crm_companies`. Policy: `tenant_id = current_setting('app.tenant_id')::uuid`. Session variable set by `withTenant()` helper in Prisma transactions | `backend/prisma/migrations/20260228120000_rls_policies/migration.sql`, `backend/src/db/prisma.ts` (lines 30-41) | **Partial** — RLS enabled but not forced (superuser bypass still active, Phase 2 only). Design doc targets 12 tables; 3 missing: `consent_records`, `data_subject_requests`, `data_breaches` |
+| 164.312(a)(1) | Access Control — Row-Level Security | RLS enabled on 12 tables via 2 migrations: `integrations`, `assets`, `jobs`, `distribution_events`, `audit_log`, `kb_documents`, `decision_memos`, `crm_contacts`, `crm_companies`, `consent_records`, `data_subject_requests`, `data_breaches`. Policy: `tenant_id = current_setting('app.tenant_id')::uuid`. Session variable set by `withTenant()` helper in Prisma transactions | `backend/prisma/migrations/20260228120000_rls_policies/`, `backend/prisma/migrations/20260304020000_rls_compliance_tables/`, `backend/src/db/prisma.ts` | **Partial** — RLS enabled on all 12 tables but not forced (superuser bypass still active). `FORCE ROW LEVEL SECURITY` pending |
 | 164.312(a)(1) | Access Control — Tenant Isolation (Application Layer) | `tenantPlugin.ts` resolves `tenantId` from `x-tenant-id` header or query param. Validates UUID format (regex). Verifies user membership via `tenantMember.findUnique()`. Rejects non-members with 403 | `backend/src/plugins/tenantPlugin.ts` (lines 25-63) | **Implemented** |
 | 164.312(a)(1) | Access Control — Emergency Access | Not implemented. No break-glass procedure | N/A | **Not Implemented** |
-| 164.312(a)(2)(iii) | Access Control — Automatic Logoff | Not implemented. No session timeout or idle detection. Supabase JWT expiry is the only session limit. No `revoked_tokens` table, no `POST /v1/auth/logout` endpoint | `backend/src/plugins/authPlugin.ts` — no blacklist check present | **Not Implemented** — planned in compliance hardening design (Section 6) |
+| 164.312(a)(2)(iii) | Access Control — Automatic Logoff | `POST /v1/auth/logout` endpoint revokes active JWT. `revoked_tokens` table with SHA-256 hashed tokens, `authPlugin.ts` checks blacklist on every request. Supabase JWT natural expiry as fallback. No idle timeout detection yet | `backend/src/routes/authRoutes.ts`, `backend/src/plugins/authPlugin.ts`, `backend/prisma/migrations/20260304030000_revoked_tokens/` | **Partial** — manual logout implemented, no automatic idle timeout |
 | **164.312(b)** | **Audit Controls** | `auditPlugin.ts` logs every HTTP request/response to `audit_log` table: method, URL, status code, actor user ID, IP address, user agent, request ID. Uses `onSend` hook (fires after response). Two-attempt strategy for schema compatibility. Auto-pauses for 10s on schema errors, never permanently disables | `backend/src/plugins/auditPlugin.ts` (lines 18-87) | **Implemented** (basic logging) |
-| 164.312(b) | Audit Controls — Hash-Chained Integrity | Not implemented. `audit_log` table has no `prev_hash` or `record_hash` columns. Records can be modified or deleted without detection | `backend/prisma/schema.prisma` (AuditLog model, line 173) | **Not Implemented** — planned in compliance hardening design (Section 1) |
+| 164.312(b) | Audit Controls — Hash-Chained Integrity | SHA-256 hash chain per tenant. `prev_hash` and `record_hash` columns on `audit_log`. `auditChain.ts` computes chain on every insert with in-memory cache and DB fallback. GENESIS_HASH anchor. Verification endpoint at `GET /v1/compliance/audit/verify` walks chain and reports total/verified/broken links | `backend/src/lib/auditChain.ts`, `backend/src/plugins/auditPlugin.ts`, `backend/prisma/migrations/20260304010000_audit_hash_chain/` | **Implemented** |
 | 164.312(b) | Audit Controls — Per-Mutation Logging | Compliance routes log every DSAR, consent, breach, incident, and vendor mutation to `audit_log` with specific action codes (`DSAR_CREATED`, `BREACH_REPORTED`, `CONSENT_GRANTED`, `DATA_ERASURE`, etc.) | `backend/src/routes/complianceRoutes.ts` — audit log calls throughout | **Implemented** |
-| **164.312(c)(1)** | **Integrity** — Input Validation | Compliance routes validate request bodies inline (e.g., `requestType` must be one of 6 values, `lawfulBasis` must be one of 6 values). However, most routes outside compliance use `req.body as any` without Zod schemas | `backend/src/routes/complianceRoutes.ts` (lines 40-46, 270-275) | **Partial** — compliance routes validated, most other routes unvalidated |
-| 164.312(c)(1) | Integrity — Data Integrity Verification | No cryptographic hash verification on stored data. No write-once storage for audit logs | N/A | **Not Implemented** |
+| **164.312(c)(1)** | **Integrity** — Input Validation | Compliance routes use Zod schemas (DsarCreateSchema, DsarUpdateSchema, ConsentSchema, BreachSchema, IncidentSchema, VendorSchema) with `.parse()` and 400 error on validation failure. HTML sanitization via `sanitize.ts` strips tags to prevent stored XSS. Other routes still use `req.body as any` in some cases | `backend/src/routes/complianceRoutes.ts`, `backend/src/lib/sanitize.ts` | **Partial** — compliance routes fully validated with Zod + sanitization, other routes still need migration |
+| 164.312(c)(1) | Integrity — Data Integrity Verification | Hash-chained audit logs provide cryptographic integrity verification. `GET /v1/compliance/audit/verify` walks the per-tenant chain and detects any tampered or missing entries. No write-once storage for audit logs | `backend/src/lib/auditChain.ts`, `backend/src/routes/complianceRoutes.ts` | **Partial** — hash chain verification implemented, no write-once storage |
 | **164.312(d)** | **Person or Entity Authentication** | JWT-based authentication via Supabase Auth. `authPlugin.ts` validates every request's bearer token by calling `supabase.auth.getUser()`. Invalid/missing tokens return 401 | `backend/src/plugins/authPlugin.ts` (lines 19-26) | **Implemented** (authentication) |
-| 164.312(d) | Person Authentication — Session Termination / Token Blacklist | Not implemented. No `revoked_tokens` table. No logout endpoint. No token blacklist check in `authPlugin`. Compromised tokens cannot be revoked server-side | `backend/src/plugins/authPlugin.ts` — no revocation logic | **Not Implemented** — planned in compliance hardening design (Section 6) |
-| **164.312(e)(1)** | **Transmission Security** — Encryption in Transit | Render terminates TLS for all inbound HTTPS connections. CORS restricts origins to `atlasux.cloud` + localhost (dev). `@fastify/helmet` is registered but **HSTS is not explicitly configured** (Helmet defaults to HSTS enabled with `maxAge: 15552000` / 180 days, but `includeSubDomains` is not explicitly set) | `backend/src/server.ts` (lines 169-189) | **Partial** — TLS via Render, Helmet defaults, but no explicit HSTS `maxAge: 31536000` or `includeSubDomains: true` as required |
+| 164.312(d) | Person Authentication — Session Termination / Token Blacklist | `revoked_tokens` table stores SHA-256 hashed JWTs with expiry. `POST /v1/auth/logout` adds token to blacklist. `authPlugin.ts` checks blacklist on every authenticated request and rejects revoked tokens with 401. Daily prune interval clears expired entries | `backend/src/routes/authRoutes.ts`, `backend/src/plugins/authPlugin.ts`, `backend/prisma/migrations/20260304030000_revoked_tokens/` | **Implemented** |
+| **164.312(e)(1)** | **Transmission Security** — Encryption in Transit | Render terminates TLS for all inbound HTTPS connections. CORS restricts origins to `atlasux.cloud` + localhost (dev). HSTS configured with `maxAge: 31536000` (1 year) and `includeSubDomains: true`. Strict referrer policy (`strict-origin-when-cross-origin`) | `backend/src/server.ts` | **Implemented** |
 | 164.312(e)(1) | Transmission Security — CORS | Origin allowlist: `https://www.atlasux.cloud`, `https://atlasux.cloud`. Localhost added only in non-production. Credentials enabled. Allowed headers explicitly listed including `Authorization`, `x-tenant-id`, `x-csrf-token` | `backend/src/server.ts` (lines 140-167) | **Implemented** |
 
 ### Physical Safeguards (45 CFR 164.310)
@@ -148,7 +150,9 @@ If a Covered Entity tenant uses Atlas UX to create, receive, maintain, or transm
 
 ### Current State
 
-Atlas UX does not currently execute BAAs with tenants. The vendor assessment system tracks whether upstream vendors (Supabase, Render, OpenAI, etc.) have BAAs available via the `has_baa` field on `vendor_assessments`, but no downstream BAA template exists for Atlas UX tenants.
+A BAA template has been drafted at `policies/BAA_TEMPLATE.md` (version 1.0, 2026-03-01). The template covers all eight HIPAA-required sections: definitions, permitted uses and disclosures, safeguards, breach notification, subcontractor requirements, individual rights, return/destruction of PHI, and term and termination. The template references the actual technical controls implemented in the Atlas UX codebase and identifies the Platform's current subcontractors (Supabase, Render, Vercel, OpenAI, Stripe).
+
+**The template has not been reviewed by healthcare privacy counsel and has not been executed with any tenant.** Atlas UX does not currently accept PHI. The vendor assessment system tracks whether upstream vendors (Supabase, Render, OpenAI, etc.) have BAAs available via the `has_baa` field on `vendor_assessments`.
 
 ### Vendor BAA Tracking
 
@@ -162,11 +166,12 @@ Vendor assessment CRUD is available at `POST/GET /v1/compliance/vendors` with re
 
 ### What Would Be Needed for BAA Readiness
 
-1. A BAA template document for execution with Covered Entity tenants
-2. Confirmed BAAs with all upstream vendors that may process PHI (Supabase, Render, OpenAI at minimum)
-3. Encryption of PHI at rest (Supabase provides this via PostgreSQL encryption; needs explicit documentation)
-4. Breach notification chain: Atlas UX must notify the Covered Entity within a contractually agreed timeframe if a breach occurs
-5. PHI return/destruction procedures upon BAA termination
+1. ~~A BAA template document for execution with Covered Entity tenants~~ — **DONE** (`policies/BAA_TEMPLATE.md`)
+2. **Legal review of BAA template** by qualified healthcare privacy counsel before execution
+3. Confirmed BAAs with all upstream vendors that may process PHI (Supabase, Render, OpenAI at minimum)
+4. Encryption of PHI at rest (Supabase provides this via PostgreSQL encryption; needs explicit documentation)
+5. Breach notification chain: Atlas UX must notify the Covered Entity within a contractually agreed timeframe if a breach occurs — **addressed in BAA template Article IV**
+6. PHI return/destruction procedures upon BAA termination — **addressed in BAA template Article VII**
 
 ---
 
@@ -174,34 +179,34 @@ Vendor assessment CRUD is available at `POST/GET /v1/compliance/vendors` with re
 
 ### Critical Gaps (Must Address Before Handling PHI)
 
-| Gap | HIPAA Section | Risk | Planned Remediation | Design Doc Reference |
+| Gap | HIPAA Section | Risk | Planned Remediation | Status |
 |---|---|---|---|---|
-| No session termination or token blacklist | 164.312(d) | Compromised JWT tokens cannot be revoked. An attacker with a stolen token has access until Supabase expiry | Add `revoked_tokens` table, `POST /v1/auth/logout` endpoint, blacklist check in `authPlugin.ts` | Section 6 |
-| No hash-chained audit logs | 164.312(b) | Audit records can be silently modified or deleted. Tamper detection is impossible | Add `prev_hash` and `record_hash` columns to `audit_log`, SHA-256 chain computation on insert, verification endpoint | Section 1 |
-| RLS not forced (superuser bypass) | 164.312(a)(1) | Prisma connects as superuser, so RLS policies are advisory only unless `FORCE ROW LEVEL SECURITY` is applied. A code bug that skips `withTenant()` leaks cross-tenant data | Phase 3: add `FORCE ROW LEVEL SECURITY` on all RLS tables, create limited-privilege Prisma connection role | Section 3 |
-| 3 compliance tables missing RLS | 164.312(a)(1) | `consent_records`, `data_subject_requests`, `data_breaches` have no RLS policies. Application-layer `tenantId` filtering is the only barrier | Add RLS policies to these 3 tables in next migration | Section 3 |
-| No CSRF protection active | 164.312(a)(1) | `csrfPlugin.ts` exists but is commented out in `server.ts` (line 199). CORS origin restriction is the only CSRF defense. Double-submit cookie pattern does not work cross-origin (Vercel to Render) | Rewrite to DB-backed synchronizer token pattern per design doc | Section 2 |
-| No BAA template or execution process | 164.308(b)(1) | Cannot legally handle PHI without executed BAAs | Draft BAA template, establish execution workflow | N/A |
+| ~~No session termination~~ | ~~164.312(d)~~ | ~~Compromised JWT tokens cannot be revoked~~ | ~~Add revoked_tokens table, logout endpoint, blacklist check~~ | **RESOLVED** (Mar 4, 2026) |
+| ~~No hash-chained audit logs~~ | ~~164.312(b)~~ | ~~Tamper detection impossible~~ | ~~Add prev_hash/record_hash, SHA-256 chain, verification endpoint~~ | **RESOLVED** (Mar 4, 2026) |
+| RLS not forced (superuser bypass) | 164.312(a)(1) | Prisma connects as superuser, so RLS policies are advisory only | Add `FORCE ROW LEVEL SECURITY` on all 12 RLS tables; migrate routes to use `withTenant()` | **In Progress** |
+| ~~3 compliance tables missing RLS~~ | ~~164.312(a)(1)~~ | ~~consent_records, data_subject_requests, data_breaches had no RLS~~ | ~~Add RLS policies in migration~~ | **RESOLVED** (Mar 4, 2026) |
+| ~~No CSRF protection active~~ | ~~164.312(a)(1)~~ | ~~CSRF defense was disabled~~ | ~~Rewrite to DB-backed synchronizer token~~ | **RESOLVED** (Mar 4, 2026) |
+| ~~No BAA template or execution process~~ | ~~164.308(b)(1)~~ | ~~Cannot legally handle PHI without executed BAAs~~ | ~~Draft BAA template~~ | **PARTIALLY RESOLVED** — template drafted (`BAA_TEMPLATE.md`, Mar 1, 2026). Requires legal review and execution workflow |
 
 ### Moderate Gaps (Should Address for Compliance Posture)
 
-| Gap | HIPAA Section | Risk | Planned Remediation | Design Doc Reference |
+| Gap | HIPAA Section | Risk | Planned Remediation | Status |
 |---|---|---|---|---|
-| HSTS not explicitly configured | 164.312(e)(1) | Relies on Helmet defaults (180-day max-age). Should be 1 year with `includeSubDomains` | Update Helmet config in `server.ts` | Section 7 |
-| Most routes lack input validation | 164.312(c)(1) | Routes outside `complianceRoutes.ts` use `req.body as any`. Injection and data integrity risks | Add Zod schemas to all route handlers | Section 5 |
-| No per-tenant rate limiting | 164.312(a)(1) | Rate limiting is IP-based only (`@fastify/rate-limit`, 60 req/min global). A malicious tenant can exhaust quotas | Add tenant-aware rate limit plugin backed by `rate_limit_buckets` table | Section 4 |
-| No automated breach notifications | 164.404 | Deadlines are tracked but notifications must be sent manually | Build notification delivery (email to affected individuals, HHS submission form) | N/A |
-| No encryption at rest documentation | 164.312(a)(2)(iv) | Supabase PostgreSQL uses disk-level encryption, but this is not documented or verified | Document Supabase encryption configuration, verify at-rest encryption | N/A |
+| ~~HSTS not configured~~ | ~~164.312(e)(1)~~ | ~~Relied on Helmet defaults~~ | ~~Update Helmet config~~ | **RESOLVED** (Mar 4, 2026) |
+| ~~No per-tenant rate limiting~~ | ~~164.312(a)(1)~~ | ~~One tenant could exhaust global rate limits~~ | ~~Add tenantRateLimit.ts plugin~~ | **RESOLVED** (Mar 4, 2026) |
+| Zod validation incomplete | 164.312(c)(1) | Routes outside `complianceRoutes.ts` still use `req.body as any` | Add Zod schemas to remaining route handlers | **Partial** — compliance routes done |
+| No automated breach notifications | 164.404 | Deadlines are tracked but notifications must be sent manually | Build notification delivery (email to affected individuals, HHS submission form) | **Open** |
+| No encryption at rest documentation | 164.312(a)(2)(iv) | Supabase PostgreSQL uses disk-level encryption, but this is not documented | Document Supabase encryption configuration | **Open** |
 
 ### Policy/Process Gaps (Organizational)
 
-| Gap | HIPAA Section | Impact |
-|---|---|---|
-| No designated Security Officer | 164.308(a)(2) | Required before handling PHI |
-| No workforce security training | 164.308(a)(5) | All staff with potential PHI access must complete HIPAA training |
-| No sanction policy | 164.308(a)(1)(ii)(C) | Must document consequences for policy violations |
-| No contingency/disaster recovery plan | 164.308(a)(7) | Must document backup, recovery, and emergency mode procedures |
-| No formal risk analysis | 164.308(a)(1)(i) | Must conduct and document comprehensive risk assessment annually |
+| Gap | HIPAA Section | Impact | Status |
+|---|---|---|---|
+| ~~No designated Security Officer~~ | ~~164.308(a)(2)~~ | ~~Required before handling PHI~~ | **RESOLVED** — Billy Whited appointed (Mar 5, 2026) |
+| No workforce security training | 164.308(a)(5) | All staff with potential PHI access must complete HIPAA training | **Open** |
+| No sanction policy | 164.308(a)(1)(ii)(C) | Must document consequences for policy violations | **Open** |
+| No contingency/disaster recovery plan | 164.308(a)(7) | Must document backup, recovery, and emergency mode procedures | **Open** |
+| No formal risk analysis | 164.308(a)(1)(i) | Must conduct and document comprehensive risk assessment annually | **Open** |
 
 ---
 
@@ -226,18 +231,28 @@ The following HIPAA-relevant technical controls are verifiably implemented in th
 
 ## 7. Honest Assessment
 
-**Atlas UX is not currently HIPAA-compliant.** The platform has strong multi-tenant isolation, comprehensive audit logging, and a mature compliance operations toolkit (breach register, DSAR, consent, vendor tracking). However, it is missing several mandatory HIPAA Security Rule requirements:
+**Atlas UX is not yet HIPAA-compliant, but the technical foundation is now strong.** Since the compliance hardening sprint (Mar 4, 2026), the following critical gaps have been closed:
 
-- No ability to revoke compromised sessions (164.312(d))
-- No tamper-evident audit log chain (164.312(b))
-- No designated Security Officer (164.308(a)(2))
-- No BAA execution capability (164.308(b)(1))
-- No formal risk analysis (164.308(a)(1)(i))
+- Session termination with token blacklist (164.312(d)) — **RESOLVED**
+- Hash-chained tamper-evident audit logs (164.312(b)) — **RESOLVED**
+- CSRF protection via DB-backed synchronizer (164.312(a)(1)) — **RESOLVED**
+- RLS on all 12 tenant-scoped tables (164.312(a)(1)) — **RESOLVED**
+- HSTS with 1-year max-age (164.312(e)(1)) — **RESOLVED**
+- Per-tenant rate limiting (164.312(a)(1)) — **RESOLVED**
+- HIPAA Security Officer appointed (164.308(a)(2)) — **RESOLVED**
 
-The compliance hardening design (`docs/plans/2026-03-03-compliance-hardening-design.md`) addresses the technical gaps in Sections 1, 3, 5, 6, and 7. Organizational/policy gaps (Security Officer, training, BAA templates, risk analysis) are not covered by the design doc and require separate action.
+### Remaining gaps before PHI acceptance:
 
-**Recommendation:** Do not accept tenants with PHI until the compliance hardening plan is executed and organizational controls are established.
+- **FORCE ROW LEVEL SECURITY** not enabled (Prisma superuser can bypass RLS) — in progress
+- **No BAA template** for Covered Entity tenants — drafting in progress
+- **No formal risk analysis** conducted (164.308(a)(1)(i))
+- **No workforce security training** program (164.308(a)(5))
+- **No sanction policy** documented (164.308(a)(1)(ii)(C))
+- **No contingency/disaster recovery plan** (164.308(a)(7))
+- **No automated breach notification delivery** (164.404)
+
+**Recommendation:** Do not accept tenants with PHI until FORCE RLS is enabled, BAA template is executed, and organizational controls (training, sanctions, DR plan) are established.
 
 ---
 
-*This document reflects the actual state of the Atlas UX codebase as of 2026-03-01. All file paths and endpoint references have been verified against the source code. Status assessments are intentionally conservative — a control is marked "Implemented" only when the code demonstrably enforces it.*
+*This document reflects the actual state of the Atlas UX codebase as of 2026-03-05. All file paths and endpoint references have been verified against the source code. Status assessments are intentionally conservative — a control is marked "Implemented" only when the code demonstrably enforces it.*

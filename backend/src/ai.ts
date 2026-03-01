@@ -1,9 +1,11 @@
+import { redactMessages } from "./lib/piiRedact.js";
+
 /**
  * Atlas UX — Chat provider router.
  *
  * Supported providers:
  *   openai    → OpenAI API (OPENAI_API_KEY)
- *   deepseek  → DeepSeek API (DEEPSEEK_API_KEY)
+ *   deepseek  → DeepSeek API (DEEPSEEK_API_KEY) — PII-redacted (GDPR: no adequacy decision for China)
  *   claude    → Anthropic via OpenRouter (OPENROUTER_API_KEY)
  *              or directly via Anthropic API (ANTHROPIC_API_KEY)
  *   gemini    → Gemini via OpenRouter (OPENROUTER_API_KEY)
@@ -29,15 +31,17 @@ export async function runChat(req: any, env: any) {
     return { provider, model: data.model, request_id: data.id, content: data.choices?.[0]?.message?.content ?? "" };
   }
 
-  // ── DeepSeek (OpenAI-compatible) ───────────────────────────────────────────
+  // ── DeepSeek (OpenAI-compatible) — PII redacted for GDPR (China transfer) ─
   if (provider === "deepseek") {
     const key = env.DEEPSEEK_API_KEY;
     if (!key) throw new Error("DEEPSEEK_API_KEY not set");
 
+    const safeMessages = redactMessages(messages);
+
     const r = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: req.model || "deepseek-chat", messages, temperature: 0.7 }),
+      body: JSON.stringify({ model: req.model || "deepseek-chat", messages: safeMessages, temperature: 0.7 }),
     });
 
     const data = await r.json();

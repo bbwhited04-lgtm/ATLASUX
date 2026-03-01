@@ -613,8 +613,12 @@ async function callProvider(args: {
       return callOpenAICompat("vercel", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
     case "openai":
       return callOpenAICompat("openai", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
-    case "deepseek":
-      return callOpenAICompat("deepseek", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+    case "deepseek": {
+      // GDPR: PII redaction before cross-border transfer to China
+      const { redactMessages } = await import("../../lib/piiRedact.js");
+      const safeMessages = redactMessages(args.messages);
+      return callOpenAICompat("deepseek", args.model, safeMessages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+    }
     case "openrouter":
       return callOpenAICompat("openrouter", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
     case "cerebras":
