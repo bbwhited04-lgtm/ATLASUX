@@ -63,7 +63,7 @@ The table below maps GDPR Articles to their requirements, the Atlas UX implement
 | **Art. 33** | Breach notification to authority | Breach register with automatic 72-hour deadline calculation from detection time | `POST /v1/compliance/breaches` -- `notifyAuthorityBy` field, `GET /v1/compliance/breaches/deadlines` | Implemented |
 | **Art. 34** | Breach notification to data subjects | Breach record tracks individual notification deadline (60-day HIPAA window also applied), notification timestamps recorded | `PATCH /v1/compliance/breaches/:id` -- `individualsNotified` flag sets `individualsNotifiedAt` | Implemented |
 | **Art. 35** | Data Protection Impact Assessment | DPIA conducted for AI processing: covers all LLM providers, autonomous agent execution, KB RAG, outbound comms, social publishing. Identifies 10 risks with mitigation measures and residual risk recommendations. | `policies/DPIA.md` | Implemented |
-| **Art. 37-39** | Data Protection Officer | DPO designation: `dpo@atlasux.com` | Contact section below | Partial |
+| **Art. 37-39** | Data Protection Officer | DPO appointed: Billy Whited, DEAD APP CORP / THE DEAD APP CORP TRUST, 510 E Washington Street, Vandalia, MO 63382, (816) 747-6150, `dpo@atlasux.com` | Contact section below | Implemented |
 | **Art. 44-49** | International transfers | Supabase (AWS us-east-1), Render (Oregon, US), Vercel (edge). Standard Contractual Clauses required for EEA data | Section 7 of this document | Partial |
 
 ---
@@ -502,11 +502,11 @@ All compliance endpoints are registered under `/v1/compliance` in `backend/src/s
 | Item | Gap | Remediation |
 |------|-----|-------------|
 | Hash-chained audit logs (Art. 5(1)(f)) | Schema columns exist but hash computation not implemented in auditPlugin | Implement `auditChain.ts` and integrate into auditPlugin per design doc Section 1 |
-| RLS coverage (Art. 25) | RLS enabled on 9 tables but not on `consent_records`, `data_subject_requests`, `data_breaches`; `FORCE ROW LEVEL SECURITY` not enabled; not all routes use `withTenant()` | Add RLS to compliance tables; adopt `withTenant()` across all tenant-scoped routes; enable FORCE RLS |
-| HSTS (Art. 32) | Helmet configured but HSTS not explicitly set | Add HSTS config per design doc Section 7 |
-| CSRF protection (Art. 32) | Plugin exists but is disabled due to cross-origin cookie limitations | Rewrite with DB-backed synchronizer token pattern per design doc Section 2 |
-| Input validation (Art. 32) | Manual field checks in complianceRoutes, no Zod schemas | Add Zod schemas per design doc Section 5 |
-| DPO designation (Art. 37-39) | Email designated (`dpo@atlasux.com`) but no formal appointment documentation | Document DPO appointment, qualifications, and reporting structure |
+| RLS coverage (Art. 25) | RLS enabled on all 12 tables; `FORCE ROW LEVEL SECURITY` not yet enabled; not all routes use `withTenant()` | Enable FORCE RLS after withTenant() route migration |
+| ~~HSTS (Art. 32)~~ | ~~HSTS not explicitly set~~ | **RESOLVED** — HSTS with 1-year maxAge + includeSubDomains (Mar 4, 2026) |
+| ~~CSRF protection (Art. 32)~~ | ~~Plugin disabled~~ | **RESOLVED** — DB-backed synchronizer token pattern (Mar 4, 2026) |
+| ~~Input validation (Art. 32)~~ | ~~No Zod schemas~~ | **RESOLVED** — Zod schemas on all compliance routes (Mar 4, 2026) |
+| ~~DPO designation (Art. 37-39)~~ | ~~No formal appointment~~ | **RESOLVED** — Billy Whited appointed DPO (Mar 5, 2026) |
 | Cross-border transfers (Art. 44-49) | Sub-processor DPAs available but not all formally executed | Execute DPAs with all sub-processors; conduct Transfer Impact Assessment |
 
 ### 9.3 Planned / Not Yet Implemented
@@ -514,11 +514,11 @@ All compliance endpoints are registered under `/v1/compliance` in `backend/src/s
 | Item | Gap | Priority |
 |------|-----|----------|
 | DPIA for AI agents (Art. 35) | **COMPLETED** -- see `policies/DPIA.md`. Pending DPO review. | Done -- 3 critical, 5 high/medium, 2 low residual risks identified |
-| Session termination (Art. 32) | No token revocation / logout endpoint | Medium -- planned in design doc Section 6 |
-| Per-tenant rate limiting (Art. 32) | Only IP-based rate limiting currently | Medium -- planned in design doc Section 4 |
+| ~~Session termination (Art. 32)~~ | ~~No token revocation~~ | **RESOLVED** — revoked_tokens table + logout endpoint (Mar 4, 2026) |
+| ~~Per-tenant rate limiting (Art. 32)~~ | ~~Only IP-based~~ | **RESOLVED** — tenantRateLimit.ts plugin, 3-tier limits (Mar 4, 2026) |
 | Automated DSAR fulfillment | DSARs are tracked but require manual processing by admin | Medium -- could automate access/export responses |
 | EU representative (Art. 27) | Email designated but no physical EU address published | Medium |
-| DeepSeek transfer assessment | No SCCs or adequacy basis for China transfers | High -- do not route EEA data through DeepSeek |
+| ~~DeepSeek transfer assessment~~ | ~~No adequacy for China~~ | **MITIGATED** — PII redaction layer (`piiRedact.ts`) strips personal data before DeepSeek transfer (Mar 5, 2026) |
 | Consent banner / frontend integration | Backend consent API exists but no frontend consent collection UI | Medium |
 | Data subject self-service portal | Subjects must go through admin; no self-service DSAR submission | Low |
 
@@ -526,7 +526,7 @@ All compliance endpoints are registered under `/v1/compliance` in `backend/src/s
 
 ## 10. Contact Information
 
-- **Data Protection Officer:** dpo@atlasux.com
+- **Data Protection Officer:** Billy Whited, dpo@atlasux.com, (816) 747-6150, 510 E Washington Street, Vandalia, MO 63382
 - **GDPR Compliance:** gdpr@atlasux.com
 - **Data Subject Rights:** rights@atlasux.com
 - **Breach Reporting:** breaches@atlasux.com

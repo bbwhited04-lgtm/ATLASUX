@@ -17,12 +17,12 @@ Atlas UX is an AI employee productivity platform with autonomous agents. This do
 
 | Framework | Document | Status | Readiness | Key Gaps |
 |-----------|----------|--------|-----------|----------|
-| SOC 2 Type II | `SOC2_COMPLIANCE.md` | Partial | ~60% Security | Observation period not started |
-| ISO 27001:2022 | `ISO27001_COMPLIANCE.md` | Partial | 57% controls | No formal ISMS, no internal audit |
-| HIPAA | `HIPAA_COMPLIANCE.md` | Not compliant | N/A until PHI | BAA template drafted (`BAA_TEMPLATE.md`), Security Officer appointed |
+| SOC 2 Type II | `SOC2_COMPLIANCE.md` | Partial | ~75% Security | Observation period not started, staging env created |
+| ISO 27001:2022 | `ISO27001_COMPLIANCE.md` | Partial | ~65% controls | ISMS scope drafted (`ISMS_SCOPE.md`), no internal audit |
+| HIPAA | `HIPAA_COMPLIANCE.md` | Not compliant | N/A until PHI | BAA template drafted, Security Officer appointed, no PHI handling active |
 | PCI DSS v4.0 | `PCI_DSS_COMPLIANCE.md` | SAQ-A scope | ~70% | Stripe handles card data |
-| NIST 800-53 Rev 5 | `NIST_800_53_COMPLIANCE.md` | Partial | ~50% Moderate | No formal ATO process |
-| GDPR | `GDPR_COMPLIANCE.md` | Partial | ~80% | No DPO, DeepSeek transfer |
+| NIST 800-53 Rev 5 | `NIST_800_53_COMPLIANCE.md` | Partial | ~55% Moderate | No formal ATO process |
+| GDPR | `GDPR_COMPLIANCE.md` | Partial | ~85% | DPO appointed, DPIA complete, DeepSeek PII redacted |
 | HITRUST CSF v11 | `HITRUST_CSF_COMPLIANCE.md` | Partial | e1 target | No formal assessment |
 
 ---
@@ -67,12 +67,12 @@ These controls exist in the codebase with verifiable file paths:
 |-----|------|-------------------|-------------|
 | No SOC 2 observation period | Cannot certify | SOC 2 | Engage auditor |
 | ~~No formal ISMS~~ | ~~Cannot certify ISO~~ | ~~ISO 27001~~ | **RESOLVED** — `ISMS_SCOPE.md` drafted (Mar 5, 2026) |
-| No DPO appointed | GDPR Art. 37 | GDPR | Appoint DPO |
+| ~~No DPO appointed~~ | ~~GDPR Art. 37~~ | ~~GDPR~~ | **RESOLVED** — Billy Whited appointed DPO (Mar 5, 2026) |
 | ~~No DPIA conducted~~ | ~~GDPR Art. 35~~ | ~~GDPR~~ | **RESOLVED** — `DPIA.md` drafted (Mar 5, 2026), pending DPO review |
 | ~~No BAA template~~ | ~~Cannot accept PHI~~ | ~~HIPAA~~ | **RESOLVED** — `BAA_TEMPLATE.md` drafted (Mar 5, 2026), requires legal review |
 | ~~No HIPAA Security Officer~~ | ~~§164.308(a)(2)~~ | ~~HIPAA~~ | **RESOLVED** — Billy Whited appointed (Mar 5, 2026) |
 | No pen test conducted | Multiple | SOC 2, PCI, ISO | Schedule pentest |
-| No staging environment | Change management | SOC 2, ISO | Create staging |
+| ~~No staging environment~~ | ~~Change management~~ | ~~SOC 2, ISO~~ | **RESOLVED** — `atlas-ux-staging` service created on Render (srv-d6ibofpdrdic73eebtqg, Mar 5, 2026) |
 | ~~DeepSeek (China) transfer~~ | ~~No adequacy/SCCs~~ | ~~GDPR~~ | **RESOLVED** — PII redaction layer (`piiRedact.ts`) strips email, phone, SSN, card, IP, address before China transfer |
 | ~~No SAST/DAST pipeline~~ | ~~Development security~~ | ~~ISO, PCI~~ | **RESOLVED** — GitHub Actions CI pipeline (`.github/workflows/ci.yml`) builds frontend + backend on every push/PR |
 | `FORCE ROW LEVEL SECURITY` not enabled | RLS bypass possible | All | Enable after withTenant() audit |
