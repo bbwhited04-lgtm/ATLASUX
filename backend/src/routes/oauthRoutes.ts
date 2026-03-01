@@ -16,6 +16,7 @@ import {
   buildSlackAuthUrl, exchangeSlackCode,
   buildPayPalAuthUrl, exchangePayPalCode,
   buildSquareAuthUrl, exchangeSquareCode,
+  buildMeetupAuthUrl, exchangeMeetupCode,
 } from "../oauth.js";
 import { tumblrAccessToken, tumblrAuthorizeUrl, tumblrRequestToken } from "../integrations/tumblr.client.js";
 import { prisma } from "../db/prisma.js";
@@ -788,6 +789,56 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
       return reply.redirect(buildReturnUrl({ connected: "square", org_id, user_id }));
     } catch (e: any) {
       return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "square_token_exchange_failed" }));
+    }
+  });
+
+  // ── Meetup OAuth2 ───────────────────────────────────────────────────────
+
+  app.get("/meetup/start", oauthRateLimit, async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
+    const user_id = String(q.user_id ?? q.userId ?? "");
+
+    if (!oauthEnabled("meetup", env)) {
+      return reply.redirect(stubConnectUrl(req, "meetup"));
+    }
+
+    const nonce = genNonce();
+    await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
+    const state = b64urlJson({ org_id, user_id, nonce });
+    return reply.redirect(buildMeetupAuthUrl(env, state));
+  });
+
+  app.get("/meetup/callback", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    if (q.error) return reply.redirect(buildReturnUrl({ oauth_error: String(q.error_description ?? q.error) }));
+
+    let state: any = {};
+    try { state = parseState(String(q.state || "")); } catch {}
+    const org_id = String(state.org_id || "");
+    const user_id = String(state.user_id || "");
+
+    const nonce = String(state.nonce || "");
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    await deleteOAuthState(`csrf:${nonce}`);
+
+    try {
+      const tok = await exchangeMeetupCode(env, String(q.code || ""));
+      const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
+      await storeTokenVault(env, {
+        org_id, user_id, provider: "meetup" as any,
+        access_token: tok.access_token,
+        refresh_token: tok.refresh_token ?? null,
+        expires_at, scope: null,
+        meta: { token_type: tok.token_type },
+      });
+      await markConnected(org_id, "meetup");
+      return reply.redirect(buildReturnUrl({ connected: "meetup", org_id, user_id }));
+    } catch (e: any) {
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "meetup_token_exchange_failed" }));
     }
   });
 

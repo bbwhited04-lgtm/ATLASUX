@@ -152,6 +152,11 @@ const EnvSchema = z.object({
   DROPBOX_APP_SECRET: z.string().optional(),
   DROPBOX_REDIRECT_URI: z.string().optional(),
 
+  // Meetup OAuth2
+  MEETUP_CLIENT_ID: z.string().optional(),
+  MEETUP_CLIENT_SECRET: z.string().optional(),
+  MEETUP_REDIRECT_URI: z.string().optional(),
+
   // Slack OAuth2 v2 (redirect built from APP_URL at runtime)
   SLACK_CLIENT_ID: z.string().optional(),
   SLACK_CLIENT_SECRET: z.string().optional(),

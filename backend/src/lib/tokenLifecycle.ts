@@ -10,7 +10,7 @@ import { prisma } from "../db/prisma.js";
 import { readTokenVault, updateTokenVaultAccessToken, clearTokenVault } from "./tokenStore.js";
 import { refreshRedditToken } from "../oauth.js";
 
-type Provider = "google" | "meta" | "x" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square";
+type Provider = "google" | "meta" | "x" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square" | "meetup";
 
 const REFRESH_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -194,6 +194,23 @@ async function refreshSquare(_env: Env, refreshToken: string) {
   return { access_token: data.access_token as string, expires_in: expiresIn };
 }
 
+async function refreshMeetup(env: Env, refreshToken: string) {
+  const body = new URLSearchParams({
+    client_id: env.MEETUP_CLIENT_ID!,
+    client_secret: env.MEETUP_CLIENT_SECRET!,
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+  const r = await fetch("https://secure.meetup.com/oauth2/access", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const data = (await r.json()) as any;
+  if (!r.ok) throw new Error(`Meetup refresh failed: ${data?.error_description ?? data?.error ?? JSON.stringify(data)}`);
+  return { access_token: data.access_token as string, expires_in: data.expires_in as number };
+}
+
 /**
  * Check token expiry and refresh if within REFRESH_WINDOW_MS.
  * Returns the current (or refreshed) access_token, or null if unavailable.
@@ -259,6 +276,10 @@ export async function refreshTokenIfNeeded(
       case "square":
         if (!vault.refresh_token) return vault.access_token;
         result = await refreshSquare(env, vault.refresh_token);
+        break;
+      case "meetup":
+        if (!vault.refresh_token) return vault.access_token;
+        result = await refreshMeetup(env, vault.refresh_token);
         break;
       // Notion and Slack tokens don't expire — no refresh needed
       case "notion":
@@ -421,6 +442,9 @@ export async function revokeToken(
           break;
         case "square":
           await revokeSquare(token);
+          break;
+        case "meetup":
+          // Meetup doesn't have a token revocation endpoint.
           break;
       }
     } catch {

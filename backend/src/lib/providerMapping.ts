@@ -5,12 +5,12 @@
  * Providers match the integration_provider enum:
  *   meta | google | x | tumblr | pinterest | linkedin
  */
-export type OAuthProvider = "meta" | "google" | "x" | "tumblr" | "pinterest" | "linkedin" | "microsoft" | "reddit" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square";
+export type OAuthProvider = "meta" | "google" | "x" | "tumblr" | "pinterest" | "linkedin" | "microsoft" | "reddit" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square" | "meetup";
 
 export const SUPPORTED_PROVIDERS: OAuthProvider[] = [
   "google", "meta", "microsoft",
   "x", "reddit", "tumblr", "pinterest", "linkedin",
-  "notion", "airtable", "dropbox", "slack", "paypal", "square",
+  "notion", "airtable", "dropbox", "slack", "paypal", "square", "meetup",
 ];
 
 const EXACT: Record<string, OAuthProvider> = {
@@ -98,6 +98,11 @@ const EXACT: Record<string, OAuthProvider> = {
   // Square
   square:                 "square",
   square_pos:             "square",
+
+  // Meetup
+  meetup:                 "meetup",
+  meetup_group:           "meetup",
+  meetup_event:           "meetup",
 };
 
 /** Maps an asset platform string to the canonical OAuth provider, or null. */
@@ -125,6 +130,7 @@ export function providerForPlatform(p: string | null | undefined): OAuthProvider
   if (s.includes("slack")) return "slack";
   if (s.includes("paypal")) return "paypal";
   if (s.includes("square")) return "square";
+  if (s.includes("meetup")) return "meetup";
 
   return null;
 }

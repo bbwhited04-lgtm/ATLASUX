@@ -28,7 +28,7 @@ type Integration = {
   name: string;
   description: string;
   category: Category;
-  oauth: "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "zoom" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square" | null;
+  oauth: "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "zoom" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square" | "meetup" | null;
   /** Sub-services unlocked by this OAuth connection */
   covers?: string[];
   /** Priority groups sort above everything else */
@@ -143,6 +143,9 @@ const INTEGRATIONS: Integration[] = [
   { id: "vercel",   name: "Vercel",      category: "Dev",      description: "Deployments and env vars.",                  oauth: null },
   { id: "cloudflare",name:"Cloudflare",  category: "Dev",      description: "DNS, Workers, security.",                    oauth: null },
 
+  // ── Events ──────────────────────────────────────────────────────────
+  { id: "meetup",   name: "Meetup",      category: "Other",    description: "Groups, events, RSVPs.",                      oauth: "meetup" },
+
   // ── Other ─────────────────────────────────────────────────────────────
   { id: "notion",   name: "Notion",      category: "Other",    description: "Docs and databases.",                         oauth: "notion" },
   { id: "airtable", name: "Airtable",    category: "Other",    description: "Base records and views.",                     oauth: "airtable" },
@@ -237,6 +240,7 @@ export default function Integrations() {
       : i.oauth === "slack"     ? `${BACKEND_URL}/v1/oauth/slack/start`
       : i.oauth === "paypal"    ? `${BACKEND_URL}/v1/oauth/paypal/start`
       : i.oauth === "square"    ? `${BACKEND_URL}/v1/oauth/square/start`
+      : i.oauth === "meetup"    ? `${BACKEND_URL}/v1/oauth/meetup/start`
       : `${BACKEND_URL}/v1/oauth/x/start`;
 
     const params = new URLSearchParams({ tenantId: realTenantId, org_id: realTenantId, user_id });

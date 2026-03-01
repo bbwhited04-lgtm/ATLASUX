@@ -3,7 +3,7 @@ import { makeSupabase } from "./supabase.js";
 import { webcrypto } from "node:crypto";
 import { writeTokenVault } from "./lib/tokenStore.js";
 
-export type Provider = "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "zoom" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square";
+export type Provider = "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "zoom" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square" | "meetup";
 
 export function oauthEnabled(provider: Provider, env: Env): boolean {
   if (provider === "google") return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI);
@@ -51,6 +51,9 @@ export function oauthEnabled(provider: Provider, env: Env): boolean {
   }
   if (provider === "square") {
     return !!(env.SQUARE_APP_ID && env.SQUARE_APP_SECRET && env.SQUARE_REDIRECT_URI);
+  }
+  if (provider === "meetup") {
+    return !!(env.MEETUP_CLIENT_ID && env.MEETUP_CLIENT_SECRET && env.MEETUP_REDIRECT_URI);
   }
   return false;
 }
@@ -675,6 +678,44 @@ export async function exchangeSquareCode(env: Env, code: string) {
     expires_at: string;
     merchant_id?: string;
     scope?: string;
+  };
+}
+
+// ── Meetup OAuth 2.0 ──────────────────────────────────────────────────────────
+
+const MEETUP_SCOPES = "ageless basic event_management group_edit group_content rsvp reporting";
+
+export function buildMeetupAuthUrl(env: Env, state: string) {
+  const params = new URLSearchParams({
+    client_id: env.MEETUP_CLIENT_ID!,
+    redirect_uri: env.MEETUP_REDIRECT_URI!,
+    response_type: "code",
+    scope: MEETUP_SCOPES,
+    state,
+  });
+  return `https://secure.meetup.com/oauth2/authorize?${params.toString()}`;
+}
+
+export async function exchangeMeetupCode(env: Env, code: string) {
+  const body = new URLSearchParams({
+    client_id: env.MEETUP_CLIENT_ID!,
+    client_secret: env.MEETUP_CLIENT_SECRET!,
+    grant_type: "authorization_code",
+    redirect_uri: env.MEETUP_REDIRECT_URI!,
+    code,
+  });
+  const r = await fetch("https://secure.meetup.com/oauth2/access", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const data = await r.json().catch(() => ({})) as any;
+  if (!r.ok || data.error) throw new Error(`Meetup token exchange failed: ${data.error_description ?? data.error ?? JSON.stringify(data)}`);
+  return data as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+    token_type: string;
   };
 }
 
