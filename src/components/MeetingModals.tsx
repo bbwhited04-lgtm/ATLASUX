@@ -4,6 +4,7 @@ import { AnalyticsConnectionModal } from "./AnalyticsConnectionModal";
 interface AddMeetingModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit?: () => void;
   meetingLink: string;
   setMeetingLink: (value: string) => void;
   meetingTitle: string;
@@ -17,6 +18,7 @@ interface AddMeetingModalProps {
 export function AddMeetingModal({
   isOpen,
   onClose,
+  onSubmit,
   meetingLink,
   setMeetingLink,
   meetingTitle,
@@ -29,9 +31,11 @@ export function AddMeetingModal({
   if (!isOpen) return null;
 
   const handleSubmit = () => {
-    // Handle meeting submission
-    // TODO: Submit meeting to backend
-    onClose();
+    if (onSubmit) {
+      onSubmit();
+    } else {
+      onClose();
+    }
   };
 
   // Detect platform from link
