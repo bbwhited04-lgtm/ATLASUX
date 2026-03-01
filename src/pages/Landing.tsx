@@ -204,9 +204,9 @@ export default function Landing() {
                 </h1>
 
                 <p className="mt-6 max-w-lg text-lg text-[#bab2b5]">
+                  <strong className="text-white">Atlas UX</strong> is an AI employee platform that automates CRM, marketing, finance, HR, and executive operations for small businesses.
                   1 Orchestrator. 29 Specialized Agents. Wired to Twilio, Microsoft Office,
                   Telegram &amp; SMS. Every action logged, every decision traceable.
-                  Your data never leaves your machine.
                 </p>
 
                 {/* Stat cards */}
@@ -623,7 +623,7 @@ export default function Landing() {
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Feb 28, 2026</span>
+            <span className="text-sm text-white/60">Last updated: Mar 1, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
             <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
