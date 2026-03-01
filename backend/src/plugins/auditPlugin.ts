@@ -4,7 +4,7 @@ import { prisma } from "../db/prisma.js";
 
 let auditPausedUntil = 0;       // epoch ms — pause window, not permanent
 let warnedOnce = false;
-const AUDIT_PAUSE_MS = 60_000;  // pause for 60s on schema error, then retry
+const AUDIT_PAUSE_MS = 10_000;  // pause for 10s on schema error, then retry
 
 function isSchemaError(err: any): boolean {
   const msg = String(err?.message ?? err);

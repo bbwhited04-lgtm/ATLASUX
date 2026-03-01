@@ -36,13 +36,19 @@ export const googleRoutes: FastifyPluginAsync = async (app) => {
       },
     } as any).catch(() => null);
 
-    // Clear stored Google tokens
-    try {
-      await prisma.integration.updateMany({
-        where: { provider: "google" },
-        data: { connected: false, access_token: null, refresh_token: null },
-      });
-    } catch { /* best effort */ }
+    // Clear stored Google tokens — scoped by Google user ID to avoid blanket-disconnecting all tenants.
+    // Only disconnect integrations whose config contains this specific Google user ID.
+    if (googleUserId && googleUserId !== "unknown") {
+      try {
+        await prisma.integration.updateMany({
+          where: {
+            provider: "google",
+            config: { path: ["googleUserId"], equals: googleUserId },
+          },
+          data: { connected: false, access_token: null, refresh_token: null },
+        });
+      } catch { /* best effort — if no matching integrations, nothing happens */ }
+    }
 
     return reply.send({
       url: `https://atlasux.cloud/#/privacy?deletion=${confirmationCode}`,

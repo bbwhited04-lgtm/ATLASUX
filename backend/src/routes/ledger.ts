@@ -50,7 +50,7 @@ export async function ledgerRoutes(app: FastifyInstance) {
    */
   app.get("/entries", async (req, reply) => {
     const q = (req.query ?? {}) as AnyObj;
-    const tenantId = typeof q.tenantId === "string" ? q.tenantId : null;
+    const tenantId = (req as any).tenantId as string | null;
     const limit = Math.min(Number(q.limit ?? 100) || 100, 200);
     const offset = Math.max(Number(q.offset ?? 0) || 0, 0);
 
@@ -89,7 +89,7 @@ export async function ledgerRoutes(app: FastifyInstance) {
   app.post("/entries", async (req, reply) => {
     const body = (req.body ?? {}) as AnyObj;
 
-    const tenantId = typeof body.tenantId === "string" ? body.tenantId : null;
+    const tenantId = (req as any).tenantId as string | null;
     const entryTypeRaw = String(body.entryType ?? "debit").trim();
     const entryType: LedgerEntryType = normalizeLedgerEntryType(entryTypeRaw);
     const category: LedgerCategory = normalizeLedgerCategory(body.category ?? "misc");

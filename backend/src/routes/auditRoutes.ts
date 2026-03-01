@@ -148,12 +148,18 @@ if (q.level) where.level = q.level;
    */
   app.get("/:id", async (req, reply) => {
     const { id } = req.params as any;
+    const reqTenantId = (req as any).tenantId as string | undefined;
 
     const result = await safeFindUnique({ where: { id } });
     if (!result.ok) {
       return reply.code(404).send({ ok: false, error: "NOT_FOUND_OR_STORAGE_NOT_READY" });
     }
     if (!result.item) {
+      return reply.code(404).send({ ok: false, error: "NOT_FOUND" });
+    }
+
+    // Enforce tenant isolation — return 404 for entries from other tenants
+    if (reqTenantId && result.item.tenantId && result.item.tenantId !== reqTenantId) {
       return reply.code(404).send({ ok: false, error: "NOT_FOUND" });
     }
 

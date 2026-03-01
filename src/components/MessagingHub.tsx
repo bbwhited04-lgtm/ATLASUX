@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { Send, MessageSquare, Mail, Phone, RefreshCw, Bot, Users } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -610,7 +611,7 @@ export function MessagingHub() {
                           className="text-xs text-slate-300 line-clamp-3"
                           dangerouslySetInnerHTML={
                             m.contentType === "html"
-                              ? { __html: m.body }
+                              ? { __html: DOMPurify.sanitize(m.body) }
                               : undefined
                           }
                         >

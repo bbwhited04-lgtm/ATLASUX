@@ -332,7 +332,12 @@ ipcMain.handle("install-update", () => autoUpdater?.quitAndInstall());
 ipcMain.handle("minimize-to-tray", () => mainWindow?.hide());
 ipcMain.handle("restore-from-tray", () => restoreFromTray());
 ipcMain.handle("show-notification", (_e, title, body) => showTrayNotification(title, body));
-ipcMain.handle("open-external", (_e, url) => shell.openExternal(url));
+ipcMain.handle("open-external", (_e, url) => {
+  // Only allow http(s) URLs — block file://, javascript:, data:, etc.
+  if (typeof url === "string" && /^https?:\/\//i.test(url)) {
+    return shell.openExternal(url);
+  }
+});
 
 // Avatar IPC
 ipcMain.handle("avatar-clicked", () => {

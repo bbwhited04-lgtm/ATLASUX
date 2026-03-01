@@ -12,6 +12,7 @@
 
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
+import { agentEmails } from "../config/agentEmails.js";
 
 const tenantId = process.env.MS_TENANT_ID ?? "";
 const clientId = process.env.MS_CLIENT_ID ?? "";
@@ -76,7 +77,13 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
       filter?: string;
       skip?: string;
     };
-    const email = qs.email || defaultMailbox;
+    const _requestedEmail = qs.email || defaultMailbox;
+    // Validate mailbox is a known agent email — prevent reading arbitrary M365 mailboxes
+    const _allowedMailboxes = new Set(Object.values(agentEmails));
+    if (!_allowedMailboxes.has(_requestedEmail)) {
+      return reply.code(403).send({ ok: false, error: "MAILBOX_NOT_ALLOWED" });
+    }
+    const email = _requestedEmail;
     const top = Math.min(Number(qs.top ?? 50), 100);
     const skip = Number(qs.skip ?? 0);
     const folder = qs.folder ?? "inbox";
@@ -158,7 +165,13 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
 
     const { messageId } = req.params as { messageId: string };
     const qs = req.query as { email?: string };
-    const email = qs.email || defaultMailbox;
+    const _requestedEmail = qs.email || defaultMailbox;
+    // Validate mailbox is a known agent email — prevent reading arbitrary M365 mailboxes
+    const _allowedMailboxes = new Set(Object.values(agentEmails));
+    if (!_allowedMailboxes.has(_requestedEmail)) {
+      return reply.code(403).send({ ok: false, error: "MAILBOX_NOT_ALLOWED" });
+    }
+    const email = _requestedEmail;
 
     try {
       const token = await getAppToken();
@@ -259,7 +272,13 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantCheck) return reply.code(401).send({ ok: false, error: "unauthorized" });
 
     const qs = req.query as { email?: string };
-    const email = qs.email || defaultMailbox;
+    const _requestedEmail = qs.email || defaultMailbox;
+    // Validate mailbox is a known agent email — prevent reading arbitrary M365 mailboxes
+    const _allowedMailboxes = new Set(Object.values(agentEmails));
+    if (!_allowedMailboxes.has(_requestedEmail)) {
+      return reply.code(403).send({ ok: false, error: "MAILBOX_NOT_ALLOWED" });
+    }
+    const email = _requestedEmail;
 
     try {
       const token = await getAppToken();

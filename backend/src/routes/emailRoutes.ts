@@ -18,6 +18,7 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
+import { timingSafeEqual } from "crypto";
 import { prisma } from "../db/prisma.js";
 import { engineTick } from "../core/engine/engine.js";
 import { agentEmails } from "../config/agentEmails.js";
@@ -283,7 +284,12 @@ export const emailRoutes: FastifyPluginAsync = async (app) => {
     // Secret validation — fail closed: if INBOUND_EMAIL_SECRET is not set, reject all requests
     const secret   = String(req.headers["x-inbound-secret"] ?? "").trim();
     const expected = String(process.env.INBOUND_EMAIL_SECRET ?? "").trim();
-    if (!expected || secret !== expected) {
+    if (!expected) {
+      return reply.code(401).send({ ok: false, error: "invalid_inbound_secret" });
+    }
+    const secretBuf = Buffer.from(secret);
+    const expectedBuf = Buffer.from(expected);
+    if (secretBuf.length !== expectedBuf.length || !timingSafeEqual(secretBuf, expectedBuf)) {
       return reply.code(401).send({ ok: false, error: "invalid_inbound_secret" });
     }
 

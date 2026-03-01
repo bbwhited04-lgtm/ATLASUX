@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import DOMPurify from "dompurify";
 import { queuePremiumJob } from "@/lib/premiumActions";
 import { API_BASE } from "@/lib/api";
 import {
@@ -794,7 +795,7 @@ const folders = [
                   {messageDetail.bodyHtml ? (
                     <div
                       className="text-slate-300"
-                      dangerouslySetInnerHTML={{ __html: messageDetail.bodyHtml }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(messageDetail.bodyHtml) }}
                     />
                   ) : (
                     <pre className="text-slate-300 whitespace-pre-wrap font-sans text-sm">

@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { timingSafeEqual } from "crypto";
 import { engineTick } from "../core/engine/engine.js";
 import { prisma } from "../db/prisma.js";
 
@@ -20,7 +21,9 @@ export const engineRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(503).send({ ok: false, error: "WORKERS_API_KEY not configured" });
     }
     const provided = String(req.headers["x-workers-key"] ?? "");
-    if (provided !== apiKey) {
+    const keyBuf = Buffer.from(apiKey);
+    const providedBuf = Buffer.from(provided);
+    if (keyBuf.length !== providedBuf.length || !timingSafeEqual(keyBuf, providedBuf)) {
       return reply.code(401).send({ ok: false, error: "UNAUTHORIZED" });
     }
     const result = await engineTick();
@@ -30,13 +33,14 @@ export const engineRoutes: FastifyPluginAsync = async (app) => {
   // Cloud-surface: request an engine run (creates an Intent)
   app.post("/run", async (req, reply) => {
     const body = (req.body ?? {}) as Partial<EngineRunRequest>;
-    if (!body.tenantId || !body.agentId || !body.workflowId) {
+    const tenantId = (req as any).tenantId as string;
+    if (!tenantId || !body.agentId || !body.workflowId) {
       return reply.code(400).send({ ok: false, error: "tenantId, agentId, workflowId are required" });
     }
 
     const intent = await prisma.intent.create({
       data: {
-        tenantId: body.tenantId,
+        tenantId,
         // NOTE: schema/table has no createdBy. We store requestor in agentId + payload.
         agentId: (req as any).user?.id ?? null,
         intentType: "ENGINE_RUN",
@@ -53,9 +57,9 @@ export const engineRoutes: FastifyPluginAsync = async (app) => {
 
     await prisma.auditLog.create({
       data: {
-        tenantId: body.tenantId,
+        tenantId,
         actorUserId: null,
-        actorExternalId: String((req as any).user?.id ?? body.tenantId ?? ""),
+        actorExternalId: String((req as any).user?.id ?? tenantId ?? ""),
         actorType: "system",
         level: "info",
         action: "ENGINE_RUN_REQUESTED",

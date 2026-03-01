@@ -169,6 +169,13 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
   app.post("/:id/approve", { config: { rateLimit: APPROVE_RATE_LIMIT } }, async (req, reply) => {
     const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    // Only owners and admins can approve decision memos
+    const role = (req as any).tenantRole as string | undefined;
+    if (role !== "owner" && role !== "admin") {
+      return reply.code(403).send({ ok: false, error: "INSUFFICIENT_ROLE" });
+    }
+
     const memoId = String((req.params as any).id);
     const actorUserId = (req as any).auth?.userId ?? null;
 
@@ -201,6 +208,13 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
     const body = (req.body as any) ?? {};
     const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    // Only owners and admins can reject decision memos
+    const role = (req as any).tenantRole as string | undefined;
+    if (role !== "owner" && role !== "admin") {
+      return reply.code(403).send({ ok: false, error: "INSUFFICIENT_ROLE" });
+    }
+
     const memoId = String((req.params as any).id);
     const actorUserId = (req as any).auth?.userId ?? null;
     const reason = String(body.reason ?? "");

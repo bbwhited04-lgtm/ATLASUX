@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { Prisma, LedgerCategory, LedgerEntryType } from "@prisma/client";
 import { prisma } from "../db/prisma.js";
-import { randomUUID } from "crypto";
+import { randomUUID, timingSafeEqual } from "crypto";
 
 
 function normalizeLedgerCategory(input: unknown): LedgerCategory {
@@ -70,7 +70,9 @@ export async function tenantsRoutes(app: FastifyInstance) {
   app.get("/", async (req, reply) => {
     const adminKey = (process.env.GATE_ADMIN_KEY ?? "").trim();
     const provided = (req.headers["x-gate-admin-key"] ?? "").toString().trim();
-    if (!adminKey || provided !== adminKey) {
+    const adminBuf = Buffer.from(adminKey);
+    const providedBuf = Buffer.from(provided);
+    if (!adminKey || adminBuf.length !== providedBuf.length || !timingSafeEqual(adminBuf, providedBuf)) {
       return reply.code(403).send({ ok: false, error: "forbidden" });
     }
 
@@ -83,7 +85,17 @@ export async function tenantsRoutes(app: FastifyInstance) {
   });
 
   // ✅ CREATE tenant (audited + ledger marker)
+  // Requires authenticated user or admin key to prevent anonymous tenant creation
   app.post("/", async (req, reply) => {
+    const userId = (req as any).auth?.userId ?? null;
+    const adminKey = (process.env.GATE_ADMIN_KEY ?? "").trim();
+    const providedAdmin = (req.headers["x-gate-admin-key"] ?? "").toString().trim();
+    const isAdmin = !!(adminKey && providedAdmin === adminKey);
+
+    if (!userId && !isAdmin) {
+      return reply.code(401).send({ ok: false, error: "AUTHENTICATION_REQUIRED" });
+    }
+
     const body = req.body as any;
 
     const name = String(body?.name ?? "").trim();

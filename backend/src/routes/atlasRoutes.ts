@@ -11,6 +11,7 @@ import { makeSupabase } from "../supabase.js";
 import { loadEnv } from "../env.js";
 import { readFile } from "fs/promises";
 import { join } from "path";
+import { sglEvaluate, type Intent } from "../core/sgl.js";
 
 const env = loadEnv(process.env);
 const supabase = makeSupabase(env);
@@ -38,7 +39,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(404).send({ 
         ok: false, 
         error: "Model file not found",
-        details: error instanceof Error ? error.message : 'Unknown error'
+        // error details omitted from response — logged server-side only
       });
     }
   });
@@ -52,7 +53,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Health check failed",
-        details: error instanceof Error ? error.message : 'Unknown error' 
+        // error details omitted from response — logged server-side only 
       });
     }
   });
@@ -73,7 +74,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Failed to get avatar URL",
-        details: error instanceof Error ? error.message : 'Unknown error' 
+        // error details omitted from response — logged server-side only 
       });
     }
   });
@@ -149,7 +150,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Conversation processing failed",
-        details: error instanceof Error ? error.message : 'Unknown error' 
+        // error details omitted from response — logged server-side only 
       });
     }
   });
@@ -191,7 +192,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Failed to get conversation",
-        details: error instanceof Error ? error.message : 'Unknown error' 
+        // error details omitted from response — logged server-side only 
       });
     }
   });
@@ -218,21 +219,40 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
         });
       }
 
+      // SGL gate — every orchestration request must be evaluated
+      const sglIntent: Intent = {
+        tenantId,
+        actor: "ATLAS",
+        type: "ORCHESTRATE",
+        payload: { decisions: decisions.map((d: any) => d.type ?? d.action ?? "unknown") },
+        dataClass: "NONE",
+        spendUsd: 0,
+      };
+      const sglResult = sglEvaluate(sglIntent);
+      if (sglResult.decision === "BLOCK") {
+        return reply.code(403).send({
+          ok: false,
+          error: "SGL_BLOCKED",
+          reasons: sglResult.reasons,
+        });
+      }
+
       const results = await atlasAgent.executeOrchestrationDecisions(
         decisions,
         tenantId,
         userId
       );
 
-      return reply.send({ 
-        ok: true, 
-        results 
+      return reply.send({
+        ok: true,
+        results,
+        sglDecision: sglResult.decision,
       });
     } catch (error) {
       return reply.code(500).send({ 
         ok: false, 
         error: "Orchestration execution failed",
-        details: error instanceof Error ? error.message : 'Unknown error' 
+        // error details omitted from response — logged server-side only 
       });
     }
   });
@@ -258,7 +278,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Failed to get agents",
-        details: error instanceof Error ? error.message : 'Unknown error' 
+        // error details omitted from response — logged server-side only 
       });
     }
   });
@@ -284,7 +304,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Failed to get system status",
-        details: error instanceof Error ? error.message : 'Unknown error' 
+        // error details omitted from response — logged server-side only 
       });
     }
   });
@@ -327,7 +347,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Voice generation failed",
-        details: error instanceof Error ? error.message : 'Unknown error' 
+        // error details omitted from response — logged server-side only 
       });
     }
   });
@@ -358,7 +378,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Failed to clear cache",
-        details: error instanceof Error ? error.message : 'Unknown error' 
+        // error details omitted from response — logged server-side only 
       });
     }
   });
@@ -403,7 +423,7 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ 
         ok: false, 
         error: "Failed to get analytics",
-        details: error instanceof Error ? error.message : 'Unknown error' 
+        // error details omitted from response — logged server-side only 
       });
     }
   });
