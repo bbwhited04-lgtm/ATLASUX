@@ -70,6 +70,7 @@ import { tiktokRoutes } from "./routes/tiktokRoutes.js";
 import { tumblrRoutes } from "./routes/tumblrRoutes.js";
 import { pinterestRoutes } from "./routes/pinterestRoutes.js";
 import { browserRoutes } from "./routes/browserRoutes.js";
+import { localAgentRoutes } from "./routes/localAgentRoutes.js";
 import { zoomRoutes } from "./routes/zoomRoutes.js";
 
 const app = Fastify({ logger: true });
@@ -320,6 +321,9 @@ await app.register(zoomRoutes, { prefix: "/v1/zoom" });
 
 // Browser automation — governed headless Chromium (SGL + decision memos)
 await app.register(browserRoutes, { prefix: "/v1/browser" });
+
+// Local vision agent — polls for LOCAL_VISION_TASK jobs, executes via CDP
+await app.register(localAgentRoutes, { prefix: "/v1/local-agent" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

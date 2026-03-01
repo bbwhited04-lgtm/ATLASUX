@@ -53,6 +53,7 @@ export const workflowCatalog = [
   { id: "WF-123", name: "Lead Enrichment (Mercer)",            description: "On-demand lead enrichment: web search company/contact, LLM profile, update CRM.",                       ownerAgent: "mercer" },
   { id: "WF-130", name: "Browser Task Execution (Atlas)",     description: "Governed headless browser automation — navigate, extract, interact with web pages via Playwright.", ownerAgent: "atlas" },
   { id: "WF-131", name: "Browser Session Resume (Atlas)",     description: "Resume a paused browser session after decision memo approval for HIGH-risk action.",               ownerAgent: "atlas" },
+  { id: "WF-140", name: "Local Vision Task (Vision)",       description: "Queue a browser task for the local vision agent — executes on user's machine via CDP + Claude Vision.", ownerAgent: "vision" },
 ] as const;
 
 export { n8nWorkflows };
@@ -2551,6 +2552,49 @@ handlers["WF-131"] = async (ctx) => {
       extractedData: result.extractedData,
       error: result.error,
     },
+  };
+};
+
+// ── WF-140 Local Vision Task ──────────────────────────────────────────────────
+
+handlers["WF-140"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-140.start", "Local vision task queued");
+
+  const targetUrl = String(ctx.input?.targetUrl ?? "").trim();
+  const task = String(ctx.input?.task ?? "").trim();
+
+  if (!task) {
+    return { ok: false, message: "task description is required" };
+  }
+
+  const job = await prisma.job.create({
+    data: {
+      tenantId: ctx.tenantId,
+      requested_by_user_id: ctx.agentId,
+      status: "queued",
+      jobType: "LOCAL_VISION_TASK",
+      priority: 1,
+      input: {
+        task,
+        targetUrl,
+        requestedBy: ctx.agentId,
+        workflowId: ctx.workflowId,
+        intentId: ctx.intentId,
+        traceId: ctx.traceId ?? `wf140-${Date.now()}`,
+      },
+    },
+  });
+
+  await writeStepAudit(ctx, "WF-140.queued", `LOCAL_VISION_TASK job ${job.id} created`, {
+    jobId: job.id,
+    targetUrl,
+    task: task.slice(0, 200),
+  });
+
+  return {
+    ok: true,
+    message: `Local vision task queued (job ${job.id}). The local agent will pick it up on its next poll.`,
+    output: { jobId: job.id, targetUrl, task: task.slice(0, 200) },
   };
 };
 

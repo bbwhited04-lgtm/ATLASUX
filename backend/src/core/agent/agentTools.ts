@@ -470,20 +470,34 @@ async function delegateTask(
       };
     }
 
+    // When delegating to vision agent, create LOCAL_VISION_TASK job
+    const isVisionTask = target.id === "vision";
+    const jobType = isVisionTask ? "LOCAL_VISION_TASK" : "AGENT_TASK";
+
+    // For vision tasks, try to extract URL from task description
+    const urlMatch = isVisionTask ? taskDesc.match(/(?:on|at|to|url[:\s]+)\s*(https?:\/\/[^\s,]+)/i) : null;
+
     const job = await prisma.job.create({
       data: {
         tenantId,
         requested_by_user_id: fromAgentId,
         status: "queued",
-        jobType: "AGENT_TASK",
+        jobType,
         priority: 1,
-        input: {
-          assignedAgentId: target.id,
-          title: `[From ${fromAgentId.toUpperCase()}] ${taskDesc.slice(0, 200)}`,
-          description: taskDesc,
-          delegatedBy: fromAgentId,
-          traceId: `delegate-${fromAgentId}-${Date.now()}`,
-        },
+        input: isVisionTask
+          ? {
+              task: taskDesc,
+              targetUrl: urlMatch?.[1] ?? "",
+              delegatedBy: fromAgentId,
+              traceId: `delegate-${fromAgentId}-${Date.now()}`,
+            }
+          : {
+              assignedAgentId: target.id,
+              title: `[From ${fromAgentId.toUpperCase()}] ${taskDesc.slice(0, 200)}`,
+              description: taskDesc,
+              delegatedBy: fromAgentId,
+              traceId: `delegate-${fromAgentId}-${Date.now()}`,
+            },
       },
     });
 
@@ -1000,14 +1014,26 @@ const BROWSER_PATTERNS = [
   /\bheadless\s+browser\b/i,
 ];
 
+const LOCAL_VISION_PATTERNS = [
+  /\blocal\s+browser\b/i,
+  /\bcheck\s+(my|the)\s+(dashboard|logged[\s-]?in\s+page|account)\b/i,
+  /\blogged[\s-]?in\s+(page|session|browser)\b/i,
+  /\bvision\s+(agent|task)\b/i,
+  /\blocal\s+vision\b/i,
+  /\bmy\s+(edge|chrome|browser)\b/i,
+  /\balready\s+(logged|signed)\s+in\b/i,
+  /\bno\s+(oauth|api)\s+(yet|available|connected)\b/i,
+  /\buse\s+(my|the)\s+browser\b/i,
+];
+
 // ── Agent → allowed tools map (from WF-107 approved proposals) ───────────────
 // Controls which tools can fire for which agent — prevents unnecessary DB hits.
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   // ── Executives ───────────────────────────────────────────────────────
-  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate", "deepResearch", "browser"],
-  binky:       ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser"],
-  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision"],
+  binky:       ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision"],
+  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision"],
   tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory", "delegate"],
   larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "telegram", "memory", "delegate"],
   jenny:       ["calendar", "legal", "policy", "knowledge", "telegram", "memory", "delegate", "webSearch"],
@@ -1015,14 +1041,14 @@ const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
 
   // ── Ops & Support ────────────────────────────────────────────────────
   petra:       ["calendar", "planner", "telegram", "memory", "delegate"],
-  mercer:      ["crm", "email", "knowledge", "telegram", "memory", "delegate", "webSearch"],
+  mercer:      ["crm", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision"],
   frank:       ["userProfile", "telegram", "memory", "delegate"],
   sandy:       ["calendar", "email", "userProfile", "telegram", "memory", "delegate"],
   claire:      ["calendar", "email", "telegram", "memory", "delegate"],
   "daily-intel": ["calendar", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch"],
 
   // ── Content & Comms ──────────────────────────────────────────────────
-  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch"],
+  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision"],
   archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch"],
   venny:       ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1"],
   victor:      ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate"],
@@ -1069,6 +1095,7 @@ export type ToolNeeds = {
   flux1:          boolean;
   deepResearch:   boolean;
   browser:        boolean;
+  localVision:    boolean;
   query:          string;
 };
 
@@ -1106,6 +1133,7 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     flux1:          can("flux1")          && FLUX1_PATTERNS.some(p => p.test(q)),
     deepResearch:   can("deepResearch")   && DEEP_RESEARCH_PATTERNS.some(p => p.test(q)),
     browser:        can("browser")        && BROWSER_PATTERNS.some(p => p.test(q)),
+    localVision:    can("localVision")    && LOCAL_VISION_PATTERNS.some(p => p.test(q)),
     query:          q,
   };
 }
@@ -1206,6 +1234,33 @@ function browserToolInfo(agentId: string): ToolResult {
   };
 }
 
+// ── Tool: local_vision (informational — actual execution via local agent) ────
+
+function localVisionToolInfo(agentId: string): ToolResult {
+  return {
+    tool: "local_vision",
+    data: [
+      `Local vision agent is available for ${agentId}.`,
+      `To execute a local browser task, delegate to the vision agent:`,
+      `  "delegate to vision: [task description] on [URL]"`,
+      ``,
+      `The vision agent runs on the user's local machine and can interact with`,
+      `already-authenticated browser sessions (Edge via CDP). Useful when:`,
+      `- No OAuth/API integration exists for the target platform`,
+      `- The task requires a logged-in session (e.g., posting on TikTok)`,
+      `- You need to check a dashboard or extract data from a web page`,
+      ``,
+      `The task will be queued as a LOCAL_VISION_TASK job and picked up by the`,
+      `local vision agent on the user's machine. Screenshots and results are`,
+      `reported back automatically.`,
+      ``,
+      `Safety: Banking, crypto, password manager, and government sites are blocked.`,
+      `Sessions are limited to 5 minutes and 30 actions max.`,
+    ].join("\n"),
+    usedAt: new Date().toISOString(),
+  };
+}
+
 // ── resolveAgentTools ─────────────────────────────────────────────────────────
 
 /**
@@ -1261,6 +1316,7 @@ export async function resolveAgentTools(
     needs.flux1          ? flux1GenerateInfo()                                    : Promise.resolve(null),
     needs.deepResearch   ? deepResearchTool(tenantId, aid, needs.query)           : Promise.resolve(null),
     needs.browser        ? Promise.resolve(browserToolInfo(aid))                    : Promise.resolve(null),
+    needs.localVision    ? Promise.resolve(localVisionToolInfo(aid))                : Promise.resolve(null),
     approvedToolsPromise,
   ];
 

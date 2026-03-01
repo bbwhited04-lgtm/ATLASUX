@@ -373,4 +373,15 @@ export const agentRegistry: AgentSummary[] = [
     toolsForbidden: ["Spending"],
     escalationTargets: ["cheryl", "mercer", "sandy", "claire", "atlas"],
   }),
+  withM365("vision", {
+    id: "vision",
+    name: "Vision",
+    title: "Local Vision Agent",
+    tier: "Specialist",
+    reportsTo: "atlas",
+    summary: "Executes browser tasks on the user's local machine via Playwright CDP and Claude Vision; handles platforms that lack API/OAuth access by interacting with already-authenticated browser sessions.",
+    toolsAllowed: ["Local browser automation", "Screenshot capture", "Claude Vision analysis"],
+    toolsForbidden: ["Password fields", "Payment forms", "Banking sites", "Crypto wallets", "Direct execution without task queue"],
+    escalationTargets: ["atlas"],
+  }),
 ];

@@ -134,6 +134,9 @@ const EnvSchema = z.object({
   VIRUS_SCAN_ENABLED: z.string().optional(),
   VIRUSTOTAL_API_KEY: z.string().optional(),
 
+  // Anthropic (local vision agent)
+  ANTHROPIC_API_KEY: z.string().optional(),
+
   // Web search providers (multi-provider fallback: You.com → Tavily → SerpAPI)
   SERP_API_KEY:    z.string().optional(),
   YOU_COM_API_KEY: z.string().optional(),

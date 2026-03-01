@@ -85,6 +85,7 @@ export const PRO_ONLY_FEATURES: ReadonlySet<string> = new Set([
   "meetings",
   "premium-screens",
   "browser",
+  "local-vision",
 ]);
 
 /**

@@ -48,6 +48,7 @@ const fallback = {
   SANDY:      "sandy.bookings@deadapp.info",
   VICTOR:     "victor.videoproductionspecialist@deadapp.info",
   FRANK:      "frank.forms@deadapp.info",
+  VISION:     "vision.agent@deadapp.info",
 } as const;
 
 export type AgentEmailKey = keyof typeof fallback;
