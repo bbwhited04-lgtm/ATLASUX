@@ -623,7 +623,7 @@ export default function Landing() {
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Mar 3, 2026</span>
+            <span className="text-sm text-white/60">Last updated: Mar 4, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
             <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
@@ -797,6 +797,8 @@ export default function Landing() {
             <li>[Claude Code] Wired OAuth for 7 new providers — Notion, Airtable (PKCE), Dropbox, Slack, PayPal, Square, and Meetup now fully integrated into the OAuth flow; connect/disconnect from Integrations tab; token refresh for Airtable/Dropbox/PayPal/Square/Meetup; Slack redirect built from APP_URL at runtime; Square handles ISO expires_at; Notion stores workspace metadata</li>
             <li>[Claude Code] Supabase email/password login — new "Sign In" tab on the gate screen alongside existing access code; Supabase auth with auto-session resume for returning users; backend /v1/auth/provision auto-creates tenant + membership on first login; real JWT-based identity chain replaces anonymous gate-only flow</li>
             <li>[Claude Code] Landing page redesign — full Sintra design system port with 9 sections: Hero (badge pill, gradient text, stat cards, CTAs, floating badges), Platform Overview (10 feature cards + 2 screenshots), Agent Roster (4-tier hierarchy with 30 agents + connectors), Integrations (8-icon bar + 6 category cards), Knowledge &amp; Chat (6 feature cards + inter-agent chat mockup with 5 messages), Audit &amp; Traceability (live audit log table + 8 feature cards + 3 screenshots), Dev Updates (preserved verbatim), Early Access CTA (form with 5 fields + selling points + platform badges); custom CSS classes (gradient-text, text-glow, glow-sky, glow-blue, grid-bg, pulse-dot, card-hover); all images from Sintra CDN; dark navy color system with alternating section backgrounds</li>
+            <li>Submitted to Y Combinator — Atlas UX application sent; sourcing senior full-stack dev on Gun.io for TypeScript/Fastify/Prisma/React stack</li>
+            <li>[Claude Code] Compliance hardening plan — full 18-task implementation plan for certification-ready code across SOC 2, ISO 27001, HIPAA, PCI DSS, NIST 800-53, GDPR, and HITRUST CSF; covers hash-chained audit logs, database-level RLS, CSRF protection, session termination, per-tenant rate limiting, input validation sweep, HSTS enforcement, and 8 framework policy document rewrites with control-to-code mappings</li>
           </ul>
 
           <div className="mt-5 flex gap-3">
