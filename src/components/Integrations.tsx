@@ -130,7 +130,6 @@ const INTEGRATIONS: Integration[] = [
   // ── Automation ────────────────────────────────────────────────────────
   { id: "zapier",   name: "Zapier",      category: "Automation",description: "Connect apps with zaps.",                   oauth: null },
   { id: "make",     name: "Make",        category: "Automation",description: "Advanced workflows.",                        oauth: null },
-  { id: "n8n",      name: "n8n",         category: "Automation",description: "Self-hosted automation.",                   oauth: null },
 
   // ── Ecommerce ─────────────────────────────────────────────────────────
   { id: "shopify",  name: "Shopify",     category: "Ecommerce",description: "Products, orders, customers.",               oauth: null },

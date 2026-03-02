@@ -2,7 +2,7 @@
  * alignableRoutes.ts — Alignable Inbound Webhook
  *
  * Alignable has no native webhook API, so this acts as a generic
- * inbound endpoint that Zapier, Make, n8n, or manual triggers can POST to.
+ * inbound endpoint that Zapier, Make, or manual triggers can POST to.
  *
  * POST /v1/alignable/webhook           — receive events (new connection, message, recommendation, etc.)
  * GET  /v1/alignable/webhook           — health check / verification ping
@@ -41,7 +41,7 @@ export const alignableRoutes: FastifyPluginAsync = async (app) => {
     });
   });
 
-  // ── POST /webhook — inbound event from Zapier/Make/n8n ─────────────────
+  // ── POST /webhook — inbound event from Zapier/Make ─────────────────
   app.post("/webhook", async (req, reply) => {
     const body = req.body as any;
 

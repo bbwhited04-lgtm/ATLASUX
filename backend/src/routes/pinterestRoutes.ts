@@ -2,7 +2,7 @@
  * pinterestRoutes.ts — Pinterest Webhook + API
  *
  * Pinterest has limited webhook support (only via Ads API).
- * This acts as an inbound endpoint for Zapier/Make/n8n triggers.
+ * This acts as an inbound endpoint for Zapier/Make triggers.
  *
  * GET  /v1/pinterest/webhook  — health check
  * POST /v1/pinterest/webhook  — receive events (new_pin, repin, board_update, follower, comment, etc.)

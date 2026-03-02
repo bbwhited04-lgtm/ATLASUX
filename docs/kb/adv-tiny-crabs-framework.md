@@ -25,7 +25,7 @@ Be surgically specific about what you want. Define the deliverable, not the proc
 
 ### Good Task Definition
 
-"Write a 1,200-word competitive analysis comparing Atlas UX's agent-based automation against three named competitors (Zapier, Make.com, and n8n). The deliverable is a structured report with an executive summary, per-competitor analysis, and a strategic recommendation. Success criteria: a reader with no prior context should understand Atlas UX's differentiated positioning after reading the executive summary alone."
+"Write a 1,200-word competitive analysis comparing Atlas UX's agent-based automation against two named competitors (Zapier and Make.com). The deliverable is a structured report with an executive summary, per-competitor analysis, and a strategic recommendation. Success criteria: a reader with no prior context should understand Atlas UX's differentiated positioning after reading the executive summary alone."
 
 ### Agent Application
 
@@ -281,7 +281,7 @@ Self-correction can be embedded in the prompt ("After your analysis, review it f
 **Y**: Markdown. H1 title. H2 for major sections. Short paragraphs (3-4 sentences max). At least one pull-quote-worthy sentence per section. Meta description (155 characters). CTA at end.
 **C**: Atlas UX is an AI employee platform where AI agents have defined roles, responsibilities, and accountability — unlike traditional automation tools that just execute workflows. Target audience: SMB owners and operations leaders who are frustrated with the complexity of existing automation tools.
 **R**: 1. Hook with a provocative opening that challenges the reader's current approach. 2. Define the distinction between tools and employees. 3. Present use cases that make the distinction tangible. 4. Address the obvious objection ("isn't this just marketing spin?"). 5. Present the counterargument honestly and respond to it. 6. Close with a forward-looking vision.
-**A**: SMB owners who have used Zapier/Make/n8n but found them insufficient. Technical enough to understand automation concepts but not engineers. Reading on desktop during work hours. Skeptical of hype.
+**A**: SMB owners who have used Zapier/Make but found them insufficient. Technical enough to understand automation concepts but not engineers. Reading on desktop during work hours. Skeptical of hype.
 **B**: Flesch-Kincaid readability grade 8-10. SEO: target keyword in H1, first 100 words, and at least 2 H2s. Every claim should be supportable even if we don't include the citation.
 **S**: After drafting, read only the H2 headers. Do they tell a complete story on their own? If someone only reads the headers, do they get the key message?
 

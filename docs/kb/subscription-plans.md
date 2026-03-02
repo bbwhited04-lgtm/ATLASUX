@@ -183,7 +183,6 @@ In addition to subscription plans, Atlas UX offers one-time purchase digital pro
 - Passive Income Guide: 5 Online Hustles ($0.99)
 - Master ChatGPT-5.0 Guide ($0.99)
 - Nano Banana AI Prompts: 500+ Image Gen ($0.99)
-- 100+ n8n Automation Templates ($0.99)
 - Nano Banana Monetize AI Images ($0.99)
 
 All digital products are instant-download files available after purchase.

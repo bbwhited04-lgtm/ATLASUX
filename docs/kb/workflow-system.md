@@ -16,7 +16,7 @@ The foundational workflows that handle essential business operations:
 - WF-010: **Daily Operations** — The master daily workflow that kicks off routine business activities
 - WF-011 through WF-021: Standard operational procedures
 
-### n8n Manifest Workflows (WF-022 to WF-092)
+### Extended Workflows (WF-022 to WF-092)
 Extended workflows covering specialized functions:
 - WF-031: **Daily Intelligence** — Market and competitive intelligence gathering
 - WF-033: Daily Intel agent workflow

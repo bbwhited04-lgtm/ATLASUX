@@ -317,7 +317,7 @@ await app.register(meetingRoutes, { prefix: "/v1/meetings" });
 // LinkedIn — webhook + API
 await app.register(linkedinRoutes, { prefix: "/v1/linkedin" });
 
-// Alignable — inbound webhook for Zapier/Make/n8n triggers
+// Alignable — inbound webhook for Zapier/Make triggers
 await app.register(alignableRoutes, { prefix: "/v1/alignable" });
 
 // X (Twitter) — Account Activity API webhook
@@ -326,10 +326,10 @@ await app.register(xRoutes, { prefix: "/v1/x" });
 // TikTok — webhook for video/engagement events
 await app.register(tiktokRoutes, { prefix: "/v1/tiktok" });
 
-// Tumblr — inbound webhook for Zapier/Make/n8n triggers
+// Tumblr — inbound webhook for Zapier/Make triggers
 await app.register(tumblrRoutes, { prefix: "/v1/tumblr" });
 
-// Pinterest — inbound webhook for Zapier/Make/n8n triggers
+// Pinterest — inbound webhook for Zapier/Make triggers
 await app.register(pinterestRoutes, { prefix: "/v1/pinterest" });
 
 // Zoom — webhook for meeting/webinar events

@@ -145,7 +145,7 @@ GET /v1/kb/cache/stats           # View cache statistics
 POST /v1/kb/seed-atlas
 ```
 
-Seeds all workflow definitions from the n8n manifest into KB documents. Safe to re-run (upserts by slug).
+Seeds all workflow definitions from the workflow manifest into KB documents. Safe to re-run (upserts by slug).
 
 **Example:**
 

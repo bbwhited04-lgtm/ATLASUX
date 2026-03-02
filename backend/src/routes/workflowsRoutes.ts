@@ -12,7 +12,7 @@ for (const w of workflowCatalog) {
 
 export const workflowsRoutes: FastifyPluginAsync = async (app) => {
   app.get("/", async (req) => {
-    // Pull DB rows (may include N8N-* keys from legacy imports)
+    // Pull DB rows from workflows table
     const rows = (await prisma.$queryRaw`
       select workflow_key, agent_key, name, status, version
       from workflows

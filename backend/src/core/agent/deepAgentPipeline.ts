@@ -1,5 +1,5 @@
 /**
- * Deep Agent Pipeline — 3-stage execution matching n8n CSS agent architecture.
+ * Deep Agent Pipeline — 3-stage execution architecture.
  *
  * Stage 1: Planning sub-agent
  *   Fast model call. Given the user query + conversation memory, produces a

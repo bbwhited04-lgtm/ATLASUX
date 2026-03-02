@@ -23,7 +23,6 @@ import {
   Lightbulb,
   Cpu,
   Palette,
-  Workflow,
   ImageIcon,
   MessageSquare,
 } from "lucide-react";
@@ -309,7 +308,7 @@ const digitalProducts: DigitalProduct[] = [
       "ChatGPT-5.0 new features explained",
       "Advanced prompt engineering techniques",
       "10 AI-powered side hustles",
-      "Automation with Zapier, Make & n8n",
+      "Automation with Zapier & Make",
       "Monetization & scaling playbook",
     ],
     paymentLink: "https://buy.stripe.com/14A14oc9r31B7661B18IU0n",
@@ -335,27 +334,6 @@ const digitalProducts: DigitalProduct[] = [
     ],
     paymentLink: "https://buy.stripe.com/7sYdRa2yR1Xx4XY5Rh8IU0m",
     downloadUrl: "/downloads/nano-banana-ai-prompts-guide.pdf",
-  },
-  {
-    id: "n8n-automation-templates",
-    name: "100+ n8n Automation Templates",
-    description:
-      "AI agents, OpenAI workflows, and no-code business automation. 100+ templates covering lead gen, content creation, email, social media, e-commerce, customer support, and DevOps.",
-    price: 0.99,
-    priceLabel: "$0.99",
-    promptCount: 100,
-    icon: Workflow,
-    color: "from-orange-500 to-red-500",
-    badge: "No-Code",
-    highlights: [
-      "100+ ready-to-use n8n templates",
-      "AI agent & OpenAI workflows",
-      "Lead gen, email & social automation",
-      "E-commerce & customer support",
-      "Beginner to advanced difficulty levels",
-    ],
-    paymentLink: "https://buy.stripe.com/14A6oI8Xf45Faii1B18IU0l",
-    downloadUrl: "/downloads/n8n-automation-templates-guide.pdf",
   },
   {
     id: "nano-banana-monetize-ai",
@@ -719,9 +697,7 @@ function ProductCard({ product }: { product: DigitalProduct }) {
             <div className="text-xs text-slate-400">
               {product.id.startsWith("ebook-")
                 ? `${product.promptCount} chapters`
-                : product.id === "n8n-automation-templates"
-                  ? `${product.promptCount}+ templates`
-                  : `${product.promptCount} prompts`}
+                : `${product.promptCount} prompts`}
             </div>
           </div>
         </div>

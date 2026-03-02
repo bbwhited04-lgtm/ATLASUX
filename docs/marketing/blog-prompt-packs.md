@@ -189,7 +189,6 @@ All packs are instant-download .txt files. Use them with ChatGPT, Claude, Atlas 
 | Passive Income Guide | $0.99 | 5 online income streams using AI |
 | Master ChatGPT-5.0 Guide | $0.99 | Advanced techniques and strategies |
 | Nano Banana AI Prompts | $0.99 | 500+ image generation prompts |
-| 100+ n8n Automation Templates | $0.99 | Workflow automation blueprints |
 | Monetize AI Images | $0.99 | Turn AI images into income |
 
 ## Why These Prompts Work

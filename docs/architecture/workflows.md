@@ -1,9 +1,8 @@
 # Workflow Architecture
 
-Atlas UX uses a registry-based workflow system that combines hand-coded workflow
-definitions with an n8n-style manifest. Workflows are triggered by the scheduler
-worker on a cron-like schedule and executed by the engine loop through the job
-queue.
+Atlas UX uses a registry-based workflow system with hand-coded workflow
+definitions. Workflows are triggered by the scheduler worker on a cron-like
+schedule and executed by the engine loop through the job queue.
 
 ---
 
@@ -15,7 +14,7 @@ three generations:
 
 ```
 +-------------------+     +-------------------+     +-------------------+
-|  Core Registry    |     |  n8n Manifest     |     |  Platform Intel   |
+|  Core Registry    |     |  Extended Registry|     |  Platform Intel   |
 |  WF-001 to WF-021|     |  WF-022 to WF-092 |     |  WF-093 to WF-106|
 |  Hand-coded       |     |  Manifest-defined |     |  Auto-generated   |
 +-------------------+     +-------------------+     +-------------------+
@@ -26,9 +25,9 @@ three generations:
 These are the original hand-coded workflows with full database rows. Each has
 a defined trigger, steps, and expected output.
 
-### n8n Manifest (WF-022 to WF-092)
+### Extended Registry (WF-022 to WF-092)
 
-These workflows were derived from an n8n-style manifest and merged into the
+These workflows were derived from the workflow manifest and merged into the
 routes file. They follow the same execution model but were generated in bulk.
 
 ### Platform Intel Sweep (WF-093 to WF-105)

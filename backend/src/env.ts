@@ -190,6 +190,12 @@ const EnvSchema = z.object({
   // Composio (23 sub-tool search integrations)
   COMPOSIO_API_KEY: z.string().optional(),
 
+  // Stability AI (image generation)
+  STABILITY_API_KEY: z.string().optional(),
+
+  // Postiz (social media publishing — used by Timmy for TikTok)
+  POSTIZ_API_KEY: z.string().optional(),
+
   // Web search providers (multi-provider fallback: You.com → Tavily → SerpAPI)
   SERP_API_KEY:    z.string().optional(),
   YOU_COM_API_KEY: z.string().optional(),

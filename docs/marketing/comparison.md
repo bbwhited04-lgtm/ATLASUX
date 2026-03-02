@@ -6,7 +6,7 @@ The AI automation landscape is crowded, but most solutions fall into one of thre
 
 ---
 
-## Atlas UX vs. Workflow Automation (Zapier, Make, n8n)
+## Atlas UX vs. Workflow Automation (Zapier, Make)
 
 ### What They Do
 Workflow automation tools connect apps and trigger actions based on events. "When X happens in App A, do Y in App B." They are powerful for simple, predictable integrations.
@@ -21,7 +21,7 @@ Workflow automation tools connect apps and trigger actions based on events. "Whe
 ### Atlas UX Difference
 Atlas UX agents reason about their tasks, adapt to changing conditions, and coordinate with each other. The SGL governance layer enforces safety at every step. Agents initiate work proactively — gathering intelligence, monitoring conditions, and acting on findings without waiting for external triggers.
 
-| Capability | Atlas UX | Zapier/Make/n8n |
+| Capability | Atlas UX | Zapier/Make |
 |---|---|---|
 | Autonomous initiative | Yes — agents act proactively | No — requires triggers |
 | Decision-making | AI reasoning with confidence scores | If/then logic only |

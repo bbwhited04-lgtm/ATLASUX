@@ -8,7 +8,7 @@ Competitive analysis reference for Atlas UX agents. Use this when positioning At
 
 Atlas UX occupies the **AI Employee** category — not workflow automation, not chatbots, not copilots. The distinction matters:
 
-- **Workflow Automation** (Zapier, Make, n8n): Connects apps with if-then logic. Requires human setup and maintenance. No autonomy, no decision-making.
+- **Workflow Automation** (Zapier, Make): Connects apps with if-then logic. Requires human setup and maintenance. No autonomy, no decision-making.
 - **AI Assistants / Copilots** (ChatGPT Teams, Microsoft Copilot): Helps humans do tasks faster. Still requires human initiation and judgment for every action.
 - **AI Employees** (Atlas UX): Named agents with defined roles, autonomous decision-making within governance boundaries, and organizational hierarchy. They work independently, escalate when needed, and coordinate with each other.
 
@@ -35,16 +35,6 @@ Atlas UX occupies the **AI Employee** category — not workflow automation, not 
 **Weaknesses:** Still requires manual workflow design. No AI reasoning. Steep learning curve for advanced features. No multi-tenant architecture. No approval workflows.
 
 **Atlas UX Differentiator:** Make is a better hammer, but you still need a carpenter. Atlas UX is the carpenter.
-
-### n8n
-
-**What it does:** Open-source workflow automation platform. Self-hostable. Similar to Make but with developer-friendly features and code nodes.
-
-**Strengths:** Open source. Self-hostable for data sovereignty. Extensible with custom code nodes. Active community.
-
-**Weaknesses:** Requires technical setup and maintenance. No autonomous intelligence. Workflows are deterministic — they cannot reason about novel situations.
-
-**Atlas UX Differentiator:** Atlas UX actually uses n8n-style manifests internally for workflow definitions (WF-022 through WF-092). The difference is that Atlas agents decide which workflows to trigger, when, and with what parameters. n8n is infrastructure. Atlas UX is the intelligence that drives it.
 
 ### ChatGPT Teams (OpenAI)
 

@@ -36,6 +36,8 @@
  *   excel_parse              — Parse .xlsx files via SheetJS
  *   dropbox_files            — Dropbox file list/search via Dropbox OAuth
  *   x_analytics              — X/Twitter tweet metrics and analytics
+ *   tiktok_post              — Post TikTok slideshows/videos via Postiz
+ *   tiktok_analytics         — TikTok platform + per-post metrics via Postiz (4-quadrant diagnostic)
  *
  * Usage: resolveAgentTools(tenantId, query, agentId) — returns formatted context string.
  */
@@ -1072,7 +1074,7 @@ const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch", "xAnalytics"],
   fran:        ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
   dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
-  timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
+  timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "tiktokPost", "tiktokAnalytics"],
   terry:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
   cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
   link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "discord"],
@@ -1122,6 +1124,8 @@ export type ToolNeeds = {
   excel:           boolean;
   dropbox:         boolean;
   xAnalytics:      boolean;
+  tiktokPost:      boolean;
+  tiktokAnalytics: boolean;
   query:          string;
 };
 
@@ -1318,7 +1322,7 @@ export async function resolveAgentTools(
 
   // Collect modular tool keys that fired
   const modularKeys = Object.entries(needs)
-    .filter(([k, v]) => v === true && ["hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics"].includes(k))
+    .filter(([k, v]) => v === true && ["hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "tiktokPost", "tiktokAnalytics"].includes(k))
     .map(([k]) => k);
 
   const jobs: Promise<ToolResult | null>[] = [

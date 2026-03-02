@@ -24,15 +24,36 @@ from dotenv import load_dotenv
 
 import httpx
 from ragas import evaluate
-from ragas.metrics import (
-    faithfulness,
-    answer_relevancy,
-    answer_correctness,
-    context_precision,
-)
 from ragas.dataset_schema import SingleTurnSample, EvaluationDataset
-from ragas.llms import LangchainLLMWrapper
-from ragas.embeddings import LangchainEmbeddingsWrapper
+
+# v0.4+ imports — try new location first, fall back to legacy
+try:
+    from ragas.metrics._faithfulness import Faithfulness
+    from ragas.metrics._answer_relevance import AnswerRelevancy
+    from ragas.metrics._answer_correctness import AnswerCorrectness
+    from ragas.metrics._context_precision import ContextPrecision
+    _faithfulness = Faithfulness()
+    _answer_relevancy = AnswerRelevancy()
+    _answer_correctness = AnswerCorrectness()
+    _context_precision = ContextPrecision()
+except ImportError:
+    from ragas.metrics import (  # type: ignore
+        faithfulness as _faithfulness,
+        answer_relevancy as _answer_relevancy,
+        answer_correctness as _answer_correctness,
+        context_precision as _context_precision,
+    )
+
+# LLM / embedding wrappers — try modern factory first
+try:
+    from ragas.llms import llm_factory
+    from ragas.embeddings import embedding_factory
+    _USE_FACTORY = True
+except ImportError:
+    _USE_FACTORY = False
+    from ragas.llms import LangchainLLMWrapper  # type: ignore
+    from ragas.embeddings import LangchainEmbeddingsWrapper  # type: ignore
+
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # ---------------------------------------------------------------------------
@@ -329,10 +350,16 @@ async def main():
     print(f"Judge: RAGAS (OpenAI GPT-4o-mini evaluator)\n")
 
     # Set up RAGAS evaluator LLM + embeddings
-    evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini", temperature=0.0))
-    evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model="text-embedding-3-small"))
+    if _USE_FACTORY:
+        from openai import OpenAI as _OAI
+        _oai_client = _OAI(api_key=OPENAI_KEY)
+        evaluator_llm = llm_factory("gpt-4o-mini", client=_oai_client)
+        evaluator_embeddings = embedding_factory("openai", model="text-embedding-3-small", client=_oai_client)
+    else:
+        evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini", temperature=0.0))
+        evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model="text-embedding-3-small"))
 
-    metrics = [faithfulness, answer_relevancy, answer_correctness, context_precision]
+    metrics = [_faithfulness, _answer_relevancy, _answer_correctness, _context_precision]
 
     # Collect results per provider
     all_results: dict[str, dict] = {}
@@ -389,11 +416,25 @@ async def main():
                     embeddings=evaluator_embeddings,
                 )
 
+                # Extract scores — RAGAS v0.4 returns EvaluationResult object
+                # Use to_pandas() for reliable extraction across versions
+                df = result.to_pandas()
+                col_map = {
+                    "faithfulness": "faithfulness",
+                    "context_precision": "context_precision",
+                    "answer_relevancy": "answer_relevancy",
+                    "answer_correctness": "answer_correctness",
+                }
+                extracted: dict[str, float] = {}
+                for key, col in col_map.items():
+                    if col in df.columns:
+                        vals = df[col].dropna()
+                        extracted[key] = float(vals.mean()) if len(vals) > 0 else 0.0
+                    else:
+                        extracted[key] = 0.0
+
                 scores = {
-                    "faithfulness": result.get("faithfulness", 0) or 0,
-                    "context_precision": result.get("context_precision", 0) or 0,
-                    "answer_relevancy": result.get("answer_relevancy", 0) or 0,
-                    "answer_correctness": result.get("answer_correctness", 0) or 0,
+                    **extracted,
                     "avg_latency": sum(latencies) / len(latencies) if latencies else 0,
                     "errors": errors,
                     "total": len(EVAL_DATASET),
@@ -402,6 +443,14 @@ async def main():
 
                 avg = (scores["faithfulness"] + scores["context_precision"] + scores["answer_relevancy"] + scores["answer_correctness"]) / 4
                 print(f"  ✅ F={scores['faithfulness']:.2f} CP={scores['context_precision']:.2f} AR={scores['answer_relevancy']:.2f} AC={scores['answer_correctness']:.2f} AVG={avg:.2f}")
+
+                # Show per-sample breakdown
+                for idx, row in df.iterrows():
+                    f_val = row.get("faithfulness", 0) or 0
+                    cp_val = row.get("context_precision", 0) or 0
+                    ar_val = row.get("answer_relevancy", 0) or 0
+                    ac_val = row.get("answer_correctness", 0) or 0
+                    print(f"     sample {idx}: F={f_val:.2f} CP={cp_val:.2f} AR={ar_val:.2f} AC={ac_val:.2f}")
 
             except Exception as e:
                 print(f"  ⚠ RAGAS eval failed: {e}")

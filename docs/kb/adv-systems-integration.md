@@ -200,18 +200,6 @@ Not currently implemented, but the architecture supports it. Supabase's underlyi
 
 ---
 
-## iPaaS Integration: n8n
-
-Atlas UX uses n8n as its workflow automation layer. The n8n manifest (WF-022 through WF-092) defines workflows that:
-
-- Are registered in `workflowsRoutes.ts` alongside the internal workflow registry (WF-001 through WF-021)
-- Can be triggered by the scheduler worker on cron schedules
-- Execute via the engine loop, which accepts manifest workflows without requiring a database row (`CANONICAL_WORKFLOW_KEYS` fallback)
-
-The n8n integration pattern is declarative: workflows are defined as JSON manifests with trigger conditions, agent assignments, and execution parameters. The engine loop interprets these manifests and dispatches work accordingly.
-
----
-
 ## How Atlas UX Integrates: Summary
 
 | Integration | Pattern | Auth | Protocol |
@@ -226,7 +214,6 @@ The n8n integration pattern is declarative: workflows are defined as JSON manife
 | Supabase (DB) | Direct | Service role key | PostgreSQL wire protocol |
 | Supabase (Storage) | REST | Service role key | HTTPS |
 | OpenAI / DeepSeek / Cerebras | Point-to-point | API key | HTTPS |
-| n8n | Manifest-driven | Internal | JSON workflow definitions |
 
 ---
 
@@ -245,6 +232,6 @@ The n8n integration pattern is declarative: workflows are defined as JSON manife
 - `backend/src/routes/oauthRoutes.ts` — OAuth flow implementations
 - `backend/src/tools/` — External API tool integrations
 - `backend/src/workers/` — Async job processing workers
-- `backend/src/routes/workflowsRoutes.ts` — Workflow registry including n8n manifest
+- `backend/src/routes/workflowsRoutes.ts` — Workflow registry
 - `backend/src/routes/telegramRoutes.ts` — Telegram webhook and API integration
 - `backend/src/lib/telegramNotify.ts` — Outbound Telegram notifications

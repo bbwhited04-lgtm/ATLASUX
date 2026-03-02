@@ -1,6 +1,6 @@
 # Atlas UX API -- Workflows
 
-Workflows define automated sequences of agent actions. The registry includes both database-stored workflows and canonical definitions from the code registry and n8n manifest.
+Workflows define automated sequences of agent actions. The registry includes both database-stored workflows and canonical definitions from the code registry.
 
 ## List Workflows
 
@@ -8,7 +8,7 @@ Workflows define automated sequences of agent actions. The registry includes bot
 GET /v1/workflows
 ```
 
-Returns all workflows, merging database rows with canonical definitions from the workflow registry (WF-001 through WF-021) and n8n manifest (WF-022 through WF-105+). Sorted by workflow key (numeric).
+Returns all workflows, merging database rows with canonical definitions from the workflow registry (WF-001 through WF-105+). Sorted by workflow key (numeric).
 
 **Auth:** JWT + `x-tenant-id` header.
 
@@ -76,5 +76,5 @@ curl -s https://atlas-ux.onrender.com/v1/workflows \
 
 - **Intake** (WF-001 to WF-005): Support, Project, Calendar, Booking, Forms
 - **Operations** (WF-010, WF-020, WF-021): Morning briefing, audits
-- **n8n Manifest** (WF-022+): Social publishing, growth loops, intel sweeps
+- **Extended Workflows** (WF-022+): Social publishing, growth loops, intel sweeps
 - **Platform Intel** (WF-093 to WF-105): Per-agent platform intelligence gathering

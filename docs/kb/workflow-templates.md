@@ -237,17 +237,3 @@ Custom workflows can be defined for Business and Enterprise tiers:
 4. Test with a dry run before enabling
 5. Monitor execution through the Agent Watcher
 
-## n8n Integration
-
-Atlas UX includes an n8n workflow library with 70+ pre-built templates across categories:
-- Social media automation
-- Content creation
-- Financial operations
-- Legal and compliance
-- Healthcare
-- HR and operations
-- DevOps
-- Customer service
-- Analytics and research
-
-These templates can be imported and customized for your specific business needs.

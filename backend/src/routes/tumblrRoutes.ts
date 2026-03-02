@@ -2,7 +2,7 @@
  * tumblrRoutes.ts — Tumblr Webhook + API
  *
  * Tumblr has no native webhook system, so this acts as a generic
- * inbound endpoint for Zapier/Make/n8n triggers or custom scrapers.
+ * inbound endpoint for Zapier/Make triggers or custom scrapers.
  *
  * GET  /v1/tumblr/webhook  — health check
  * POST /v1/tumblr/webhook  — receive events (new_post, reblog, like, follow, ask, etc.)
