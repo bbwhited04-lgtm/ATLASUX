@@ -2510,12 +2510,129 @@ async function postizFetch(endpoint: string, method: "GET" | "POST" = "GET", bod
 
 type PostizIntegration = { id: string; name: string; providerIdentifier?: string; identifier?: string };
 
+/** Map platform to the intel workflow that feeds it. */
+const PLATFORM_INTEL_WF: Record<string, string> = {
+  tiktok: "WF-096", x: "WF-093", facebook: "WF-094", reddit: "WF-101",
+  threads: "WF-095", linkedin: "WF-099", pinterest: "WF-098", tumblr: "WF-097",
+  youtube: "WF-105", mastodon: "WF-100", instagram: "WF-104", medium: "WF-102",
+};
+
+/** Platform-specific content rules for the LLM. */
+const PLATFORM_CONTENT_RULES: Record<string, string> = {
+  tiktok:    "Write a TikTok caption (under 150 chars). Use trending hooks, 3-5 hashtags including #fyp. Be punchy and Gen-Z friendly.",
+  x:         "Write a tweet (under 280 chars). Concise, opinionated, include 2-3 relevant hashtags. No fluff.",
+  facebook:  "Write a Facebook post (2-3 sentences). Conversational, ask a question to drive comments. Include 1-2 hashtags.",
+  reddit:    "Write a Reddit post title + body. Be authentic, not salesy. Frame as sharing something useful. No hashtags.",
+  threads:   "Write a Threads post (under 500 chars). Conversational, casual, like talking to a friend. 1-2 hashtags max.",
+  linkedin:  "Write a LinkedIn post (3-4 sentences). Professional but human. Lead with insight, end with question. 3 hashtags.",
+  pinterest: "Write a Pinterest pin description (under 500 chars). SEO-friendly, include keywords, be aspirational.",
+  tumblr:    "Write a Tumblr post. Creative, personality-forward, can be longer. Use tags liberally.",
+  youtube:   "Write a YouTube Shorts caption (under 100 chars) and title. Hook-first, trending style.",
+  mastodon:  "Write a Mastodon toot (under 500 chars). Thoughtful, community-minded, no corporate tone. Use hashtags.",
+  instagram: "Write an Instagram caption (2-3 sentences). Visual storytelling angle, emoji-friendly, 5-10 hashtags at the end.",
+  medium:    "Write a Medium article title, subtitle, and opening paragraph. Thought-leadership style, keyword-rich.",
+};
+
+/**
+ * Pull recent platform intel and Atlas task orders from audit logs.
+ * Returns the most relevant context for content generation.
+ */
+async function getPublishIntel(ctx: WorkflowContext, platform: string): Promise<string> {
+  const today = new Date().toISOString().slice(0, 10);
+  const intelWfId = PLATFORM_INTEL_WF[platform] ?? "";
+
+  // Get recent audit entries from intel sweep + Atlas task orders (last 24h)
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const audits = (await prisma.$queryRaw`
+    select message, meta, timestamp
+    from audit_log
+    where tenant_id = ${ctx.tenantId}::uuid
+      and action = 'WORKFLOW_STEP'
+      and timestamp > ${since}::timestamptz
+      and (
+        message like ${`%${intelWfId}%`}
+        or message like '%WF-106%'
+      )
+    order by timestamp desc
+    limit 10
+  `) as Array<{ message: string; meta: any; timestamp: Date }>;
+
+  if (!audits.length) return "";
+
+  const intelLines = audits
+    .map((a) => a.message?.slice(0, 300))
+    .filter(Boolean)
+    .join("\n");
+
+  return intelLines;
+}
+
 function createPostizPublishHandler(platform: string): WorkflowHandler {
   return async (ctx) => {
     await writeStepAudit(ctx, `${ctx.workflowId}.start`, `Postiz ${platform} publish starting`);
 
-    const caption = String(ctx.input?.caption ?? ctx.input?.content ?? ctx.input?.text ?? "").trim();
-    if (!caption) return { ok: false, message: "caption/content required in input" };
+    let caption = String(ctx.input?.caption ?? ctx.input?.content ?? ctx.input?.text ?? "").trim();
+
+    // If no manual caption, generate one from intel + LLM
+    if (!caption) {
+      await writeStepAudit(ctx, `${ctx.workflowId}.intel`, `No manual caption — pulling intel for ${platform} content generation`);
+
+      // 1. Get platform intel from recent audit logs
+      const intel = await getPublishIntel(ctx, platform);
+
+      // 2. Get agent KB context
+      const kb = await getKbContext({
+        tenantId: ctx.tenantId,
+        agentId: ctx.agentId,
+        query: `${platform} content strategy trending topics Atlas UX`,
+        intentId: ctx.intentId,
+        requestedBy: ctx.requestedBy,
+      });
+
+      // 3. Get fresh web trends
+      let webTrends = "";
+      try {
+        const searchResult = await searchWeb(`${platform} trending topics AI automation small business ${new Date().toISOString().slice(0, 10)}`, 5);
+        if (searchResult.ok) {
+          webTrends = searchResult.results.slice(0, 4).map((r, i) => `${i + 1}. ${r.title} — ${r.snippet}`).join("\n");
+        }
+      } catch { /* non-fatal */ }
+
+      const contentRules = PLATFORM_CONTENT_RULES[platform] ?? `Write a compelling ${platform} post for Atlas UX.`;
+
+      // 4. LLM generates the post content
+      const agentName = agentRegistry.find((a) => a.id === ctx.agentId)?.name ?? ctx.agentId;
+      caption = await safeLLM(ctx, {
+        agent: agentName.toUpperCase(),
+        purpose: `${platform}_content_generation`,
+        route: "DRAFT_GENERATION_FAST",
+        system: [
+          `You are ${agentName}, the ${platform} content agent for Atlas UX — an AI employee platform with 30+ autonomous agents.`,
+          `Your job: write ONE ready-to-publish ${platform} post based on today's intelligence.`,
+          `\n${contentRules}`,
+          `\nATLAS UX POSITIONING: AI employees that actually work. 30+ agents automating business operations. Currently in beta.`,
+          `Website: atlasux.cloud`,
+          intel ? `\nTODAY'S PLATFORM INTEL:\n${intel}` : "",
+          webTrends ? `\nLIVE TRENDS:\n${webTrends}` : "",
+          kb.text ? `\nKB CONTEXT:\n${kb.text.slice(0, 800)}` : "",
+          `\nIMPORTANT: Output ONLY the post content — no preamble, no "Here's a post:", no quotes. Just the raw text ready to publish.`,
+        ].filter(Boolean).join("\n"),
+        user: `Write a ${platform} post for today (${new Date().toISOString().slice(0, 10)}). Use the intel and trends above to make it timely and relevant.`,
+      });
+
+      // Clean LLM output — strip any quotes or preamble
+      caption = caption.replace(/^["']|["']$/g, "").trim();
+
+      await writeStepAudit(ctx, `${ctx.workflowId}.generated`, `LLM generated ${platform} content (${caption.length} chars)`, {
+        captionPreview: caption.slice(0, 150),
+        hadIntel: !!intel,
+        hadWebTrends: !!webTrends,
+      });
+    }
+
+    if (!caption || caption.startsWith("[LLM unavailable")) {
+      return { ok: false, message: `Could not generate ${platform} content — LLM unavailable and no manual caption provided.` };
+    }
 
     // Find integration
     const integrations = (await postizFetch("/integrations")) as PostizIntegration[];
@@ -2593,8 +2710,37 @@ handlers["WF-211"] = createPostizPublishHandler("medium");
 handlers["WF-212"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-212.start", "Cross-platform Postiz publish starting");
 
-  const caption = String(ctx.input?.caption ?? ctx.input?.content ?? ctx.input?.text ?? "").trim();
-  if (!caption) return { ok: false, message: "caption/content required in input" };
+  let caption = String(ctx.input?.caption ?? ctx.input?.content ?? ctx.input?.text ?? "").trim();
+
+  // If no manual caption, generate a cross-platform base post
+  if (!caption) {
+    const intel = await getPublishIntel(ctx, "x"); // use X intel as general baseline
+    const kb = await getKbContext({
+      tenantId: ctx.tenantId, agentId: "sunday",
+      query: "Atlas UX cross-platform social media content",
+      intentId: ctx.intentId, requestedBy: ctx.requestedBy,
+    });
+
+    caption = await safeLLM(ctx, {
+      agent: "SUNDAY",
+      purpose: "cross_platform_content",
+      route: "DRAFT_GENERATION_FAST",
+      system: [
+        "You are SUNDAY, the Comms & Tech Doc Writer for Atlas UX.",
+        "Write ONE short, punchy social media post (under 200 chars) that works across X, Facebook, Threads, LinkedIn, Tumblr, and Mastodon.",
+        "Keep it general enough for all platforms but engaging. Include 2-3 hashtags. Atlas UX is an AI employee platform with 30+ agents.",
+        intel ? `\nToday's intel:\n${intel}` : "",
+        kb.text ? `\nKB:\n${kb.text.slice(0, 500)}` : "",
+        "\nOutput ONLY the post text — no preamble.",
+      ].filter(Boolean).join("\n"),
+      user: `Write a cross-platform post for today (${new Date().toISOString().slice(0, 10)}).`,
+    });
+    caption = caption.replace(/^["']|["']$/g, "").trim();
+  }
+
+  if (!caption || caption.startsWith("[LLM unavailable")) {
+    return { ok: false, message: "Could not generate cross-platform content — LLM unavailable and no manual caption provided." };
+  }
 
   const targetPlatforms: string[] = Array.isArray(ctx.input?.platforms)
     ? ctx.input.platforms.map((p: unknown) => String(p).toLowerCase())

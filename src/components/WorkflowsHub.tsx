@@ -112,21 +112,56 @@ export function WorkflowsHub() {
   const [inputJson, setInputJson] = React.useState<string>("{}");
 
   const templates: Record<string, any> = React.useMemo(
-    () => ({
-      "WF-001": {
-        customerEmail: "test@deadapp.info",
-        subject: "Install help",
-        message: "Need assistance installing Atlas UX",
-      },
-      "WF-002": {
-        ticketId: "TKT-0001",
-        reason: "Escalate to Atlas",
-        notes: "Customer blocked; include repro steps + logs",
-      },
-      "WF-010": {
-        date: new Date().toISOString().slice(0, 10),
-      },
-    }),
+    () => {
+      const postizPublish = (platform: string) => ({
+        caption: `Check out Atlas UX — your AI employee platform #atlasux #${platform}`,
+      });
+      const postizPublishMedium = {
+        caption: "How Atlas UX Automates Your Business With 30+ AI Employees",
+        settings: { title: "How Atlas UX Automates Your Business", subtitle: "AI employees that actually work", tags: ["ai", "automation", "saas"] },
+      };
+      const postizPublishYT = {
+        caption: "Atlas UX — AI employees that actually work #atlasux #shorts",
+        settings: { title: "Atlas UX Demo", type: "short", tags: ["ai", "automation"] },
+      };
+      const postizPublishPinterest = {
+        caption: "AI Employee Platform — automate your business with Atlas UX #atlasux",
+        settings: { title: "Atlas UX AI Employees", board: "", link: "https://atlasux.cloud" },
+      };
+      const postizPublishReddit = {
+        caption: "We built an AI employee platform with 30+ autonomous agents — here's how it works",
+        settings: { subreddit: ["artificial", "SaaS"] },
+      };
+      const crossPlatformPublish = {
+        caption: "Atlas UX — 30+ AI employees running your business autonomously. Try the beta. #atlasux",
+        platforms: ["x", "facebook", "threads", "linkedin", "tumblr", "mastodon"],
+      };
+
+      return {
+        "WF-001": { customerEmail: "test@deadapp.info", subject: "Install help", message: "Need assistance installing Atlas UX" },
+        "WF-002": { ticketId: "TKT-0001", reason: "Escalate to Atlas", notes: "Customer blocked; include repro steps + logs" },
+        "WF-010": { date: new Date().toISOString().slice(0, 10) },
+        "WF-110": { query: "AI automation small business", maxResults: 10 },
+        "WF-111": { videoPath: "", title: "Atlas UX Short", tags: ["ai", "automation"] },
+        "WF-123": { companyName: "", contactName: "", notes: "" },
+        "WF-130": { task: "Navigate to https://example.com and extract the page title", targetUrl: "https://example.com" },
+        "WF-140": { task: "Open TikTok and check notifications", targetUrl: "https://www.tiktok.com" },
+        // Postiz Publish templates
+        "WF-200": postizPublish("tiktok"),
+        "WF-201": postizPublish("x"),
+        "WF-202": postizPublish("facebook"),
+        "WF-203": postizPublishReddit,
+        "WF-204": postizPublish("threads"),
+        "WF-205": postizPublish("linkedin"),
+        "WF-206": postizPublishPinterest,
+        "WF-207": postizPublish("tumblr"),
+        "WF-208": postizPublishYT,
+        "WF-209": postizPublish("mastodon"),
+        "WF-210": postizPublish("instagram"),
+        "WF-211": postizPublishMedium,
+        "WF-212": crossPlatformPublish,
+      };
+    },
     []
   );
 
@@ -363,7 +398,7 @@ export function WorkflowsHub() {
             spellCheck={false}
           />
           <div className="mt-1 text-xs text-slate-500">
-            Tip: WF-001 needs <span className="font-mono">customerEmail</span>. Until inbound email is wired, paste it here.
+            Tip: WF-001 needs <span className="font-mono">customerEmail</span>. WF-200–212 need <span className="font-mono">caption</span>. Templates auto-load when you select a workflow.
           </div>
         </div>
 
