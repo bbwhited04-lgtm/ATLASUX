@@ -138,7 +138,7 @@ function agentEmail(agentId: string): string | null {
  * if they are not Atlas (so Binky, Sunday, etc. stay in the loop).
  */
 function getReportRecipients(agentId: string): { to: string; cc: string[] } {
-  const atlasAddr = agentEmail("atlas") ?? "atlas@deadapp.info";
+  const atlasAddr = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
   const agent = agentRegistry.find((a) => a.id === agentId);
   const leader = agent?.reportsTo;
   const cc: string[] = [];
@@ -506,7 +506,7 @@ const handlers: Record<string, WorkflowHandler> = {
 
     // Internal routing email
     await queueEmail(ctx, {
-      to: agentEmail("atlas") ?? "atlas@deadapp.info",
+      to: agentEmail("atlas") ?? "atlas.ceo@deadapp.info",
       subject: `[${ctx.traceId ?? ctx.intentId}] Support Intake → ${routeTo.toUpperCase()} [${priority}]`,
       text: [
         `Support intake routed to ${routeTo}.`,
@@ -563,7 +563,7 @@ const handlers: Record<string, WorkflowHandler> = {
 
     await writeStepAudit(ctx, "escalate.drafted", `Memo drafted (${llmText.length} chars)`);
 
-    const toEmail = agentEmail(toRole) ?? agentEmail("atlas") ?? "atlas@deadapp.info";
+    const toEmail = agentEmail(toRole) ?? agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
     await queueEmail(ctx, {
       to: toEmail,
       subject: `[ESCALATION] ${toRole.toUpperCase()} ← ${ctx.agentId.toUpperCase()} (${ctx.traceId ?? ctx.intentId})`,
@@ -894,7 +894,7 @@ handlers["WF-106"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-106.orders", `Task orders generated (${taskOrders.length} chars)`);
 
   // 5. Send Atlas's master task order to Billy + Atlas mailbox
-  const atlasEmail = agentEmail("atlas") ?? "atlas@deadapp.info";
+  const atlasEmail = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
   const billyEmail = process.env.OWNER_EMAIL?.trim() ?? "billy@deadapp.info";
   const masterSubject = `[ATLAS TASK ORDERS] ${today} — Workforce Task Assignment`;
   const masterBody = [
@@ -1028,7 +1028,7 @@ handlers["WF-107"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-107.start", "Atlas Tool Discovery beginning");
 
   const billyEmail  = process.env.OWNER_EMAIL?.trim()  ?? "billy@deadapp.info";
-  const atlasEmail  = agentEmail("atlas") ?? "atlas@deadapp.info";
+  const atlasEmail  = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
   const backendUrl  = (process.env.BACKEND_URL ?? process.env.RENDER_EXTERNAL_URL ?? "https://atlasux-backend.onrender.com").replace(/\/$/, "");
   const today       = new Date().toISOString().slice(0, 10);
 
@@ -1735,7 +1735,7 @@ handlers["WF-110"] = async (ctx) => {
   }
 
   // Send summary email to Atlas
-  const atlasAddr = agentEmail("atlas") ?? "atlas@deadapp.info";
+  const atlasAddr = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
   await queueEmail(ctx, {
     to: atlasAddr,
     subject: `[YOUTUBE SCRAPE] ${stored} videos ingested into KB`,
@@ -1841,7 +1841,7 @@ handlers["WF-111"] = async (ctx) => {
   }).catch(() => null);
 
   // Email notification
-  const atlasAddr = agentEmail("atlas") ?? "atlas@deadapp.info";
+  const atlasAddr = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
   await queueEmail(ctx, {
     to: atlasAddr,
     subject: `[YOUTUBE UPLOAD] "${title}" published`,

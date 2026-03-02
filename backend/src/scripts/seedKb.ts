@@ -298,7 +298,7 @@ All spend events must have ledger entries.
 ## Email Architecture
 - **Licensed Mailbox**: atlas.ceo@deadapp.info (ATLAS only — authenticated via Microsoft Graph)
 - **Delegated Send-As**: All other agent mailboxes use "Send As" delegation from ATLAS
-- **Outbound Provider**: Microsoft Graph API (MS_SENDER_UPN=atlas@deadapp.info)
+- **Outbound Provider**: Microsoft Graph API (MS_SENDER_UPN=atlas.ceo@deadapp.info)
 
 ## Agent Email Addresses
 | Agent | Email | Role |
@@ -1707,7 +1707,7 @@ The DAILY-INTEL mailbox is the central aggregation point for:
 ## Configuration Required
 This shared inbox needs to be:
 1. Created in Microsoft 365 admin panel
-2. Configured with Send As delegation to atlas@deadapp.info
+2. Configured with Send As delegation to atlas.ceo@deadapp.info
 3. Verified in the AGENT_EMAIL_DAILY_INTEL env var (currently set to daily-intel@deadapp.info)
 
 ## Subscribers

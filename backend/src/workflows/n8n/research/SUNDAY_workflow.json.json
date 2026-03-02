@@ -39,7 +39,7 @@
               "value1": "={{$json.fromEmail}}",
               "value2": [
                 "atlas@deadappcorp.org",
-                "atlas@deadapp.info",
+                "atlas.ceo@deadapp.info",
                 "billy@deadapp.info",
                 "bbwhited@icloud.com",
                 "bbwhited@live.com"

@@ -18,7 +18,7 @@
         "values": {
           "string": [
             { "name": "run_id", "value": "={{$now.toISO() + '::' + $execution.id}}" },
-            { "name": "atlas_email", "value": "atlas@deadapp.info" },
+            { "name": "atlas_email", "value": "atlas.ceo@deadapp.info" },
             { "name": "audit_cc", "value": "larry.auditor@deadapp.info" }
           ]
         },

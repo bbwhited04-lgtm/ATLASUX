@@ -103,21 +103,10 @@ ALTER TABLE browser_sessions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation ON browser_sessions
   USING (current_setting('app.tenant_id', true) IS NULL OR tenant_id = current_setting('app.tenant_id', true)::uuid);
 
-ALTER TABLE browser_actions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON browser_actions
-  USING (current_setting('app.tenant_id', true) IS NULL OR tenant_id = current_setting('app.tenant_id', true)::uuid);
-
-ALTER TABLE revoked_tokens ENABLE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON revoked_tokens
-  USING (current_setting('app.tenant_id', true) IS NULL OR tenant_id = current_setting('app.tenant_id', true)::uuid);
-
-ALTER TABLE token_vault ENABLE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON token_vault
-  USING (current_setting('app.tenant_id', true) IS NULL OR tenant_id = current_setting('app.tenant_id', true)::uuid);
-
-ALTER TABLE cloud_seats ENABLE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON cloud_seats
-  USING (current_setting('app.tenant_id', true) IS NULL OR tenant_id = current_setting('app.tenant_id', true)::uuid);
+-- browser_actions: no tenant_id column (scoped via session_id FK to browser_sessions)
+-- revoked_tokens: global table, no tenant scope
+-- token_vault: uses org_id, not tenant_id
+-- cloud_seats: global table (pre-auth gate codes)
 
 ALTER TABLE approvals ENABLE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation ON approvals
@@ -171,9 +160,6 @@ ALTER TABLE vendor_assessments FORCE ROW LEVEL SECURITY;
 ALTER TABLE atlas_conversations FORCE ROW LEVEL SECURITY;
 ALTER TABLE meeting_notes FORCE ROW LEVEL SECURITY;
 ALTER TABLE browser_sessions FORCE ROW LEVEL SECURITY;
-ALTER TABLE browser_actions FORCE ROW LEVEL SECURITY;
-ALTER TABLE revoked_tokens FORCE ROW LEVEL SECURITY;
-ALTER TABLE token_vault FORCE ROW LEVEL SECURITY;
-ALTER TABLE cloud_seats FORCE ROW LEVEL SECURITY;
+-- browser_actions, revoked_tokens, token_vault, cloud_seats: excluded (no tenant_id column)
 ALTER TABLE approvals FORCE ROW LEVEL SECURITY;
 ALTER TABLE atlas_ip_approvals FORCE ROW LEVEL SECURITY;

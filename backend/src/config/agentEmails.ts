@@ -9,7 +9,7 @@
 
 const fallback = {
   // ── C-Suite & Core ────────────────────────────────────────────────────────
-  ATLAS:      "atlas@deadapp.info",
+  ATLAS:      "atlas.ceo@deadapp.info",
   BINKY:      "binky.cro@deadapp.info",
   BENNY:      "benny.cto@deadapp.info",
   TINA:       "tina.cfo@deadapp.info",
