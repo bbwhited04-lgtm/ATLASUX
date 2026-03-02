@@ -34,6 +34,20 @@ export const workflowCatalog = [
   { id: "WF-010", name: "Daily Executive Brief (Binky)",  description: "Daily intel digest with traceability.",                                          ownerAgent: "binky"  },
   { id: "WF-020", name: "Engine Run Smoke Test (Atlas)",  description: "Minimal end-to-end cloud surface verification.",                                  ownerAgent: "atlas"  },
   { id: "WF-021", name: "Bootstrap Atlas (Atlas)",          description: "Boot → discover agents → load KB → seed tasks → queue boot email → await command.", ownerAgent: "atlas"    },
+  { id: "WF-093", name: "X (Twitter) Platform Intel (Kelly)",         description: "Daily X/Twitter trend sweep — trending hashtags, viral content, tech startup chatter.",               ownerAgent: "kelly"    },
+  { id: "WF-094", name: "Facebook Platform Intel (Fran)",             description: "Daily Facebook trend sweep — trending topics, small business Pages & Groups activity.",          ownerAgent: "fran"     },
+  { id: "WF-095", name: "Threads Platform Intel (Dwight)",            description: "Daily Threads trend sweep — trending topics, creator conversations, Meta ecosystem.",            ownerAgent: "dwight"   },
+  { id: "WF-096", name: "TikTok Platform Intel (Timmy)",              description: "Daily TikTok trend sweep — trending hashtags, sounds, viral video formats.",                     ownerAgent: "timmy"    },
+  { id: "WF-097", name: "Tumblr Platform Intel (Terry)",              description: "Daily Tumblr trend sweep — trending tags, creative posts, aesthetic content.",                   ownerAgent: "terry"    },
+  { id: "WF-098", name: "Pinterest Platform Intel (Cornwall)",        description: "Daily Pinterest trend sweep — trending pins, boards, visual inspiration ideas.",                 ownerAgent: "cornwall" },
+  { id: "WF-099", name: "LinkedIn Platform Intel (Link)",             description: "Daily LinkedIn trend sweep — trending professional topics, B2B posts, business content.",        ownerAgent: "link"     },
+  { id: "WF-100", name: "Alignable Platform Intel (Emma)",            description: "Daily Alignable trend sweep — local business topics, community discussions.",                   ownerAgent: "emma"     },
+  { id: "WF-101", name: "Reddit Platform Intel (Donna)",              description: "Daily Reddit trend sweep — hot threads, AI/automation/small-business subreddits.",              ownerAgent: "donna"    },
+  { id: "WF-102", name: "Blog SEO Platform Intel (Reynolds)",         description: "Daily SEO trend sweep — trending blog topics, AI/automation/small-business keywords.",          ownerAgent: "reynolds" },
+  { id: "WF-103", name: "Facebook Ads Platform Intel (Penny)",        description: "Daily Facebook Ads trend sweep — trending ad formats, winning creatives, small biz ads.",       ownerAgent: "penny"    },
+  { id: "WF-104", name: "Instagram Platform Intel (Archy)",           description: "Daily Instagram trend sweep — trending Reels, hashtags, visual content, creators.",             ownerAgent: "archy"    },
+  { id: "WF-105", name: "YouTube Platform Intel (Venny)",             description: "Daily YouTube trend sweep — trending videos, AI/automation creators, topic analysis.",          ownerAgent: "venny"    },
+  { id: "WF-106", name: "Atlas Daily Aggregation & Task Assignment",  description: "Synthesize all 13 platform intel reports → unified packet → per-agent task orders → emails.",  ownerAgent: "atlas"    },
   { id: "WF-107", name: "Atlas Tool Discovery & Proposal",  description: "Look inside (agent gaps) + look outside (SERP external tools) → LLM proposals → email report with approve/deny links.", ownerAgent: "atlas" },
   { id: "WF-108", name: "Reynolds Blog Writer & Publisher", description: "SERP research → LLM drafts full blog post → publishes to KB → emails confirmation.",  ownerAgent: "reynolds" },
   { id: "WF-110", name: "Venny YouTube Video Scraper & KB Ingest", description: "Search YouTube by keyword/channel → pull metadata + transcripts → store in KB for team retrieval.", ownerAgent: "venny" },
@@ -53,6 +67,25 @@ export const workflowCatalog = [
   { id: "WF-130", name: "Browser Task Execution (Atlas)",     description: "Governed headless browser automation — navigate, extract, interact with web pages via Playwright.", ownerAgent: "atlas" },
   { id: "WF-131", name: "Browser Session Resume (Atlas)",     description: "Resume a paused browser session after decision memo approval for HIGH-risk action.",               ownerAgent: "atlas" },
   { id: "WF-140", name: "Local Vision Task (Vision)",       description: "Queue a browser task for the local vision agent — executes on user's machine via CDP + Claude Vision.", ownerAgent: "vision" },
+  // ── Postiz Social Publishing (WF-200 series) ──────────────────────────────
+  { id: "WF-200", name: "TikTok Publish via Postiz (Timmy)",        description: "Publish a TikTok post via Postiz API — caption, hashtags, privacy settings.",               ownerAgent: "timmy"    },
+  { id: "WF-201", name: "X (Twitter) Publish via Postiz (Kelly)",   description: "Publish a tweet/post to X via Postiz API.",                                                ownerAgent: "kelly"    },
+  { id: "WF-202", name: "Facebook Publish via Postiz (Fran)",       description: "Publish a Facebook Page post via Postiz API.",                                              ownerAgent: "fran"     },
+  { id: "WF-203", name: "Reddit Publish via Postiz (Donna)",        description: "Publish a Reddit post via Postiz API — subreddit, title, content.",                         ownerAgent: "donna"    },
+  { id: "WF-204", name: "Threads Publish via Postiz (Dwight)",      description: "Publish a Threads post via Postiz API.",                                                   ownerAgent: "dwight"   },
+  { id: "WF-205", name: "LinkedIn Publish via Postiz (Link)",       description: "Publish a LinkedIn post via Postiz API.",                                                  ownerAgent: "link"     },
+  { id: "WF-206", name: "Pinterest Publish via Postiz (Cornwall)",  description: "Publish a pin to Pinterest via Postiz API — title, board, image.",                          ownerAgent: "cornwall" },
+  { id: "WF-207", name: "Tumblr Publish via Postiz (Terry)",        description: "Publish a Tumblr post via Postiz API.",                                                    ownerAgent: "terry"    },
+  { id: "WF-208", name: "YouTube Publish via Postiz (Venny)",       description: "Publish a YouTube Short or video via Postiz API — title, tags, type.",                      ownerAgent: "venny"    },
+  { id: "WF-209", name: "Mastodon Publish via Postiz (Emma)",       description: "Publish a Mastodon toot via Postiz API.",                                                  ownerAgent: "emma"     },
+  { id: "WF-210", name: "Instagram Publish via Postiz (Archy)",     description: "Publish an Instagram post/reel via Postiz API.",                                           ownerAgent: "archy"    },
+  { id: "WF-211", name: "Medium Publish via Postiz (Reynolds)",     description: "Publish an article to Medium via Postiz API — title, subtitle, tags.",                      ownerAgent: "reynolds" },
+  { id: "WF-212", name: "Cross-Platform Publish via Postiz (Sunday)", description: "Publish content to multiple platforms at once via Postiz — Sunday coordinates distribution.", ownerAgent: "sunday" },
+  // ── Postiz Analytics (WF-220 series) ──────────────────────────────────────
+  { id: "WF-220", name: "TikTok Analytics Report (Timmy)",          description: "Pull TikTok analytics from Postiz — views, engagement, 4-quadrant diagnostic.",            ownerAgent: "timmy"    },
+  { id: "WF-221", name: "X Analytics Report (Kelly)",               description: "Pull X/Twitter analytics from Postiz — impressions, engagement, diagnostic.",              ownerAgent: "kelly"    },
+  { id: "WF-222", name: "Facebook Analytics Report (Fran)",         description: "Pull Facebook analytics from Postiz — reach, engagement, diagnostic.",                     ownerAgent: "fran"     },
+  { id: "WF-223", name: "Cross-Platform Analytics (Sunday)",        description: "Pull analytics for all connected platforms — summary dashboard with diagnostics.",          ownerAgent: "sunday"   },
 ] as const;
 
 export const workflowCatalogAll = [
@@ -2432,6 +2465,340 @@ handlers["WF-140"] = async (ctx) => {
     message: `Local vision task queued (job ${job.id}). The local agent will pick it up on its next poll.`,
     output: { jobId: job.id, targetUrl, task: task.slice(0, 200) },
   };
+};
+
+// ── WF-200 series: Postiz Social Publishing ─────────────────────────────────
+// Generic factory for per-platform Postiz publishing workflows.
+// All use the same Postiz REST API — the only difference is platform + settings.
+
+const POSTIZ_API = "https://api.postiz.com/public/v1";
+
+const POSTIZ_AGENT_PLATFORM: Record<string, string> = {
+  timmy: "tiktok", kelly: "x", fran: "facebook", donna: "reddit",
+  dwight: "threads", link: "linkedin", cornwall: "pinterest", terry: "tumblr",
+  venny: "youtube", emma: "mastodon", archy: "instagram", reynolds: "medium",
+  sunday: "x", // Sunday cross-posts; default to X
+};
+
+const POSTIZ_PLATFORM_SETTINGS: Record<string, Record<string, unknown>> = {
+  tiktok:    { __type: "tiktok", privacy_level: "SELF_ONLY", duet: false, stitch: false, comment: true, video_made_with_ai: true, content_posting_method: "UPLOAD" },
+  x:         { __type: "x" },
+  facebook:  { __type: "facebook" },
+  reddit:    { __type: "reddit", subreddit: [] },
+  threads:   { __type: "threads" },
+  linkedin:  { __type: "linkedin", post_as_images_carousel: false },
+  pinterest: { __type: "pinterest", title: "", link: "", dominant_color: "#000000", board: "" },
+  tumblr:    { __type: "tumblr" },
+  youtube:   { __type: "youtube", title: "", type: "short", tags: [] },
+  mastodon:  { __type: "mastodon" },
+  instagram: { __type: "instagram", post_type: "post", collaborators: [] },
+  medium:    { __type: "medium", title: "", subtitle: "", tags: [] },
+};
+
+async function postizFetch(endpoint: string, method: "GET" | "POST" = "GET", body?: unknown): Promise<unknown> {
+  const key = process.env.POSTIZ_API_KEY;
+  if (!key) throw new Error("POSTIZ_API_KEY not configured");
+  const opts: RequestInit = {
+    method,
+    headers: { Authorization: key, "Content-Type": "application/json" },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`${POSTIZ_API}${endpoint}`, opts);
+  if (!res.ok) throw new Error(`Postiz API ${res.status}: ${await res.text().catch(() => "")}`);
+  return res.json();
+}
+
+type PostizIntegration = { id: string; name: string; providerIdentifier?: string; identifier?: string };
+
+function createPostizPublishHandler(platform: string): WorkflowHandler {
+  return async (ctx) => {
+    await writeStepAudit(ctx, `${ctx.workflowId}.start`, `Postiz ${platform} publish starting`);
+
+    const caption = String(ctx.input?.caption ?? ctx.input?.content ?? ctx.input?.text ?? "").trim();
+    if (!caption) return { ok: false, message: "caption/content required in input" };
+
+    // Find integration
+    const integrations = (await postizFetch("/integrations")) as PostizIntegration[];
+    const integration = integrations.find(
+      (i) => i.providerIdentifier === platform || i.identifier === platform || (i.name ?? "").toLowerCase().includes(platform),
+    );
+    if (!integration) return { ok: false, message: `No ${platform} integration found in Postiz. Connect it at https://app.postiz.com first.` };
+
+    const settings = POSTIZ_PLATFORM_SETTINGS[platform] ?? { __type: platform };
+
+    // Override settings from input if provided
+    if (ctx.input?.settings && typeof ctx.input.settings === "object") {
+      Object.assign(settings, ctx.input.settings);
+    }
+
+    const postBody = {
+      type: "now",
+      date: new Date().toISOString(),
+      shortLink: false,
+      tags: [],
+      posts: [{
+        integration: { id: integration.id },
+        value: [{ content: caption, image: [] }],
+        settings,
+      }],
+    };
+
+    const result = (await postizFetch("/posts", "POST", postBody)) as Array<{ postId?: string }>;
+    const postId = result?.[0]?.postId ?? "unknown";
+
+    await writeStepAudit(ctx, `${ctx.workflowId}.published`, `Published to ${platform} via Postiz (post ${postId})`, {
+      postId, platform, integration: integration.name, captionPreview: caption.slice(0, 100),
+    });
+
+    // Notify Atlas
+    const { to, cc } = getReportRecipients(ctx.agentId);
+    await queueEmail(ctx, {
+      to,
+      fromAgent: ctx.agentId,
+      subject: `[${ctx.agentId.toUpperCase()}] Published to ${platform} — ${caption.slice(0, 60)}`,
+      text: [
+        `${platform.toUpperCase()} POST PUBLISHED`,
+        `Agent: ${ctx.agentId}`,
+        `Platform: ${platform}`,
+        `Post ID: ${postId}`,
+        `Integration: ${integration.name}`,
+        `\nContent:\n${caption}`,
+        `\nTrace: ${ctx.traceId ?? ctx.intentId}`,
+      ].join("\n"),
+    });
+
+    return {
+      ok: true,
+      message: `Published to ${platform} via Postiz`,
+      output: { postId, platform, integration: integration.name, caption: caption.slice(0, 200) },
+    };
+  };
+}
+
+// Register per-platform publish handlers
+handlers["WF-200"] = createPostizPublishHandler("tiktok");
+handlers["WF-201"] = createPostizPublishHandler("x");
+handlers["WF-202"] = createPostizPublishHandler("facebook");
+handlers["WF-203"] = createPostizPublishHandler("reddit");
+handlers["WF-204"] = createPostizPublishHandler("threads");
+handlers["WF-205"] = createPostizPublishHandler("linkedin");
+handlers["WF-206"] = createPostizPublishHandler("pinterest");
+handlers["WF-207"] = createPostizPublishHandler("tumblr");
+handlers["WF-208"] = createPostizPublishHandler("youtube");
+handlers["WF-209"] = createPostizPublishHandler("mastodon");
+handlers["WF-210"] = createPostizPublishHandler("instagram");
+handlers["WF-211"] = createPostizPublishHandler("medium");
+
+// WF-212 — Cross-platform publish (Sunday coordinates)
+handlers["WF-212"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-212.start", "Cross-platform Postiz publish starting");
+
+  const caption = String(ctx.input?.caption ?? ctx.input?.content ?? ctx.input?.text ?? "").trim();
+  if (!caption) return { ok: false, message: "caption/content required in input" };
+
+  const targetPlatforms: string[] = Array.isArray(ctx.input?.platforms)
+    ? ctx.input.platforms.map((p: unknown) => String(p).toLowerCase())
+    : Object.values(POSTIZ_AGENT_PLATFORM).filter((v, i, a) => a.indexOf(v) === i); // all unique platforms
+
+  const integrations = (await postizFetch("/integrations")) as PostizIntegration[];
+  const results: Array<{ platform: string; ok: boolean; postId?: string; error?: string }> = [];
+
+  for (const platform of targetPlatforms) {
+    const integration = integrations.find(
+      (i) => i.providerIdentifier === platform || i.identifier === platform || (i.name ?? "").toLowerCase().includes(platform),
+    );
+    if (!integration) {
+      results.push({ platform, ok: false, error: "No integration found" });
+      continue;
+    }
+    try {
+      const settings = POSTIZ_PLATFORM_SETTINGS[platform] ?? { __type: platform };
+      const postBody = {
+        type: "now",
+        date: new Date().toISOString(),
+        shortLink: false,
+        tags: [],
+        posts: [{
+          integration: { id: integration.id },
+          value: [{ content: caption, image: [] }],
+          settings,
+        }],
+      };
+      const result = (await postizFetch("/posts", "POST", postBody)) as Array<{ postId?: string }>;
+      results.push({ platform, ok: true, postId: result?.[0]?.postId ?? "unknown" });
+    } catch (err: unknown) {
+      results.push({ platform, ok: false, error: err instanceof Error ? err.message : String(err) });
+    }
+    await new Promise((r) => setTimeout(r, 300)); // rate limit courtesy
+  }
+
+  const succeeded = results.filter((r) => r.ok).length;
+  const failed = results.filter((r) => !r.ok).length;
+
+  await writeStepAudit(ctx, "WF-212.complete", `Cross-posted to ${succeeded}/${results.length} platforms`, { results });
+
+  const { to } = getReportRecipients("sunday");
+  await queueEmail(ctx, {
+    to,
+    fromAgent: "sunday",
+    subject: `[SUNDAY] Cross-platform publish — ${succeeded}/${results.length} succeeded`,
+    text: [
+      `CROSS-PLATFORM PUBLISH COMPLETE`,
+      `Succeeded: ${succeeded} | Failed: ${failed}`,
+      `\nResults:`,
+      ...results.map((r) => `  ${r.platform}: ${r.ok ? `OK (${r.postId})` : `FAILED (${r.error})`}`),
+      `\nContent:\n${caption.slice(0, 300)}`,
+      `\nTrace: ${ctx.traceId ?? ctx.intentId}`,
+    ].join("\n"),
+  });
+
+  return {
+    ok: true,
+    message: `Cross-posted to ${succeeded}/${results.length} platforms`,
+    output: { results, succeeded, failed },
+  };
+};
+
+// ── WF-220 series: Postiz Analytics ──────────────────────────────────────────
+
+type PostizMetric = { label: string; data?: Array<{ total: string; date: string }> };
+
+function postizDiagnose(views: number, likes: number, avgViews: number): string {
+  const highViews = views > avgViews && views > 5_000;
+  const highEngagement = likes > 0 && views > 0 && (likes / views) > 0.03;
+  if (highViews && highEngagement) return "SCALE — hook + engagement working, make variations";
+  if (highViews && !highEngagement) return "FIX CTA — views good but engagement low, change call-to-action";
+  if (!highViews && highEngagement) return "FIX HOOKS — content engages but needs more reach, try stronger hooks";
+  return "NEEDS WORK — try different approach or hook format";
+}
+
+function createPostizAnalyticsHandler(platform: string): WorkflowHandler {
+  return async (ctx) => {
+    await writeStepAudit(ctx, `${ctx.workflowId}.start`, `Postiz ${platform} analytics starting`);
+
+    const integrations = (await postizFetch("/integrations")) as PostizIntegration[];
+    const integration = integrations.find(
+      (i) => i.providerIdentifier === platform || i.identifier === platform || (i.name ?? "").toLowerCase().includes(platform),
+    );
+    if (!integration) return { ok: false, message: `No ${platform} integration found in Postiz.` };
+
+    // Platform-level stats (30 days)
+    let platformSection = "";
+    try {
+      const stats = (await postizFetch(`/analytics/${integration.id}?date=30`)) as PostizMetric[];
+      if (Array.isArray(stats) && stats.length > 0) {
+        const lines = stats.map((m) => {
+          const latest = m.data?.[m.data.length - 1];
+          const val = latest ? parseInt(latest.total, 10) || 0 : 0;
+          return `  ${m.label}: ${val.toLocaleString()}`;
+        });
+        platformSection = `Platform Stats (30 days):\n${lines.join("\n")}`;
+      }
+    } catch { platformSection = "Platform stats unavailable."; }
+
+    // Per-post analytics (7 days)
+    const now = new Date();
+    const start = new Date(now.getTime() - 7 * 86_400_000);
+    type PostizPost = { id: string; content?: string; publishDate?: string; integration?: { providerIdentifier?: string; name?: string } };
+    let postsSection = "";
+    let diagnosticSection = "";
+
+    try {
+      const postsData = (await postizFetch(`/posts?startDate=${start.toISOString()}&endDate=${now.toISOString()}`)) as { posts?: PostizPost[] };
+      const platformPosts = (postsData.posts ?? []).filter(
+        (p) => p.integration?.providerIdentifier === platform || (p.integration?.name ?? "").toLowerCase().includes(platform),
+      );
+
+      if (platformPosts.length > 0) {
+        const postMetrics: Array<{ hook: string; views: number; likes: number }> = [];
+
+        for (const post of platformPosts.slice(0, 10)) {
+          try {
+            const analytics = (await postizFetch(`/analytics/post/${post.id}?date=7`)) as PostizMetric[];
+            const metrics: Record<string, number> = {};
+            if (Array.isArray(analytics)) {
+              for (const m of analytics) {
+                const latest = m.data?.[m.data.length - 1];
+                if (latest) metrics[m.label.toLowerCase()] = parseInt(latest.total, 10) || 0;
+              }
+            }
+            postMetrics.push({
+              hook: (post.content ?? "").substring(0, 60),
+              views: metrics.views ?? metrics.impressions ?? 0,
+              likes: metrics.likes ?? metrics.reactions ?? 0,
+            });
+          } catch { /* skip */ }
+          await new Promise((r) => setTimeout(r, 200));
+        }
+
+        if (postMetrics.length > 0) {
+          const totalViews = postMetrics.reduce((s, p) => s + p.views, 0);
+          const avgViews = Math.round(totalViews / postMetrics.length);
+          postsSection = `Recent Posts (${postMetrics.length}): Total views ${totalViews.toLocaleString()}, avg ${avgViews.toLocaleString()}`;
+          diagnosticSection = postMetrics.map((p) => {
+            const dx = postizDiagnose(p.views, p.likes, avgViews);
+            return `  "${p.hook}..." → ${dx}`;
+          }).join("\n");
+        }
+      }
+    } catch { /* non-fatal */ }
+
+    const report = [platformSection, postsSection, diagnosticSection ? `Diagnostic:\n${diagnosticSection}` : ""].filter(Boolean).join("\n\n");
+
+    await writeStepAudit(ctx, `${ctx.workflowId}.complete`, `${platform} analytics report generated`);
+
+    const { to } = getReportRecipients(ctx.agentId);
+    await queueEmail(ctx, {
+      to,
+      fromAgent: ctx.agentId,
+      subject: `[${ctx.agentId.toUpperCase()}] ${platform} Analytics Report`,
+      text: `${platform.toUpperCase()} ANALYTICS REPORT\n\n${report}\n\nTrace: ${ctx.traceId ?? ctx.intentId}`,
+    });
+
+    return { ok: true, message: `${platform} analytics report generated`, output: { report } };
+  };
+}
+
+handlers["WF-220"] = createPostizAnalyticsHandler("tiktok");
+handlers["WF-221"] = createPostizAnalyticsHandler("x");
+handlers["WF-222"] = createPostizAnalyticsHandler("facebook");
+
+// WF-223 — Cross-platform analytics (Sunday)
+handlers["WF-223"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-223.start", "Cross-platform analytics starting");
+
+  const integrations = (await postizFetch("/integrations")) as PostizIntegration[];
+  const summaries: string[] = [];
+
+  for (const int of integrations.slice(0, 15)) {
+    try {
+      const stats = (await postizFetch(`/analytics/${int.id}?date=7`)) as PostizMetric[];
+      if (Array.isArray(stats) && stats.length > 0) {
+        const line = stats.map((m) => {
+          const latest = m.data?.[m.data.length - 1];
+          return `${m.label}: ${latest ? parseInt(latest.total, 10).toLocaleString() : "0"}`;
+        }).join(", ");
+        summaries.push(`  ${int.name} (${int.providerIdentifier ?? "?"}): ${line}`);
+      }
+    } catch { /* skip */ }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+
+  const report = summaries.length
+    ? `Cross-Platform Analytics (last 7 days):\n${summaries.join("\n")}`
+    : "No analytics data available.";
+
+  await writeStepAudit(ctx, "WF-223.complete", `Cross-platform report: ${summaries.length} platforms`);
+
+  const { to } = getReportRecipients("sunday");
+  await queueEmail(ctx, {
+    to,
+    fromAgent: "sunday",
+    subject: `[SUNDAY] Cross-Platform Analytics — ${summaries.length} platforms`,
+    text: `${report}\n\nTrace: ${ctx.traceId ?? ctx.intentId}`,
+  });
+
+  return { ok: true, message: `Cross-platform analytics: ${summaries.length} platforms`, output: { report } };
 };
 
 // ── Public API ────────────────────────────────────────────────────────────────

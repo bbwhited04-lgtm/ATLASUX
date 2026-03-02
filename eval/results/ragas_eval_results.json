@@ -1,0 +1,77 @@
+{
+  "timestamp": "2026-03-02T13:12:28Z",
+  "results": {
+    "OpenAI (gpt-4o-mini)": {
+      "faithfulness": 0,
+      "context_precision": 0,
+      "answer_relevancy": 0,
+      "answer_correctness": 0,
+      "avg_latency": 2078.9438247680664,
+      "errors": 0,
+      "total": 5
+    },
+    "Cerebras (llama3.1-8b)": {
+      "faithfulness": 0,
+      "context_precision": 0,
+      "answer_relevancy": 0,
+      "answer_correctness": 0,
+      "avg_latency": 828.285026550293,
+      "errors": 0,
+      "total": 5
+    },
+    "Cerebras (gpt-oss-120b)": {
+      "faithfulness": 0,
+      "context_precision": 0,
+      "answer_relevancy": 0,
+      "answer_correctness": 0,
+      "avg_latency": 2730.442428588867,
+      "errors": 0,
+      "total": 5
+    },
+    "NVIDIA NIM (kimi-k2)": {
+      "faithfulness": 0,
+      "context_precision": 0,
+      "answer_relevancy": 0,
+      "answer_correctness": 0,
+      "avg_latency": 1382.273292541504,
+      "errors": 0,
+      "total": 5
+    },
+    "Gemini (2.5-flash)": {
+      "faithfulness": 0,
+      "context_precision": 0,
+      "answer_relevancy": 0,
+      "answer_correctness": 0,
+      "avg_latency": 1825.3713607788086,
+      "errors": 0,
+      "total": 5
+    },
+    "OpenRouter (auto)": {
+      "faithfulness": 0,
+      "context_precision": 0,
+      "answer_relevancy": 0,
+      "answer_correctness": 0,
+      "avg_latency": 10753.465175628662,
+      "errors": 1,
+      "total": 5
+    },
+    "Anthropic (haiku)": {
+      "faithfulness": 0,
+      "context_precision": 0,
+      "answer_relevancy": 0,
+      "answer_correctness": 0,
+      "avg_latency": 0,
+      "errors": 5,
+      "total": 5
+    },
+    "Swarms (gpt-4o)": {
+      "faithfulness": 0,
+      "context_precision": 0,
+      "answer_relevancy": 0,
+      "answer_correctness": 0,
+      "avg_latency": 0,
+      "errors": 5,
+      "total": 5
+    }
+  }
+}
