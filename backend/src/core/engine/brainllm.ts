@@ -215,8 +215,9 @@ const ALLOWLIST: { providers: Set<LlmProvider>; models: Set<string> } = {
     // OpenRouter
     "openrouter/auto",
     "openrouter/free",
-    // Cerebras (OpenAI-compatible naming varies; use a stable placeholder)
-    "cerebras/llama",
+    // Cerebras
+    "cerebras/llama-4-scout-17b-16e-instruct",
+    "cerebras/llama3.3-70b",
     // Cloudflare Workers AI model placeholders
     "cf/meta/llama",
   ]),
@@ -231,17 +232,17 @@ const ROUTES: Record<LlmRoute, RoutePlanItem[]> = {
     { provider: "vercel_ai_gateway", model: "google/gemini-2.0-flash", params: { temperature: 0.2, maxOutputTokens: 1200 } },
     { provider: "vercel_ai_gateway", model: "google/gemini-1.5-pro", params: { temperature: 0.25, maxOutputTokens: 1600 } },
     { provider: "openrouter", model: "openrouter/auto", params: { temperature: 0.25, maxOutputTokens: 1400 } },
-    { provider: "cerebras", model: "cerebras/llama", params: { temperature: 0.25, maxOutputTokens: 1200 } },
+    { provider: "cerebras", model: "cerebras/llama-4-scout-17b-16e-instruct", params: { temperature: 0.25, maxOutputTokens: 1200 } },
   ],
   LONG_CONTEXT_SUMMARY: [
     { provider: "vercel_ai_gateway", model: "google/gemini-1.5-pro", params: { temperature: 0.3, maxOutputTokens: 1600 } },
     { provider: "vercel_ai_gateway", model: "google/gemini-2.0-flash", params: { temperature: 0.3, maxOutputTokens: 1600 } },
     { provider: "openrouter", model: "openrouter/auto", params: { temperature: 0.3, maxOutputTokens: 1600 } },
-    { provider: "cerebras", model: "cerebras/llama", params: { temperature: 0.3, maxOutputTokens: 1600 } },
+    { provider: "cerebras", model: "cerebras/llama-4-scout-17b-16e-instruct", params: { temperature: 0.3, maxOutputTokens: 1600 } },
   ],
   DRAFT_GENERATION_FAST: [
     // If you add GROQ later, add it here.
-    { provider: "cerebras", model: "cerebras/llama", params: { temperature: 0.7, maxOutputTokens: 900 } },
+    { provider: "cerebras", model: "cerebras/llama-4-scout-17b-16e-instruct", params: { temperature: 0.7, maxOutputTokens: 900 } },
     { provider: "vercel_ai_gateway", model: "google/gemini-2.0-flash", params: { temperature: 0.7, maxOutputTokens: 900 } },
     { provider: "openrouter", model: "openrouter/auto", params: { temperature: 0.7, maxOutputTokens: 900 } },
   ],
@@ -621,8 +622,11 @@ async function callProvider(args: {
     }
     case "openrouter":
       return callOpenAICompat("openrouter", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
-    case "cerebras":
-      return callOpenAICompat("cerebras", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+    case "cerebras": {
+      // Strip "cerebras/" prefix — API expects bare model IDs like "llama-4-scout-17b-16e-instruct"
+      const cerebrasModel = args.model.startsWith("cerebras/") ? args.model.replace("cerebras/", "") : args.model;
+      return callOpenAICompat("cerebras", cerebrasModel, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+    }
     default:
       throw new Error(`Unsupported provider: ${args.provider}`);
   }

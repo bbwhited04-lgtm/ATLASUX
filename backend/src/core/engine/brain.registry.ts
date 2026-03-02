@@ -76,8 +76,9 @@ export const ALLOWLIST: {
     "openrouter/auto",
     "openrouter/free",
 
-    // Cerebras (OpenAI-compatible naming varies; keep stable alias you use)
-    "cerebras/llama",
+    // Cerebras
+    "cerebras/llama-4-scout-17b-16e-instruct",
+    "cerebras/llama3.3-70b",
 
     // Cloudflare Workers AI (placeholder; set to your chosen model)
     "cf/meta/llama",
@@ -112,7 +113,7 @@ export const ROUTES: Record<LlmRoute, ReadonlyArray<RoutePlanItem>> = {
     },
     {
       provider: "cerebras",
-      model: "cerebras/llama",
+      model: "cerebras/llama-4-scout-17b-16e-instruct",
       params: { temperature: 0.25, maxOutputTokens: 1200 },
       notes: "Fast backup lane (once enabled)."
     }
@@ -135,7 +136,7 @@ export const ROUTES: Record<LlmRoute, ReadonlyArray<RoutePlanItem>> = {
   DRAFT_GENERATION_FAST: [
     {
       provider: "cerebras",
-      model: "cerebras/llama",
+      model: "cerebras/llama-4-scout-17b-16e-instruct",
       params: { temperature: 0.7, maxOutputTokens: 900 },
       notes: "Speed lane for content drafts."
     },
