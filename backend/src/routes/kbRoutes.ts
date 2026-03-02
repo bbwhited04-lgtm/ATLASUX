@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma, withTenant } from "../db/prisma.js";
 import { KbDocumentStatus } from "@prisma/client";
-import { n8nWorkflows } from "../workflows/n8n/manifest.js";
+import { workflowCatalog } from "../workflows/registry.js";
 import { flushKbCache, invalidateKbCache, kbCacheStats } from "../core/kb/kbCache.js";
 import { upsertChunks } from "../lib/pinecone.js";
 import type { PineconeChunk } from "../lib/pinecone.js";
@@ -694,24 +694,17 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
       let seeded = 0;
       let skipped = 0;
 
-      for (const wf of n8nWorkflows) {
+      for (const wf of workflowCatalog) {
         const slug = `atlas-wf-${wf.id.toLowerCase()}`;
         const body = [
           `# ${wf.name}`,
           ``,
           `**ID:** ${wf.id}`,
-          `**Category:** ${wf.category}`,
           `**Owner Agent:** ${wf.ownerAgent}`,
-          `**Trigger:** ${wf.trigger}`,
-          `**Human-in-Loop:** ${wf.humanInLoop ? "Yes" : "No"}`,
           ``,
           `## Description`,
           ``,
           wf.description,
-          ``,
-          `## File`,
-          ``,
-          `\`${wf.file}\``,
         ].join("\n");
 
         try {
@@ -745,18 +738,6 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
               update: {},
             });
 
-            // Category tag
-            const catTag = await tx.kbTag.upsert({
-              where: { tenantId_name: { tenantId, name: wf.category } },
-              create: { tenantId, name: wf.category },
-              update: {},
-            });
-            await tx.kbTagOnDocument.upsert({
-              where: { documentId_tagId: { documentId: doc.id, tagId: catTag.id } },
-              create: { documentId: doc.id, tagId: catTag.id },
-              update: {},
-            });
-
             seeded++;
           }
         } catch (err) {
@@ -772,7 +753,7 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
       ok: true,
       seeded: result.seeded,
       updated: result.skipped,
-      total: n8nWorkflows.length,
+      total: workflowCatalog.length,
     });
   });
 }

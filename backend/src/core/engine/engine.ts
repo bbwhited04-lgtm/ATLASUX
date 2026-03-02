@@ -5,7 +5,7 @@ import { atlasExecuteGate } from "../exec/atlasGate.js";
 import { getWorkflowHandler, workflowCatalogAll } from "../../workflows/registry.js";
 
 // Build a fast lookup set of all canonical workflow keys (WF-001 … WF-106+)
-const CANONICAL_WORKFLOW_KEYS = new Set(workflowCatalogAll.map((w) => w.id));
+const CANONICAL_WORKFLOW_KEYS = new Set<string>(workflowCatalogAll.map((w) => w.id));
 
 type IntentPayload = {
   requestedBy?: unknown;

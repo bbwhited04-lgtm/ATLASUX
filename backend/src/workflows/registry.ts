@@ -1,5 +1,4 @@
 import { prisma } from "../db/prisma.js";
-import { n8nWorkflows, type AtlasWorkflowDef } from "./n8n/manifest.js";
 import { getKbContext } from "../core/kb/getKbContext.js";
 import { runLLM, type AuditHook } from "../core/engine/brainllm.js";
 import { agentRegistry } from "../agents/registry.js";
@@ -56,19 +55,8 @@ export const workflowCatalog = [
   { id: "WF-140", name: "Local Vision Task (Vision)",       description: "Queue a browser task for the local vision agent — executes on user's machine via CDP + Claude Vision.", ownerAgent: "vision" },
 ] as const;
 
-export { n8nWorkflows };
-
 export const workflowCatalogAll = [
   ...workflowCatalog,
-  ...n8nWorkflows.map((w) => ({
-    id: w.id,
-    name: w.name,
-    description: w.description,
-    ownerAgent: w.ownerAgent as string,
-    category: w.category,
-    trigger: w.trigger,
-    humanInLoop: w.humanInLoop,
-  })),
 ];
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -188,154 +176,6 @@ async function safeLLM(
   }
 }
 
-// ── n8n generic handler factory ───────────────────────────────────────────────
-
-function createN8nHandler(def: AtlasWorkflowDef): WorkflowHandler {
-  return async (ctx) => {
-    await writeStepAudit(ctx, `${def.id}.start`, `Starting ${def.name}`);
-
-    // 1. Pull KB for the owner agent + workflow topic
-    const kb = await getKbContext({
-      tenantId: ctx.tenantId,
-      agentId: def.ownerAgent,
-      query: String(ctx.input?.topic ?? ctx.input?.subject ?? def.description).slice(0, 200),
-      intentId: ctx.intentId,
-      requestedBy: ctx.requestedBy,
-    });
-
-    // 2. LLM reasoning
-    const route =
-      def.category === "research" || def.category === "analytics"
-        ? ("LONG_CONTEXT_SUMMARY" as const)
-        : ("ORCHESTRATION_REASONING" as const);
-
-    const systemPrompt = [
-      `You are ${def.ownerAgent.toUpperCase()}, an Atlas UX AI agent.`,
-      `Workflow: ${def.name} (${def.id})`,
-      `Description: ${def.description}`,
-      `Category: ${def.category} | Trigger: ${def.trigger}`,
-      kb.text
-        ? `\n\nKnowledge Base (${kb.items.length} docs, ${kb.totalChars} chars):\n${kb.text}`
-        : "\n\n(No KB docs loaded for this agent yet — upload docs with slug prefix agent/${def.ownerAgent}/ in the KB hub.)",
-    ].join("\n");
-
-    const userPrompt = [
-      `Execute "${def.name}".`,
-      Object.keys(ctx.input ?? {}).length > 0
-        ? `Input:\n${JSON.stringify(ctx.input, null, 2)}`
-        : "No specific input. Apply defaults from your KB and role.",
-      def.humanInLoop
-        ? "\nThis workflow requires human approval before any external action. Draft output only — do not act."
-        : "",
-      "\nRespond with: (1) what you did, (2) the generated content or decision, (3) next recommended steps.",
-    ].join("\n");
-
-    const llmText = await safeLLM(ctx, {
-      agent: def.ownerAgent.toUpperCase(),
-      purpose: `wf_${def.id}`,
-      route,
-      system: systemPrompt,
-      user: userPrompt,
-    });
-
-    await writeStepAudit(ctx, `${def.id}.llm`, `LLM output: ${llmText.slice(0, 120)}…`, {
-      chars: llmText.length,
-      kbItems: kb.items.length,
-    });
-
-    // Priority 2: Truth compliance check before any external output
-    await prisma.auditLog.create({
-      data: {
-        tenantId: ctx.tenantId,
-        actorUserId: null,
-        actorExternalId: def.ownerAgent,
-        actorType: "system",
-        level: "info",
-        action: "TRUTH_COMPLIANCE_CHECK",
-        entityType: "intent",
-        entityId: ctx.intentId,
-        message: `[${def.id}] Truth compliance: ${kb.items.length} KB docs, ${llmText.length} chars, humanInLoop=${def.humanInLoop}. Status: PASS`,
-        meta: {
-          workflowId: def.id,
-          ownerAgent: def.ownerAgent,
-          kbItems: kb.items.length,
-          humanInLoop: def.humanInLoop,
-          llmChars: llmText.length,
-          passed: true,
-        },
-        timestamp: new Date(),
-      },
-    }).catch(() => null);
-
-    // 3. Queue result email to Atlas (CEO) + CC agent's direct leader
-    const { to: reportTo, cc: reportCc } = getReportRecipients(def.ownerAgent);
-    const reportSubject = `[${def.id}] ${def.name} — Run Complete`;
-    const reportText = [
-      `Workflow: ${def.name}`,
-      `Agent:    ${def.ownerAgent.toUpperCase()}`,
-      `Trace:    ${ctx.traceId ?? ctx.intentId}`,
-      `KB docs:  ${kb.items.length}`,
-      def.humanInLoop ? "\n⚠️ HUMAN APPROVAL REQUIRED before external action.\n" : "",
-      `\n${llmText}`,
-    ].join("\n");
-
-    await queueEmail(ctx, {
-      to: reportTo,
-      fromAgent: def.ownerAgent,
-      subject: reportSubject,
-      text: reportText,
-    });
-    for (const cc of reportCc) {
-      await queueEmail(ctx, {
-        to: cc,
-        fromAgent: def.ownerAgent,
-        subject: `[CC] ${reportSubject}`,
-        text: reportText,
-      });
-    }
-
-    // Priority 3: Write WORKFLOW_COMPLETE audit entry
-    await writeStepAudit(ctx, `${def.id}.complete`, `${def.name} — workflow complete`, {
-      kbItems: kb.items.length,
-      llmChars: llmText.length,
-      humanInLoop: def.humanInLoop,
-    });
-
-    // Priority 3: Ledger entry for compute (token spend)
-    const estimatedCents = Math.max(1, Math.round(llmText.length / 100)); // ~1 cent per 100 chars
-    await prisma.ledgerEntry.create({
-      data: {
-        tenantId: ctx.tenantId,
-        entryType: "debit",
-        category: "token_spend",
-        amountCents: BigInt(estimatedCents),
-        description: `Workflow ${def.id} (${def.name}) — LLM compute`,
-        reference_type: "intent",
-        reference_id: ctx.intentId,
-        run_id: ctx.traceId ?? ctx.intentId,
-        meta: {
-          workflowId: def.id,
-          ownerAgent: def.ownerAgent,
-          kbItems: kb.items.length,
-          llmChars: llmText.length,
-        },
-      },
-    }).catch(() => null);
-
-    return {
-      ok: true,
-      message: `${def.name} executed`,
-      output: {
-        workflowId: def.id,
-        ownerAgent: def.ownerAgent,
-        humanInLoop: def.humanInLoop,
-        kbItems: kb.items.length,
-        llmChars: llmText.length,
-        summary: llmText.slice(0, 400),
-      },
-    };
-  };
-}
 
 // ── Core workflow handlers ────────────────────────────────────────────────────
 
@@ -1012,12 +852,6 @@ handlers["WF-103"] = createPlatformIntelHandler("Facebook Ads", "Facebook Ads tr
 handlers["WF-104"] = createPlatformIntelHandler("Instagram", "Instagram trending Reels hashtags visual content creators");
 handlers["WF-105"] = createPlatformIntelHandler("YouTube", "YouTube trending videos AI automation creators topics 2026");
 
-// ── Auto-register all n8n workflows ──────────────────────────────────────────
-for (const def of n8nWorkflows) {
-  if (!handlers[def.id]) {
-    handlers[def.id] = createN8nHandler(def);
-  }
-}
 
 // ── WF-107 Atlas Tool Discovery & Proposal ────────────────────────────────────
 // Atlas reviews every agent's SKILL.md, identifies tool gaps, generates a
