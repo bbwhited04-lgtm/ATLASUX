@@ -2571,7 +2571,7 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
   return async (ctx) => {
     await writeStepAudit(ctx, `${ctx.workflowId}.start`, `Postiz ${platform} publish starting`);
 
-    let caption = String(ctx.input?.caption ?? ctx.input?.content ?? ctx.input?.text ?? "").trim();
+    let caption = String(ctx.input?.caption ?? ctx.input?.Caption ?? ctx.input?.content ?? ctx.input?.Content ?? ctx.input?.text ?? ctx.input?.Text ?? "").trim();
 
     // If no manual caption, generate one from intel + LLM
     if (!caption) {
