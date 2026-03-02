@@ -27,11 +27,70 @@ type WorkflowItem = {
 };
 
 const DEFAULT_WORKFLOWS: WorkflowItem[] = [
-  { id: "WF-001", name: "Support Intake (Cheryl)", description: "Create ticket → classify → acknowledge → route → audit." },
-  { id: "WF-002", name: "Support Escalation (Cheryl)", description: "Package escalation packet and route to the correct executive owner." },
-  { id: "WF-010", name: "Daily Executive Brief (Binky)", description: "Daily intel digest with internal traceability." },
-  { id: "WF-020", name: "Engine Run Smoke Test (Atlas)", description: "Minimal end-to-end cloud surface verification." },
-  { id: "WF-021", name: "Bootstrap Atlas (Atlas)", description: "Boot → discover agents → seed tasks → queue boot email → await command." },
+  // ── Support & Operations ──────────────────────────────────────────────────
+  { id: "WF-001", name: "Support Intake (Cheryl)",                    agent_key: "cheryl",   description: "Create ticket → classify → acknowledge → route → audit." },
+  { id: "WF-002", name: "Support Escalation (Cheryl)",                agent_key: "cheryl",   description: "Package escalation and route to executive owner." },
+  { id: "WF-010", name: "Daily Executive Brief (Binky)",              agent_key: "binky",    description: "Daily intel digest with traceability." },
+  { id: "WF-020", name: "Engine Run Smoke Test (Atlas)",              agent_key: "atlas",    description: "Minimal end-to-end cloud surface verification." },
+  { id: "WF-021", name: "Bootstrap Atlas (Atlas)",                    agent_key: "atlas",    description: "Boot → discover agents → load KB → seed tasks → queue boot email → await command." },
+  // ── Platform Intel Sweeps (WF-093–WF-106) ────────────────────────────────
+  { id: "WF-093", name: "X (Twitter) Platform Intel (Kelly)",         agent_key: "kelly",    description: "Daily X/Twitter trend sweep — trending hashtags, viral content, tech startup chatter." },
+  { id: "WF-094", name: "Facebook Platform Intel (Fran)",             agent_key: "fran",     description: "Daily Facebook trend sweep — trending topics, small business Pages & Groups activity." },
+  { id: "WF-095", name: "Threads Platform Intel (Dwight)",            agent_key: "dwight",   description: "Daily Threads trend sweep — trending topics, creator conversations, Meta ecosystem." },
+  { id: "WF-096", name: "TikTok Platform Intel (Timmy)",              agent_key: "timmy",    description: "Daily TikTok trend sweep — trending hashtags, sounds, viral video formats." },
+  { id: "WF-097", name: "Tumblr Platform Intel (Terry)",              agent_key: "terry",    description: "Daily Tumblr trend sweep — trending tags, creative posts, aesthetic content." },
+  { id: "WF-098", name: "Pinterest Platform Intel (Cornwall)",        agent_key: "cornwall", description: "Daily Pinterest trend sweep — trending pins, boards, visual inspiration ideas." },
+  { id: "WF-099", name: "LinkedIn Platform Intel (Link)",             agent_key: "link",     description: "Daily LinkedIn trend sweep — trending professional topics, B2B posts, business content." },
+  { id: "WF-100", name: "Alignable Platform Intel (Emma)",            agent_key: "emma",     description: "Daily Alignable trend sweep — local business topics, community discussions." },
+  { id: "WF-101", name: "Reddit Platform Intel (Donna)",              agent_key: "donna",    description: "Daily Reddit trend sweep — hot threads, AI/automation/small-business subreddits." },
+  { id: "WF-102", name: "Blog SEO Platform Intel (Reynolds)",         agent_key: "reynolds", description: "Daily SEO trend sweep — trending blog topics, AI/automation/small-business keywords." },
+  { id: "WF-103", name: "Facebook Ads Platform Intel (Penny)",        agent_key: "penny",    description: "Daily Facebook Ads trend sweep — trending ad formats, winning creatives, small biz ads." },
+  { id: "WF-104", name: "Instagram Platform Intel (Archy)",           agent_key: "archy",    description: "Daily Instagram trend sweep — trending Reels, hashtags, visual content, creators." },
+  { id: "WF-105", name: "YouTube Platform Intel (Venny)",             agent_key: "venny",    description: "Daily YouTube trend sweep — trending videos, AI/automation creators, topic analysis." },
+  { id: "WF-106", name: "Atlas Daily Aggregation & Task Assignment",  agent_key: "atlas",    description: "Synthesize all 13 platform intel reports → unified packet → per-agent task orders → emails." },
+  // ── Atlas Tools & Content ─────────────────────────────────────────────────
+  { id: "WF-107", name: "Atlas Tool Discovery & Proposal",            agent_key: "atlas",    description: "Look inside (agent gaps) + look outside (SERP external tools) → LLM proposals → email report." },
+  { id: "WF-108", name: "Reynolds Blog Writer & Publisher",           agent_key: "reynolds", description: "SERP research → LLM drafts full blog post → publishes to KB → emails confirmation." },
+  // ── YouTube & Video ───────────────────────────────────────────────────────
+  { id: "WF-110", name: "Venny YouTube Video Scraper & KB Ingest",    agent_key: "venny",    description: "Search YouTube by keyword/channel → pull metadata + transcripts → store in KB." },
+  { id: "WF-111", name: "Venny YouTube Shorts Auto-Publisher",        agent_key: "venny",    description: "Download Victor's exported video from OneDrive → upload to YouTube via Data API v3." },
+  // ── Lucy Reception (WF-112–WF-118) ───────────────────────────────────────
+  { id: "WF-112", name: "Lucy Morning Reception Open",                agent_key: "lucy",     description: "Open reception → check voicemails → sync calendar → morning summary to Atlas." },
+  { id: "WF-113", name: "Lucy Inbound Call Triage & Routing",         agent_key: "lucy",     description: "Greet caller → identify purpose → route to agent/executive → log to audit." },
+  { id: "WF-114", name: "Lucy Appointment Booking",                   agent_key: "lucy",     description: "Book via Bookings → check conflicts → confirm parties → log to CRM." },
+  { id: "WF-115", name: "Lucy Voicemail Transcription",               agent_key: "lucy",     description: "Transcribe voicemail → summarize → deliver to recipient → audit log." },
+  { id: "WF-116", name: "Lucy Lead Capture & CRM",                    agent_key: "lucy",     description: "Capture lead info from call/chat/email → CRM entry → route to Mercer." },
+  { id: "WF-117", name: "Lucy End-of-Day Reception Summary",          agent_key: "lucy",     description: "Compile daily log → calls, bookings, leads, messages → summary email to Atlas." },
+  { id: "WF-118", name: "Lucy Chat Widget First Response",            agent_key: "lucy",     description: "Greet chat visitor → identify intent → FAQ or escalate to Cheryl/specialist." },
+  // ── Nightly & Weekly Sweeps ───────────────────────────────────────────────
+  { id: "WF-119", name: "Nightly Agent Memory Log",                   agent_key: "atlas",    description: "Each agent logs a summary of their daily activity to memory for future recall." },
+  { id: "WF-120", name: "Brand Mention Sweep (Sunday)",               agent_key: "sunday",   description: "Weekly brand awareness sweep: web + X + Reddit for Atlas UX, atlasux, Dead App Corp." },
+  { id: "WF-121", name: "Competitor Intel Sweep (Archy)",             agent_key: "archy",    description: "Weekly competitive landscape analysis: web search for AI employee platforms." },
+  { id: "WF-122", name: "SEO Rank Tracker (Reynolds)",                agent_key: "reynolds", description: "Weekly SEO check: search target keywords, track Atlas UX ranking position." },
+  { id: "WF-123", name: "Lead Enrichment (Mercer)",                   agent_key: "mercer",   description: "On-demand lead enrichment: web search company/contact, LLM profile, update CRM." },
+  // ── Browser & Vision ──────────────────────────────────────────────────────
+  { id: "WF-130", name: "Browser Task Execution (Atlas)",             agent_key: "atlas",    description: "Governed headless browser automation — navigate, extract, interact with web pages." },
+  { id: "WF-131", name: "Browser Session Resume (Atlas)",             agent_key: "atlas",    description: "Resume a paused browser session after decision memo approval for HIGH-risk action." },
+  { id: "WF-140", name: "Local Vision Task (Vision)",                 agent_key: "vision",   description: "Queue a browser task for the local vision agent — executes on user's machine via CDP." },
+  // ── Postiz Social Publishing (WF-200 series) ─────────────────────────────
+  { id: "WF-200", name: "TikTok Publish via Postiz (Timmy)",          agent_key: "timmy",    description: "Publish a TikTok post via Postiz API — caption, hashtags, privacy settings." },
+  { id: "WF-201", name: "X (Twitter) Publish via Postiz (Kelly)",     agent_key: "kelly",    description: "Publish a tweet/post to X via Postiz API." },
+  { id: "WF-202", name: "Facebook Publish via Postiz (Fran)",         agent_key: "fran",     description: "Publish a Facebook Page post via Postiz API." },
+  { id: "WF-203", name: "Reddit Publish via Postiz (Donna)",          agent_key: "donna",    description: "Publish a Reddit post via Postiz API — subreddit, title, content." },
+  { id: "WF-204", name: "Threads Publish via Postiz (Dwight)",        agent_key: "dwight",   description: "Publish a Threads post via Postiz API." },
+  { id: "WF-205", name: "LinkedIn Publish via Postiz (Link)",         agent_key: "link",     description: "Publish a LinkedIn post via Postiz API." },
+  { id: "WF-206", name: "Pinterest Publish via Postiz (Cornwall)",    agent_key: "cornwall", description: "Publish a pin to Pinterest via Postiz API — title, board, image." },
+  { id: "WF-207", name: "Tumblr Publish via Postiz (Terry)",          agent_key: "terry",    description: "Publish a Tumblr post via Postiz API." },
+  { id: "WF-208", name: "YouTube Publish via Postiz (Venny)",         agent_key: "venny",    description: "Publish a YouTube Short or video via Postiz API — title, tags, type." },
+  { id: "WF-209", name: "Mastodon Publish via Postiz (Emma)",         agent_key: "emma",     description: "Publish a Mastodon toot via Postiz API." },
+  { id: "WF-210", name: "Instagram Publish via Postiz (Archy)",       agent_key: "archy",    description: "Publish an Instagram post/reel via Postiz API." },
+  { id: "WF-211", name: "Medium Publish via Postiz (Reynolds)",       agent_key: "reynolds", description: "Publish an article to Medium via Postiz API — title, subtitle, tags." },
+  { id: "WF-212", name: "Cross-Platform Publish via Postiz (Sunday)", agent_key: "sunday",   description: "Publish content to multiple platforms at once — Sunday coordinates distribution." },
+  // ── Postiz Analytics (WF-220 series) ──────────────────────────────────────
+  { id: "WF-220", name: "TikTok Analytics Report (Timmy)",            agent_key: "timmy",    description: "Pull TikTok analytics from Postiz — views, engagement, 4-quadrant diagnostic." },
+  { id: "WF-221", name: "X Analytics Report (Kelly)",                 agent_key: "kelly",    description: "Pull X/Twitter analytics from Postiz — impressions, engagement, diagnostic." },
+  { id: "WF-222", name: "Facebook Analytics Report (Fran)",           agent_key: "fran",     description: "Pull Facebook analytics from Postiz — reach, engagement, diagnostic." },
+  { id: "WF-223", name: "Cross-Platform Analytics (Sunday)",          agent_key: "sunday",   description: "Pull analytics for all connected platforms — summary dashboard with diagnostics." },
 ];
 
 export function WorkflowsHub() {
@@ -253,12 +312,15 @@ export function WorkflowsHub() {
               <option value="terry">Terry ~ Tumblr Agent</option>
               <option value="timmy">Timmy ~ Tiktok Agent</option>
               <option value="venny">Venny ~ Videographer</option>
-              <option value="claire">Claire ~ Agent</option>
-              <option value="daily_intel">Daily Intel ~ Shared Inbox</option>
-              <option value="petra">Petra ~ Coordinator</option>
-              <option value="porter">Porter ~ Portal Manager</option>
-              <option value="sandy">Sandy ~ Bookings</option>
-              <option value="victor">Victor ~ Video Production Specialist</option>
+              <option value="claire">Claire ~ Calendar & Scheduling</option>
+              <option value="daily-intel">Daily-Intel ~ Intel Aggregator</option>
+              <option value="frank">Frank ~ Forms & Data</option>
+              <option value="lucy">Lucy ~ Receptionist</option>
+              <option value="petra">Petra ~ Project Manager</option>
+              <option value="porter">Porter ~ SharePoint Manager</option>
+              <option value="sandy">Sandy ~ Bookings & Appointments</option>
+              <option value="victor">Victor ~ Video Production</option>
+              <option value="vision">Vision ~ Local Browser Agent</option>
             </select>
           </div>
 
