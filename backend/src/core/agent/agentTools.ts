@@ -36,8 +36,8 @@
  *   excel_parse              — Parse .xlsx files via SheetJS
  *   dropbox_files            — Dropbox file list/search via Dropbox OAuth
  *   x_analytics              — X/Twitter tweet metrics and analytics
- *   tiktok_post              — Post TikTok slideshows/videos via Postiz
- *   tiktok_analytics         — TikTok platform + per-post metrics via Postiz (4-quadrant diagnostic)
+ *   postiz_publish           — Publish to any of 31 social platforms via Postiz (all social agents)
+ *   postiz_analytics         — Platform + per-post metrics for any Postiz channel (4-quadrant diagnostic)
  *
  * Usage: resolveAgentTools(tenantId, query, agentId) — returns formatted context string.
  */
@@ -1064,23 +1064,23 @@ const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   "daily-intel": ["calendar", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio"],
 
   // ── Content & Comms ──────────────────────────────────────────────────
-  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision", "hackerNews", "arxiv", "composio"],
-  archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio"],
-  venny:       ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1"],
-  victor:      ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate"],
+  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics"],
+  archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics"],
+  venny:       ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1", "postizPublish", "postizAnalytics"],
+  victor:      ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate", "postizPublish", "postizAnalytics"],
   reynolds:    ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "hackerNews"],
 
   // ── Social Publishers ────────────────────────────────────────────────
-  kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch", "xAnalytics"],
-  fran:        ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
-  dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
-  timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "tiktokPost", "tiktokAnalytics"],
-  terry:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
-  cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
-  link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "discord"],
-  emma:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser"],
-  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate", "redditSearch", "browser", "hackerNews"],
-  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "webSearch", "browser", "composio"],
+  kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch", "xAnalytics", "postizPublish", "postizAnalytics"],
+  fran:        ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics"],
+  dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics"],
+  timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics"],
+  terry:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics"],
+  cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics"],
+  link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "discord", "postizPublish", "postizAnalytics"],
+  emma:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics"],
+  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate", "redditSearch", "browser", "hackerNews", "postizPublish", "postizAnalytics"],
+  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "webSearch", "browser", "composio", "postizPublish", "postizAnalytics"],
 };
 
 export type ToolNeeds = {
@@ -1124,8 +1124,8 @@ export type ToolNeeds = {
   excel:           boolean;
   dropbox:         boolean;
   xAnalytics:      boolean;
-  tiktokPost:      boolean;
-  tiktokAnalytics: boolean;
+  postizPublish:   boolean;
+  postizAnalytics: boolean;
   query:          string;
 };
 
@@ -1322,7 +1322,7 @@ export async function resolveAgentTools(
 
   // Collect modular tool keys that fired
   const modularKeys = Object.entries(needs)
-    .filter(([k, v]) => v === true && ["hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "tiktokPost", "tiktokAnalytics"].includes(k))
+    .filter(([k, v]) => v === true && ["hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "postizPublish", "postizAnalytics"].includes(k))
     .map(([k]) => k);
 
   const jobs: Promise<ToolResult | null>[] = [

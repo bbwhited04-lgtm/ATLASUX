@@ -23,9 +23,9 @@ import { discordSendTool }    from "./discordSend.js";
 import { telegramFullTool }   from "./telegramFull.js";
 import { excelParseTool }     from "./excelParse.js";
 import { dropboxFilesTool }   from "./dropboxFiles.js";
-import { xAnalyticsTool }     from "./xAnalytics.js";
-import { tiktokPostTool }     from "./tiktokPost.js";
-import { tiktokAnalyticsTool } from "./tiktokAnalytics.js";
+import { xAnalyticsTool }       from "./xAnalytics.js";
+import { postizPublishTool }    from "./postizPublish.js";
+import { postizAnalyticsTool }  from "./postizAnalytics.js";
 
 // ── Tool registry ────────────────────────────────────────────────────────────
 
@@ -41,8 +41,8 @@ const ALL_TOOLS: ToolDefinition[] = [
   excelParseTool,
   dropboxFilesTool,
   xAnalyticsTool,
-  tiktokPostTool,
-  tiktokAnalyticsTool,
+  postizPublishTool,
+  postizAnalyticsTool,
 ];
 
 export function getAllTools(): ToolDefinition[] {
