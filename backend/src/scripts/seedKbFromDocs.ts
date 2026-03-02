@@ -35,6 +35,17 @@ function categorize(slug: string): string {
   if (slug.startsWith("law-")) return "law";
   if (slug.startsWith("edu-")) return "education";
   if (slug.startsWith("adv-")) return "advanced";
+  // HLE benchmark domain knowledge docs
+  if (slug.startsWith("mathematics")) return "hle-mathematics";
+  if (slug.startsWith("physics")) return "hle-physics";
+  if (slug.startsWith("biology") || slug.startsWith("medicine")) return "hle-biology-medicine";
+  if (slug.startsWith("chemistry")) return "hle-chemistry";
+  if (slug.startsWith("computer-science") || slug.startsWith("computer_science")) return "hle-computer-science";
+  if (slug.startsWith("engineering")) return "hle-engineering";
+  if (slug.startsWith("humanities")) return "hle-humanities";
+  if (slug.startsWith("linguistics")) return "hle-linguistics";
+  if (slug.startsWith("hle")) return "hle-benchmark";
+  if (slug.startsWith("atlas_workflow") || slug.startsWith("atlas-workflow")) return "atlas-operations";
   // Existing categories from the file content
   const categories: Record<string, string> = {
     "saas-metrics": "business",

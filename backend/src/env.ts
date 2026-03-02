@@ -111,6 +111,8 @@ const EnvSchema = z.object({
 
   // Discord
   DISCORD_PUBLIC_KEY: z.string().optional(),
+  DISCORD_BOT_TOKEN: z.string().optional(),
+  DISCORD_DEFAULT_CHANNEL_ID: z.string().optional(),
 
   // Engine + safety
   ENGINE_ENABLED: z.string().optional(),
@@ -170,6 +172,15 @@ const EnvSchema = z.object({
   SQUARE_APP_ID: z.string().optional(),
   SQUARE_APP_SECRET: z.string().optional(),
   SQUARE_REDIRECT_URI: z.string().optional(),
+
+  // NVIDIA NIM (Kimi 2.5 and other NVIDIA-hosted models)
+  NVIDIA_API_KEY: z.string().optional(),
+
+  // Swarms.ai (multi-agent orchestration API)
+  SWARMS_API_KEY: z.string().optional(),
+
+  // Composio (23 sub-tool search integrations)
+  COMPOSIO_API_KEY: z.string().optional(),
 
   // Web search providers (multi-provider fallback: You.com → Tavily → SerpAPI)
   SERP_API_KEY:    z.string().optional(),

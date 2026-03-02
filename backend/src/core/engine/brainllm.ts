@@ -15,6 +15,8 @@
  *   - OPENROUTER_API_KEY
  *   - CEREBRAS_API_KEY
  *   - WORKERS_API_KEY   (Cloudflare Workers AI)
+ *   - NVIDIA_API_KEY    (NVIDIA NIM — Kimi 2.5 / Moonshot AI)
+ *   - SWARMS_API_KEY   (Swarms.ai — multi-agent orchestration)
  *
  * Optional guardrail ENVs seen in your .env:
  *   - AUTO_SPEND_LIMIT          (number, USD/day)
@@ -43,7 +45,9 @@ export type LlmProvider =
   | "deepseek"
   | "openrouter"
   | "cerebras"
-  | "cloudflare_workers_ai";
+  | "cloudflare_workers_ai"
+  | "nvidia_nim"
+  | "swarms";
 
 export interface LlmMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -203,6 +207,8 @@ const ALLOWLIST: { providers: Set<LlmProvider>; models: Set<string> } = {
     "openrouter",
     "cerebras",
     "cloudflare_workers_ai",
+    "nvidia_nim",
+    "swarms",
   ]),
   models: new Set<string>([
     // Gemini via Vercel or direct
@@ -222,6 +228,11 @@ const ALLOWLIST: { providers: Set<LlmProvider>; models: Set<string> } = {
     "cerebras/llama3.3-70b",
     // Cloudflare Workers AI model placeholders
     "cf/meta/llama",
+    // NVIDIA NIM (Kimi 2.5 — Moonshot AI via NVIDIA)
+    "moonshotai/kimi-k2-instruct",
+    // Swarms.ai (multi-model agent orchestration)
+    "swarms/gpt-4o",
+    "swarms/claude-sonnet-4-20250514",
   ]),
 };
 
@@ -232,28 +243,32 @@ const ALLOWLIST: { providers: Set<LlmProvider>; models: Set<string> } = {
 const ROUTES: Record<LlmRoute, RoutePlanItem[]> = {
   ORCHESTRATION_REASONING: [
     { provider: "vercel_ai_gateway", model: "google/gemini-2.0-flash", params: { temperature: 0.2, maxOutputTokens: 1200 } },
+    { provider: "nvidia_nim", model: "moonshotai/kimi-k2-instruct", params: { temperature: 0.2, maxOutputTokens: 1200 } },
     { provider: "vercel_ai_gateway", model: "google/gemini-1.5-pro", params: { temperature: 0.25, maxOutputTokens: 1600 } },
     { provider: "openrouter", model: "openrouter/auto", params: { temperature: 0.25, maxOutputTokens: 1400 } },
     { provider: "cerebras", model: "cerebras/llama-4-scout-17b-16e-instruct", params: { temperature: 0.25, maxOutputTokens: 1200 } },
   ],
   LONG_CONTEXT_SUMMARY: [
     { provider: "vercel_ai_gateway", model: "google/gemini-1.5-pro", params: { temperature: 0.3, maxOutputTokens: 1600 } },
+    { provider: "nvidia_nim", model: "moonshotai/kimi-k2-instruct", params: { temperature: 0.3, maxOutputTokens: 1600 } },
     { provider: "vercel_ai_gateway", model: "google/gemini-2.0-flash", params: { temperature: 0.3, maxOutputTokens: 1600 } },
     { provider: "openrouter", model: "openrouter/auto", params: { temperature: 0.3, maxOutputTokens: 1600 } },
     { provider: "cerebras", model: "cerebras/llama-4-scout-17b-16e-instruct", params: { temperature: 0.3, maxOutputTokens: 1600 } },
   ],
   DRAFT_GENERATION_FAST: [
-    // If you add GROQ later, add it here.
     { provider: "cerebras", model: "cerebras/llama-4-scout-17b-16e-instruct", params: { temperature: 0.7, maxOutputTokens: 900 } },
+    { provider: "nvidia_nim", model: "moonshotai/kimi-k2-instruct", params: { temperature: 0.7, maxOutputTokens: 900 } },
     { provider: "vercel_ai_gateway", model: "google/gemini-2.0-flash", params: { temperature: 0.7, maxOutputTokens: 900 } },
     { provider: "openrouter", model: "openrouter/auto", params: { temperature: 0.7, maxOutputTokens: 900 } },
   ],
   CLASSIFY_EXTRACT_VALIDATE: [
     { provider: "vercel_ai_gateway", model: "google/gemini-2.0-flash", params: { temperature: 0.0, maxOutputTokens: 600 } },
     { provider: "cloudflare_workers_ai", model: "cf/meta/llama", params: { temperature: 0.0, maxOutputTokens: 600 } },
+    { provider: "swarms", model: "swarms/gpt-4o", params: { temperature: 0.0, maxOutputTokens: 600 } },
   ],
   EMERGENCY_FALLBACK_MINIMAL: [
     { provider: "cloudflare_workers_ai", model: "cf/meta/llama", params: { temperature: 0.0, maxOutputTokens: 400 } },
+    { provider: "swarms", model: "swarms/gpt-4o", params: { temperature: 0.0, maxOutputTokens: 400 } },
     { provider: "openrouter", model: "openrouter/free", params: { temperature: 0.0, maxOutputTokens: 400 } },
   ],
 };
@@ -346,6 +361,8 @@ const ENDPOINTS = {
   deepseek: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com/v1/chat/completions",
   openrouter: process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1/chat/completions",
   cerebras: process.env.CEREBRAS_BASE_URL || "https://api.cerebras.ai/v1/chat/completions",
+  nvidia: process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1/chat/completions",
+  swarms: "https://api.swarms.world/v1/agent/completions",
   geminiGenerate: (model: string) =>
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
   cloudflareWorkers: (accountId: string, model: string) =>
@@ -636,6 +653,10 @@ async function callProvider(args: {
       const cerebrasModel = args.model.startsWith("cerebras/") ? args.model.replace("cerebras/", "") : args.model;
       return callOpenAICompat("cerebras", cerebrasModel, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
     }
+    case "nvidia_nim":
+      return callOpenAICompat("nvidia", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+    case "swarms":
+      return callSwarms(args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
     default:
       throw new Error(`Unsupported provider: ${args.provider}`);
   }
@@ -646,7 +667,7 @@ async function callProvider(args: {
  * This covers: Vercel AI Gateway (OpenAI compat), OpenAI, DeepSeek, OpenRouter, Cerebras (if configured compat).
  */
 async function callOpenAICompat(
-  which: "vercel" | "openai" | "deepseek" | "openrouter" | "cerebras",
+  which: "vercel" | "openai" | "deepseek" | "openrouter" | "cerebras" | "nvidia",
   model: string,
   messages: LlmMessage[],
   temperature: number,
@@ -683,7 +704,7 @@ async function callOpenAICompat(
   };
 }
 
-function buildOpenAICompat(which: "vercel" | "openai" | "deepseek" | "openrouter" | "cerebras"): { url: string; headers: Record<string, string> } {
+function buildOpenAICompat(which: "vercel" | "openai" | "deepseek" | "openrouter" | "cerebras" | "nvidia"): { url: string; headers: Record<string, string> } {
   if (which === "vercel") {
     const apiKey = getEnvOrThrow("VERCEL_AI_API_KEY");
     return {
@@ -710,6 +731,11 @@ function buildOpenAICompat(which: "vercel" | "openai" | "deepseek" | "openrouter
     if (process.env.OPENROUTER_APP_NAME) extra["X-Title"] = process.env.OPENROUTER_APP_NAME;
 
     return { url: ENDPOINTS.openrouter, headers: { Authorization: `Bearer ${apiKey}`, ...extra } };
+  }
+
+  if (which === "nvidia") {
+    const apiKey = getEnvOrThrow("NVIDIA_API_KEY");
+    return { url: ENDPOINTS.nvidia, headers: { Authorization: `Bearer ${apiKey}` } };
   }
 
   // cerebras
@@ -812,6 +838,63 @@ async function callCloudflareWorkers(
     raw?.result?.text ??
     raw?.response ??
     "";
+
+  return { text, raw };
+}
+
+/**
+ * Swarms.ai Agent Completions API.
+ * Non-standard format: uses agent_config + task instead of messages array.
+ * Auth via x-api-key header.
+ */
+async function callSwarms(
+  model: string,
+  messages: LlmMessage[],
+  temperature: number,
+  maxOutputTokens: number,
+  timeoutMs: number
+): Promise<ProviderCallResult> {
+  const apiKey = getEnvOrThrow("SWARMS_API_KEY");
+
+  // Strip "swarms/" prefix to get the underlying model name
+  const swarmsModel = model.startsWith("swarms/") ? model.replace("swarms/", "") : model;
+
+  // Convert messages array into Swarms format: system prompt + task
+  const systemMsgs = messages.filter(m => m.role === "system");
+  const userMsgs = messages.filter(m => m.role !== "system");
+  const systemPrompt = systemMsgs.map(m => m.content).join("\n\n") || "You are a helpful AI assistant.";
+  const task = userMsgs.map(m => m.content).join("\n\n");
+
+  const body = {
+    agent_config: {
+      agent_name: "atlas-engine",
+      system_prompt: systemPrompt,
+      model_name: swarmsModel,
+      role: "worker",
+      max_loops: 1,
+      max_tokens: maxOutputTokens,
+      temperature,
+    },
+    task,
+  };
+
+  const raw = await fetchJson(ENDPOINTS.swarms, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+    },
+    body: JSON.stringify(body),
+    timeoutMs,
+  });
+
+  // Swarms response format varies — try common fields
+  const text =
+    raw?.output ??
+    raw?.response ??
+    raw?.result ??
+    raw?.choices?.[0]?.message?.content ??
+    (typeof raw === "string" ? raw : "");
 
   return { text, raw };
 }

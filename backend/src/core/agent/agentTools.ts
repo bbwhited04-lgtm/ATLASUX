@@ -24,6 +24,19 @@
  *   search_x                 — search recent tweets on X (app-only bearer token)
  *   deep_research            — multi-query parallel research with cited report synthesis
  *
+ * Modular tools (from tools/ directory — see tools/toolRegistry.ts):
+ *   hacker_news_search       — HackerNews via Algolia API (public)
+ *   arxiv_search             — ArXiv paper search (public)
+ *   composio_search          — Composio 23 sub-tools (Amazon, DuckDuckGo, Finance, etc.)
+ *   gmail_read               — Gmail inbox via Google OAuth
+ *   google_calendar          — Google Calendar via Google OAuth
+ *   google_sheets            — Google Sheets read/write via Google OAuth
+ *   discord                  — Discord Bot send/read messages
+ *   telegram_full            — Telegram read history (extends existing send)
+ *   excel_parse              — Parse .xlsx files via SheetJS
+ *   dropbox_files            — Dropbox file list/search via Dropbox OAuth
+ *   x_analytics              — X/Twitter tweet metrics and analytics
+ *
  * Usage: resolveAgentTools(tenantId, query, agentId) — returns formatted context string.
  */
 
@@ -35,6 +48,7 @@ import { postTweet, searchRecentTweets } from "../../services/x.js";
 import { getMemory }                 from "./agentMemory.js";
 import { searchWeb, fetchUrlContent, searchReddit } from "../../lib/webSearch.js";
 import { runDeepResearch }                           from "../../lib/deepResearch.js";
+import { detectModularNeeds, resolveModularTools }   from "./tools/toolRegistry.js";
 
 export type ToolResult = {
   tool:   string;
@@ -1031,40 +1045,40 @@ const LOCAL_VISION_PATTERNS = [
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   // ── Executives ───────────────────────────────────────────────────────
-  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision"],
-  binky:       ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision"],
-  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision"],
-  tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory", "delegate"],
-  larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "telegram", "memory", "delegate"],
-  jenny:       ["calendar", "legal", "policy", "knowledge", "telegram", "memory", "delegate", "webSearch"],
-  benny:       ["calendar", "legal", "ipRegister", "knowledge", "telegram", "memory", "delegate", "webSearch"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics"],
+  binky:       ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "discord", "telegramFull"],
+  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull"],
+  tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory", "delegate", "gmailRead", "googleSheets", "excel", "dropbox"],
+  larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "telegram", "memory", "delegate", "composio", "dropbox"],
+  jenny:       ["calendar", "legal", "policy", "knowledge", "telegram", "memory", "delegate", "webSearch", "arxiv", "composio"],
+  benny:       ["calendar", "legal", "ipRegister", "knowledge", "telegram", "memory", "delegate", "webSearch", "composio"],
 
   // ── Ops & Support ────────────────────────────────────────────────────
-  petra:       ["calendar", "planner", "telegram", "memory", "delegate"],
-  mercer:      ["crm", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision"],
-  frank:       ["userProfile", "telegram", "memory", "delegate"],
-  sandy:       ["calendar", "email", "userProfile", "telegram", "memory", "delegate"],
-  claire:      ["calendar", "email", "telegram", "memory", "delegate"],
-  "daily-intel": ["calendar", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch"],
+  petra:       ["calendar", "planner", "telegram", "memory", "delegate", "googleCalendar", "googleSheets", "discord", "telegramFull"],
+  mercer:      ["crm", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "composio", "discord"],
+  frank:       ["userProfile", "telegram", "memory", "delegate", "telegramFull"],
+  sandy:       ["calendar", "email", "userProfile", "telegram", "memory", "delegate", "gmailRead", "googleCalendar"],
+  claire:      ["calendar", "email", "telegram", "memory", "delegate", "gmailRead", "googleCalendar"],
+  "daily-intel": ["calendar", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio"],
 
   // ── Content & Comms ──────────────────────────────────────────────────
-  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision"],
-  archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch"],
+  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision", "hackerNews", "arxiv", "composio"],
+  archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio"],
   venny:       ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1"],
   victor:      ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate"],
-  reynolds:    ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl"],
+  reynolds:    ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "hackerNews"],
 
   // ── Social Publishers ────────────────────────────────────────────────
-  kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch"],
+  kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch", "xAnalytics"],
   fran:        ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
   dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
   timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
   terry:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
   cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate", "browser"],
-  link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser"],
+  link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "discord"],
   emma:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser"],
-  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate", "redditSearch", "browser"],
-  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "webSearch", "browser"],
+  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate", "redditSearch", "browser", "hackerNews"],
+  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "webSearch", "browser", "composio"],
 };
 
 export type ToolNeeds = {
@@ -1096,6 +1110,18 @@ export type ToolNeeds = {
   deepResearch:   boolean;
   browser:        boolean;
   localVision:    boolean;
+  // Modular tools (from tools/ directory)
+  hackerNews:      boolean;
+  arxiv:           boolean;
+  composio:        boolean;
+  gmailRead:       boolean;
+  googleCalendar:  boolean;
+  googleSheets:    boolean;
+  discord:         boolean;
+  telegramFull:    boolean;
+  excel:           boolean;
+  dropbox:         boolean;
+  xAnalytics:      boolean;
   query:          string;
 };
 
@@ -1134,8 +1160,10 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     deepResearch:   can("deepResearch")   && DEEP_RESEARCH_PATTERNS.some(p => p.test(q)),
     browser:        can("browser")        && BROWSER_PATTERNS.some(p => p.test(q)),
     localVision:    can("localVision")    && LOCAL_VISION_PATTERNS.some(p => p.test(q)),
+    // Modular tools — delegated to tool registry
+    ...detectModularNeeds(q, allowed),
     query:          q,
-  };
+  } as ToolNeeds;
 }
 
 // ── Approved tools inventory (DB-backed, cached) ─────────────────────────────
@@ -1288,6 +1316,11 @@ export async function resolveAgentTools(
     return `[AGENT TOOL RESULTS]\nThe following live data was retrieved to answer this question accurately:\n\n### Tool: ${approvedResult.tool}\n_Retrieved: ${approvedResult.usedAt}_\n\n${approvedResult.data}`;
   }
 
+  // Collect modular tool keys that fired
+  const modularKeys = Object.entries(needs)
+    .filter(([k, v]) => v === true && ["hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics"].includes(k))
+    .map(([k]) => k);
+
   const jobs: Promise<ToolResult | null>[] = [
     needs.subscription ? getSubscriptionInfo(tenantId)                         : Promise.resolve(null),
     needs.team         ? getTeamMembers(tenantId)                              : Promise.resolve(null),
@@ -1320,7 +1353,16 @@ export async function resolveAgentTools(
     approvedToolsPromise,
   ];
 
-  const results = (await Promise.all(jobs)).filter(Boolean) as ToolResult[];
+  // Run legacy tools + modular tools in parallel
+  const [legacyResults, modularResults] = await Promise.all([
+    Promise.all(jobs),
+    resolveModularTools({ tenantId, agentId: aid, query: needs.query }, modularKeys),
+  ]);
+
+  const results = [
+    ...(legacyResults.filter(Boolean) as ToolResult[]),
+    ...modularResults,
+  ];
   if (!results.length) return "";
 
   const blocks = results.map(r =>

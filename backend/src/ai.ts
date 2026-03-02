@@ -135,5 +135,57 @@ export async function runChat(req: any, env: any) {
     throw new Error("No API key for Gemini. Set GEMINI_API_KEY or OPENROUTER_API_KEY.");
   }
 
+  // ── Swarms.ai (Agent Completions API) ────────────────────────────────────
+  if (provider === "swarms") {
+    const key = env.SWARMS_API_KEY;
+    if (!key) throw new Error("SWARMS_API_KEY not set");
+
+    const systemMsgs = messages.filter((m: any) => m.role === "system");
+    const userMsgs = messages.filter((m: any) => m.role !== "system");
+    const systemPrompt = systemMsgs.map((m: any) => m.content).join("\n\n") || "You are a helpful AI assistant.";
+    const task = userMsgs.map((m: any) => m.content).join("\n\n");
+
+    const swarmsModel = (req.model || "gpt-4o").replace(/^swarms\//, "");
+
+    const r = await fetch("https://api.swarms.world/v1/agent/completions", {
+      method: "POST",
+      headers: { "x-api-key": key, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agent_config: {
+          agent_name: "atlas-chat",
+          system_prompt: systemPrompt,
+          model_name: swarmsModel,
+          role: "worker",
+          max_loops: 1,
+          max_tokens: 8192,
+          temperature: 0.7,
+        },
+        task,
+      }),
+    });
+
+    const data = await r.json();
+    if (!r.ok) throw new Error(data?.error?.message || data?.detail || "Swarms error");
+
+    return { provider, model: swarmsModel, request_id: data.id || null, content: data.output ?? data.response ?? data.result ?? "" };
+  }
+
+  // ── NVIDIA NIM (Kimi 2.5 — OpenAI-compatible) ────────────────────────────
+  if (provider === "nvidia" || provider === "kimi") {
+    const key = env.NVIDIA_API_KEY;
+    if (!key) throw new Error("NVIDIA_API_KEY not set");
+
+    const r = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: req.model || "moonshotai/kimi-k2-instruct", messages, temperature: 0.7 }),
+    });
+
+    const data = await r.json();
+    if (!r.ok) throw new Error(data?.error?.message || "NVIDIA NIM error");
+
+    return { provider, model: data.model || "kimi-k2-instruct", request_id: data.id || null, content: data.choices?.[0]?.message?.content ?? "" };
+  }
+
   throw new Error(`Unsupported provider: ${provider}`);
 }
