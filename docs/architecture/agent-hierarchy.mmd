@@ -1,8 +1,3 @@
-# Atlas UX Agent Hierarchy
-
-> 38 agents across 5 tiers. Dashed borders = Deep Mode enabled (complex multi-step pipeline).
-
-```mermaid
 %%{ init: {
   "theme": "dark",
   "themeVariables": {
@@ -129,53 +124,3 @@ flowchart TD
 
   %% Deep mode indicators (dashed border)
   class atlas,binky,tina,larry,cheryl,sunday,mercer,petra deepmode
-```
-
-## Legend
-
-| Color | Tier | Agents |
-|-------|------|--------|
-| Purple | **Board** | Chairman |
-| Blue | **Executive** | Atlas, Binky, Cheryl |
-| Cyan | **Governor** | Tina (CFO), Larry (Corp Sec) |
-| Green | **Specialist** | Jenny (Legal), Benny (IP), Vision (Browser) |
-| Slate | **Subagent** | Mercer, Petra, Lucy, Daily-Intel, Archy, Frank, Porter, Victor, Claire, Sandy |
-| Pink | **Social Publisher** | Sunday, Venny, Penny, Donna, Cornwall, Link, Dwight, Reynolds, Emma, Fran, Kelly, Terry, Timmy |
-
-**Dashed border** = Deep Mode enabled (complex multi-step processing pipeline)
-
-## Reporting Lines
-
-| Leader | Direct Reports |
-|--------|---------------|
-| Chairman | Atlas |
-| Atlas | Binky, Tina, Larry, Jenny, Benny, Vision, Mercer, Petra, Lucy |
-| Binky | Cheryl, Daily-Intel, Archy, Sunday, Frank |
-| Sunday | Venny, Penny, Donna, Cornwall, Link, Dwight, Reynolds, Emma, Fran, Kelly, Terry, Timmy |
-| Larry | Porter |
-| Venny | Victor |
-| Emma | Claire, Sandy |
-
-## Delegation Model
-
-1. **Top-Down Task Assignment** — Atlas aggregates intel from all agents (WF-106) and assigns daily tasks
-2. **Advisory Only** — Sub-agents produce analysis, recommendations, and content drafts
-3. **Single Executor** — Only Atlas can execute external actions (enforced by SGL)
-4. **Escalation Chain** — High-risk decisions escalate through governors (Tina, Larry) to the Chairman
-
-## Agent Configuration Files
-
-Each agent's behavior is defined in markdown files under `Agents/`:
-
-```
-Agents/Atlas/SKILL.md           # What Atlas can do
-Agents/Atlas/SOUL.md            # Atlas personality
-Agents/Atlas/SOUL_LOCK.md       # Immutable personality constraints
-Agents/Atlas/ATLAS_POLICY.md    # Operational policies
-Agents/Atlas/MEMORY.md          # Persistent memory context
-
-Agents/Sub-Agents/KELLY/        # Each sub-agent has its own directory
-Agents/Sub-Agents/POLICY.md     # Shared sub-agent policies
-Agents/Sub-Agents/SOUL.md       # Shared sub-agent personality base
-Agents/Sub-Agents/SOUL-LOCK.md  # Shared immutable constraints
-```
