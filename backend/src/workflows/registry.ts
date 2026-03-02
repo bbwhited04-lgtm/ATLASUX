@@ -2481,7 +2481,18 @@ const POSTIZ_AGENT_PLATFORM: Record<string, string> = {
 };
 
 const POSTIZ_PLATFORM_SETTINGS: Record<string, Record<string, unknown>> = {
-  tiktok:    { __type: "tiktok", privacy_level: "SELF_ONLY", duet: false, stitch: false, comment: true, video_made_with_ai: true, content_posting_method: "UPLOAD" },
+  tiktok: {
+    __type: "tiktok",
+    privacy_level: "SELF_ONLY",
+    duet: false,
+    stitch: false,
+    comment: true,
+    autoAddMusic: "no",
+    brand_content_toggle: false,
+    brand_organic_toggle: false,
+    video_made_with_ai: true,
+    content_posting_method: "UPLOAD",
+  },
   x:         { __type: "x" },
   facebook:  { __type: "facebook" },
   reddit:    { __type: "reddit", subreddit: [] },
