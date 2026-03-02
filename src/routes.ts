@@ -57,6 +57,9 @@ const BlogPost = lazyRetry(() => import("./pages/blog/BlogPost"));
 const BlogCategory = lazyRetry(() => import("./pages/blog/BlogCategory"));
 const About = lazyRetry(() => import("./pages/About"));
 const Compare = lazyRetry(() => import("./pages/Compare"));
+const Support = lazyRetry(() => import("./pages/Support"));
+const Docs = lazyRetry(() => import("./pages/Docs"));
+const Configure = lazyRetry(() => import("./pages/Configure"));
 
 /** Minimal loading spinner shown while lazy chunks load */
 function LazyFallback() {
@@ -84,6 +87,9 @@ export const router = createHashRouter([
       { path: "/store", Component: () => React.createElement(S, null, React.createElement(Store)) },
       { path: "/product", Component: () => React.createElement(S, null, React.createElement(Product)) },
       { path: "/compare", Component: () => React.createElement(S, null, React.createElement(Compare)) },
+      { path: "/support", Component: () => React.createElement(S, null, React.createElement(Support)) },
+      { path: "/docs", Component: () => React.createElement(S, null, React.createElement(Docs)) },
+      { path: "/configure", Component: () => React.createElement(S, null, React.createElement(Configure)) },
       { path: "/blog", Component: () => React.createElement(S, null, React.createElement(BlogHome)) },
       { path: "/blog/category/:category", Component: () => React.createElement(S, null, React.createElement(BlogCategory)) },
       { path: "/blog/:slug", Component: () => React.createElement(S, null, React.createElement(BlogPost)) },

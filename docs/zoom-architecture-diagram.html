@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Atlas UX — Zoom Integration Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; }
+  .diagram { width: 1000px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 22px; color: #1a1a2e; margin-bottom: 8px; }
+  .subtitle { text-align: center; font-size: 13px; color: #666; margin-bottom: 40px; }
+
+  .row { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; position: relative; }
+  .box {
+    border: 2px solid #2563eb;
+    border-radius: 10px;
+    padding: 14px 20px;
+    text-align: center;
+    background: #eff6ff;
+    min-width: 160px;
+    position: relative;
+  }
+  .box.green { border-color: #16a34a; background: #f0fdf4; }
+  .box.purple { border-color: #7c3aed; background: #f5f3ff; }
+  .box.orange { border-color: #ea580c; background: #fff7ed; }
+  .box.gray { border-color: #6b7280; background: #f9fafb; }
+  .box.zoom { border-color: #2d8cff; background: #e8f4ff; }
+  .box .title { font-weight: 700; font-size: 13px; color: #1a1a2e; }
+  .box .detail { font-size: 10px; color: #555; margin-top: 4px; line-height: 1.4; }
+
+  .arrow-down { text-align: center; color: #2563eb; font-size: 24px; margin: 4px 0; }
+  .arrow-label { text-align: center; font-size: 10px; color: #666; margin: 2px 0 4px; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #94a3b8;
+    text-align: center;
+    margin: 20px 0 8px;
+  }
+
+  .connector-row {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin: 8px 0;
+  }
+  .connector-item { text-align: center; }
+  .connector-item .arrow { color: #2563eb; font-size: 20px; }
+  .connector-item .label { font-size: 9px; color: #666; }
+
+  .side-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 16px;
+  }
+  .side-arrow { color: #2563eb; font-size: 20px; }
+</style>
+</head>
+<body>
+<div class="diagram">
+  <h1>Atlas UX — Zoom Integration Architecture</h1>
+  <p class="subtitle">Technical Design for Zoom Marketplace Production Submission</p>
+
+  <!-- User Layer -->
+  <div class="section-label">User Layer</div>
+  <div class="row">
+    <div class="box gray">
+      <div class="title">User (Browser)</div>
+      <div class="detail">atlasux.cloud<br>React 18 SPA on Vercel</div>
+    </div>
+  </div>
+
+  <div class="arrow-down">↓</div>
+  <div class="arrow-label">HTTPS / JWT Auth</div>
+
+  <!-- Frontend -->
+  <div class="section-label">Frontend</div>
+  <div class="row">
+    <div class="box">
+      <div class="title">Vercel (Frontend)</div>
+      <div class="detail">React + TypeScript + Vite<br>Static SPA — atlasux.cloud</div>
+    </div>
+  </div>
+
+  <div class="arrow-down">↓</div>
+  <div class="arrow-label">REST API calls (/v1/*)</div>
+
+  <!-- Backend -->
+  <div class="section-label">Backend</div>
+  <div class="row">
+    <div class="box purple" style="min-width: 280px;">
+      <div class="title">Render (Backend API)</div>
+      <div class="detail">Node.js + Fastify 5 + TypeScript<br>atlas-ux.onrender.com<br>JWT Auth · Tenant Isolation · Audit Trail</div>
+    </div>
+  </div>
+
+  <!-- Connections from backend -->
+  <div class="connector-row">
+    <div class="connector-item">
+      <div class="arrow">↓</div>
+      <div class="label">OAuth 2.0 Flow</div>
+    </div>
+    <div class="connector-item">
+      <div class="arrow">↓</div>
+      <div class="label">Prisma ORM</div>
+    </div>
+    <div class="connector-item">
+      <div class="arrow">↓</div>
+      <div class="label">Webhook Events</div>
+    </div>
+    <div class="connector-item">
+      <div class="arrow">↓</div>
+      <div class="label">REST API</div>
+    </div>
+  </div>
+
+  <!-- Services Row -->
+  <div class="section-label">External Services &amp; Data</div>
+  <div class="row">
+    <div class="box zoom">
+      <div class="title">Zoom API</div>
+      <div class="detail">api.zoom.us/v2<br>OAuth 2.0 · Webhooks<br>Meetings · Recordings · Chat</div>
+    </div>
+    <div class="box green">
+      <div class="title">Supabase (PostgreSQL)</div>
+      <div class="detail">Database + RLS<br>Tokens · Audit Logs<br>Jobs · Decision Memos</div>
+    </div>
+    <div class="box orange">
+      <div class="title">Microsoft Graph API</div>
+      <div class="detail">Mail · Calendar · Teams<br>OneDrive · SharePoint</div>
+    </div>
+    <div class="box gray">
+      <div class="title">AI Providers</div>
+      <div class="detail">Gemini · OpenRouter<br>Cerebras · Cloudflare</div>
+    </div>
+  </div>
+
+  <!-- Zoom Detail -->
+  <div class="section-label" style="margin-top: 32px;">Zoom Data Flow</div>
+  <div class="row">
+    <div class="box zoom" style="min-width: 800px; text-align: left; padding: 20px 28px;">
+      <div class="title" style="margin-bottom: 10px;">Zoom Integration Flow</div>
+      <div class="detail" style="font-size: 11px; line-height: 2;">
+        <strong>1. Authorization:</strong> User clicks "Connect Zoom" → Redirect to zoom.us/oauth/authorize → User grants access → Callback to /v1/oauth/zoom/callback → Token exchange via zoom.us/oauth/token → Tokens stored encrypted in PostgreSQL<br>
+        <strong>2. API Usage:</strong> Backend calls api.zoom.us/v2 with Bearer token → Schedule meetings (POST /users/{userId}/meetings) · Read recordings (GET /meetings/{meetingId}/recordings) · Send chat (POST /chat/users/{userId}/messages)<br>
+        <strong>3. Webhooks:</strong> Zoom sends events to /v1/zoom/webhook → HMAC-SHA256 signature verification → Event logged to audit trail → Agent processes event (meeting started/ended, recording available)<br>
+        <strong>4. Token Refresh:</strong> Access tokens refreshed automatically using stored refresh_token before expiry<br>
+        <strong>5. Data Handling:</strong> No Zoom data stored beyond OAuth tokens and audit log entries. Meeting content processed in-memory and discarded after agent task completion.
+      </div>
+    </div>
+  </div>
+
+  <!-- Security -->
+  <div class="section-label" style="margin-top: 32px;">Security Controls</div>
+  <div class="row">
+    <div class="box gray" style="min-width: 800px; text-align: left; padding: 20px 28px;">
+      <div class="detail" style="font-size: 11px; line-height: 2;">
+        <strong>Authentication:</strong> JWT tokens with tenant-scoped claims · OAuth 2.0 authorization code flow for Zoom<br>
+        <strong>Authorization:</strong> Row-level security on all database tables · Role-based access (owner/admin/member)<br>
+        <strong>Secrets:</strong> API keys and OAuth tokens encrypted at rest · Never transmitted via email · Compliance stop on secret detection<br>
+        <strong>Audit:</strong> Every API call, agent action, and approval decision logged with timestamp, actor, and tenant ID<br>
+        <strong>Webhook Verification:</strong> HMAC-SHA256 signature validation on all incoming Zoom webhook events<br>
+        <strong>Network:</strong> All traffic over HTTPS/TLS 1.3 · No plaintext communication
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align: center; margin-top: 24px; font-size: 10px; color: #999;">
+    Atlas UX — Dead App Corp &copy; 2026 &nbsp;|&nbsp; atlasux.cloud &nbsp;|&nbsp; support@deadapp.info
+  </p>
+</div>
+</body>
+</html>
