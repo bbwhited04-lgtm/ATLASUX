@@ -41,3 +41,10 @@ services:
     rootDir: backend
     buildCommand: npm install && npm run build
     startCommand: npm run worker:social
+
+  - type: worker
+    name: atlasux-watchdog
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run worker:watchdog

@@ -3,55 +3,9 @@
  * Reads TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER from env.
  */
 import { prisma } from "../db/prisma.js";
+import { handleJobFailure } from "../lib/jobFailureHandler.js";
 
 const POLL_MS = Number(process.env.SMS_WORKER_INTERVAL_MS ?? 10_000);
-
-async function handleJobFailure(
-  jobId: string,
-  tenantId: string,
-  retryCount: number,
-  maxRetries: number,
-  errMsg: string,
-  jobType: string,
-) {
-  const now = new Date();
-  if (retryCount < maxRetries) {
-    const delayMs = 10_000 * Math.pow(2, retryCount);
-    const nextRetryAt = new Date(now.getTime() + delayMs);
-    await prisma.job.update({
-      where: { id: jobId },
-      data: {
-        status: "queued",
-        retryCount: retryCount + 1,
-        nextRetryAt,
-        error: { message: errMsg, attemptedAt: now.toISOString(), retryCount },
-        finishedAt: null,
-      },
-    });
-    console.log(`[${jobType}] Job ${jobId} will retry #${retryCount + 1} at ${nextRetryAt.toISOString()}`);
-  } else {
-    await prisma.job.update({
-      where: { id: jobId },
-      data: { status: "failed", finishedAt: now, error: { message: errMsg, exhausted: true, retryCount } },
-    });
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: null,
-        level: "error",
-        action: "JOB_EXHAUSTED_RETRIES",
-        entityType: "job",
-        entityId: jobId,
-        message: `${jobType} job ${jobId} exhausted ${maxRetries} retries: ${errMsg}`,
-        meta: { jobType, errMsg, retryCount },
-        timestamp: now,
-      },
-    }).catch(() => null);
-    console.error(`[${jobType}] Job ${jobId} permanently failed after ${maxRetries} retries: ${errMsg}`);
-  }
-}
 
 async function sendViaTwilio(to: string, message: string): Promise<{ sid: string }> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;

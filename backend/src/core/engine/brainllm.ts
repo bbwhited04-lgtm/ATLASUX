@@ -27,6 +27,8 @@
  * - Uses fetch() (Node 18+). If your runtime is older, add a fetch polyfill.
  */
 
+import * as circuitBreaker from "../../lib/circuitBreaker.js";
+
 export type LlmRoute =
   | "ORCHESTRATION_REASONING"
   | "LONG_CONTEXT_SUMMARY"
@@ -473,6 +475,11 @@ export async function runLLM(req: LlmRequest, auditHook: AuditHook = auditDefaul
     const provider = item.provider;
     const model = item.model;
 
+    // Circuit breaker: skip providers that are repeatedly failing
+    if (circuitBreaker.isOpen(provider)) {
+      continue;
+    }
+
     const temp = clamp(req.temperature ?? item.params.temperature, 0, ROUTE_CAPS[req.route].temperatureMax);
     const maxOut = clamp(req.maxOutputTokens ?? item.params.maxOutputTokens, 1, ROUTE_CAPS[req.route].maxOutputTokens);
 
@@ -519,6 +526,7 @@ export async function runLLM(req: LlmRequest, auditHook: AuditHook = auditDefaul
       };
 
       enforceGuardrailsPost(req.runId, usage);
+      circuitBreaker.recordSuccess(provider);
 
       await auditHook({
         event: "LLM_CALL_END",
@@ -558,6 +566,7 @@ export async function runLLM(req: LlmRequest, auditHook: AuditHook = auditDefaul
       }
 
       markFailure(req.runId);
+      circuitBreaker.recordFailure(provider);
 
       await auditHook({
         event: "LLM_CALL_FAIL",

@@ -1,18 +1,12 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
 import { workflowCatalog } from "../workflows/registry.js";
-import { n8nWorkflows } from "../workflows/n8n/manifest.js";
 
 // Build a single lookup map: workflow_key → { name, description, ownerAgent }
 const CANONICAL: Record<string, { name: string; description: string; ownerAgent: string }> = {};
 
-// 1. Registry workflows (WF-001, WF-002, WF-010, WF-020, WF-021)
+// Registry workflows only (native TypeScript handlers)
 for (const w of workflowCatalog) {
-  CANONICAL[w.id] = { name: w.name, description: w.description, ownerAgent: w.ownerAgent };
-}
-
-// 2. n8n manifest workflows (WF-022 … WF-091)
-for (const w of n8nWorkflows) {
   CANONICAL[w.id] = { name: w.name, description: w.description, ownerAgent: w.ownerAgent };
 }
 

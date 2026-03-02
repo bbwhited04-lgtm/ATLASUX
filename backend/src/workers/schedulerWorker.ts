@@ -549,6 +549,21 @@ async function tick() {
       await markFired(key, token);
     } catch (err: any) {
       console.error(`[scheduler] ✗ ${job.label}: ${err?.message ?? err}`);
+      await prisma.auditLog.create({
+        data: {
+          tenantId: RESOLVED_TENANT_ID,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: "scheduler",
+          level: "error",
+          action: "SCHEDULER_FIRE_FAILED",
+          entityType: "workflow",
+          entityId: job.workflowId,
+          message: `Scheduler failed to fire ${job.label}: ${err?.message ?? err}`,
+          meta: { jobId: job.id, workflowId: job.workflowId, agentId: job.agentId },
+          timestamp: new Date(),
+        },
+      }).catch(() => null);
     }
   }
 }
