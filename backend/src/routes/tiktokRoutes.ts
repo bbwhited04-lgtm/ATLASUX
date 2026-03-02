@@ -31,6 +31,7 @@ export const tiktokRoutes: FastifyPluginAsync = async (app) => {
     try {
       await prisma.auditLog.create({
         data: {
+          tenantId: null,
           actorExternalId: "tiktok-webhook",
           actorType: "system",
           action: `tiktok.${event}`,

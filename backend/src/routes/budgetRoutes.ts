@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { LedgerCategory } from "@prisma/client";
 
 function s(v: unknown): string | null {
@@ -16,14 +16,16 @@ async function computeSpend(
   category: LedgerCategory | null,
 ): Promise<number> {
   const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
-  const ledger = await prisma.ledgerEntry.findMany({
-    where: {
-      tenantId,
-      entryType: "debit",
-      occurredAt: { gte: since },
-      ...(category ? { category } : {}),
-    },
-    select: { amountCents: true },
+  const ledger = await withTenant(tenantId, async (tx) => {
+    return tx.ledgerEntry.findMany({
+      where: {
+        tenantId,
+        entryType: "debit",
+        occurredAt: { gte: since },
+        ...(category ? { category } : {}),
+      },
+      select: { amountCents: true },
+    });
   });
   return ledger.reduce((sum, l) => sum + Number(l.amountCents), 0);
 }
@@ -74,9 +76,11 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId as string | undefined;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
-    const budgets = await prisma.budget.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
+    const budgets = await withTenant(tenantId, async (tx) => {
+      return tx.budget.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: "desc" },
+      });
     });
 
     const enriched = await Promise.all(
@@ -107,15 +111,17 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
         ? (categoryRaw as LedgerCategory)
         : null;
 
-    const budget = await prisma.budget.create({
-      data: {
-        tenantId,
-        name: s(body.name)!,
-        category: category ?? undefined,
-        limitCents: BigInt(Math.round(Number(body.limitCents))),
-        periodDays: body.periodDays !== undefined ? Number(body.periodDays) : 30,
-        alertAt: body.alertAt !== undefined ? Number(body.alertAt) : 0.8,
-      },
+    const budget = await withTenant(tenantId, async (tx) => {
+      return tx.budget.create({
+        data: {
+          tenantId,
+          name: s(body.name)!,
+          category: category ?? undefined,
+          limitCents: BigInt(Math.round(Number(body.limitCents))),
+          periodDays: body.periodDays !== undefined ? Number(body.periodDays) : 30,
+          alertAt: body.alertAt !== undefined ? Number(body.alertAt) : 0.8,
+        },
+      });
     });
 
     const spentCents = await computeSpend(tenantId, budget.periodDays, budget.category);
@@ -130,49 +136,55 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
     const { id } = req.params as any;
     const body = (req.body ?? {}) as any;
 
-    const existing = await prisma.budget.findFirst({ where: { id, tenantId } });
-    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const existing = await tx.budget.findFirst({ where: { id, tenantId } });
+      if (!existing) return { notFound: true } as const;
 
-    let categoryUpdate: { category?: LedgerCategory | null } = {};
-    if (body.category !== undefined) {
-      const categoryRaw = s(body.category);
-      categoryUpdate.category =
-        categoryRaw && Object.values(LedgerCategory).includes(categoryRaw as LedgerCategory)
-          ? (categoryRaw as LedgerCategory)
-          : null;
-    }
+      let categoryUpdate: { category?: LedgerCategory | null } = {};
+      if (body.category !== undefined) {
+        const categoryRaw = s(body.category);
+        categoryUpdate.category =
+          categoryRaw && Object.values(LedgerCategory).includes(categoryRaw as LedgerCategory)
+            ? (categoryRaw as LedgerCategory)
+            : null;
+      }
 
-    const budget = await prisma.budget.update({
-      where: { id },
-      data: {
-        ...(body.name !== undefined ? { name: s(body.name) ?? existing.name } : {}),
-        ...categoryUpdate,
-        ...(body.limitCents !== undefined
-          ? { limitCents: BigInt(Math.round(Number(body.limitCents))) }
-          : {}),
-        ...(body.periodDays !== undefined ? { periodDays: Number(body.periodDays) } : {}),
-        ...(body.alertAt !== undefined ? { alertAt: Number(body.alertAt) } : {}),
-      },
+      const budget = await tx.budget.update({
+        where: { id },
+        data: {
+          ...(body.name !== undefined ? { name: s(body.name) ?? existing.name } : {}),
+          ...categoryUpdate,
+          ...(body.limitCents !== undefined
+            ? { limitCents: BigInt(Math.round(Number(body.limitCents))) }
+            : {}),
+          ...(body.periodDays !== undefined ? { periodDays: Number(body.periodDays) } : {}),
+          ...(body.alertAt !== undefined ? { alertAt: Number(body.alertAt) } : {}),
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: (req as any).auth?.userId ?? null,
+          level: "info",
+          action: "BUDGET_UPDATED",
+          entityType: "budget",
+          entityId: id,
+          message: `Budget updated: ${budget.name}`,
+          meta: {},
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+
+      return { notFound: false, budget } as const;
     });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: (req as any).auth?.userId ?? null,
-        level: "info",
-        action: "BUDGET_UPDATED",
-        entityType: "budget",
-        entityId: id,
-        message: `Budget updated: ${budget.name}`,
-        meta: {},
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+    if (result.notFound) return reply.code(404).send({ ok: false, error: "Not found" });
 
-    const spentCents = await computeSpend(tenantId, budget.periodDays, budget.category);
-    return reply.send({ ok: true, budget: serializeBudget(budget, spentCents) });
+    const spentCents = await computeSpend(tenantId, result.budget.periodDays, result.budget.category);
+    return reply.send({ ok: true, budget: serializeBudget(result.budget, spentCents) });
   });
 
   // DELETE /:id — delete a budget
@@ -182,26 +194,32 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
 
     const { id } = req.params as any;
 
-    const existing = await prisma.budget.findFirst({ where: { id, tenantId } });
-    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
+    const deleted = await withTenant(tenantId, async (tx) => {
+      const existing = await tx.budget.findFirst({ where: { id, tenantId } });
+      if (!existing) return { notFound: true } as const;
 
-    await prisma.budget.delete({ where: { id } });
+      await tx.budget.delete({ where: { id } });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: (req as any).auth?.userId ?? null,
-        level: "info",
-        action: "BUDGET_DELETED",
-        entityType: "budget",
-        entityId: id,
-        message: `Budget deleted: ${existing.name}`,
-        meta: {},
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: (req as any).auth?.userId ?? null,
+          level: "info",
+          action: "BUDGET_DELETED",
+          entityType: "budget",
+          entityId: id,
+          message: `Budget deleted: ${existing.name}`,
+          meta: {},
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+
+      return { notFound: false } as const;
+    });
+
+    if (deleted.notFound) return reply.code(404).send({ ok: false, error: "Not found" });
 
     return reply.send({ ok: true });
   });
@@ -211,9 +229,11 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId as string | undefined;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
-    const budgets = await prisma.budget.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
+    const budgets = await withTenant(tenantId, async (tx) => {
+      return tx.budget.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: "desc" },
+      });
     });
 
     const enriched = await Promise.all(

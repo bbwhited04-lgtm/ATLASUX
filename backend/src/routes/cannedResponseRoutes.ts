@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { withTenant } from "../db/prisma.js";
 
 function s(v: unknown): string | null {
   return typeof v === "string" && v.trim().length ? v.trim() : null;
@@ -19,9 +19,11 @@ export const cannedResponseRoutes: FastifyPluginAsync = async (app) => {
       where.channel = channel;
     }
 
-    const responses = await prisma.cannedResponse.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
+    const responses = await withTenant(tenantId, async (tx) => {
+      return tx.cannedResponse.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+      });
     });
 
     return reply.send({ ok: true, responses, total: responses.length });
@@ -37,16 +39,18 @@ export const cannedResponseRoutes: FastifyPluginAsync = async (app) => {
     if (!s(body.title)) return reply.code(400).send({ ok: false, error: "title required" });
     if (!s(body.body)) return reply.code(400).send({ ok: false, error: "body required" });
 
-    const response = await prisma.cannedResponse.create({
-      data: {
-        tenantId,
-        title: s(body.title)!,
-        body: s(body.body)!,
-        channel: s(body.channel) ?? undefined,
-        tags: Array.isArray(body.tags)
-          ? body.tags.filter((t: unknown) => typeof t === "string")
-          : [],
-      },
+    const response = await withTenant(tenantId, async (tx) => {
+      return tx.cannedResponse.create({
+        data: {
+          tenantId,
+          title: s(body.title)!,
+          body: s(body.body)!,
+          channel: s(body.channel) ?? undefined,
+          tags: Array.isArray(body.tags)
+            ? body.tags.filter((t: unknown) => typeof t === "string")
+            : [],
+        },
+      });
     });
 
     return reply.code(201).send({ ok: true, response });
@@ -60,38 +64,43 @@ export const cannedResponseRoutes: FastifyPluginAsync = async (app) => {
     const { id } = req.params as any;
     const body = (req.body ?? {}) as any;
 
-    const existing = await prisma.cannedResponse.findFirst({ where: { id, tenantId } });
-    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const existing = await tx.cannedResponse.findFirst({ where: { id, tenantId } });
+      if (!existing) return { notFound: true as const };
 
-    const response = await prisma.cannedResponse.update({
-      where: { id },
-      data: {
-        ...(body.title !== undefined ? { title: s(body.title) ?? existing.title } : {}),
-        ...(body.body  !== undefined ? { body:  s(body.body)  ?? existing.body  } : {}),
-        ...(body.channel !== undefined ? { channel: s(body.channel) ?? null } : {}),
-        ...(Array.isArray(body.tags)
-          ? { tags: body.tags.filter((t: unknown) => typeof t === "string") }
-          : {}),
-      },
+      const response = await tx.cannedResponse.update({
+        where: { id },
+        data: {
+          ...(body.title !== undefined ? { title: s(body.title) ?? existing.title } : {}),
+          ...(body.body  !== undefined ? { body:  s(body.body)  ?? existing.body  } : {}),
+          ...(body.channel !== undefined ? { channel: s(body.channel) ?? null } : {}),
+          ...(Array.isArray(body.tags)
+            ? { tags: body.tags.filter((t: unknown) => typeof t === "string") }
+            : {}),
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: (req as any).auth?.userId ?? null,
+          level: "info",
+          action: "CANNED_RESPONSE_UPDATED",
+          entityType: "canned_response",
+          entityId: id,
+          message: `Canned response updated: ${response.title}`,
+          meta: {},
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+
+      return { response };
     });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: (req as any).auth?.userId ?? null,
-        level: "info",
-        action: "CANNED_RESPONSE_UPDATED",
-        entityType: "canned_response",
-        entityId: id,
-        message: `Canned response updated: ${response.title}`,
-        meta: {},
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
-
-    return reply.send({ ok: true, response });
+    if ("notFound" in result) return reply.code(404).send({ ok: false, error: "Not found" });
+    return reply.send({ ok: true, response: result.response });
   });
 
   // DELETE /:id — delete a canned response
@@ -101,27 +110,32 @@ export const cannedResponseRoutes: FastifyPluginAsync = async (app) => {
 
     const { id } = req.params as any;
 
-    const existing = await prisma.cannedResponse.findFirst({ where: { id, tenantId } });
-    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const existing = await tx.cannedResponse.findFirst({ where: { id, tenantId } });
+      if (!existing) return { notFound: true as const };
 
-    await prisma.cannedResponse.delete({ where: { id } });
+      await tx.cannedResponse.delete({ where: { id } });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: (req as any).auth?.userId ?? null,
-        level: "info",
-        action: "CANNED_RESPONSE_DELETED",
-        entityType: "canned_response",
-        entityId: id,
-        message: `Canned response deleted: ${existing.title}`,
-        meta: {},
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: (req as any).auth?.userId ?? null,
+          level: "info",
+          action: "CANNED_RESPONSE_DELETED",
+          entityType: "canned_response",
+          entityId: id,
+          message: `Canned response deleted: ${existing.title}`,
+          meta: {},
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
 
+      return { ok: true };
+    });
+
+    if ("notFound" in result) return reply.code(404).send({ ok: false, error: "Not found" });
     return reply.send({ ok: true });
   });
 };

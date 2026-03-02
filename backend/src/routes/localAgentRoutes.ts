@@ -1,5 +1,5 @@
 import { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { randomBytes } from "node:crypto";
 import { hasPremiumAccess, type SeatTier } from "../lib/seatLimits.js";
 import { getSystemState, setSystemState } from "../services/systemState.js";
@@ -47,9 +47,11 @@ async function enforceFeatureAccess(
   tenantId: string,
 ): Promise<{ allowed: boolean; reason?: string }> {
   try {
-    const member = await prisma.tenantMember.findFirst({
-      where: { tenantId, userId },
-      select: { seatType: true },
+    const member = await withTenant(tenantId, async (tx) => {
+      return tx.tenantMember.findFirst({
+        where: { tenantId, userId },
+        select: { seatType: true },
+      });
     });
     if (!member) return { allowed: false, reason: "Not a member of this tenant" };
     const tier = (member.seatType ?? "free_beta") as SeatTier;
@@ -88,21 +90,23 @@ export const localAgentRoutes: FastifyPluginAsync = async (app) => {
       last_heartbeat: null,
     });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "user",
-        actorUserId: userId,
-        actorExternalId: null,
-        level: "info",
-        action: "LOCAL_AGENT_REGISTERED",
-        entityType: "system_state",
-        entityId: localAgentStateKey(tenantId),
-        message: "Local vision agent API key generated",
-        meta: {},
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+    await withTenant(tenantId, async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "user",
+          actorUserId: userId,
+          actorExternalId: null,
+          level: "info",
+          action: "LOCAL_AGENT_REGISTERED",
+          entityType: "system_state",
+          entityId: localAgentStateKey(tenantId),
+          message: "Local vision agent API key generated",
+          meta: {},
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+    }).catch(() => null);
 
     return reply.send({
       ok: true,
@@ -119,62 +123,65 @@ export const localAgentRoutes: FastifyPluginAsync = async (app) => {
 
     const { tenantId } = auth;
 
-    const jobs = await prisma.job.findMany({
-      where: {
-        tenantId,
-        status: "queued",
-        jobType: "LOCAL_VISION_TASK",
-        OR: [
-          { nextRetryAt: null },
-          { nextRetryAt: { lte: new Date() } },
-        ],
-      },
-      orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
-      take: 1,
+    const result = await withTenant(tenantId, async (tx) => {
+      const jobs = await tx.job.findMany({
+        where: {
+          tenantId,
+          status: "queued",
+          jobType: "LOCAL_VISION_TASK",
+          OR: [
+            { nextRetryAt: null },
+            { nextRetryAt: { lte: new Date() } },
+          ],
+        },
+        orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
+        take: 1,
+      });
+
+      if (!jobs.length) {
+        return { job: null } as const;
+      }
+
+      const job = jobs[0];
+
+      // Optimistic lock — claim the job
+      const claimed = await tx.job.updateMany({
+        where: { id: job.id, status: "queued" },
+        data: { status: "running", startedAt: new Date() },
+      });
+
+      if (claimed.count !== 1) {
+        return { job: null } as const;
+      }
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: "local_vision_agent",
+          level: "info",
+          action: "LOCAL_VISION_TASK_CLAIMED",
+          entityType: "job",
+          entityId: job.id,
+          message: `Local vision agent claimed job ${job.id}`,
+          meta: { jobType: job.jobType },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+
+      return {
+        job: {
+          id: job.id,
+          jobType: job.jobType,
+          input: job.input,
+          priority: job.priority,
+          createdAt: job.createdAt,
+        },
+      } as const;
     });
 
-    if (!jobs.length) {
-      return reply.send({ ok: true, job: null });
-    }
-
-    const job = jobs[0];
-
-    // Optimistic lock — claim the job
-    const claimed = await prisma.job.updateMany({
-      where: { id: job.id, status: "queued" },
-      data: { status: "running", startedAt: new Date() },
-    });
-
-    if (claimed.count !== 1) {
-      return reply.send({ ok: true, job: null });
-    }
-
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: "local_vision_agent",
-        level: "info",
-        action: "LOCAL_VISION_TASK_CLAIMED",
-        entityType: "job",
-        entityId: job.id,
-        message: `Local vision agent claimed job ${job.id}`,
-        meta: { jobType: job.jobType },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
-
-    return reply.send({
-      ok: true,
-      job: {
-        id: job.id,
-        jobType: job.jobType,
-        input: job.input,
-        priority: job.priority,
-        createdAt: job.createdAt,
-      },
-    });
+    return reply.send({ ok: true, job: result.job });
   });
 
   // ── POST /heartbeat — Update online status ─────────────────────────────
@@ -206,8 +213,8 @@ export const localAgentRoutes: FastifyPluginAsync = async (app) => {
 
     const status = body.success ? "succeeded" : "failed";
 
-    await prisma.$transaction([
-      prisma.job.update({
+    await withTenant(tenantId, async (tx) => {
+      await tx.job.update({
         where: { id: jobId },
         data: {
           status,
@@ -215,8 +222,8 @@ export const localAgentRoutes: FastifyPluginAsync = async (app) => {
           error: body.error ? { message: String(body.error) } : {},
           finishedAt: new Date(),
         },
-      }),
-      prisma.auditLog.create({
+      });
+      await tx.auditLog.create({
         data: {
           tenantId,
           actorType: "system",
@@ -235,8 +242,8 @@ export const localAgentRoutes: FastifyPluginAsync = async (app) => {
           },
           timestamp: new Date(),
         },
-      }),
-    ]);
+      });
+    });
 
     return reply.send({ ok: true, status });
   });

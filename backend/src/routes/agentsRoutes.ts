@@ -1,6 +1,14 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
 
+/**
+ * Agent registry routes — intentionally system-level (no tenant scope).
+ *
+ * The `agents` table is a global registry of all AI agents in the system.
+ * Agents are not per-tenant resources; they are shared across all tenants.
+ * Therefore, no withTenant() wrapping or tenant_id filtering is needed here.
+ * RLS is N/A for this table.
+ */
 export const agentsRoutes: FastifyPluginAsync = async (app) => {
   app.get("/", async () => {
     const rows = (await prisma.$queryRaw`

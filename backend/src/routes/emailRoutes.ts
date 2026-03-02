@@ -19,9 +19,11 @@
 
 import type { FastifyPluginAsync } from "fastify";
 import { timingSafeEqual } from "crypto";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { engineTick } from "../core/engine/engine.js";
 import { agentEmails } from "../config/agentEmails.js";
+
+type TxClient = Parameters<Parameters<typeof withTenant>[1]>[0];
 
 // ── Classification constants ─────────────────────────────────────────────────
 
@@ -150,9 +152,9 @@ async function classify(to: string, subject: string, text: string): Promise<{ ag
 }
 
 /** Stage 1 — Ingest (best-effort; never fails the pipeline) */
-async function ingest(tenantId: string, agentKey: string, normalized: ReturnType<typeof normalize>) {
+async function ingest(tx: TxClient, tenantId: string, agentKey: string, normalized: ReturnType<typeof normalize>) {
   try {
-    await prisma.$queryRaw`
+    await (tx as any).$queryRaw`
       insert into agent_inbox_events (
         tenant_id, agent_key, inbox_email, provider, provider_message_id,
         from_email, from_name, subject, body_text, body_html,
@@ -170,8 +172,8 @@ async function ingest(tenantId: string, agentKey: string, normalized: ReturnType
 }
 
 /** Stage 4 — Dispatch */
-async function dispatch(tenantId: string, agentKey: string, workflowId: string, normalized: ReturnType<typeof normalize>) {
-  const intent = await prisma.intent.create({
+async function dispatch(tx: TxClient, tenantId: string, agentKey: string, workflowId: string, normalized: ReturnType<typeof normalize>) {
+  const intent = await tx.intent.create({
     data: {
       tenantId,
       agentId: null,
@@ -197,9 +199,9 @@ async function dispatch(tenantId: string, agentKey: string, workflowId: string, 
 }
 
 /** Stage 5 — Audit */
-async function audit(tenantId: string, intentId: string, agentKey: string, workflowId: string, reason: string, normalized: ReturnType<typeof normalize>) {
+async function audit(tx: TxClient, tenantId: string, intentId: string, agentKey: string, workflowId: string, reason: string, normalized: ReturnType<typeof normalize>) {
   try {
-    await prisma.auditLog.create({
+    await tx.auditLog.create({
       data: {
         tenantId,
         actorType: "system",
@@ -300,21 +302,26 @@ export const emailRoutes: FastifyPluginAsync = async (app) => {
     // Stage 2: Normalize
     const normalized = normalize(body);
 
-    // Stage 3: Classify
+    // Stage 3: Classify (not tenant-scoped DB, stays outside withTenant)
     const { agentKey, workflowId, reason } = await classify(normalized.to, normalized.subject, normalized.text);
 
-    // Stage 1: Ingest (after classify so we know agentKey)
-    await ingest(tenantId, agentKey, normalized);
+    // Stages 1, 4, 5 — all tenant-scoped DB operations in one RLS transaction
+    const intent = await withTenant(tenantId, async (tx) => {
+      // Stage 1: Ingest (after classify so we know agentKey)
+      await ingest(tx, tenantId, agentKey, normalized);
 
-    // Stage 4: Dispatch
-    const intent = await dispatch(tenantId, agentKey, workflowId, normalized);
+      // Stage 4: Dispatch
+      const i = await dispatch(tx, tenantId, agentKey, workflowId, normalized);
 
-    // Optional immediate tick (alpha mode)
+      // Stage 5: Audit
+      await audit(tx, tenantId, i.id, agentKey, workflowId, reason, normalized);
+
+      return i;
+    });
+
+    // Optional immediate tick (alpha mode) — external call, outside transaction
     const runTickNow = String((req.query as any)?.runTickNow ?? "true").toLowerCase() !== "false";
     const tickResult = runTickNow ? await engineTick() : null;
-
-    // Stage 5: Audit
-    await audit(tenantId, intent.id, agentKey, workflowId, reason, normalized);
 
     return reply.send({
       ok: true,

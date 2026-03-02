@@ -58,6 +58,7 @@ export const alignableRoutes: FastifyPluginAsync = async (app) => {
     try {
       await prisma.auditLog.create({
         data: {
+          tenantId: (req as any).tenantId ?? null,
           actorExternalId: `alignable-${source}`,
           actorType: "system",
           action: `alignable.${event}`,

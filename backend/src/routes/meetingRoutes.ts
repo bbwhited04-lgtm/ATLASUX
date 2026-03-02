@@ -14,7 +14,7 @@
 
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { enforceFeatureAccess } from "../lib/seatEnforcement.js";
 
 const tenantIdEnv = process.env.MS_TENANT_ID ?? "";
@@ -266,18 +266,22 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
   // ── GET / — list meeting notes ─────────────────────────────────────────────
   app.get("/", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
+
     const q = req.query as Record<string, string>;
     const status = q.status || undefined;
     const limit = Math.min(parseInt(q.limit ?? "50", 10), 100);
 
-    const meetings = await prisma.meetingNote.findMany({
-      where: {
-        tenantId,
-        ...(status ? { status } : {}),
-      },
-      orderBy: { scheduledAt: "desc" },
-      take: limit,
-    });
+    const meetings = await withTenant(tenantId, async (tx) =>
+      tx.meetingNote.findMany({
+        where: {
+          tenantId,
+          ...(status ? { status } : {}),
+        },
+        orderBy: { scheduledAt: "desc" },
+        take: limit,
+      })
+    );
 
     return reply.send({ ok: true, meetings, count: meetings.length });
   });
@@ -285,19 +289,22 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
   // ── GET /upcoming — calendar-sourced upcoming meetings ─────────────────────
   app.get("/upcoming", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     // Merge calendar events with manually created meeting notes
     const [calendarMeetings, manualMeetings] = await Promise.all([
       fetchCalendarMeetings(tenantId),
-      prisma.meetingNote.findMany({
-        where: {
-          tenantId,
-          status: "scheduled",
-          scheduledAt: { gte: new Date() },
-        },
-        orderBy: { scheduledAt: "asc" },
-        take: 20,
-      }),
+      withTenant(tenantId, async (tx) =>
+        tx.meetingNote.findMany({
+          where: {
+            tenantId,
+            status: "scheduled",
+            scheduledAt: { gte: new Date() },
+          },
+          orderBy: { scheduledAt: "asc" },
+          take: 20,
+        })
+      ),
     ]);
 
     return reply.send({
@@ -310,22 +317,27 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
   // ── GET /:id — single meeting note ─────────────────────────────────────────
   app.get("/:id", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
+
     const { id } = req.params as { id: string };
 
-    const meeting = await prisma.meetingNote.findFirst({
-      where: { id, tenantId },
+    return withTenant(tenantId, async (tx) => {
+      const meeting = await tx.meetingNote.findFirst({
+        where: { id, tenantId },
+      });
+
+      if (!meeting) {
+        return reply.code(404).send({ ok: false, error: "Meeting note not found" });
+      }
+
+      return reply.send({ ok: true, meeting });
     });
-
-    if (!meeting) {
-      return reply.code(404).send({ ok: false, error: "Meeting note not found" });
-    }
-
-    return reply.send({ ok: true, meeting });
   });
 
   // ── POST / — create meeting note ───────────────────────────────────────────
   app.post("/", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     let body: z.infer<typeof CreateMeetingBody>;
     try {
@@ -334,18 +346,20 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ ok: false, error: "Invalid request body", details: e.errors });
     }
 
-    const meeting = await prisma.meetingNote.create({
-      data: {
-        tenantId,
-        platform: body.platform,
-        title: body.title,
-        meetingUrl: body.meetingUrl ?? null,
-        scheduledAt: new Date(body.scheduledAt),
-        durationMinutes: body.durationMinutes ?? null,
-        attendees: body.attendees ?? [],
-        status: "scheduled",
-      },
-    });
+    const meeting = await withTenant(tenantId, async (tx) =>
+      tx.meetingNote.create({
+        data: {
+          tenantId,
+          platform: body.platform,
+          title: body.title,
+          meetingUrl: body.meetingUrl ?? null,
+          scheduledAt: new Date(body.scheduledAt),
+          durationMinutes: body.durationMinutes ?? null,
+          attendees: body.attendees ?? [],
+          status: "scheduled",
+        },
+      })
+    );
 
     return reply.code(201).send({ ok: true, meeting });
   });
@@ -353,11 +367,13 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
   // ── POST /:id/process — fetch transcript + AI summarize ────────────────────
   app.post("/:id/process", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
+
     const { id } = req.params as { id: string };
 
-    const meeting = await prisma.meetingNote.findFirst({
-      where: { id, tenantId },
-    });
+    const meeting = await withTenant(tenantId, async (tx) =>
+      tx.meetingNote.findFirst({ where: { id, tenantId } })
+    );
 
     if (!meeting) {
       return reply.code(404).send({ ok: false, error: "Meeting note not found" });
@@ -371,10 +387,12 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
 
     if (!transcript) {
       // Mark as completed without transcript — user can paste manually later
-      await prisma.meetingNote.update({
-        where: { id },
-        data: { status: "completed" },
-      });
+      await withTenant(tenantId, async (tx) =>
+        tx.meetingNote.update({
+          where: { id },
+          data: { status: "completed" },
+        })
+      );
       return reply.send({
         ok: true,
         message: "No transcript available. Meeting marked as completed.",
@@ -386,26 +404,30 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
     try {
       const { summary, actionItems, keyPoints } = await summarizeTranscript(transcript);
 
-      const updated = await prisma.meetingNote.update({
-        where: { id },
-        data: {
-          transcript,
-          summary,
-          actionItems,
-          keyPoints,
-          status: "processed",
-          processedAt: new Date(),
-        },
-      });
+      const updated = await withTenant(tenantId, async (tx) =>
+        tx.meetingNote.update({
+          where: { id },
+          data: {
+            transcript,
+            summary,
+            actionItems,
+            keyPoints,
+            status: "processed",
+            processedAt: new Date(),
+          },
+        })
+      );
 
       return reply.send({ ok: true, meeting: updated });
     } catch (err: any) {
       app.log.error({ err }, "Meeting processing failed");
 
-      await prisma.meetingNote.update({
-        where: { id },
-        data: { transcript, status: "failed" },
-      });
+      await withTenant(tenantId, async (tx) =>
+        tx.meetingNote.update({
+          where: { id },
+          data: { transcript, status: "failed" },
+        })
+      );
 
       return reply.code(500).send({ ok: false, error: "Processing failed: " + err.message });
     }
@@ -414,18 +436,22 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
   // ── DELETE /:id ────────────────────────────────────────────────────────────
   app.delete("/:id", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
+
     const { id } = req.params as { id: string };
 
-    const meeting = await prisma.meetingNote.findFirst({
-      where: { id, tenantId },
+    return withTenant(tenantId, async (tx) => {
+      const meeting = await tx.meetingNote.findFirst({
+        where: { id, tenantId },
+      });
+
+      if (!meeting) {
+        return reply.code(404).send({ ok: false, error: "Meeting note not found" });
+      }
+
+      await tx.meetingNote.delete({ where: { id } });
+
+      return reply.send({ ok: true, deleted: id });
     });
-
-    if (!meeting) {
-      return reply.code(404).send({ ok: false, error: "Meeting note not found" });
-    }
-
-    await prisma.meetingNote.delete({ where: { id } });
-
-    return reply.send({ ok: true, deleted: id });
   });
 };

@@ -168,7 +168,8 @@ async function executeTask(job: {
     return;
   }
 
-  const targetUrl = String(input.targetUrl).trim();
+  // Accept both targetUrl (correct) and targetURL (common LLM variant)
+  const targetUrl = String(input.targetUrl ?? input.targetURL ?? "").trim();
   const task = String(input.task).trim();
 
   // Dynamic import — Playwright may not be installed in all environments

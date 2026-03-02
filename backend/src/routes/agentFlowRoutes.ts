@@ -17,7 +17,7 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 
 // M365 agents that may source data into Binky's research queue
 const M365_AGENTS = new Set(["petra", "porter", "claire", "victor", "frank", "sandy"]);
@@ -60,48 +60,52 @@ export const agentFlowRoutes: FastifyPluginAsync = async (app) => {
     const toolId   = String(body.toolId   ?? "").trim();
 
     // Queue the item for Binky using agent_inbox_events
-    const event = await prisma.agent_inbox_events.create({
-      data: {
-        tenant_id:  tid,
-        agent_key:  "binky",
-        inbox_email: "binky.cro@deadapp.info",
-        provider:   "m365_research",
-        from_email: `${sourceAgent}@atlas-internal`,
-        from_name:  sourceAgent.toUpperCase(),
-        subject,
-        body_text:  bodyText,
-        status:     "new",
-        metadata:   {
-          sourceAgent,
-          toolId,
-          queuedBy: "atlas",
-          ...(body.metadata ?? {}),
-        },
-      },
-    });
-
-    // Audit (mandatory per ATLAS_POLICY.md §I.1)
-    try {
-      await (prisma.auditLog as any).create({
+    const event = await withTenant(tid, async (tx) => {
+      const ev = await tx.agent_inbox_events.create({
         data: {
-          actorType:      "system",
-          actorUserId:    null,
-          actorExternalId: null,
-          level:          "info" as any,
-          action:         "agent_flow.atlas.forward_to_binky",
-          status:         "SUCCESS",
-          metadata: {
-            source:      "agent_flow",
+          tenant_id:  tid,
+          agent_key:  "binky",
+          inbox_email: "binky.cro@deadapp.info",
+          provider:   "m365_research",
+          from_email: `${sourceAgent}@atlas-internal`,
+          from_name:  sourceAgent.toUpperCase(),
+          subject,
+          body_text:  bodyText,
+          status:     "new",
+          metadata:   {
             sourceAgent,
             toolId,
-            eventId:     event.id,
-            tenantId:    tid,
+            queuedBy: "atlas",
+            ...(body.metadata ?? {}),
           },
-        } as any,
+        },
       });
-    } catch {
-      // Non-fatal per ATLAS_POLICY.md §III (audit must not abort transaction)
-    }
+
+      // Audit (mandatory per ATLAS_POLICY.md §I.1)
+      try {
+        await (tx.auditLog as any).create({
+          data: {
+            actorType:      "system",
+            actorUserId:    null,
+            actorExternalId: null,
+            level:          "info" as any,
+            action:         "agent_flow.atlas.forward_to_binky",
+            status:         "SUCCESS",
+            metadata: {
+              source:      "agent_flow",
+              sourceAgent,
+              toolId,
+              eventId:     ev.id,
+              tenantId:    tid,
+            },
+          } as any,
+        });
+      } catch {
+        // Non-fatal per ATLAS_POLICY.md §III (audit must not abort transaction)
+      }
+
+      return ev;
+    });
 
     return reply.send({
       ok:      true,
@@ -126,15 +130,17 @@ export const agentFlowRoutes: FastifyPluginAsync = async (app) => {
 
     const limit = Math.min(Number(q.limit ?? 50), 100);
 
-    const items = await prisma.agent_inbox_events.findMany({
-      where: {
-        tenant_id: tid,
-        agent_key: "binky",
-        provider:  "m365_research",
-        status:    "new",
-      },
-      orderBy: { created_at: "asc" },
-      take:    limit,
+    const items = await withTenant(tid, async (tx) => {
+      return tx.agent_inbox_events.findMany({
+        where: {
+          tenant_id: tid,
+          agent_key: "binky",
+          provider:  "m365_research",
+          status:    "new",
+        },
+        orderBy: { created_at: "asc" },
+        take:    limit,
+      });
     });
 
     return reply.send({
@@ -165,9 +171,11 @@ export const agentFlowRoutes: FastifyPluginAsync = async (app) => {
 
     if (!tid) return reply.code(400).send({ ok: false, error: "tenantId_required" });
 
-    const updated = await prisma.agent_inbox_events.updateMany({
-      where:  { id, tenant_id: tid, agent_key: "binky" },
-      data:   { status: "processed" },
+    const updated = await withTenant(tid, async (tx) => {
+      return tx.agent_inbox_events.updateMany({
+        where:  { id, tenant_id: tid, agent_key: "binky" },
+        data:   { status: "processed" },
+      });
     });
 
     if (updated.count === 0) {

@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 
 // helper to safely read jsonb stored in Prisma JsonValue
 function asObj(v: unknown): Record<string, any> {
@@ -7,7 +7,7 @@ function asObj(v: unknown): Record<string, any> {
 }
 
 export const runtimeRoutes: FastifyPluginAsync = async (app) => {
-  app.get("/status", async (_req, reply) => {
+  app.get("/status", async (req, reply) => {
     try {
       // system_state row: key='atlas_online', value={"online":false, ...optional}
       const row = await prisma.system_state.findUnique({
@@ -28,11 +28,22 @@ export const runtimeRoutes: FastifyPluginAsync = async (app) => {
       // approvals table has no `status`, so do a safe count.
       // If you have expires_at, this is a good pending heuristic:
       const now = new Date();
-      const pendingApprovals = await prisma.approvals.count({
-        where: {
-          OR: [{ expires_at: null }, { expires_at: { gt: now } }],
-        },
-      });
+      const tid = (req as any).tenantId as string | undefined;
+
+      const pendingApprovals = tid
+        ? await withTenant(tid, (tx) =>
+            tx.approvals.count({
+              where: {
+                tenant_id: tid,
+                OR: [{ expires_at: null }, { expires_at: { gt: now } }],
+              },
+            })
+          )
+        : await prisma.approvals.count({
+            where: {
+              OR: [{ expires_at: null }, { expires_at: { gt: now } }],
+            },
+          });
 
       return reply.send({
         ok: true,

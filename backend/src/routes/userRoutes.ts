@@ -7,7 +7,7 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { getUsage, getUsageHistory } from "../lib/usageMeter.js";
 import { getLimits, SEAT_LIMITS, type SeatTier } from "../lib/seatLimits.js";
 
@@ -135,8 +135,10 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
     const usage = await getUsage(auth.userId, tenantId);
 
     // Get seat type for limits
-    const member = await prisma.tenantMember.findUnique({
-      where: { tenantId_userId: { tenantId, userId: auth.userId } },
+    const member = await withTenant(tenantId, async (tx) => {
+      return tx.tenantMember.findUnique({
+        where: { tenantId_userId: { tenantId, userId: auth.userId } },
+      });
     });
     const limits = getLimits(member?.seatType);
 
@@ -179,8 +181,10 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
     if (!auth?.userId) return reply.code(401).send({ ok: false, error: "not_authenticated" });
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenant_required" });
 
-    const sub = await prisma.subscription.findUnique({
-      where: { userId_tenantId: { userId: auth.userId, tenantId } },
+    const sub = await withTenant(tenantId, async (tx) => {
+      return tx.subscription.findUnique({
+        where: { userId_tenantId: { userId: auth.userId, tenantId } },
+      });
     });
 
     if (!sub) {
@@ -237,20 +241,30 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
     if (!auth?.userId) return reply.code(401).send({ ok: false, error: "not_authenticated" });
 
     const { tenantId } = req.params as { tenantId: string };
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
-    // Check caller is admin/owner of this tenant
-    const caller = await prisma.tenantMember.findUnique({
-      where: { tenantId_userId: { tenantId, userId: auth.userId } },
+    const result = await withTenant(tenantId, async (tx) => {
+      // Check caller is admin/owner of this tenant
+      const caller = await tx.tenantMember.findUnique({
+        where: { tenantId_userId: { tenantId, userId: auth.userId } },
+      });
+      if (!caller || !["admin", "owner"].includes(caller.role)) {
+        return { forbidden: true } as const;
+      }
+
+      const members = await tx.tenantMember.findMany({
+        where: { tenantId },
+        include: { user: { select: { id: true, email: true, displayName: true } } },
+      });
+
+      return { forbidden: false, members } as const;
     });
-    if (!caller || !["admin", "owner"].includes(caller.role)) {
+
+    if (result.forbidden) {
       return reply.code(403).send({ ok: false, error: "admin_required" });
     }
 
-    const members = await prisma.tenantMember.findMany({
-      where: { tenantId },
-      include: { user: { select: { id: true, email: true, displayName: true } } },
-    });
-
+    const members = result.members;
     const seatCounts: Record<string, number> = {};
     for (const m of members) {
       seatCounts[m.seatType] = (seatCounts[m.seatType] ?? 0) + 1;
@@ -279,49 +293,58 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
     if (!auth?.userId) return reply.code(401).send({ ok: false, error: "not_authenticated" });
 
     const { tenantId, userId } = req.params as { tenantId: string; userId: string };
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const { seatType } = (req.body ?? {}) as { seatType?: string };
 
     if (!seatType || !["free_beta", "starter", "pro", "enterprise"].includes(seatType)) {
       return reply.code(400).send({ ok: false, error: "invalid_seat_type" });
     }
 
-    // Check caller is admin/owner
-    const caller = await prisma.tenantMember.findUnique({
-      where: { tenantId_userId: { tenantId, userId: auth.userId } },
+    const result = await withTenant(tenantId, async (tx) => {
+      // Check caller is admin/owner
+      const caller = await tx.tenantMember.findUnique({
+        where: { tenantId_userId: { tenantId, userId: auth.userId } },
+      });
+      if (!caller || !["admin", "owner"].includes(caller.role)) {
+        return { forbidden: true } as const;
+      }
+
+      const updated = await tx.tenantMember.update({
+        where: { tenantId_userId: { tenantId, userId } },
+        data: { seatType: seatType as any },
+      });
+
+      // Also upsert subscription record
+      await tx.subscription.upsert({
+        where: { userId_tenantId: { userId, tenantId } },
+        create: { userId, tenantId, seatType: seatType as any, status: "active" },
+        update: { seatType: seatType as any },
+      }).catch(() => null);
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: null,
+          actorExternalId: auth.userId,
+          actorType: "user",
+          level: "info",
+          action: "SEAT_CHANGED",
+          entityType: "tenant_member",
+          entityId: null,
+          message: `Seat changed for ${userId}: ${updated.seatType}`,
+          meta: { targetUserId: userId, seatType },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+
+      return { forbidden: false, seatType: updated.seatType } as const;
     });
-    if (!caller || !["admin", "owner"].includes(caller.role)) {
+
+    if (result.forbidden) {
       return reply.code(403).send({ ok: false, error: "admin_required" });
     }
 
-    const updated = await prisma.tenantMember.update({
-      where: { tenantId_userId: { tenantId, userId } },
-      data: { seatType: seatType as any },
-    });
-
-    // Also upsert subscription record
-    await prisma.subscription.upsert({
-      where: { userId_tenantId: { userId, tenantId } },
-      create: { userId, tenantId, seatType: seatType as any, status: "active" },
-      update: { seatType: seatType as any },
-    }).catch(() => null);
-
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorUserId: null,
-        actorExternalId: auth.userId,
-        actorType: "user",
-        level: "info",
-        action: "SEAT_CHANGED",
-        entityType: "tenant_member",
-        entityId: null,
-        message: `Seat changed for ${userId}: ${updated.seatType}`,
-        meta: { targetUserId: userId, seatType },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
-
-    return { ok: true, seatType: updated.seatType };
+    return { ok: true, seatType: result.seatType };
   });
 
   /**
@@ -333,9 +356,11 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
       || (req.query as any)?.tenantId;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "x-tenant-id required" });
 
-    const owner = await prisma.tenantMember.findFirst({
-      where: { tenantId, role: "owner" },
-      select: { seatType: true },
+    const owner = await withTenant(tenantId, async (tx) => {
+      return tx.tenantMember.findFirst({
+        where: { tenantId, role: "owner" },
+        select: { seatType: true },
+      });
     });
 
     return {

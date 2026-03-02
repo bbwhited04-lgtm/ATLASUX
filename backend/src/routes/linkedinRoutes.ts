@@ -33,6 +33,7 @@ export const linkedinRoutes: FastifyPluginAsync = async (app) => {
       // Store the event in audit log for traceability
       await prisma.auditLog.create({
         data: {
+          tenantId: null,
           actorExternalId: "linkedin-webhook",
           actorType: "system",
           action: "linkedin.webhook.event",

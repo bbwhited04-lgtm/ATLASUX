@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 
 const DisconnectBody = z.object({
   org_id: z.string().min(1, "org_id is required").max(200),
@@ -79,24 +79,43 @@ async function ensureTenant(slug: string) {
   });
 }
 
+/**
+ * Resolve tenantId from either the auth plugin (UUID) or the legacy slug query param.
+ * Prefers the plugin-injected UUID for authenticated paths.
+ */
+async function resolveTenantId(req: any): Promise<{ tenantId: string; slug: string } | null> {
+  // Prefer UUID from plugin (authenticated path)
+  const pluginTid = (req as any).tenantId as string | undefined;
+  if (pluginTid) {
+    const tenant = await prisma.tenant.findUnique({ where: { id: pluginTid }, select: { id: true, slug: true } });
+    if (tenant) return { tenantId: tenant.id, slug: tenant.slug };
+  }
+  // Fallback: slug from query param (legacy path)
+  const slug = getOrgSlug(req);
+  if (slug) {
+    const tenant = await ensureTenant(slug);
+    return { tenantId: tenant.id, slug: tenant.slug };
+  }
+  return null;
+}
+
 export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
   /**
    * GET /v1/integrations/status?org_id=demo_org
    */
   app.get("/status", async (req, reply) => {
-    const orgSlug = getOrgSlug(req);
-    if (!orgSlug) return reply.code(400).send({ ok: false, error: "org_id is required" });
+    const resolved = await resolveTenantId(req);
+    if (!resolved) return reply.code(400).send({ ok: false, error: "org_id is required" });
+    const { tenantId, slug } = resolved;
 
-    const tenant = await ensureTenant(orgSlug);
-
-    const connectedCount = await prisma.integration.count({
-      where: { tenantId: tenant.id, connected: true },
-    });
+    const connectedCount = await withTenant(tenantId, (tx) =>
+      tx.integration.count({ where: { tenantId, connected: true } })
+    );
 
     return reply.send({
       ok: true,
-      org_id: orgSlug,
-      tenant_id: tenant.id,
+      org_id: slug,
+      tenant_id: tenantId,
       integrations_connected: connectedCount,
       status: "online",
       ts: new Date().toISOString(),
@@ -108,15 +127,14 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
    * This is what your Business Manager UI should call to show provider cards.
    */
   app.get("/site_integration", async (req, reply) => {
-    const orgSlug = getOrgSlug(req);
     const userId = getUserId(req);
-    if (!orgSlug) return reply.code(400).send({ ok: false, error: "org_id is required" });
+    const resolved = await resolveTenantId(req);
+    if (!resolved) return reply.code(400).send({ ok: false, error: "org_id is required" });
+    const { tenantId, slug } = resolved;
 
-    const tenant = await ensureTenant(orgSlug);
-
-    const rows = await prisma.integration.findMany({
-      where: { tenantId: tenant.id },
-    });
+    const rows = await withTenant(tenantId, (tx) =>
+      tx.integration.findMany({ where: { tenantId } })
+    );
 
     const byProvider = new Map(rows.map((r) => [r.provider, r]));
 
@@ -132,7 +150,6 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
         scopes: Array.isArray(scopes) ? scopes : p.defaultScopes,
         last_sync_at: row?.last_sync_at ?? null,
         updated_at: row?.updated_at ?? null,
-        // Optional: include lightweight status/config (safe for UI)
         status: row?.status ?? {},
         config: row?.config ?? {},
       };
@@ -140,7 +157,7 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
 
     return reply.send({
       ok: true,
-      org_id: orgSlug,
+      org_id: slug,
       user_id: userId,
       providers,
       ts: new Date().toISOString(),
@@ -152,19 +169,21 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
    * Returns raw integration rows for a table view if your UI needs it.
    */
   app.get("/list", async (req, reply) => {
-    const orgSlug = getOrgSlug(req);
-    if (!orgSlug) return reply.code(400).send({ ok: false, error: "org_id is required" });
-    const tenant = await ensureTenant(orgSlug);
+    const resolved = await resolveTenantId(req);
+    if (!resolved) return reply.code(400).send({ ok: false, error: "org_id is required" });
+    const { tenantId, slug } = resolved;
 
-    const items = await prisma.integration.findMany({
-      where: { tenantId: tenant.id },
-      orderBy: { updated_at: "desc" },
-    });
+    const items = await withTenant(tenantId, (tx) =>
+      tx.integration.findMany({
+        where: { tenantId },
+        orderBy: { updated_at: "desc" },
+      })
+    );
 
     return reply.send({
       ok: true,
-      org_id: orgSlug,
-      tenant_id: tenant.id,
+      org_id: slug,
+      tenant_id: tenantId,
       items,
       ts: new Date().toISOString(),
     });
@@ -175,17 +194,20 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
    * Lightweight summary panel. (Accounting lives in /v1/accounting/summary)
    */
   app.get("/summary", async (req, reply) => {
-    const orgSlug = getOrgSlug(req);
-    if (!orgSlug) return reply.code(400).send({ ok: false, error: "org_id is required" });
-    const tenant = await ensureTenant(orgSlug);
+    const resolved = await resolveTenantId(req);
+    if (!resolved) return reply.code(400).send({ ok: false, error: "org_id is required" });
+    const { tenantId, slug } = resolved;
 
-    const total = await prisma.integration.count({ where: { tenantId: tenant.id } });
-    const connected = await prisma.integration.count({ where: { tenantId: tenant.id, connected: true } });
+    const { total, connected } = await withTenant(tenantId, async (tx) => {
+      const total = await tx.integration.count({ where: { tenantId } });
+      const connected = await tx.integration.count({ where: { tenantId, connected: true } });
+      return { total, connected };
+    });
 
     return reply.send({
       ok: true,
-      org_id: orgSlug,
-      tenant_id: tenant.id,
+      org_id: slug,
+      tenant_id: tenantId,
       integrations: { total, connected, disconnected: Math.max(total - connected, 0) },
       ts: new Date().toISOString(),
     });
@@ -198,31 +220,35 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
   app.post("/disconnect", async (req, reply) => {
     const parsed = DisconnectBody.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ ok: false, error: "Validation failed", details: parsed.error.errors });
-    const orgSlug = parsed.data.org_id;
     const provider = parsed.data.provider;
 
-    const tenant = await ensureTenant(orgSlug);
+    // Resolve tenant from plugin UUID or legacy org_id in body
+    const resolved = await resolveTenantId({ ...req, query: { ...(req.query as any), org_id: parsed.data.org_id } });
+    if (!resolved) return reply.code(400).send({ ok: false, error: "org_id is required" });
+    const { tenantId, slug } = resolved;
 
-    await prisma.integration.upsert({
-      where: { tenantId_provider: { tenantId: tenant.id, provider: provider as any } },
-      update: {
-        connected: false,
-        access_token: null,
-        refresh_token: null,
-        token_expires_at: null,
-        status: {},
-      },
-      create: {
-        tenantId: tenant.id,
-        provider: provider as any,
-        connected: false,
-        scopes: [],
-        config: {},
-        status: {},
-      },
-    });
+    await withTenant(tenantId, (tx) =>
+      tx.integration.upsert({
+        where: { tenantId_provider: { tenantId, provider: provider as any } },
+        update: {
+          connected: false,
+          access_token: null,
+          refresh_token: null,
+          token_expires_at: null,
+          status: {},
+        },
+        create: {
+          tenantId,
+          provider: provider as any,
+          connected: false,
+          scopes: [],
+          config: {},
+          status: {},
+        },
+      })
+    );
 
-    return reply.send({ ok: true, org_id: orgSlug, provider, connected: false });
+    return reply.send({ ok: true, org_id: slug, provider, connected: false });
   });
 
   /**
@@ -235,29 +261,34 @@ export const businessManagerRoutes: FastifyPluginAsync = async (app) => {
     if (!parsed.success) return reply.code(400).send({ ok: false, error: "Validation failed", details: parsed.error.errors });
     const { org_id: orgSlug, provider, scopes, status, config } = parsed.data;
 
-    const tenant = await ensureTenant(orgSlug);
+    // Resolve tenant from plugin UUID or legacy org_id in body
+    const resolved = await resolveTenantId({ ...req, query: { ...(req.query as any), org_id: orgSlug } });
+    if (!resolved) return reply.code(400).send({ ok: false, error: "org_id is required" });
+    const { tenantId, slug } = resolved;
 
-    const updated = await prisma.integration.upsert({
-      where: { tenantId_provider: { tenantId: tenant.id, provider: provider as any } },
-      update: {
-        connected: true,
-        scopes: scopes ?? undefined,
-        status: (status ?? undefined) as any,
-        config: (config ?? undefined) as any,
-      },
-      create: {
-        tenantId: tenant.id,
-        provider: provider as any,
-        connected: true,
-        scopes: scopes ?? [],
-        status: (status ?? {}) as any,
-        config: (config ?? {}) as any,
-      },
-    });
+    const updated = await withTenant(tenantId, (tx) =>
+      tx.integration.upsert({
+        where: { tenantId_provider: { tenantId, provider: provider as any } },
+        update: {
+          connected: true,
+          scopes: scopes ?? undefined,
+          status: (status ?? undefined) as any,
+          config: (config ?? undefined) as any,
+        },
+        create: {
+          tenantId,
+          provider: provider as any,
+          connected: true,
+          scopes: scopes ?? [],
+          status: (status ?? {}) as any,
+          config: (config ?? {}) as any,
+        },
+      })
+    );
 
     return reply.send({
       ok: true,
-      org_id: orgSlug,
+      org_id: slug,
       provider,
       connected: updated.connected,
       updated_at: updated.updated_at,

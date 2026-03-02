@@ -6,7 +6,7 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { z } from "zod";
 
 // ── Zod Schemas (PCI 6.5.1, NIST SI-10, SOC 2 CC6.1) ──────────────────────
@@ -68,11 +68,13 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const where: any = { tenantId };
     if (status) where.status = status;
 
-    const requests = await prisma.dataSubjectRequest.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    });
+    const requests = await withTenant(tenantId, async (tx) =>
+      tx.dataSubjectRequest.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      })
+    );
 
     return { ok: true, requests, total: requests.length };
   });
@@ -91,33 +93,37 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const dueBy = new Date();
     dueBy.setDate(dueBy.getDate() + 30);
 
-    const dsar = await prisma.dataSubjectRequest.create({
-      data: {
-        tenantId,
-        requestType,
-        subjectEmail,
-        subjectName: subjectName || null,
-        reason: reason || null,
-        requestedBy: (req as any).auth?.userId || null,
-        dueBy,
-      },
-    });
+    const dsar = await withTenant(tenantId, async (tx) => {
+      const created = await tx.dataSubjectRequest.create({
+        data: {
+          tenantId,
+          requestType,
+          subjectEmail,
+          subjectName: subjectName || null,
+          reason: reason || null,
+          requestedBy: (req as any).auth?.userId || null,
+          dueBy,
+        },
+      });
 
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "user",
-        actorUserId: (req as any).auth?.userId || null,
-        level: "info",
-        action: "DSAR_CREATED",
-        entityType: "data_subject_request",
-        entityId: dsar.id,
-        message: `DSAR ${requestType} request created for ${subjectEmail}`,
-        meta: { requestType, subjectEmail },
-        timestamp: new Date(),
-      } as any,
-    }).catch(() => null);
+      // Audit log
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "user",
+          actorUserId: (req as any).auth?.userId || null,
+          level: "info",
+          action: "DSAR_CREATED",
+          entityType: "data_subject_request",
+          entityId: created.id,
+          message: `DSAR ${requestType} request created for ${subjectEmail}`,
+          meta: { requestType, subjectEmail },
+          timestamp: new Date(),
+        } as any,
+      }).catch(() => null);
+
+      return created;
+    });
 
     return reply.status(201).send({ ok: true, dsar });
   });
@@ -138,29 +144,35 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     if (response) data.response = response;
     if (status === "completed") data.completedAt = new Date();
 
-    const dsar = await prisma.dataSubjectRequest.updateMany({
-      where: { id, tenantId },
-      data,
+    const result = await withTenant(tenantId, async (tx) => {
+      const dsar = await tx.dataSubjectRequest.updateMany({
+        where: { id, tenantId },
+        data,
+      });
+
+      if (dsar.count === 0) return null;
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "user",
+          actorUserId: (req as any).auth?.userId || null,
+          level: "info",
+          action: "DSAR_UPDATED",
+          entityType: "data_subject_request",
+          entityId: id,
+          message: `DSAR ${id} updated to ${status || "modified"}`,
+          meta: { status, response },
+          timestamp: new Date(),
+        } as any,
+      }).catch(() => null);
+
+      return dsar;
     });
 
-    if (dsar.count === 0) return reply.status(404).send({ ok: false, error: "Request not found" });
+    if (!result) return reply.status(404).send({ ok: false, error: "Request not found" });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "user",
-        actorUserId: (req as any).auth?.userId || null,
-        level: "info",
-        action: "DSAR_UPDATED",
-        entityType: "data_subject_request",
-        entityId: id,
-        message: `DSAR ${id} updated to ${status || "modified"}`,
-        meta: { status, response },
-        timestamp: new Date(),
-      } as any,
-    }).catch(() => null);
-
-    return { ok: true, updated: dsar.count };
+    return { ok: true, updated: result.count };
   });
 
   // ── DSAR: Export user data (Right to Portability — Article 20) ──────────
@@ -170,47 +182,51 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
     // Gather all data for this subject across the tenant
-    const [contacts, auditLogs, jobs, ledger, integrations, consents, dsars] = await Promise.all([
-      prisma.crmContact.findMany({ where: { tenantId, email } }),
-      prisma.auditLog.findMany({
-        where: { tenantId, actorUserId: email },
-        take: 1000,
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.job.findMany({ where: { tenantId }, take: 500, orderBy: { createdAt: "desc" } }),
-      prisma.ledgerEntry.findMany({ where: { tenantId }, take: 500, orderBy: { createdAt: "desc" } }),
-      prisma.integration.findMany({ where: { tenantId }, select: { provider: true, status: true, created_at: true } }),
-      prisma.consentRecord.findMany({ where: { tenantId, subjectEmail: email } }),
-      prisma.dataSubjectRequest.findMany({ where: { tenantId, subjectEmail: email } }),
-    ]);
+    const exportData = await withTenant(tenantId, async (tx) => {
+      const [contacts, auditLogs, jobs, ledger, integrations, consents, dsars] = await Promise.all([
+        tx.crmContact.findMany({ where: { tenantId, email } }),
+        tx.auditLog.findMany({
+          where: { tenantId, actorUserId: email },
+          take: 1000,
+          orderBy: { createdAt: "desc" },
+        }),
+        tx.job.findMany({ where: { tenantId }, take: 500, orderBy: { createdAt: "desc" } }),
+        tx.ledgerEntry.findMany({ where: { tenantId }, take: 500, orderBy: { createdAt: "desc" } }),
+        tx.integration.findMany({ where: { tenantId }, select: { provider: true, status: true, created_at: true } }),
+        tx.consentRecord.findMany({ where: { tenantId, subjectEmail: email } }),
+        tx.dataSubjectRequest.findMany({ where: { tenantId, subjectEmail: email } }),
+      ]);
 
-    const exportData = {
-      exportedAt: new Date().toISOString(),
-      tenantId,
-      subjectEmail: email,
-      contacts,
-      consentRecords: consents,
-      dataSubjectRequests: dsars,
-      auditLogEntries: auditLogs.length,
-      jobsCreated: jobs.length,
-      ledgerEntries: ledger.length,
-      integrations,
-    };
-
-    await prisma.auditLog.create({
-      data: {
+      const data = {
+        exportedAt: new Date().toISOString(),
         tenantId,
-        actorType: "user",
-        actorUserId: (req as any).auth?.userId || null,
-        level: "info",
-        action: "DATA_EXPORT",
-        entityType: "data_subject_request",
-        entityId: email,
-        message: `Data export generated for ${email}`,
-        meta: { subjectEmail: email },
-        timestamp: new Date(),
-      } as any,
-    }).catch(() => null);
+        subjectEmail: email,
+        contacts,
+        consentRecords: consents,
+        dataSubjectRequests: dsars,
+        auditLogEntries: auditLogs.length,
+        jobsCreated: jobs.length,
+        ledgerEntries: ledger.length,
+        integrations,
+      };
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "user",
+          actorUserId: (req as any).auth?.userId || null,
+          level: "info",
+          action: "DATA_EXPORT",
+          entityType: "data_subject_request",
+          entityId: email,
+          message: `Data export generated for ${email}`,
+          meta: { subjectEmail: email },
+          timestamp: new Date(),
+        } as any,
+      }).catch(() => null);
+
+      return data;
+    });
 
     reply.header("content-disposition", `attachment; filename="data-export-${email}.json"`);
     reply.header("content-type", "application/json");
@@ -223,38 +239,42 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const { email } = req.params as any;
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
-    const deleted: Record<string, number> = {};
+    const deleted = await withTenant(tenantId, async (tx) => {
+      const d: Record<string, number> = {};
 
-    // Delete CRM contacts
-    const contacts = await prisma.crmContact.deleteMany({ where: { tenantId, email } });
-    deleted.crmContacts = contacts.count;
+      // Delete CRM contacts
+      const contacts = await tx.crmContact.deleteMany({ where: { tenantId, email } });
+      d.crmContacts = contacts.count;
 
-    // Delete consent records
-    const consents = await prisma.consentRecord.deleteMany({ where: { tenantId, subjectEmail: email } });
-    deleted.consentRecords = consents.count;
+      // Delete consent records
+      const consents = await tx.consentRecord.deleteMany({ where: { tenantId, subjectEmail: email } });
+      d.consentRecords = consents.count;
 
-    // Clear integration tokens (don't delete the row — keep for audit)
-    const integrations = await prisma.integration.updateMany({
-      where: { tenantId },
-      data: { access_token: null, refresh_token: null, status: "disconnected" },
+      // Clear integration tokens (don't delete the row — keep for audit)
+      const integrations = await tx.integration.updateMany({
+        where: { tenantId },
+        data: { access_token: null, refresh_token: null, status: "disconnected" },
+      });
+      d.integrationsCleared = integrations.count;
+
+      // Log the erasure (audit log is retained for compliance — cannot be deleted per GDPR Article 17(3)(e))
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "user",
+          actorUserId: (req as any).auth?.userId || null,
+          level: "warn",
+          action: "DATA_ERASURE",
+          entityType: "data_subject_request",
+          entityId: email,
+          message: `Data erasure completed for ${email}`,
+          meta: { subjectEmail: email, deleted: d },
+          timestamp: new Date(),
+        } as any,
+      }).catch(() => null);
+
+      return d;
     });
-    deleted.integrationsCleared = integrations.count;
-
-    // Log the erasure (audit log is retained for compliance — cannot be deleted per GDPR Article 17(3)(e))
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "user",
-        actorUserId: (req as any).auth?.userId || null,
-        level: "warn",
-        action: "DATA_ERASURE",
-        entityType: "data_subject_request",
-        entityId: email,
-        message: `Data erasure completed for ${email}`,
-        meta: { subjectEmail: email, deleted },
-        timestamp: new Date(),
-      } as any,
-    }).catch(() => null);
 
     return { ok: true, deleted, note: "Audit logs retained per GDPR Article 17(3)(e) — legal obligation" };
   });
@@ -264,14 +284,16 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId;
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
-    const overdue = await prisma.dataSubjectRequest.findMany({
-      where: {
-        tenantId,
-        status: { in: ["pending", "in_progress"] },
-        dueBy: { lt: new Date() },
-      },
-      orderBy: { dueBy: "asc" },
-    });
+    const overdue = await withTenant(tenantId, async (tx) =>
+      tx.dataSubjectRequest.findMany({
+        where: {
+          tenantId,
+          status: { in: ["pending", "in_progress"] },
+          dueBy: { lt: new Date() },
+        },
+        orderBy: { dueBy: "asc" },
+      })
+    );
 
     return { ok: true, overdue, count: overdue.length };
   });
@@ -286,9 +308,11 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const { email } = req.params as any;
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
-    const records = await prisma.consentRecord.findMany({
-      where: { tenantId, subjectEmail: email },
-    });
+    const records = await withTenant(tenantId, async (tx) =>
+      tx.consentRecord.findMany({
+        where: { tenantId, subjectEmail: email },
+      })
+    );
 
     return { ok: true, records };
   });
@@ -303,42 +327,46 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     catch (e: any) { return reply.status(400).send({ ok: false, error: "validation_failed", details: e.errors }); }
     const { subjectEmail, purpose, lawfulBasis } = body;
 
-    const record = await prisma.consentRecord.upsert({
-      where: { tenantId_subjectEmail_purpose: { tenantId, subjectEmail, purpose } },
-      create: {
-        tenantId,
-        subjectEmail,
-        purpose,
-        lawfulBasis,
-        granted: true,
-        grantedAt: new Date(),
-        ipAddress: req.ip,
-        userAgent: req.headers["user-agent"] || null,
-      },
-      update: {
-        granted: true,
-        grantedAt: new Date(),
-        withdrawnAt: null,
-        lawfulBasis,
-        ipAddress: req.ip,
-        userAgent: req.headers["user-agent"] || null,
-      },
-    });
+    const record = await withTenant(tenantId, async (tx) => {
+      const rec = await tx.consentRecord.upsert({
+        where: { tenantId_subjectEmail_purpose: { tenantId, subjectEmail, purpose } },
+        create: {
+          tenantId,
+          subjectEmail,
+          purpose,
+          lawfulBasis,
+          granted: true,
+          grantedAt: new Date(),
+          ipAddress: req.ip,
+          userAgent: req.headers["user-agent"] || null,
+        },
+        update: {
+          granted: true,
+          grantedAt: new Date(),
+          withdrawnAt: null,
+          lawfulBasis,
+          ipAddress: req.ip,
+          userAgent: req.headers["user-agent"] || null,
+        },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "user",
-        actorUserId: (req as any).auth?.userId || null,
-        level: "info",
-        action: "CONSENT_GRANTED",
-        entityType: "consent_record",
-        entityId: record.id,
-        message: `Consent granted: ${purpose} for ${subjectEmail}`,
-        meta: { subjectEmail, purpose, lawfulBasis },
-        timestamp: new Date(),
-      } as any,
-    }).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "user",
+          actorUserId: (req as any).auth?.userId || null,
+          level: "info",
+          action: "CONSENT_GRANTED",
+          entityType: "consent_record",
+          entityId: rec.id,
+          message: `Consent granted: ${purpose} for ${subjectEmail}`,
+          meta: { subjectEmail, purpose, lawfulBasis },
+          timestamp: new Date(),
+        } as any,
+      }).catch(() => null);
+
+      return rec;
+    });
 
     return reply.status(201).send({ ok: true, record });
   });
@@ -350,25 +378,29 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
     try {
-      const record = await prisma.consentRecord.update({
-        where: { tenantId_subjectEmail_purpose: { tenantId, subjectEmail: email, purpose } },
-        data: { granted: false, withdrawnAt: new Date() },
-      });
+      const record = await withTenant(tenantId, async (tx) => {
+        const rec = await tx.consentRecord.update({
+          where: { tenantId_subjectEmail_purpose: { tenantId, subjectEmail: email, purpose } },
+          data: { granted: false, withdrawnAt: new Date() },
+        });
 
-      await prisma.auditLog.create({
-        data: {
-          tenantId,
-          actorType: "user",
-          actorUserId: (req as any).auth?.userId || null,
-          level: "warn",
-          action: "CONSENT_WITHDRAWN",
-          entityType: "consent_record",
-          entityId: record.id,
-          message: `Consent withdrawn: ${purpose} for ${email}`,
-          meta: { subjectEmail: email, purpose },
-          timestamp: new Date(),
-        } as any,
-      }).catch(() => null);
+        await tx.auditLog.create({
+          data: {
+            tenantId,
+            actorType: "user",
+            actorUserId: (req as any).auth?.userId || null,
+            level: "warn",
+            action: "CONSENT_WITHDRAWN",
+            entityType: "consent_record",
+            entityId: rec.id,
+            message: `Consent withdrawn: ${purpose} for ${email}`,
+            meta: { subjectEmail: email, purpose },
+            timestamp: new Date(),
+          } as any,
+        }).catch(() => null);
+
+        return rec;
+      });
 
       return { ok: true, record };
     } catch {
@@ -385,11 +417,13 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId;
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
-    const breaches = await prisma.dataBreach.findMany({
-      where: { tenantId },
-      orderBy: { detectedAt: "desc" },
-      take: 100,
-    });
+    const breaches = await withTenant(tenantId, async (tx) =>
+      tx.dataBreach.findMany({
+        where: { tenantId },
+        orderBy: { detectedAt: "desc" },
+        take: 100,
+      })
+    );
 
     return { ok: true, breaches, total: breaches.length };
   });
@@ -414,36 +448,40 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const notifyIndividualsBy = new Date(detectedAt);
     notifyIndividualsBy.setDate(notifyIndividualsBy.getDate() + 60);
 
-    const breach = await prisma.dataBreach.create({
-      data: {
-        tenantId,
-        severity,
-        title,
-        description,
-        dataTypesAffected: dataTypesAffected || [],
-        individualsAffected: individualsAffected || null,
-        detectedAt,
-        notifyAuthorityBy,
-        notifyIndividualsBy,
-        incidentCommander: incidentCommander || null,
-        reportedBy: (req as any).auth?.userId || null,
-      },
-    });
+    const breach = await withTenant(tenantId, async (tx) => {
+      const b = await tx.dataBreach.create({
+        data: {
+          tenantId,
+          severity,
+          title,
+          description,
+          dataTypesAffected: dataTypesAffected || [],
+          individualsAffected: individualsAffected || null,
+          detectedAt,
+          notifyAuthorityBy,
+          notifyIndividualsBy,
+          incidentCommander: incidentCommander || null,
+          reportedBy: (req as any).auth?.userId || null,
+        },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "user",
-        actorUserId: (req as any).auth?.userId || null,
-        level: "error",
-        action: "BREACH_REPORTED",
-        entityType: "data_breach",
-        entityId: breach.id,
-        message: `Data breach reported: ${title} (${severity})`,
-        meta: { severity, title, dataTypesAffected, individualsAffected },
-        timestamp: new Date(),
-      } as any,
-    }).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "user",
+          actorUserId: (req as any).auth?.userId || null,
+          level: "error",
+          action: "BREACH_REPORTED",
+          entityType: "data_breach",
+          entityId: b.id,
+          message: `Data breach reported: ${title} (${severity})`,
+          meta: { severity, title, dataTypesAffected, individualsAffected },
+          timestamp: new Date(),
+        } as any,
+      }).catch(() => null);
+
+      return b;
+    });
 
     return reply.status(201).send({
       ok: true,
@@ -472,23 +510,29 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     if (authorityNotified) data.authorityNotifiedAt = new Date();
     if (individualsNotified) data.individualsNotifiedAt = new Date();
 
-    const result = await prisma.dataBreach.updateMany({ where: { id, tenantId }, data });
-    if (result.count === 0) return reply.status(404).send({ ok: false, error: "Breach not found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const r = await tx.dataBreach.updateMany({ where: { id, tenantId }, data });
+      if (r.count === 0) return null;
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "user",
-        actorUserId: (req as any).auth?.userId || null,
-        level: "warn",
-        action: "BREACH_UPDATED",
-        entityType: "data_breach",
-        entityId: id,
-        message: `Breach ${id} updated: ${status || "modified"}`,
-        meta: { status, rootCause },
-        timestamp: new Date(),
-      } as any,
-    }).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "user",
+          actorUserId: (req as any).auth?.userId || null,
+          level: "warn",
+          action: "BREACH_UPDATED",
+          entityType: "data_breach",
+          entityId: id,
+          message: `Breach ${id} updated: ${status || "modified"}`,
+          meta: { status, rootCause },
+          timestamp: new Date(),
+        } as any,
+      }).catch(() => null);
+
+      return r;
+    });
+
+    if (!result) return reply.status(404).send({ ok: false, error: "Breach not found" });
 
     return { ok: true, updated: result.count };
   });
@@ -502,17 +546,19 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const in24h = new Date(now);
     in24h.setHours(in24h.getHours() + 24);
 
-    const urgent = await prisma.dataBreach.findMany({
-      where: {
-        tenantId,
-        status: { notIn: ["closed"] },
-        OR: [
-          { authorityNotifiedAt: null, notifyAuthorityBy: { lte: in24h } },
-          { individualsNotifiedAt: null, notifyIndividualsBy: { not: null } },
-        ],
-      },
-      orderBy: { notifyAuthorityBy: "asc" },
-    });
+    const urgent = await withTenant(tenantId, async (tx) =>
+      tx.dataBreach.findMany({
+        where: {
+          tenantId,
+          status: { notIn: ["closed"] },
+          OR: [
+            { authorityNotifiedAt: null, notifyAuthorityBy: { lte: in24h } },
+            { individualsNotifiedAt: null, notifyIndividualsBy: { not: null } },
+          ],
+        },
+        orderBy: { notifyAuthorityBy: "asc" },
+      })
+    );
 
     return { ok: true, urgent, count: urgent.length };
   });
@@ -532,11 +578,13 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     if (severity) where.severity = severity;
     if (category) where.category = category;
 
-    const incidents = await prisma.incidentReport.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    });
+    const incidents = await withTenant(tenantId, async (tx) =>
+      tx.incidentReport.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      })
+    );
 
     return { ok: true, incidents, total: incidents.length };
   });
@@ -555,34 +603,38 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     catch (e: any) { return reply.status(400).send({ ok: false, error: "validation_failed", details: e.errors }); }
     const { severity, category, title, description, impactSummary, affectedSystems, assignedTo } = incBody;
 
-    const incident = await prisma.incidentReport.create({
-      data: {
-        tenantId,
-        severity,
-        category: category ?? "uncategorized",
-        title,
-        description,
-        impactSummary: impactSummary || null,
-        affectedSystems: affectedSystems || [],
-        reportedBy: (req as any).auth?.userId || null,
-        assignedTo: assignedTo || null,
-      },
-    });
+    const incident = await withTenant(tenantId, async (tx) => {
+      const inc = await tx.incidentReport.create({
+        data: {
+          tenantId,
+          severity,
+          category: category ?? "uncategorized",
+          title,
+          description,
+          impactSummary: impactSummary || null,
+          affectedSystems: affectedSystems || [],
+          reportedBy: (req as any).auth?.userId || null,
+          assignedTo: assignedTo || null,
+        },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "user",
-        actorUserId: (req as any).auth?.userId || null,
-        level: severity === "P0" ? "error" : "warn",
-        action: "INCIDENT_CREATED",
-        entityType: "incident_report",
-        entityId: incident.id,
-        message: `Incident reported: ${title} (${severity}/${category})`,
-        meta: { severity, category, title, affectedSystems },
-        timestamp: new Date(),
-      } as any,
-    }).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "user",
+          actorUserId: (req as any).auth?.userId || null,
+          level: severity === "P0" ? "error" : "warn",
+          action: "INCIDENT_CREATED",
+          entityType: "incident_report",
+          entityId: inc.id,
+          message: `Incident reported: ${title} (${severity}/${category})`,
+          meta: { severity, category, title, affectedSystems },
+          timestamp: new Date(),
+        } as any,
+      }).catch(() => null);
+
+      return inc;
+    });
 
     return reply.status(201).send({ ok: true, incident });
   });
@@ -603,23 +655,29 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     if (lessonsLearned) data.lessonsLearned = lessonsLearned;
     if (status === "resolved" || status === "closed") data.resolvedAt = new Date();
 
-    const result = await prisma.incidentReport.updateMany({ where: { id, tenantId }, data });
-    if (result.count === 0) return reply.status(404).send({ ok: false, error: "Incident not found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const r = await tx.incidentReport.updateMany({ where: { id, tenantId }, data });
+      if (r.count === 0) return null;
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "user",
-        actorUserId: (req as any).auth?.userId || null,
-        level: "info",
-        action: "INCIDENT_UPDATED",
-        entityType: "incident_report",
-        entityId: id,
-        message: `Incident ${id} updated: ${status || "modified"}`,
-        meta: { status, rootCause, resolution },
-        timestamp: new Date(),
-      } as any,
-    }).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "user",
+          actorUserId: (req as any).auth?.userId || null,
+          level: "info",
+          action: "INCIDENT_UPDATED",
+          entityType: "incident_report",
+          entityId: id,
+          message: `Incident ${id} updated: ${status || "modified"}`,
+          meta: { status, rootCause, resolution },
+          timestamp: new Date(),
+        } as any,
+      }).catch(() => null);
+
+      return r;
+    });
+
+    if (!result) return reply.status(404).send({ ok: false, error: "Incident not found" });
 
     return { ok: true, updated: result.count };
   });
@@ -633,10 +691,12 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId;
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
-    const vendors = await prisma.vendorAssessment.findMany({
-      where: { tenantId },
-      orderBy: { vendorName: "asc" },
-    });
+    const vendors = await withTenant(tenantId, async (tx) =>
+      tx.vendorAssessment.findMany({
+        where: { tenantId },
+        orderBy: { vendorName: "asc" },
+      })
+    );
 
     return { ok: true, vendors, total: vendors.length };
   });
@@ -660,50 +720,54 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const nextAssessmentDue = new Date();
     nextAssessmentDue.setFullYear(nextAssessmentDue.getFullYear() + 1);
 
-    const vendor = await prisma.vendorAssessment.upsert({
-      where: { tenantId_vendorName: { tenantId, vendorName } },
-      create: {
-        tenantId,
-        vendorName,
-        category,
-        riskLevel,
-        dataAccess: dataAccess || [],
-        complianceCerts: complianceCerts || [],
-        hasDataProcessingAgreement: hasDataProcessingAgreement || false,
-        hasBaa: hasBaa || false,
-        lastAssessedAt: new Date(),
-        nextAssessmentDue,
-        notes: notes || null,
-        assessedBy: (req as any).auth?.userId || null,
-      },
-      update: {
-        category,
-        riskLevel,
-        dataAccess: dataAccess || [],
-        complianceCerts: complianceCerts || [],
-        hasDataProcessingAgreement: hasDataProcessingAgreement || false,
-        hasBaa: hasBaa || false,
-        lastAssessedAt: new Date(),
-        nextAssessmentDue,
-        notes: notes || null,
-        assessedBy: (req as any).auth?.userId || null,
-      },
-    });
+    const vendor = await withTenant(tenantId, async (tx) => {
+      const v = await tx.vendorAssessment.upsert({
+        where: { tenantId_vendorName: { tenantId, vendorName } },
+        create: {
+          tenantId,
+          vendorName,
+          category,
+          riskLevel,
+          dataAccess: dataAccess || [],
+          complianceCerts: complianceCerts || [],
+          hasDataProcessingAgreement: hasDataProcessingAgreement || false,
+          hasBaa: hasBaa || false,
+          lastAssessedAt: new Date(),
+          nextAssessmentDue,
+          notes: notes || null,
+          assessedBy: (req as any).auth?.userId || null,
+        },
+        update: {
+          category,
+          riskLevel,
+          dataAccess: dataAccess || [],
+          complianceCerts: complianceCerts || [],
+          hasDataProcessingAgreement: hasDataProcessingAgreement || false,
+          hasBaa: hasBaa || false,
+          lastAssessedAt: new Date(),
+          nextAssessmentDue,
+          notes: notes || null,
+          assessedBy: (req as any).auth?.userId || null,
+        },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "user",
-        actorUserId: (req as any).auth?.userId || null,
-        level: "info",
-        action: "VENDOR_ASSESSED",
-        entityType: "vendor_assessment",
-        entityId: vendor.id,
-        message: `Vendor assessed: ${vendorName} (${riskLevel})`,
-        meta: { vendorName, category, riskLevel, complianceCerts },
-        timestamp: new Date(),
-      } as any,
-    }).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "user",
+          actorUserId: (req as any).auth?.userId || null,
+          level: "info",
+          action: "VENDOR_ASSESSED",
+          entityType: "vendor_assessment",
+          entityId: v.id,
+          message: `Vendor assessed: ${vendorName} (${riskLevel})`,
+          meta: { vendorName, category, riskLevel, complianceCerts },
+          timestamp: new Date(),
+        } as any,
+      }).catch(() => null);
+
+      return v;
+    });
 
     return reply.status(201).send({ ok: true, vendor });
   });
@@ -713,14 +777,16 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId;
     if (!tenantId) return reply.status(400).send({ ok: false, error: "Tenant ID required" });
 
-    const due = await prisma.vendorAssessment.findMany({
-      where: {
-        tenantId,
-        status: "active",
-        nextAssessmentDue: { lte: new Date() },
-      },
-      orderBy: { nextAssessmentDue: "asc" },
-    });
+    const due = await withTenant(tenantId, async (tx) =>
+      tx.vendorAssessment.findMany({
+        where: {
+          tenantId,
+          status: "active",
+          nextAssessmentDue: { lte: new Date() },
+        },
+        orderBy: { nextAssessmentDue: "asc" },
+      })
+    );
 
     return { ok: true, due, count: due.length };
   });
@@ -744,16 +810,18 @@ export const complianceRoutes: FastifyPluginAsync = async (app) => {
       vendorsTotal,
       vendorsDue,
       consentsActive,
-    ] = await Promise.all([
-      prisma.dataSubjectRequest.count({ where: { tenantId, status: { in: ["pending", "in_progress"] } } }),
-      prisma.dataSubjectRequest.count({ where: { tenantId, status: { in: ["pending", "in_progress"] }, dueBy: { lt: now } } }),
-      prisma.dataBreach.count({ where: { tenantId, status: { notIn: ["closed"] } } }),
-      prisma.dataBreach.count({ where: { tenantId, authorityNotifiedAt: null, notifyAuthorityBy: { lt: now } } }),
-      prisma.incidentReport.count({ where: { tenantId, status: { notIn: ["resolved", "closed"] } } }),
-      prisma.vendorAssessment.count({ where: { tenantId } }),
-      prisma.vendorAssessment.count({ where: { tenantId, status: "active", nextAssessmentDue: { lte: now } } }),
-      prisma.consentRecord.count({ where: { tenantId, granted: true } }),
-    ]);
+    ] = await withTenant(tenantId, async (tx) =>
+      Promise.all([
+        tx.dataSubjectRequest.count({ where: { tenantId, status: { in: ["pending", "in_progress"] } } }),
+        tx.dataSubjectRequest.count({ where: { tenantId, status: { in: ["pending", "in_progress"] }, dueBy: { lt: now } } }),
+        tx.dataBreach.count({ where: { tenantId, status: { notIn: ["closed"] } } }),
+        tx.dataBreach.count({ where: { tenantId, authorityNotifiedAt: null, notifyAuthorityBy: { lt: now } } }),
+        tx.incidentReport.count({ where: { tenantId, status: { notIn: ["resolved", "closed"] } } }),
+        tx.vendorAssessment.count({ where: { tenantId } }),
+        tx.vendorAssessment.count({ where: { tenantId, status: "active", nextAssessmentDue: { lte: now } } }),
+        tx.consentRecord.count({ where: { tenantId, granted: true } }),
+      ])
+    );
 
     return {
       ok: true,

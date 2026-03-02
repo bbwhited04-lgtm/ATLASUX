@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { Prisma, LedgerCategory, LedgerEntryType } from "@prisma/client";
 
 
@@ -56,30 +56,34 @@ export async function ledgerRoutes(app: FastifyInstance) {
 
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId_required" });
 
-    const [entries, total] = await prisma.$transaction([
-      prisma.ledgerEntry.findMany({
-        where: { tenantId },
-        orderBy: { occurredAt: "desc" },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.ledgerEntry.count({ where: { tenantId } }),
-    ]);
+    const result = await withTenant(tenantId, async (tx) => {
+      const [entries, total] = await Promise.all([
+        tx.ledgerEntry.findMany({
+          where: { tenantId },
+          orderBy: { occurredAt: "desc" },
+          take: limit,
+          skip: offset,
+        }),
+        tx.ledgerEntry.count({ where: { tenantId } }),
+      ]);
 
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
 
-    const monthDebits = await prisma.ledgerEntry.aggregate({
-      where: { tenantId, occurredAt: { gte: monthStart }, entryType: LedgerEntryType.debit },
-      _sum: { amountCents: true },
+      const monthDebits = await tx.ledgerEntry.aggregate({
+        where: { tenantId, occurredAt: { gte: monthStart }, entryType: LedgerEntryType.debit },
+        _sum: { amountCents: true },
+      });
+
+      return { entries, total, monthDebits };
     });
 
     return reply.send({
       ok: true,
-      total,
-      entries,
-      monthDebitCents: Number(monthDebits._sum.amountCents ?? 0),
+      total: result.total,
+      entries: result.entries,
+      monthDebitCents: Number(result.monthDebits._sum.amountCents ?? 0),
     });
   });
 
@@ -100,20 +104,22 @@ export async function ledgerRoutes(app: FastifyInstance) {
 
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId_required" });
     if (!description) return reply.code(400).send({ ok: false, error: "description_required" });
-    
-    const entry = await prisma.ledgerEntry.create({
-      data: {
-        tenantId,
-        entryType,
-        category,
-        amountCents,
-        createdAt: new Date(),
-        currency,
-        description,
-        externalRef: typeof body.externalRef === "string" ? body.externalRef : null,
-        meta: body.meta ?? Prisma.DbNull,
-        occurredAt: body.occurredAt ? new Date(body.occurredAt) : new Date(),
-      },
+
+    const entry = await withTenant(tenantId, async (tx) => {
+      return tx.ledgerEntry.create({
+        data: {
+          tenantId,
+          entryType,
+          category,
+          amountCents,
+          createdAt: new Date(),
+          currency,
+          description,
+          externalRef: typeof body.externalRef === "string" ? body.externalRef : null,
+          meta: body.meta ?? Prisma.DbNull,
+          occurredAt: body.occurredAt ? new Date(body.occurredAt) : new Date(),
+        },
+      });
     });
 
     return reply.send({ ok: true, entry });

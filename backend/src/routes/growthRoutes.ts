@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { runGrowthLoop } from "../services/growthLoop.js";
 
 const GrowthRunSchema = z.object({
@@ -18,21 +18,23 @@ export const growthRoutes: FastifyPluginAsync = async (app) => {
     try { body = GrowthRunSchema.parse(req.body ?? {}); }
     catch (e: any) { return reply.code(400).send({ ok: false, error: "INVALID_BODY", details: e.errors }); }
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: (req as any).auth?.userId ?? null,
-        actorExternalId: body.agent,
-        level: "info",
-        action: "GROWTH_LOOP_TRIGGERED",
-        entityType: "growth_run",
-        entityId: null,
-        message: `Growth loop triggered by agent ${body.agent}`,
-        meta: { agent: body.agent, hasProposedAction: body.proposedAction != null },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+    await withTenant(tenantId, async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: (req as any).auth?.userId ?? null,
+          actorExternalId: body.agent,
+          level: "info",
+          action: "GROWTH_LOOP_TRIGGERED",
+          entityType: "growth_run",
+          entityId: null,
+          message: `Growth loop triggered by agent ${body.agent}`,
+          meta: { agent: body.agent, hasProposedAction: body.proposedAction != null },
+          timestamp: new Date(),
+        },
+      } as any);
+    }).catch(() => null);
 
     const res = await runGrowthLoop({ tenantId, agent: body.agent, proposedAction: body.proposedAction as any });
     return reply.send(res);

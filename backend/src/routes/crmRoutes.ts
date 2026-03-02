@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { Prisma } from "@prisma/client";
 
 function s(v: unknown): string | null {
@@ -32,10 +32,12 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
       ];
     }
 
-    const [contacts, total] = await Promise.all([
-      prisma.crmContact.findMany({ where, orderBy: { createdAt: "desc" }, take: limit, skip: offset }),
-      prisma.crmContact.count({ where }),
-    ]);
+    const [contacts, total] = await withTenant(tenantId, async (tx) => {
+      return Promise.all([
+        tx.crmContact.findMany({ where, orderBy: { createdAt: "desc" }, take: limit, skip: offset }),
+        tx.crmContact.count({ where }),
+      ]);
+    });
 
     return reply.send({ ok: true, contacts, total });
   });
@@ -45,35 +47,39 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const body = (req.body ?? {}) as any;
-    const contact = await prisma.crmContact.create({
-      data: {
-        tenantId,
-        firstName: s(body.firstName) ?? undefined,
-        lastName:  s(body.lastName)  ?? undefined,
-        email:     s(body.email)     ?? undefined,
-        phone:     s(body.phone)     ?? undefined,
-        company:   s(body.company)   ?? undefined,
-        source:    s(body.source)    ?? "manual",
-        notes:     s(body.notes)     ?? undefined,
-        tags:      Array.isArray(body.tags) ? body.tags.filter((t: any) => typeof t === "string") : [],
-      },
-    });
+    const { contact } = await withTenant(tenantId, async (tx) => {
+      const contact = await tx.crmContact.create({
+        data: {
+          tenantId,
+          firstName: s(body.firstName) ?? undefined,
+          lastName:  s(body.lastName)  ?? undefined,
+          email:     s(body.email)     ?? undefined,
+          phone:     s(body.phone)     ?? undefined,
+          company:   s(body.company)   ?? undefined,
+          source:    s(body.source)    ?? "manual",
+          notes:     s(body.notes)     ?? undefined,
+          tags:      Array.isArray(body.tags) ? body.tags.filter((t: any) => typeof t === "string") : [],
+        },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: (req as any).auth?.userId ?? null,
-        level: "info",
-        action: "CRM_CONTACT_CREATED",
-        entityType: "crm_contact",
-        entityId: contact.id,
-        message: `Contact created: ${[body.firstName, body.lastName].filter(Boolean).join(" ") || body.email || "unnamed"}`,
-        meta: { source: contact.source },
-        timestamp: new Date(),
-      },
-    }).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: (req as any).auth?.userId ?? null,
+          level: "info",
+          action: "CRM_CONTACT_CREATED",
+          entityType: "crm_contact",
+          entityId: contact.id,
+          message: `Contact created: ${[body.firstName, body.lastName].filter(Boolean).join(" ") || body.email || "unnamed"}`,
+          meta: { source: contact.source },
+          timestamp: new Date(),
+        },
+      }).catch(() => null);
+
+      return { contact };
+    });
 
     return reply.code(201).send({ ok: true, contact });
   });
@@ -85,39 +91,44 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     const { id } = req.params as any;
     const body = (req.body ?? {}) as any;
 
-    const existing = await prisma.crmContact.findFirst({ where: { id, tenantId } });
-    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const existing = await tx.crmContact.findFirst({ where: { id, tenantId } });
+      if (!existing) return { notFound: true as const };
 
-    const updated = await prisma.crmContact.update({
-      where: { id },
-      data: {
-        ...(body.firstName !== undefined ? { firstName: s(body.firstName) ?? undefined } : {}),
-        ...(body.lastName  !== undefined ? { lastName:  s(body.lastName)  ?? undefined } : {}),
-        ...(body.email     !== undefined ? { email:     s(body.email)     ?? undefined } : {}),
-        ...(body.phone     !== undefined ? { phone:     s(body.phone)     ?? undefined } : {}),
-        ...(body.company   !== undefined ? { company:   s(body.company)   ?? undefined } : {}),
-        ...(body.notes     !== undefined ? { notes:     s(body.notes)     ?? undefined } : {}),
-        ...(Array.isArray(body.tags)     ? { tags: body.tags.filter((t: any) => typeof t === "string") } : {}),
-      },
+      const updated = await tx.crmContact.update({
+        where: { id },
+        data: {
+          ...(body.firstName !== undefined ? { firstName: s(body.firstName) ?? undefined } : {}),
+          ...(body.lastName  !== undefined ? { lastName:  s(body.lastName)  ?? undefined } : {}),
+          ...(body.email     !== undefined ? { email:     s(body.email)     ?? undefined } : {}),
+          ...(body.phone     !== undefined ? { phone:     s(body.phone)     ?? undefined } : {}),
+          ...(body.company   !== undefined ? { company:   s(body.company)   ?? undefined } : {}),
+          ...(body.notes     !== undefined ? { notes:     s(body.notes)     ?? undefined } : {}),
+          ...(Array.isArray(body.tags)     ? { tags: body.tags.filter((t: any) => typeof t === "string") } : {}),
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: (req as any).auth?.userId ?? null,
+          level: "info",
+          action: "CRM_CONTACT_UPDATED",
+          entityType: "crm_contact",
+          entityId: id,
+          message: `Contact updated: ${id}`,
+          meta: {},
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+
+      return { contact: updated };
     });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: (req as any).auth?.userId ?? null,
-        level: "info",
-        action: "CRM_CONTACT_UPDATED",
-        entityType: "crm_contact",
-        entityId: id,
-        message: `Contact updated: ${id}`,
-        meta: {},
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
-
-    return reply.send({ ok: true, contact: updated });
+    if ("notFound" in result) return reply.code(404).send({ ok: false, error: "Not found" });
+    return reply.send({ ok: true, contact: result.contact });
   });
 
   app.delete("/contacts/:id", async (req, reply) => {
@@ -125,27 +136,33 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const { id } = req.params as any;
-    const existing = await prisma.crmContact.findFirst({ where: { id, tenantId } });
-    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
 
-    await prisma.crmContact.delete({ where: { id } });
+    const result = await withTenant(tenantId, async (tx) => {
+      const existing = await tx.crmContact.findFirst({ where: { id, tenantId } });
+      if (!existing) return { notFound: true as const };
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: (req as any).auth?.userId ?? null,
-        level: "info",
-        action: "CRM_CONTACT_DELETED",
-        entityType: "crm_contact",
-        entityId: id,
-        message: `Contact deleted: ${id}`,
-        meta: {},
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+      await tx.crmContact.delete({ where: { id } });
 
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: (req as any).auth?.userId ?? null,
+          level: "info",
+          action: "CRM_CONTACT_DELETED",
+          entityType: "crm_contact",
+          entityId: id,
+          message: `Contact deleted: ${id}`,
+          meta: {},
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+
+      return { ok: true };
+    });
+
+    if ("notFound" in result) return reply.code(404).send({ ok: false, error: "Not found" });
     return reply.send({ ok: true });
   });
 
@@ -158,23 +175,27 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     const ids: string[] = Array.isArray(body.ids) ? body.ids : [];
     if (!ids.length) return reply.code(400).send({ ok: false, error: "ids[] required" });
 
-    const { count } = await prisma.crmContact.deleteMany({ where: { tenantId, id: { in: ids } } });
+    const { count } = await withTenant(tenantId, async (tx) => {
+      const { count } = await tx.crmContact.deleteMany({ where: { tenantId, id: { in: ids } } });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: (req as any).auth?.userId ?? null,
-        level: "info",
-        action: "CRM_CONTACTS_BULK_DELETED",
-        entityType: "crm_contact",
-        entityId: ids.join(",").slice(0, 200),
-        message: `Bulk deleted ${count} contacts`,
-        meta: { ids, count },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: (req as any).auth?.userId ?? null,
+          level: "info",
+          action: "CRM_CONTACTS_BULK_DELETED",
+          entityType: "crm_contact",
+          entityId: ids.join(",").slice(0, 200),
+          message: `Bulk deleted ${count} contacts`,
+          meta: { ids, count },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+
+      return { count };
+    });
 
     return reply.send({ ok: true, deleted: count });
   });
@@ -196,10 +217,12 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
       ];
     }
 
-    const [companies, total] = await Promise.all([
-      prisma.crmCompany.findMany({ where, orderBy: { createdAt: "desc" }, take: 200 }),
-      prisma.crmCompany.count({ where }),
-    ]);
+    const [companies, total] = await withTenant(tenantId, async (tx) => {
+      return Promise.all([
+        tx.crmCompany.findMany({ where, orderBy: { createdAt: "desc" }, take: 200 }),
+        tx.crmCompany.count({ where }),
+      ]);
+    });
 
     return reply.send({ ok: true, companies, total });
   });
@@ -211,14 +234,16 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     const body = (req.body ?? {}) as any;
     if (!s(body.name)) return reply.code(400).send({ ok: false, error: "name required" });
 
-    const company = await prisma.crmCompany.create({
-      data: {
-        tenantId,
-        name:     s(body.name)!,
-        domain:   s(body.domain)   ?? undefined,
-        industry: s(body.industry) ?? undefined,
-        notes:    s(body.notes)    ?? undefined,
-      },
+    const company = await withTenant(tenantId, async (tx) => {
+      return tx.crmCompany.create({
+        data: {
+          tenantId,
+          name:     s(body.name)!,
+          domain:   s(body.domain)   ?? undefined,
+          industry: s(body.industry) ?? undefined,
+          notes:    s(body.notes)    ?? undefined,
+        },
+      });
     });
 
     return reply.code(201).send({ ok: true, company });
@@ -229,10 +254,16 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const { id } = req.params as any;
-    const existing = await prisma.crmCompany.findFirst({ where: { id, tenantId } });
-    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
 
-    await prisma.crmCompany.delete({ where: { id } });
+    const result = await withTenant(tenantId, async (tx) => {
+      const existing = await tx.crmCompany.findFirst({ where: { id, tenantId } });
+      if (!existing) return { notFound: true as const };
+
+      await tx.crmCompany.delete({ where: { id } });
+      return { ok: true };
+    });
+
+    if ("notFound" in result) return reply.code(404).send({ ok: false, error: "Not found" });
     return reply.send({ ok: true });
   });
 
@@ -244,16 +275,21 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
 
     const { id } = req.params as any;
 
-    const contact = await prisma.crmContact.findFirst({ where: { id, tenantId } });
-    if (!contact) return reply.code(404).send({ ok: false, error: "Not found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const contact = await tx.crmContact.findFirst({ where: { id, tenantId } });
+      if (!contact) return { notFound: true as const };
 
-    const activities = await prisma.contactActivity.findMany({
-      where: { contactId: id, tenantId },
-      orderBy: { occurredAt: "desc" },
-      take: 100,
+      const activities = await tx.contactActivity.findMany({
+        where: { contactId: id, tenantId },
+        orderBy: { occurredAt: "desc" },
+        take: 100,
+      });
+
+      return { activities };
     });
 
-    return reply.send({ ok: true, activities });
+    if ("notFound" in result) return reply.code(404).send({ ok: false, error: "Not found" });
+    return reply.send({ ok: true, activities: result.activities });
   });
 
   app.post("/contacts/:id/activities", async (req, reply) => {
@@ -263,9 +299,6 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     const { id } = req.params as any;
     const body = (req.body ?? {}) as any;
 
-    const contact = await prisma.crmContact.findFirst({ where: { id, tenantId } });
-    if (!contact) return reply.code(404).send({ ok: false, error: "Not found" });
-
     const type = s(body.type);
     if (!type || !(ACTIVITY_TYPES as readonly string[]).includes(type)) {
       return reply.code(400).send({
@@ -274,19 +307,27 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const activity = await prisma.contactActivity.create({
-      data: {
-        tenantId,
-        contactId: id,
-        type: type as ActivityType,
-        subject: s(body.subject) ?? undefined,
-        body: s(body.body) ?? undefined,
-        meta: body.meta ?? Prisma.DbNull,
-        occurredAt: body.occurredAt ? new Date(body.occurredAt) : new Date(),
-      },
+    const result = await withTenant(tenantId, async (tx) => {
+      const contact = await tx.crmContact.findFirst({ where: { id, tenantId } });
+      if (!contact) return { notFound: true as const };
+
+      const activity = await tx.contactActivity.create({
+        data: {
+          tenantId,
+          contactId: id,
+          type: type as ActivityType,
+          subject: s(body.subject) ?? undefined,
+          body: s(body.body) ?? undefined,
+          meta: body.meta ?? Prisma.DbNull,
+          occurredAt: body.occurredAt ? new Date(body.occurredAt) : new Date(),
+        },
+      });
+
+      return { activity };
     });
 
-    return reply.code(201).send({ ok: true, activity });
+    if ("notFound" in result) return reply.code(404).send({ ok: false, error: "Not found" });
+    return reply.code(201).send({ ok: true, activity: result.activity });
   });
 
   app.delete("/activities/:activityId", async (req, reply) => {
@@ -294,10 +335,16 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const { activityId } = req.params as any;
-    const existing = await prisma.contactActivity.findFirst({ where: { id: activityId, tenantId } });
-    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
 
-    await prisma.contactActivity.delete({ where: { id: activityId } });
+    const result = await withTenant(tenantId, async (tx) => {
+      const existing = await tx.contactActivity.findFirst({ where: { id: activityId, tenantId } });
+      if (!existing) return { notFound: true as const };
+
+      await tx.contactActivity.delete({ where: { id: activityId } });
+      return { ok: true };
+    });
+
+    if ("notFound" in result) return reply.code(404).send({ ok: false, error: "Not found" });
     return reply.send({ ok: true });
   });
 
@@ -307,9 +354,11 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId as string | undefined;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
-    const segments = await prisma.crmSegment.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
+    const segments = await withTenant(tenantId, async (tx) => {
+      return tx.crmSegment.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: "desc" },
+      });
     });
 
     return reply.send({ ok: true, segments });
@@ -322,13 +371,15 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     const body = (req.body ?? {}) as any;
     if (!s(body.name)) return reply.code(400).send({ ok: false, error: "name required" });
 
-    const segment = await prisma.crmSegment.create({
-      data: {
-        tenantId,
-        name: s(body.name)!,
-        description: s(body.description) ?? undefined,
-        filters: body.filters ?? {},
-      },
+    const segment = await withTenant(tenantId, async (tx) => {
+      return tx.crmSegment.create({
+        data: {
+          tenantId,
+          name: s(body.name)!,
+          description: s(body.description) ?? undefined,
+          filters: body.filters ?? {},
+        },
+      });
     });
 
     return reply.code(201).send({ ok: true, segment });
@@ -341,19 +392,24 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     const { id } = req.params as any;
     const body = (req.body ?? {}) as any;
 
-    const existing = await prisma.crmSegment.findFirst({ where: { id, tenantId } });
-    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const existing = await tx.crmSegment.findFirst({ where: { id, tenantId } });
+      if (!existing) return { notFound: true as const };
 
-    const segment = await prisma.crmSegment.update({
-      where: { id },
-      data: {
-        ...(body.name !== undefined ? { name: s(body.name) ?? existing.name } : {}),
-        ...(body.description !== undefined ? { description: s(body.description) ?? undefined } : {}),
-        ...(body.filters !== undefined ? { filters: body.filters } : {}),
-      },
+      const segment = await tx.crmSegment.update({
+        where: { id },
+        data: {
+          ...(body.name !== undefined ? { name: s(body.name) ?? existing.name } : {}),
+          ...(body.description !== undefined ? { description: s(body.description) ?? undefined } : {}),
+          ...(body.filters !== undefined ? { filters: body.filters } : {}),
+        },
+      });
+
+      return { segment };
     });
 
-    return reply.send({ ok: true, segment });
+    if ("notFound" in result) return reply.code(404).send({ ok: false, error: "Not found" });
+    return reply.send({ ok: true, segment: result.segment });
   });
 
   app.delete("/segments/:id", async (req, reply) => {
@@ -361,10 +417,16 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const { id } = req.params as any;
-    const existing = await prisma.crmSegment.findFirst({ where: { id, tenantId } });
-    if (!existing) return reply.code(404).send({ ok: false, error: "Not found" });
 
-    await prisma.crmSegment.delete({ where: { id } });
+    const result = await withTenant(tenantId, async (tx) => {
+      const existing = await tx.crmSegment.findFirst({ where: { id, tenantId } });
+      if (!existing) return { notFound: true as const };
+
+      await tx.crmSegment.delete({ where: { id } });
+      return { ok: true };
+    });
+
+    if ("notFound" in result) return reply.code(404).send({ ok: false, error: "Not found" });
     return reply.send({ ok: true });
   });
 
@@ -373,42 +435,48 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     const { id } = req.params as any;
-    const segment = await prisma.crmSegment.findFirst({ where: { id, tenantId } });
-    if (!segment) return reply.code(404).send({ ok: false, error: "Not found" });
 
-    const filters = (segment.filters ?? {}) as any;
+    const result = await withTenant(tenantId, async (tx) => {
+      const segment = await tx.crmSegment.findFirst({ where: { id, tenantId } });
+      if (!segment) return { notFound: true as const };
 
-    const where: any = { tenantId };
+      const filters = (segment.filters ?? {}) as any;
 
-    if (filters.q && typeof filters.q === "string" && filters.q.trim()) {
-      const q = filters.q.trim();
-      where.OR = [
-        { firstName: { contains: q, mode: "insensitive" } },
-        { lastName:  { contains: q, mode: "insensitive" } },
-        { email:     { contains: q, mode: "insensitive" } },
-        { company:   { contains: q, mode: "insensitive" } },
-        { phone:     { contains: q, mode: "insensitive" } },
-      ];
-    }
+      const where: any = { tenantId };
 
-    if (Array.isArray(filters.tags) && filters.tags.length) {
-      where.tags = { hasEvery: filters.tags };
-    }
+      if (filters.q && typeof filters.q === "string" && filters.q.trim()) {
+        const q = filters.q.trim();
+        where.OR = [
+          { firstName: { contains: q, mode: "insensitive" } },
+          { lastName:  { contains: q, mode: "insensitive" } },
+          { email:     { contains: q, mode: "insensitive" } },
+          { company:   { contains: q, mode: "insensitive" } },
+          { phone:     { contains: q, mode: "insensitive" } },
+        ];
+      }
 
-    if (filters.source && typeof filters.source === "string") {
-      where.source = { equals: filters.source, mode: "insensitive" };
-    }
+      if (Array.isArray(filters.tags) && filters.tags.length) {
+        where.tags = { hasEvery: filters.tags };
+      }
 
-    if (filters.company && typeof filters.company === "string") {
-      where.company = { contains: filters.company, mode: "insensitive" };
-    }
+      if (filters.source && typeof filters.source === "string") {
+        where.source = { equals: filters.source, mode: "insensitive" };
+      }
 
-    const contacts = await prisma.crmContact.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
+      if (filters.company && typeof filters.company === "string") {
+        where.company = { contains: filters.company, mode: "insensitive" };
+      }
+
+      const contacts = await tx.crmContact.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+      });
+
+      return { contacts, total: contacts.length };
     });
 
-    return reply.send({ ok: true, contacts, total: contacts.length });
+    if ("notFound" in result) return reply.code(404).send({ ok: false, error: "Not found" });
+    return reply.send({ ok: true, contacts: result.contacts, total: result.total });
   });
 
   // ── CSV Import ────────────────────────────────────────────────────────────
@@ -423,83 +491,87 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     if (!rows.length) return reply.code(400).send({ ok: false, error: "No rows provided" });
     if (rows.length > 5000) return reply.code(400).send({ ok: false, error: "Max 5000 rows per import" });
 
-    let created = 0;
-    let skipped = 0;
-    const errors: string[] = [];
+    const result = await withTenant(tenantId, async (tx) => {
+      let created = 0;
+      let skipped = 0;
+      const errors: string[] = [];
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const firstName = s(row.firstName ?? row.first_name ?? row["First Name"] ?? row["First"]);
-      const lastName  = s(row.lastName ?? row.last_name ?? row["Last Name"] ?? row["Last"]);
-      const email     = s(row.email ?? row.Email ?? row["E-mail"] ?? row["Email Address"] ?? row["E-mail Address"]);
-      const phone     = s(row.phone ?? row.Phone ?? row["Phone Number"] ?? row["Phone number"]);
-      const company   = s(row.company ?? row.Company ?? row["Organization"] ?? row["Company Name"]);
-      const notes     = s(row.notes ?? row.Notes ?? row["Note"]);
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const firstName = s(row.firstName ?? row.first_name ?? row["First Name"] ?? row["First"]);
+        const lastName  = s(row.lastName ?? row.last_name ?? row["Last Name"] ?? row["Last"]);
+        const email     = s(row.email ?? row.Email ?? row["E-mail"] ?? row["Email Address"] ?? row["E-mail Address"]);
+        const phone     = s(row.phone ?? row.Phone ?? row["Phone Number"] ?? row["Phone number"]);
+        const company   = s(row.company ?? row.Company ?? row["Organization"] ?? row["Company Name"]);
+        const notes     = s(row.notes ?? row.Notes ?? row["Note"]);
 
-      if (!email && !phone && !firstName && !lastName) {
-        skipped++;
-        continue;
-      }
-
-      try {
-        await prisma.crmContact.create({
-          data: {
-            tenantId,
-            firstName: firstName ?? undefined,
-            lastName:  lastName  ?? undefined,
-            email:     email     ?? undefined,
-            phone:     phone     ?? undefined,
-            company:   company   ?? undefined,
-            notes:     notes     ?? undefined,
-            source:    importSource,
-            tags:      [],
-          },
-        });
-        created++;
-      } catch (err: any) {
-        errors.push(`Row ${i + 1}: ${err?.message?.slice(0, 80) ?? "unknown error"}`);
-        skipped++;
-      }
-    }
-
-    // ── Auto-derive companies from imported contacts ──────────────────────
-    const companyNames = new Set<string>();
-    for (const row of rows) {
-      const name = s(row.company ?? row.Company ?? row["Organization"] ?? row["Company Name"]);
-      if (name) companyNames.add(name);
-    }
-    let companiesCreated = 0;
-    for (const name of companyNames) {
-      try {
-        const existing = await prisma.crmCompany.findFirst({
-          where: { tenantId, name: { equals: name, mode: "insensitive" } },
-        });
-        if (!existing) {
-          await prisma.crmCompany.create({ data: { tenantId, name } });
-          companiesCreated++;
+        if (!email && !phone && !firstName && !lastName) {
+          skipped++;
+          continue;
         }
-      } catch {
-        // Non-fatal — company creation is best-effort
+
+        try {
+          await tx.crmContact.create({
+            data: {
+              tenantId,
+              firstName: firstName ?? undefined,
+              lastName:  lastName  ?? undefined,
+              email:     email     ?? undefined,
+              phone:     phone     ?? undefined,
+              company:   company   ?? undefined,
+              notes:     notes     ?? undefined,
+              source:    importSource,
+              tags:      [],
+            },
+          });
+          created++;
+        } catch (err: any) {
+          errors.push(`Row ${i + 1}: ${err?.message?.slice(0, 80) ?? "unknown error"}`);
+          skipped++;
+        }
       }
-    }
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: (req as any).auth?.userId ?? null,
-        level: "info",
-        action: "CRM_CONTACTS_IMPORTED",
-        entityType: "crm_contact",
-        entityId: null,
-        message: `${importSource.toUpperCase()} import: ${created} created, ${skipped} skipped, ${companiesCreated} companies derived`,
-        meta: { source: importSource, created, skipped, totalRows: rows.length, errorCount: errors.length, companiesCreated },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+      // ── Auto-derive companies from imported contacts ──────────────────────
+      const companyNames = new Set<string>();
+      for (const row of rows) {
+        const name = s(row.company ?? row.Company ?? row["Organization"] ?? row["Company Name"]);
+        if (name) companyNames.add(name);
+      }
+      let companiesCreated = 0;
+      for (const name of companyNames) {
+        try {
+          const existing = await tx.crmCompany.findFirst({
+            where: { tenantId, name: { equals: name, mode: "insensitive" } },
+          });
+          if (!existing) {
+            await tx.crmCompany.create({ data: { tenantId, name } });
+            companiesCreated++;
+          }
+        } catch {
+          // Non-fatal — company creation is best-effort
+        }
+      }
 
-    return reply.send({ ok: true, created, skipped, companiesCreated, errors: errors.slice(0, 10) });
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: (req as any).auth?.userId ?? null,
+          level: "info",
+          action: "CRM_CONTACTS_IMPORTED",
+          entityType: "crm_contact",
+          entityId: null,
+          message: `${importSource.toUpperCase()} import: ${created} created, ${skipped} skipped, ${companiesCreated} companies derived`,
+          meta: { source: importSource, created, skipped, totalRows: rows.length, errorCount: errors.length, companiesCreated },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+
+      return { created, skipped, companiesCreated, errors: errors.slice(0, 10) };
+    });
+
+    return reply.send({ ok: true, created: result.created, skipped: result.skipped, companiesCreated: result.companiesCreated, errors: result.errors });
   });
 
   // ── Deduplication ──────────────────────────────────────────────────────────
@@ -508,45 +580,49 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = (req as any).tenantId as string | undefined;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
-    // Find emails that appear more than once
-    const emailDups = await prisma.$queryRaw<{ email: string }[]>`
-      SELECT email
-      FROM crm_contacts
-      WHERE tenant_id = ${tenantId}::uuid
-        AND email IS NOT NULL
-        AND email <> ''
-      GROUP BY email
-      HAVING COUNT(*) > 1
-    `;
+    const groups = await withTenant(tenantId, async (tx) => {
+      // Find emails that appear more than once
+      const emailDups = await tx.$queryRaw<{ email: string }[]>`
+        SELECT email
+        FROM crm_contacts
+        WHERE tenant_id = ${tenantId}::uuid
+          AND email IS NOT NULL
+          AND email <> ''
+        GROUP BY email
+        HAVING COUNT(*) > 1
+      `;
 
-    // Find phones that appear more than once
-    const phoneDups = await prisma.$queryRaw<{ phone: string }[]>`
-      SELECT phone
-      FROM crm_contacts
-      WHERE tenant_id = ${tenantId}::uuid
-        AND phone IS NOT NULL
-        AND phone <> ''
-      GROUP BY phone
-      HAVING COUNT(*) > 1
-    `;
+      // Find phones that appear more than once
+      const phoneDups = await tx.$queryRaw<{ phone: string }[]>`
+        SELECT phone
+        FROM crm_contacts
+        WHERE tenant_id = ${tenantId}::uuid
+          AND phone IS NOT NULL
+          AND phone <> ''
+        GROUP BY phone
+        HAVING COUNT(*) > 1
+      `;
 
-    const groups: { field: string; value: string; contacts: any[] }[] = [];
+      const groups: { field: string; value: string; contacts: any[] }[] = [];
 
-    for (const row of emailDups) {
-      const contacts = await prisma.crmContact.findMany({
-        where: { tenantId, email: row.email },
-        orderBy: { createdAt: "asc" },
-      });
-      groups.push({ field: "email", value: row.email, contacts });
-    }
+      for (const row of emailDups) {
+        const contacts = await tx.crmContact.findMany({
+          where: { tenantId, email: row.email },
+          orderBy: { createdAt: "asc" },
+        });
+        groups.push({ field: "email", value: row.email, contacts });
+      }
 
-    for (const row of phoneDups) {
-      const contacts = await prisma.crmContact.findMany({
-        where: { tenantId, phone: row.phone },
-        orderBy: { createdAt: "asc" },
-      });
-      groups.push({ field: "phone", value: row.phone, contacts });
-    }
+      for (const row of phoneDups) {
+        const contacts = await tx.crmContact.findMany({
+          where: { tenantId, phone: row.phone },
+          orderBy: { createdAt: "asc" },
+        });
+        groups.push({ field: "phone", value: row.phone, contacts });
+      }
+
+      return groups;
+    });
 
     return reply.send({ ok: true, groups });
   });
@@ -562,34 +638,40 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     if (!keepId) return reply.code(400).send({ ok: false, error: "keepId required" });
     if (!mergeIds.length) return reply.code(400).send({ ok: false, error: "mergeIds[] required" });
 
-    const keepContact = await prisma.crmContact.findFirst({ where: { id: keepId, tenantId } });
-    if (!keepContact) return reply.code(404).send({ ok: false, error: "keepId contact not found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const keepContact = await tx.crmContact.findFirst({ where: { id: keepId, tenantId } });
+      if (!keepContact) return { notFound: "keepId" as const };
 
-    const mergedContacts = await prisma.crmContact.findMany({
-      where: { tenantId, id: { in: mergeIds } },
-    });
+      const mergedContacts = await tx.crmContact.findMany({
+        where: { tenantId, id: { in: mergeIds } },
+      });
 
-    if (mergedContacts.length !== mergeIds.length) {
-      return reply.code(404).send({ ok: false, error: "One or more mergeIds not found" });
-    }
+      if (mergedContacts.length !== mergeIds.length) {
+        return { notFound: "mergeIds" as const };
+      }
 
-    // Union all tags
-    const allTags = new Set<string>([...keepContact.tags]);
-    for (const c of mergedContacts) {
-      for (const t of c.tags) allTags.add(t);
-    }
+      // Union all tags
+      const allTags = new Set<string>([...keepContact.tags]);
+      for (const c of mergedContacts) {
+        for (const t of c.tags) allTags.add(t);
+      }
 
-    await prisma.$transaction([
-      prisma.crmContact.update({
+      await tx.crmContact.update({
         where: { id: keepId },
         data: { tags: Array.from(allTags) },
-      }),
-      prisma.crmContact.deleteMany({
+      });
+      await tx.crmContact.deleteMany({
         where: { tenantId, id: { in: mergeIds } },
-      }),
-    ]);
+      });
 
-    const contact = await prisma.crmContact.findUnique({ where: { id: keepId } });
-    return reply.send({ ok: true, contact, mergedCount: mergeIds.length });
+      const contact = await tx.crmContact.findUnique({ where: { id: keepId } });
+      return { contact, mergedCount: mergeIds.length };
+    });
+
+    if ("notFound" in result) {
+      if (result.notFound === "keepId") return reply.code(404).send({ ok: false, error: "keepId contact not found" });
+      return reply.code(404).send({ ok: false, error: "One or more mergeIds not found" });
+    }
+    return reply.send({ ok: true, contact: result.contact, mergedCount: result.mergedCount });
   });
 };

@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { makeSupabase } from "../supabase.js";
 import { loadEnv } from "../env.js";
 import { submitComment, submitPost } from "../services/reddit.js";
@@ -38,15 +38,17 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = resolveTenant(req);
     if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
-    const memos = await prisma.decisionMemo.findMany({
-      where: {
-        tenantId,
-        agent: "donna",
-        status: "PROPOSED",
-        requiresApproval: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
+    const memos = await withTenant(tenantId, async (tx) => {
+      return tx.decisionMemo.findMany({
+        where: {
+          tenantId,
+          agent: "donna",
+          status: "PROPOSED",
+          requiresApproval: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
     });
 
     return reply.send({ ok: true, pending: memos });
@@ -67,20 +69,22 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
 
     const { subreddit, title, text } = body;
 
-    const memo = await prisma.decisionMemo.create({
-      data: {
-        tenantId,
-        agent: "donna",
-        title: `Post to r/${subreddit}: "${title.slice(0, 60)}"`,
-        rationale: "Manually queued Reddit post — requires human approval before publishing.",
-        estimatedCostUsd: 0,
-        billingType: "none",
-        riskTier: 1,
-        confidence: 1.0,
-        requiresApproval: true,
-        status: "PROPOSED",
-        payload: { action: "reddit_post", subreddit, title, text },
-      },
+    const memo = await withTenant(tenantId, async (tx) => {
+      return tx.decisionMemo.create({
+        data: {
+          tenantId,
+          agent: "donna",
+          title: `Post to r/${subreddit}: "${title.slice(0, 60)}"`,
+          rationale: "Manually queued Reddit post — requires human approval before publishing.",
+          estimatedCostUsd: 0,
+          billingType: "none",
+          riskTier: 1,
+          confidence: 1.0,
+          requiresApproval: true,
+          status: "PROPOSED",
+          payload: { action: "reddit_post", subreddit, title, text },
+        },
+      });
     });
 
     return reply.send({ ok: true, memo });
@@ -102,8 +106,10 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const { memoId } = req.params as any;
-    const memo = await prisma.decisionMemo.findFirst({
-      where: { id: memoId, tenantId, agent: "donna", status: "PROPOSED" },
+    const memo = await withTenant(tenantId, async (tx) => {
+      return tx.decisionMemo.findFirst({
+        where: { id: memoId, tenantId, agent: "donna", status: "PROPOSED" },
+      });
     });
     if (!memo) return reply.code(404).send({ ok: false, error: "Memo not found or already processed" });
 
@@ -121,9 +127,11 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(400).send({ ok: false, error: `Unknown action: ${p.action}` });
       }
 
-      await prisma.decisionMemo.update({
-        where: { id: memoId },
-        data: { status: "EXECUTED", payload: { ...p, posted } },
+      await withTenant(tenantId, async (tx) => {
+        await tx.decisionMemo.update({
+          where: { id: memoId },
+          data: { status: "EXECUTED", payload: { ...p, posted } },
+        });
       });
 
       return reply.send({ ok: true, posted });
@@ -143,17 +151,21 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
     const { memoId } = req.params as any;
     const body = req.body as any;
 
-    const memo = await prisma.decisionMemo.findFirst({
-      where: { id: memoId, tenantId, agent: "donna", status: "PROPOSED" },
+    const memo = await withTenant(tenantId, async (tx) => {
+      return tx.decisionMemo.findFirst({
+        where: { id: memoId, tenantId, agent: "donna", status: "PROPOSED" },
+      });
     });
     if (!memo) return reply.code(404).send({ ok: false, error: "Memo not found or already processed" });
 
-    await prisma.decisionMemo.update({
-      where: { id: memoId },
-      data: {
-        status: "REJECTED",
-        payload: { ...(memo.payload as any), rejectionReason: body?.reason ?? "Rejected by human" },
-      },
+    await withTenant(tenantId, async (tx) => {
+      await tx.decisionMemo.update({
+        where: { id: memoId },
+        data: {
+          status: "REJECTED",
+          payload: { ...(memo.payload as any), rejectionReason: body?.reason ?? "Rejected by human" },
+        },
+      });
     });
 
     return reply.send({ ok: true });

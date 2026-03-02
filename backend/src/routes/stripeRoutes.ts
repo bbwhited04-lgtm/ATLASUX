@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import crypto from "node:crypto";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { createStripeProductAndPrice } from "../services/stripeCatalog.js";
 import {
   stripeCreateCheckoutSession,
@@ -52,36 +52,41 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
   app.post("/products/request", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (req, reply) => {
     requireRole(req, ["owner", "admin", "exec", "atlas"]);
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const userId = (req as any).auth?.userId as string;
     const body = RequestCreateProductSchema.parse(req.body ?? {});
 
-    const intent = await prisma.intent.create({
-      data: {
-        tenantId,
-        intentType: "stripe.create_product",
-        payload: {
-          ...body,
-          created_by: userId ?? null,
-          createdAt: new Date().toISOString(),
+    const intent = await withTenant(tenantId, async (tx) => {
+      const intent = await tx.intent.create({
+        data: {
+          tenantId,
+          intentType: "stripe.create_product",
+          payload: {
+            ...body,
+            created_by: userId ?? null,
+            createdAt: new Date().toISOString(),
+          },
+          status: "AWAITING_HUMAN",
         },
-        status: "AWAITING_HUMAN",
-      },
-    });
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorUserId: null,
-        actorExternalId: String(userId ?? ""),
-        actorType: "system",
-        level: "info",
-        action: "STRIPE_PRODUCT_REQUESTED",
-        entityType: "intent",
-        entityId: intent.id,
-        message: `Requested Stripe product creation: ${body.name}`,
-        meta: { fromAgent: body.fromAgent, name: body.name, priceUSD: body.priceUSD, currency: body.currency ?? "usd" },
-        timestamp: new Date(),
-      },
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: null,
+          actorExternalId: String(userId ?? ""),
+          actorType: "system",
+          level: "info",
+          action: "STRIPE_PRODUCT_REQUESTED",
+          entityType: "intent",
+          entityId: intent.id,
+          message: `Requested Stripe product creation: ${body.name}`,
+          meta: { fromAgent: body.fromAgent, name: body.name, priceUSD: body.priceUSD, currency: body.currency ?? "usd" },
+          timestamp: new Date(),
+        },
+      });
+
+      return intent;
     });
 
     return reply.send({ ok: true, intentId: intent.id, status: intent.status });
@@ -97,6 +102,7 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
     requireRole(req, ["owner", "admin", "exec", "atlas"]);
 
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const userId = (req as any).auth?.userId as string;
     const body = CreateProductSchema.parse(req.body ?? {});
 
@@ -108,48 +114,50 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
       metadata: body.metadata ?? null,
     });
 
-    // Audit (DB)
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorUserId: null,
-        actorExternalId: String(userId ?? ""),
-        actorType: "system",
-        level: "info",
-        action: "STRIPE_PRODUCT_CREATED",
-        entityType: "external",
-        entityId: null,
-        message: `Created Stripe product ${result.productId} (${body.name})`,
-        meta: {
-          fromAgent: body.fromAgent,
-          name: body.name,
-          priceUSD: body.priceUSD,
-          currency: (body.currency ?? "usd").toLowerCase(),
-          productId: result.productId,
-          priceId: result.priceId,
+    // Audit + Ledger (DB) — wrapped in withTenant for RLS
+    await withTenant(tenantId, async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: null,
+          actorExternalId: String(userId ?? ""),
+          actorType: "system",
+          level: "info",
+          action: "STRIPE_PRODUCT_CREATED",
+          entityType: "external",
+          entityId: null,
+          message: `Created Stripe product ${result.productId} (${body.name})`,
+          meta: {
+            fromAgent: body.fromAgent,
+            name: body.name,
+            priceUSD: body.priceUSD,
+            currency: (body.currency ?? "usd").toLowerCase(),
+            productId: result.productId,
+            priceId: result.priceId,
+          },
+          timestamp: new Date(),
         },
-        timestamp: new Date(),
-      },
-    });
+      });
 
-    // Ledger (0-cost catalog mutation, still traceable)
-    await prisma.ledgerEntry.create({
-      data: {
-        tenantId,
-        entryType: LedgerEntryType.debit,
-        category: LedgerCategory.api_spend,
-        amountCents: BigInt(0),
-        currency: "USD",
-        description: `Stripe catalog: created product ${body.name}`,
-        externalRef: result.productId,
-        meta: {
-          fromAgent: body.fromAgent,
-          priceUSD: body.priceUSD,
-          priceId: result.priceId,
+      // Ledger (0-cost catalog mutation, still traceable)
+      await tx.ledgerEntry.create({
+        data: {
+          tenantId,
+          entryType: LedgerEntryType.debit,
+          category: LedgerCategory.api_spend,
+          amountCents: BigInt(0),
+          currency: "USD",
+          description: `Stripe catalog: created product ${body.name}`,
+          externalRef: result.productId,
+          meta: {
+            fromAgent: body.fromAgent,
+            priceUSD: body.priceUSD,
+            priceId: result.priceId,
+          },
+          occurredAt: new Date(),
+          createdAt: new Date(),
         },
-        occurredAt: new Date(),
-        createdAt: new Date(),
-      },
+      });
     });
 
     return reply.send({

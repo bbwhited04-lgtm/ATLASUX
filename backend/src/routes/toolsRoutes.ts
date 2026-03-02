@@ -19,7 +19,7 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { getSkill } from "../core/kb/skillLoader.js";
 import {
   M365_TOOLS,
@@ -193,16 +193,19 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
 
     // Human approval tools → create DecisionMemo record, do not execute yet
     if (tool.requiresHumanApproval) {
-      const memo = await prisma.decisionMemo.create({
-        data: {
-          tenantId: tid,
-          summary: `M365 tool invocation: ${toolId} by agent ${normalizedAgent}`,
-          decision: "PENDING",
-          rationale: `Tool ${toolId} requires human approval before execution.`,
-          agentId: normalizedAgent,
-          metadata: { toolId, params: params ?? {} },
-        } as any,
-      }).catch(() => null);
+      const memo = await withTenant(tid, async (tx) => {
+        const memo = await tx.decisionMemo.create({
+          data: {
+            tenantId: tid,
+            summary: `M365 tool invocation: ${toolId} by agent ${normalizedAgent}`,
+            decision: "PENDING",
+            rationale: `Tool ${toolId} requires human approval before execution.`,
+            agentId: normalizedAgent,
+            metadata: { toolId, params: params ?? {} },
+          } as any,
+        }).catch(() => null);
+        return memo;
+      });
 
       await writeAudit(tid, normalizedAgent, toolId, "PENDING_HUMAN_APPROVAL", null);
       return reply.code(202).send({
@@ -246,10 +249,12 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
     if (!tid) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const status = (req.query as any)?.status ?? "pending";
-    const rows = await prisma.toolProposal.findMany({
-      where:   { tenantId: tid, ...(status !== "all" ? { status } : {}) },
-      orderBy: { createdAt: "desc" },
-      take:    100,
+    const rows = await withTenant(tid, async (tx) => {
+      return tx.toolProposal.findMany({
+        where:   { tenantId: tid, ...(status !== "all" ? { status } : {}) },
+        orderBy: { createdAt: "desc" },
+        take:    100,
+      });
     });
     return { ok: true, count: rows.length, proposals: rows };
   });
@@ -267,12 +272,14 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
     }
 
     // Find all pending proposals from this run
-    const pending = await prisma.toolProposal.findMany({
-      where: {
-        tenantId: anchor.tenantId,
-        runId:    anchor.runId,
-        status:   "pending",
-      },
+    const pending = await withTenant(anchor.tenantId, async (tx) => {
+      return tx.toolProposal.findMany({
+        where: {
+          tenantId: anchor.tenantId,
+          runId:    anchor.runId,
+          status:   "pending",
+        },
+      });
     });
 
     if (!pending.length) {
@@ -291,9 +298,11 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
     for (const p of pending) {
       try {
         await addToolToKb(p.tenantId, p.agentId, p.toolName, p.toolPurpose, p.toolImpl);
-        await prisma.toolProposal.update({
-          where: { id: p.id },
-          data:  { status: "approved", decidedAt: new Date(), decidedBy: approver },
+        await withTenant(p.tenantId, async (tx) => {
+          await tx.toolProposal.update({
+            where: { id: p.id },
+            data:  { status: "approved", decidedAt: new Date(), decidedBy: approver },
+          });
         });
         approved++;
       } catch {
@@ -301,16 +310,18 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId: anchor.tenantId, actorType: "human", actorUserId: null,
-        actorExternalId: approver, level: "info", action: "TOOL_PROPOSALS_BULK_APPROVED",
-        entityType: "tool_proposal", entityId: anchor.runId ?? anchor.id,
-        message: `Bulk-approved ${approved} of ${pending.length} tool proposals (run ${anchor.runId ?? "unknown"})`,
-        meta: { approved, total: pending.length, runId: anchor.runId },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+    await withTenant(anchor.tenantId, async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          tenantId: anchor.tenantId, actorType: "human", actorUserId: null,
+          actorExternalId: approver, level: "info", action: "TOOL_PROPOSALS_BULK_APPROVED",
+          entityType: "tool_proposal", entityId: anchor.runId ?? anchor.id,
+          message: `Bulk-approved ${approved} of ${pending.length} tool proposals (run ${anchor.runId ?? "unknown"})`,
+          meta: { approved, total: pending.length, runId: anchor.runId },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+    });
 
     const skipped = pending.length - approved;
     return reply.type("text/html").send(htmlPage(
@@ -355,23 +366,24 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
     // KB first — if it fails, status stays "pending" so the link remains clickable
     await addToolToKb(proposal.tenantId, proposal.agentId, proposal.toolName, proposal.toolPurpose, proposal.toolImpl);
 
-    // KB succeeded — now mark approved
-    await prisma.toolProposal.update({
-      where: { approvalToken: token },
-      data:  { status: "approved", decidedAt: new Date(), decidedBy: approver },
-    });
+    // KB succeeded — now mark approved + audit log
+    await withTenant(proposal.tenantId, async (tx) => {
+      await tx.toolProposal.update({
+        where: { approvalToken: token },
+        data:  { status: "approved", decidedAt: new Date(), decidedBy: approver },
+      });
 
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        tenantId: proposal.tenantId, actorType: "human", actorUserId: null,
-        actorExternalId: approver, level: "info", action: "TOOL_PROPOSAL_APPROVED",
-        entityType: "tool_proposal", entityId: proposal.id,
-        message: `Approved tool "${proposal.toolName}" for agent ${proposal.agentId}`,
-        meta: { toolName: proposal.toolName, agentId: proposal.agentId },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId: proposal.tenantId, actorType: "human", actorUserId: null,
+          actorExternalId: approver, level: "info", action: "TOOL_PROPOSAL_APPROVED",
+          entityType: "tool_proposal", entityId: proposal.id,
+          message: `Approved tool "${proposal.toolName}" for agent ${proposal.agentId}`,
+          meta: { toolName: proposal.toolName, agentId: proposal.agentId },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+    });
 
     return reply.type("text/html").send(htmlPage(
       "✅ Tool Approved",
@@ -398,21 +410,23 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
 
     const approver = (req as any).auth?.userId ?? (req as any).auth?.email ?? "link_approver";
 
-    await prisma.toolProposal.update({
-      where: { approvalToken: token },
-      data:  { status: "denied", decidedAt: new Date(), decidedBy: approver },
-    });
+    await withTenant(proposal.tenantId, async (tx) => {
+      await tx.toolProposal.update({
+        where: { approvalToken: token },
+        data:  { status: "denied", decidedAt: new Date(), decidedBy: approver },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId: proposal.tenantId, actorType: "human", actorUserId: null,
-        actorExternalId: approver, level: "info", action: "TOOL_PROPOSAL_DENIED",
-        entityType: "tool_proposal", entityId: proposal.id,
-        message: `Denied tool "${proposal.toolName}" for agent ${proposal.agentId}`,
-        meta: { toolName: proposal.toolName, agentId: proposal.agentId },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId: proposal.tenantId, actorType: "human", actorUserId: null,
+          actorExternalId: approver, level: "info", action: "TOOL_PROPOSAL_DENIED",
+          entityType: "tool_proposal", entityId: proposal.id,
+          message: `Denied tool "${proposal.toolName}" for agent ${proposal.agentId}`,
+          meta: { toolName: proposal.toolName, agentId: proposal.agentId },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+    });
 
     return reply.type("text/html").send(htmlPage(
       "❌ Tool Denied",
@@ -449,22 +463,24 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
     ].filter(s => s !== null).join("\n");
 
     // Upsert KB doc — use tenantId as createdBy UUID (same as seedKb.ts pattern)
-    await prisma.kbDocument.upsert({
-      where:  { tenantId_slug: { tenantId, slug } },
-      create: {
-        tenantId,
-        slug,
-        title,
-        body,
-        status:    "published",
-        createdBy: tenantId, // system-generated doc, use tenant UUID as author
-      },
-      update: {
-        title,
-        body,
-        status:    "published",
-        updatedBy: tenantId,
-      },
+    await withTenant(tenantId, async (tx) => {
+      await tx.kbDocument.upsert({
+        where:  { tenantId_slug: { tenantId, slug } },
+        create: {
+          tenantId,
+          slug,
+          title,
+          body,
+          status:    "published",
+          createdBy: tenantId, // system-generated doc, use tenant UUID as author
+        },
+        update: {
+          title,
+          body,
+          status:    "published",
+          updatedBy: tenantId,
+        },
+      });
     });
 
     // ── Policy addendum ─────────────────────────────────────────────────────
@@ -481,45 +497,47 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
    * WF-107 approval and the static POLICY.md file.
    */
   async function updatePolicyAddendum(tenantId: string, agentId: string) {
-    const approved = await prisma.toolProposal.findMany({
-      where:   { tenantId, agentId, status: "approved" },
-      select:  { toolName: true, toolPurpose: true, toolImpl: true },
-      orderBy: { decidedAt: "asc" },
-    });
+    await withTenant(tenantId, async (tx) => {
+      const approved = await tx.toolProposal.findMany({
+        where:   { tenantId, agentId, status: "approved" },
+        select:  { toolName: true, toolPurpose: true, toolImpl: true },
+        orderBy: { decidedAt: "asc" },
+      });
 
-    const normalizedAgent = agentId.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-    const addendumSlug    = `agent/${normalizedAgent}/policy-addendum`;
-    const addendumTitle   = `Policy Addendum — ${agentId} (Approved Tools)`;
+      const normalizedAgent = agentId.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const addendumSlug    = `agent/${normalizedAgent}/policy-addendum`;
+      const addendumTitle   = `Policy Addendum — ${agentId} (Approved Tools)`;
 
-    if (!approved.length) {
-      // No approved tools — remove stale addendum if one exists
-      await prisma.kbDocument.deleteMany({
-        where: { tenantId, slug: addendumSlug },
-      }).catch(() => null);
-      return;
-    }
+      if (!approved.length) {
+        // No approved tools — remove stale addendum if one exists
+        await tx.kbDocument.deleteMany({
+          where: { tenantId, slug: addendumSlug },
+        }).catch(() => null);
+        return;
+      }
 
-    const addendumBody = [
-      `# Policy Addendum — ${agentId}`,
-      ``,
-      `## Dynamically Approved Tools`,
-      ``,
-      `The following tools have been approved for ${agentId} via WF-107 Tool Discovery.`,
-      `${agentId} is authorized to use these tools when relevant to a user query.`,
-      ``,
-      ...approved.map((t, i) => {
-        const implNote = t.toolImpl ? ` | Implementation: ${t.toolImpl}` : "";
-        return `${i + 1}. **${t.toolName}** — ${t.toolPurpose}${implNote}`;
-      }),
-      ``,
-      `---`,
-      `_Auto-generated by WF-107. Last updated: ${new Date().toISOString()}_`,
-    ].join("\n");
+      const addendumBody = [
+        `# Policy Addendum — ${agentId}`,
+        ``,
+        `## Dynamically Approved Tools`,
+        ``,
+        `The following tools have been approved for ${agentId} via WF-107 Tool Discovery.`,
+        `${agentId} is authorized to use these tools when relevant to a user query.`,
+        ``,
+        ...approved.map((t, i) => {
+          const implNote = t.toolImpl ? ` | Implementation: ${t.toolImpl}` : "";
+          return `${i + 1}. **${t.toolName}** — ${t.toolPurpose}${implNote}`;
+        }),
+        ``,
+        `---`,
+        `_Auto-generated by WF-107. Last updated: ${new Date().toISOString()}_`,
+      ].join("\n");
 
-    await prisma.kbDocument.upsert({
-      where:  { tenantId_slug: { tenantId, slug: addendumSlug } },
-      create: { tenantId, slug: addendumSlug, title: addendumTitle, body: addendumBody, status: "published", createdBy: tenantId },
-      update: { title: addendumTitle, body: addendumBody, status: "published", updatedBy: tenantId },
+      await tx.kbDocument.upsert({
+        where:  { tenantId_slug: { tenantId, slug: addendumSlug } },
+        create: { tenantId, slug: addendumSlug, title: addendumTitle, body: addendumBody, status: "published", createdBy: tenantId },
+        update: { title: addendumTitle, body: addendumBody, status: "published", updatedBy: tenantId },
+      });
     });
   }
 
@@ -552,20 +570,22 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
     status: string,
     reason: string | null
   ) {
-    await prisma.auditLog.create({
-      data: {
-        tenantId: tid,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: agentId,
-        level: status === "BLOCKED" || status === "FAILED" ? "warn" : "info",
-        action: `M365_TOOL_${status}`,
-        entityType: "m365_tool",
-        entityId: toolId,
-        message: `Agent ${agentId} ${status.toLowerCase()} tool ${toolId}${reason ? `: ${reason}` : ""}`,
-        meta: { toolId, agentId, status, reason },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null); // non-fatal
+    await withTenant(tid, async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          tenantId: tid,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: agentId,
+          level: status === "BLOCKED" || status === "FAILED" ? "warn" : "info",
+          action: `M365_TOOL_${status}`,
+          entityType: "m365_tool",
+          entityId: toolId,
+          message: `Agent ${agentId} ${status.toLowerCase()} tool ${toolId}${reason ? `: ${reason}` : ""}`,
+          meta: { toolId, agentId, status, reason },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null); // non-fatal
+    }).catch(() => null);
   }
 };

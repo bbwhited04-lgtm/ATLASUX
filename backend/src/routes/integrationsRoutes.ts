@@ -1,14 +1,16 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { providerForPlatform, SUPPORTED_PROVIDERS } from "../lib/providerMapping.js";
 import { loadEnv } from "../env.js";
 import { revokeToken } from "../lib/tokenLifecycle.js";
 
 const env = loadEnv(process.env);
 
-async function ensureStubIntegration(tenantId: string, provider: any) {
+type TxClient = Parameters<Parameters<typeof withTenant>[1]>[0];
+
+async function ensureStubIntegration(tx: TxClient, tenantId: string, provider: any) {
   try {
-    await prisma.integration.upsert({
+    await tx.integration.upsert({
       where: { tenantId_provider: { tenantId, provider } },
       create: { tenantId, provider, connected: false },
       update: {},
@@ -28,9 +30,9 @@ function resolveTenant(req: any): string | null {
   );
 }
 
-async function getIntegrationRows(tenantId: string) {
+async function getIntegrationRows(tx: TxClient, tenantId: string) {
   // Infer providers from assets and ensure stub rows exist
-  const assets = await prisma.asset.findMany({
+  const assets = await tx.asset.findMany({
     where: { tenantId },
     select: { platform: true },
   });
@@ -40,10 +42,10 @@ async function getIntegrationRows(tenantId: string) {
     if (p) inferred.add(p);
   }
   for (const p of SUPPORTED_PROVIDERS) {
-    if (inferred.has(p)) await ensureStubIntegration(tenantId, p as any);
+    if (inferred.has(p)) await ensureStubIntegration(tx, tenantId, p as any);
   }
 
-  return prisma.integration.findMany({
+  return tx.integration.findMany({
     where: { tenantId },
     select: { provider: true, connected: true, updated_at: true, last_sync_at: true, status: true },
     orderBy: { provider: "asc" },
@@ -66,25 +68,27 @@ export const integrationsRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = resolveTenant(req);
     if (!tenantId) return { ok: false, error: "TENANT_REQUIRED" };
 
-    const rows = await getIntegrationRows(tenantId);
+    return withTenant(tenantId, async (tx) => {
+      const rows = await getIntegrationRows(tx, tenantId);
 
-    // Build flat provider→connected map so every consumer can do a simple lookup
-    const providers: Record<string, boolean> = {};
-    for (const p of SUPPORTED_PROVIDERS) providers[p] = false;
-    for (const r of rows) providers[String(r.provider)] = !!r.connected;
+      // Build flat provider→connected map so every consumer can do a simple lookup
+      const providers: Record<string, boolean> = {};
+      for (const p of SUPPORTED_PROVIDERS) providers[p] = false;
+      for (const r of rows) providers[String(r.provider)] = !!r.connected;
 
-    return {
-      ok: true,
-      tenantId,
-      providers,
-      integrations: rows.map(r => ({
-        provider: r.provider,
-        connected: r.connected,
-        updated_at: r.updated_at,
-        last_sync_at: r.last_sync_at,
-        status: r.status,
-      })),
-    };
+      return {
+        ok: true,
+        tenantId,
+        providers,
+        integrations: rows.map(r => ({
+          provider: r.provider,
+          connected: r.connected,
+          updated_at: r.updated_at,
+          last_sync_at: r.last_sync_at,
+          status: r.status,
+        })),
+      };
+    });
   }
 
   app.get("/summary", summaryHandler);
@@ -106,11 +110,13 @@ export const integrationsRoutes: FastifyPluginAsync = async (app) => {
     if (userId && (!role || !["owner", "admin"].includes(role))) return { ok: false, error: "REQUIRES_ADMIN" };
     if (!(SUPPORTED_PROVIDERS as string[]).includes(provider)) return { ok: false, error: "UNSUPPORTED_PROVIDER" };
 
-    const row = await prisma.integration.upsert({
-      where: { tenantId_provider: { tenantId, provider: provider as any } },
-      create: { tenantId, provider: provider as any, connected: true },
-      update: { connected: true, updated_at: new Date() as any },
-      select: { provider: true, connected: true, updated_at: true },
+    const row = await withTenant(tenantId, async (tx) => {
+      return tx.integration.upsert({
+        where: { tenantId_provider: { tenantId, provider: provider as any } },
+        create: { tenantId, provider: provider as any, connected: true },
+        update: { connected: true, updated_at: new Date() as any },
+        select: { provider: true, connected: true, updated_at: true },
+      });
     });
     return { ok: true, integration: row };
   });
@@ -128,11 +134,13 @@ export const integrationsRoutes: FastifyPluginAsync = async (app) => {
     // Revoke token at provider + clear token_vault + clear integration tokens
     await revokeToken(env, tenantId, provider as any).catch(() => null);
 
-    const row = await prisma.integration.upsert({
-      where: { tenantId_provider: { tenantId, provider: provider as any } },
-      create: { tenantId, provider: provider as any, connected: false },
-      update: { connected: false, access_token: null, refresh_token: null, token_expires_at: null, updated_at: new Date() as any },
-      select: { provider: true, connected: true, updated_at: true },
+    const row = await withTenant(tenantId, async (tx) => {
+      return tx.integration.upsert({
+        where: { tenantId_provider: { tenantId, provider: provider as any } },
+        create: { tenantId, provider: provider as any, connected: false },
+        update: { connected: false, access_token: null, refresh_token: null, token_expires_at: null, updated_at: new Date() as any },
+        select: { provider: true, connected: true, updated_at: true },
+      });
     });
     return { ok: true, integration: row };
   });

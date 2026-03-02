@@ -23,7 +23,7 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
 
@@ -204,21 +204,23 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
       );
 
       if (tenantId) {
-        await prisma.auditLog.create({
-          data: {
-            tenantId,
-            actorType: "system",
-            actorUserId: null,
-            actorExternalId: fromAgent,
-            level: "info",
-            action: "TEAMS_MESSAGE_SENT",
-            entityType: "teams_channel",
-            entityId: `${teamId}/${channelId}`.slice(0, 80),
-            message: `Teams message sent by ${fromAgent} to channel ${channelId}`,
-            meta: { fromAgent, title, teamId, channelId, preview: text.slice(0, 200) },
-            timestamp: new Date(),
-          },
-        } as any).catch(() => null);
+        await withTenant(tenantId, async (tx) => {
+          await tx.auditLog.create({
+            data: {
+              tenantId,
+              actorType: "system",
+              actorUserId: null,
+              actorExternalId: fromAgent,
+              level: "info",
+              action: "TEAMS_MESSAGE_SENT",
+              entityType: "teams_channel",
+              entityId: `${teamId}/${channelId}`.slice(0, 80),
+              message: `Teams message sent by ${fromAgent} to channel ${channelId}`,
+              meta: { fromAgent, title, teamId, channelId, preview: text.slice(0, 200) },
+              timestamp: new Date(),
+            },
+          } as any);
+        }).catch(() => null);
       }
 
       return reply.send({ ok: true });
@@ -260,21 +262,23 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
       );
 
       if (tenantId) {
-        await prisma.auditLog.create({
-          data: {
-            tenantId,
-            actorType: "system",
-            actorUserId: null,
-            actorExternalId: fromAgent,
-            level: "info",
-            action: "TEAMS_CROSS_AGENT_NOTIFY",
-            entityType: "teams_channel",
-            entityId: `${teamId}/${channelId}`.slice(0, 80),
-            message: `Cross-agent Teams: ${fromAgent} → ${toAgent}`,
-            meta: { fromAgent, toAgent, teamId, channelId, preview: message.slice(0, 200) },
-            timestamp: new Date(),
-          },
-        } as any).catch(() => null);
+        await withTenant(tenantId, async (tx) => {
+          await tx.auditLog.create({
+            data: {
+              tenantId,
+              actorType: "system",
+              actorUserId: null,
+              actorExternalId: fromAgent,
+              level: "info",
+              action: "TEAMS_CROSS_AGENT_NOTIFY",
+              entityType: "teams_channel",
+              entityId: `${teamId}/${channelId}`.slice(0, 80),
+              message: `Cross-agent Teams: ${fromAgent} → ${toAgent}`,
+              meta: { fromAgent, toAgent, teamId, channelId, preview: message.slice(0, 200) },
+              timestamp: new Date(),
+            },
+          } as any);
+        }).catch(() => null);
       }
 
       return reply.send({ ok: true, fromAgent, toAgent });

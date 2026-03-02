@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { approveDecisionMemo, createDecisionMemo, rejectDecisionMemo } from "../services/decisionMemos.js";
 
 const CreateMemoSchema = z.object({
@@ -52,11 +52,13 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
 
     const status = q.status ? String(q.status) : undefined;
     const take = Math.min(Number(q.take ?? 50), 200);
-    const rows = await prisma.decisionMemo.findMany({
-      where: { tenantId, ...(status ? { status } : {}) },
-      orderBy: { createdAt: "desc" },
-      take,
-    });
+    const rows = await withTenant(tenantId, async (tx) =>
+      tx.decisionMemo.findMany({
+        where: { tenantId, ...(status ? { status } : {}) },
+        orderBy: { createdAt: "desc" },
+        take,
+      })
+    );
     return reply.send({ ok: true, memos: rows });
   });
 
@@ -76,10 +78,12 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
-    const templates = await prisma.decisionTemplate.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "asc" },
-    });
+    const templates = await withTenant(tenantId, async (tx) =>
+      tx.decisionTemplate.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: "asc" },
+      })
+    );
 
     return reply.send({ ok: true, templates });
   });
@@ -93,17 +97,19 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
     try { body = TemplateCreateSchema.parse(req.body ?? {}); }
     catch (e: any) { return reply.code(400).send({ ok: false, error: "INVALID_BODY", details: e.errors }); }
 
-    const template = await prisma.decisionTemplate.create({
-      data: {
-        tenantId,
-        name:             body.name,
-        ...(body.description      != null ? { description:      body.description      } : {}),
-        ...(body.defaultTitle     != null ? { defaultTitle:     body.defaultTitle     } : {}),
-        ...(body.defaultRationale != null ? { defaultRationale: body.defaultRationale } : {}),
-        ...(body.billingType      != null ? { billingType:      body.billingType      } : {}),
-        ...(body.riskTier         != null ? { riskTier:         body.riskTier         } : {}),
-      },
-    });
+    const template = await withTenant(tenantId, async (tx) =>
+      tx.decisionTemplate.create({
+        data: {
+          tenantId,
+          name:             body.name,
+          ...(body.description      != null ? { description:      body.description      } : {}),
+          ...(body.defaultTitle     != null ? { defaultTitle:     body.defaultTitle     } : {}),
+          ...(body.defaultRationale != null ? { defaultRationale: body.defaultRationale } : {}),
+          ...(body.billingType      != null ? { billingType:      body.billingType      } : {}),
+          ...(body.riskTier         != null ? { riskTier:         body.riskTier         } : {}),
+        },
+      })
+    );
 
     return reply.code(201).send({ ok: true, template });
   });
@@ -115,7 +121,9 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
 
     const id = String((req.params as any).id ?? "");
 
-    const deleted = await prisma.decisionTemplate.deleteMany({ where: { id, tenantId } });
+    const deleted = await withTenant(tenantId, async (tx) =>
+      tx.decisionTemplate.deleteMany({ where: { id, tenantId } })
+    );
     if (deleted.count === 0) return reply.code(404).send({ ok: false, error: "not_found" });
 
     return reply.send({ ok: true });
@@ -127,10 +135,12 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
-    const memos = await prisma.decisionMemo.findMany({
-      where: { tenantId },
-      select: { status: true, estimatedCostUsd: true, agent: true },
-    });
+    const memos = await withTenant(tenantId, async (tx) =>
+      tx.decisionMemo.findMany({
+        where: { tenantId },
+        select: { status: true, estimatedCostUsd: true, agent: true },
+      })
+    );
 
     const total    = memos.length;
     const approved = memos.filter(m => m.status === "APPROVED").length;
@@ -181,23 +191,25 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
 
     const res = await approveDecisionMemo({ tenantId, memoId });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "human",
-        actorUserId,
-        actorExternalId: null,
-        level: res.ok ? "info" : "warn",
-        action: "DECISION_MEMO_APPROVED",
-        entityType: "decision_memo",
-        entityId: memoId,
-        message: res.ok
-          ? `Decision memo ${memoId} approved`
-          : `Decision memo ${memoId} approval blocked by guardrails`,
-        meta: { memoId, guardrail: res.guard ?? null },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+    await withTenant(tenantId, async (tx) =>
+      tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "human",
+          actorUserId,
+          actorExternalId: null,
+          level: res.ok ? "info" : "warn",
+          action: "DECISION_MEMO_APPROVED",
+          entityType: "decision_memo",
+          entityId: memoId,
+          message: res.ok
+            ? `Decision memo ${memoId} approved`
+            : `Decision memo ${memoId} approval blocked by guardrails`,
+          meta: { memoId, guardrail: res.guard ?? null },
+          timestamp: new Date(),
+        },
+      } as any)
+    ).catch(() => null);
 
     if (!res.ok) return reply.code(409).send({ ok: false, error: "guardrail_block", guard: res.guard, memo: res.memo });
     return reply.send({ ok: true, memo: res.memo, guard: res.guard });
@@ -221,21 +233,23 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
 
     const memo = await rejectDecisionMemo({ tenantId, memoId, reason });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "human",
-        actorUserId,
-        actorExternalId: null,
-        level: "info",
-        action: "DECISION_MEMO_REJECTED",
-        entityType: "decision_memo",
-        entityId: memoId,
-        message: `Decision memo ${memoId} rejected${reason ? `: ${reason}` : ""}`,
-        meta: { memoId, reason },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+    await withTenant(tenantId, async (tx) =>
+      tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "human",
+          actorUserId,
+          actorExternalId: null,
+          level: "info",
+          action: "DECISION_MEMO_REJECTED",
+          entityType: "decision_memo",
+          entityId: memoId,
+          message: `Decision memo ${memoId} rejected${reason ? `: ${reason}` : ""}`,
+          meta: { memoId, reason },
+          timestamp: new Date(),
+        },
+      } as any)
+    ).catch(() => null);
 
     return reply.send({ ok: true, memo });
   });

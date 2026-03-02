@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 
 interface PairingEntry {
   code:      string;
@@ -49,21 +49,23 @@ export const mobileRoutes: FastifyPluginAsync = async (app) => {
     const expiresAt = new Date(Date.now() + PAIRING_TTL_MS).toISOString();
     pairingStore.set(code, { code, tenantId, createdAt: Date.now(), status: "pending" });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: (req as any).auth?.userId ?? null,
-        actorExternalId: null,
-        level: "info",
-        action: "MOBILE_PAIR_STARTED",
-        entityType: "mobile_pair",
-        entityId: code,
-        message: "Mobile pairing session started",
-        meta: { code, expiresAt },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+    await withTenant(tenantId, async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: (req as any).auth?.userId ?? null,
+          actorExternalId: null,
+          level: "info",
+          action: "MOBILE_PAIR_STARTED",
+          entityType: "mobile_pair",
+          entityId: code,
+          message: "Mobile pairing session started",
+          meta: { code, expiresAt },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+    }).catch(() => null);
 
     return reply.send({ ok: true, code, expiresAt });
   });
@@ -118,21 +120,23 @@ export const mobileRoutes: FastifyPluginAsync = async (app) => {
       os:   String(body.os ?? "iOS").slice(0, 40),
     };
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId: entry.tenantId,
-        actorType: "system",
-        actorUserId: null,
-        actorExternalId: null,
-        level: "info",
-        action: "MOBILE_PAIR_CONFIRMED",
-        entityType: "mobile_pair",
-        entityId: code,
-        message: `Mobile device paired: ${entry.deviceInfo.name}`,
-        meta: { code, deviceName: entry.deviceInfo.name, os: entry.deviceInfo.os },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+    await withTenant(entry.tenantId, async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          tenantId: entry.tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: null,
+          level: "info",
+          action: "MOBILE_PAIR_CONFIRMED",
+          entityType: "mobile_pair",
+          entityId: code,
+          message: `Mobile device paired: ${entry.deviceInfo!.name}`,
+          meta: { code, deviceName: entry.deviceInfo!.name, os: entry.deviceInfo!.os },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+    }).catch(() => null);
 
     return reply.send({ ok: true });
   });

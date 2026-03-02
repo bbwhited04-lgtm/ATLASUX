@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { timingSafeEqual } from "crypto";
 import { engineTick } from "../core/engine/engine.js";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 
 type EngineRunRequest = {
   tenantId: string;
@@ -38,44 +38,48 @@ export const engineRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ ok: false, error: "tenantId, agentId, workflowId are required" });
     }
 
-    const intent = await prisma.intent.create({
-      data: {
-        tenantId,
-        // NOTE: schema/table has no createdBy. We store requestor in agentId + payload.
-        agentId: (req as any).user?.id ?? null,
-        intentType: "ENGINE_RUN",
-        payload: {
-          agentId: body.agentId,
-          workflowId: body.workflowId,
-          input: body.input ?? {},
-          traceId: body.traceId ?? null,
-          requestedBy: (req as any).user?.id ?? body.tenantId,
+    const { intent, tickResult } = await withTenant(tenantId, async (tx) => {
+      const intent = await tx.intent.create({
+        data: {
+          tenantId,
+          // NOTE: schema/table has no createdBy. We store requestor in agentId + payload.
+          agentId: (req as any).user?.id ?? null,
+          intentType: "ENGINE_RUN",
+          payload: {
+            agentId: body.agentId,
+            workflowId: body.workflowId,
+            input: body.input ?? {},
+            traceId: body.traceId ?? null,
+            requestedBy: (req as any).user?.id ?? body.tenantId,
+          },
+          status: "DRAFT",
         },
-        status: "DRAFT",
-      },
-    });
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorUserId: null,
-        actorExternalId: String((req as any).user?.id ?? tenantId ?? ""),
-        actorType: "system",
-        level: "info",
-        action: "ENGINE_RUN_REQUESTED",
-        entityType: "intent",
-        entityId: intent.id,
-        message: `Engine run requested (${body.workflowId}) by ${body.agentId}`,
-        meta: { workflowId: body.workflowId, agentId: body.agentId, traceId: body.traceId ?? null },
-        timestamp: new Date(),
-      },
-    });
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: null,
+          actorExternalId: String((req as any).user?.id ?? tenantId ?? ""),
+          actorType: "system",
+          level: "info",
+          action: "ENGINE_RUN_REQUESTED",
+          entityType: "intent",
+          entityId: intent.id,
+          message: `Engine run requested (${body.workflowId}) by ${body.agentId}`,
+          meta: { workflowId: body.workflowId, agentId: body.agentId, traceId: body.traceId ?? null },
+          timestamp: new Date(),
+        },
+      });
 
-    // Optional: run one tick immediately (useful for smoke testing)
-    let tickResult: any = null;
-    if (body.runTickNow) {
-      tickResult = await engineTick();
-    }
+      // Optional: run one tick immediately (useful for smoke testing)
+      let tickResult: any = null;
+      if (body.runTickNow) {
+        tickResult = await engineTick();
+      }
+
+      return { intent, tickResult };
+    });
 
     return reply.send({ ok: true, intentId: intent.id, tickResult });
   });
@@ -84,16 +88,20 @@ export const engineRoutes: FastifyPluginAsync = async (app) => {
   app.get("/runs/:id", async (req, reply) => {
     const id = (req.params as any).id as string;
     const reqTenantId = (req as any).tenantId as string;
-    const intent = await prisma.intent.findUnique({ where: { id } });
-    if (!intent) return reply.code(404).send({ ok: false, error: "not found" });
-    if (intent.tenantId !== reqTenantId) return reply.code(403).send({ ok: false, error: "forbidden" });
+    if (!reqTenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
-    const audits = await prisma.auditLog.findMany({
-      where: { entityType: "intent", entityId: id },
-      orderBy: { timestamp: "asc" },
-      take: 200,
+    return withTenant(reqTenantId, async (tx) => {
+      const intent = await tx.intent.findUnique({ where: { id } });
+      if (!intent) return reply.code(404).send({ ok: false, error: "not found" });
+      if (intent.tenantId !== reqTenantId) return reply.code(403).send({ ok: false, error: "forbidden" });
+
+      const audits = await tx.auditLog.findMany({
+        where: { entityType: "intent", entityId: id },
+        orderBy: { timestamp: "asc" },
+        take: 200,
+      });
+
+      return reply.send({ ok: true, intent, audits });
     });
-
-    return reply.send({ ok: true, intent, audits });
   });
 };

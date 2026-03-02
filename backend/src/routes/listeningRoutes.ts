@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { prisma } from "../db/prisma.js";
+import { withTenant } from "../db/prisma.js";
 import { providerForPlatform } from "../lib/providerMapping.js";
 
 const ImportBody = z.object({
@@ -64,38 +64,40 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = ((req as any).tenantId ?? null) as string | null;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
-    const assets = await prisma.asset.findMany({
-      where: { tenantId },
-      select: { id: true, name: true, url: true, platform: true, type: true },
-      orderBy: { createdAt: "desc" },
-      take: 200,
+    const plan = await withTenant(tenantId, async (tx) => {
+      const assets = await tx.asset.findMany({
+        where: { tenantId },
+        select: { id: true, name: true, url: true, platform: true, type: true },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      });
+
+      const providers = new Set<string>();
+      const candidates = assets
+        .map(a => {
+          const provider = providerForPlatform(a.platform);
+          if (provider) providers.add(provider);
+          return { ...a, provider };
+        })
+        .filter(a => !!a.provider);
+
+      const rows = await tx.integration.findMany({
+        where: { tenantId, provider: { in: Array.from(providers) as any } },
+        select: { provider: true, connected: true },
+      });
+      const connectedByProvider: Record<string, boolean> = {};
+      for (const r of rows) connectedByProvider[String(r.provider)] = !!r.connected;
+
+      return candidates.map(a => ({
+        id: a.id,
+        name: a.name,
+        url: a.url,
+        platform: a.platform,
+        provider: a.provider,
+        connected: !!connectedByProvider[String(a.provider)],
+        type: a.type,
+      }));
     });
-
-    const providers = new Set<string>();
-    const candidates = assets
-      .map(a => {
-        const provider = providerForPlatform(a.platform);
-        if (provider) providers.add(provider);
-        return { ...a, provider };
-      })
-      .filter(a => !!a.provider);
-
-    const rows = await prisma.integration.findMany({
-      where: { tenantId, provider: { in: Array.from(providers) as any } },
-      select: { provider: true, connected: true },
-    });
-    const connectedByProvider: Record<string, boolean> = {};
-    for (const r of rows) connectedByProvider[String(r.provider)] = !!r.connected;
-
-    const plan = candidates.map(a => ({
-      id: a.id,
-      name: a.name,
-      url: a.url,
-      platform: a.platform,
-      provider: a.provider,
-      connected: !!connectedByProvider[String(a.provider)],
-      type: a.type,
-    }));
 
     return reply.send({ ok: true, tenantId, plan });
   });
@@ -127,32 +129,36 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
       type: "social_profile" as any,
     }));
 
-    let created = 0;
-    let failed: Array<{ url: string; error: string }> = [];
+    const result = await withTenant(tenantId, async (tx) => {
+      let created = 0;
+      let failed: Array<{ url: string; error: string }> = [];
 
-    // Try fast bulk insert first
-    try {
-      const res = await prisma.asset.createMany({
-        data: rows as any,
-        skipDuplicates: true as any,
-      } as any);
-      created = Number((res as any)?.count ?? 0);
-    } catch (e: any) {
-      // Fallback to per-row create with best-effort dedupe (ignore duplicates)
-      for (const r of rows) {
-        try {
-          await prisma.asset.create({ data: r as any } as any);
-          created += 1;
-        } catch (err: any) {
-          const msg = String(err?.message ?? err);
-          // Ignore typical duplicate errors
-          if (msg.toLowerCase().includes("unique") || msg.toLowerCase().includes("duplicate")) continue;
-          failed.push({ url: r.url, error: msg });
+      // Try fast bulk insert first
+      try {
+        const res = await tx.asset.createMany({
+          data: rows as any,
+          skipDuplicates: true as any,
+        } as any);
+        created = Number((res as any)?.count ?? 0);
+      } catch (e: any) {
+        // Fallback to per-row create with best-effort dedupe (ignore duplicates)
+        for (const r of rows) {
+          try {
+            await tx.asset.create({ data: r as any } as any);
+            created += 1;
+          } catch (err: any) {
+            const msg = String(err?.message ?? err);
+            // Ignore typical duplicate errors
+            if (msg.toLowerCase().includes("unique") || msg.toLowerCase().includes("duplicate")) continue;
+            failed.push({ url: r.url, error: msg });
+          }
         }
       }
-    }
 
-    return reply.send({ ok: failed.length === 0, tenantId, found: urls.length, created, failed, urls });
+      return { created, failed };
+    });
+
+    return reply.send({ ok: result.failed.length === 0, tenantId, found: urls.length, created: result.created, failed: result.failed, urls });
   });
 
   /**
@@ -163,11 +169,13 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = ((req as any).tenantId ?? null) as string | null;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
-    const sources = await prisma.asset.findMany({
-      where: { tenantId, type: { in: ["social", "social_profile", "app", "keyword"] as any } },
-      select: { id: true, name: true, url: true, platform: true, type: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
-      take: 500,
+    const sources = await withTenant(tenantId, async (tx) => {
+      return tx.asset.findMany({
+        where: { tenantId, type: { in: ["social", "social_profile", "app", "keyword"] as any } },
+        select: { id: true, name: true, url: true, platform: true, type: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 500,
+      });
     });
 
     return reply.send({ ok: true, tenantId, sources });
@@ -189,24 +197,27 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
     const terms = raw.split(",").map(s => s.trim()).filter(s => s.length > 0 && s.length < 100);
     if (!terms.length) return reply.code(400).send({ ok: false, error: "NO_VALID_KEYWORDS" });
 
-    let created = 0;
-    for (const term of terms) {
-      try {
-        await prisma.asset.create({
-          data: {
-            tenantId,
-            name: term,
-            url: "",
-            platform: "keyword",
-            type: "keyword" as any,
-          } as any,
-        });
-        created++;
-      } catch (err: any) {
-        const msg = String(err?.message ?? "");
-        if (msg.toLowerCase().includes("unique") || msg.toLowerCase().includes("duplicate")) continue;
+    const created = await withTenant(tenantId, async (tx) => {
+      let created = 0;
+      for (const term of terms) {
+        try {
+          await tx.asset.create({
+            data: {
+              tenantId,
+              name: term,
+              url: "",
+              platform: "keyword",
+              type: "keyword" as any,
+            } as any,
+          });
+          created++;
+        } catch (err: any) {
+          const msg = String(err?.message ?? "");
+          if (msg.toLowerCase().includes("unique") || msg.toLowerCase().includes("duplicate")) continue;
+        }
       }
-    }
+      return created;
+    });
 
     return reply.send({ ok: true, tenantId, created, total: terms.length });
   });
@@ -222,10 +233,15 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
     const { id } = req.params as any;
     if (!id) return reply.code(400).send({ ok: false, error: "ID_REQUIRED" });
 
-    const asset = await prisma.asset.findFirst({ where: { id, tenantId } });
-    if (!asset) return reply.code(404).send({ ok: false, error: "NOT_FOUND" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const asset = await tx.asset.findFirst({ where: { id, tenantId } });
+      if (!asset) return { notFound: true as const };
 
-    await prisma.asset.delete({ where: { id } });
+      await tx.asset.delete({ where: { id } });
+      return { ok: true };
+    });
+
+    if ("notFound" in result) return reply.code(404).send({ ok: false, error: "NOT_FOUND" });
     return reply.send({ ok: true, tenantId, deleted: id });
   });
 
@@ -238,14 +254,16 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     // Find the most recent LISTENING_START or LISTENING_STOP job
-    const lastJob = await prisma.job.findFirst({
-      where: {
-        tenantId,
-        jobType: { in: ["LISTENING_START", "LISTENING_STOP"] },
-        status: { in: ["queued", "running", "succeeded"] as any },
-      },
-      orderBy: { createdAt: "desc" },
-      select: { jobType: true, status: true, createdAt: true },
+    const lastJob = await withTenant(tenantId, async (tx) => {
+      return tx.job.findFirst({
+        where: {
+          tenantId,
+          jobType: { in: ["LISTENING_START", "LISTENING_STOP"] },
+          status: { in: ["queued", "running", "succeeded"] as any },
+        },
+        orderBy: { createdAt: "desc" },
+        select: { jobType: true, status: true, createdAt: true },
+      });
     });
 
     const active = lastJob?.jobType === "LISTENING_START";
@@ -260,29 +278,33 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = ((req as any).tenantId ?? null) as string | null;
     if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
-    const job = await prisma.job.create({
-      data: {
-        tenantId,
-        jobType: "LISTENING_STOP",
-        status: "succeeded" as any,
-        priority: 0,
-      },
-      select: { id: true, status: true, createdAt: true },
-    });
+    const job = await withTenant(tenantId, async (tx) => {
+      const job = await tx.job.create({
+        data: {
+          tenantId,
+          jobType: "LISTENING_STOP",
+          status: "succeeded" as any,
+          priority: 0,
+        },
+        select: { id: true, status: true, createdAt: true },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        level: "info" as any,
-        action: "LISTENING_STOPPED",
-        entityType: "job",
-        entityId: job.id,
-        message: "Listening stopped by user.",
-        metadata: {},
-        status: "SUCCESS" as any,
-      } as any,
-    }).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          level: "info" as any,
+          action: "LISTENING_STOPPED",
+          entityType: "job",
+          entityId: job.id,
+          message: "Listening stopped by user.",
+          metadata: {},
+          status: "SUCCESS" as any,
+        } as any,
+      }).catch(() => null);
+
+      return job;
+    });
 
     return reply.send({ ok: true, tenantId, job });
   });
@@ -302,32 +324,36 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
     const plan = planJson?.plan ?? [];
     const disconnected = plan.filter((p: any) => !p.connected);
 
-    const job = await prisma.job.create({
-      data: {
-        tenantId,
-        jobType: "LISTENING_START",
-        status: "queued" as any,
-        input: { plan },
-        priority: 1,
-      },
-      select: { id: true, status: true, createdAt: true },
-    });
+    const job = await withTenant(tenantId, async (tx) => {
+      const job = await tx.job.create({
+        data: {
+          tenantId,
+          jobType: "LISTENING_START",
+          status: "queued" as any,
+          input: { plan },
+          priority: 1,
+        },
+        select: { id: true, status: true, createdAt: true },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        level: "info" as any,
-        action: "LISTENING_START_REQUESTED",
-        entityType: "job",
-        entityId: job.id,
-        message: disconnected.length
-          ? `Listening requested; ${disconnected.length} providers not connected yet.`
-          : "Listening requested.",
-        metadata: { disconnectedProviders: Array.from(new Set(disconnected.map((d: any) => d.provider))) },
-        status: "SUCCESS" as any,
-      } as any,
-    }).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          level: "info" as any,
+          action: "LISTENING_START_REQUESTED",
+          entityType: "job",
+          entityId: job.id,
+          message: disconnected.length
+            ? `Listening requested; ${disconnected.length} providers not connected yet.`
+            : "Listening requested.",
+          metadata: { disconnectedProviders: Array.from(new Set(disconnected.map((d: any) => d.provider))) },
+          status: "SUCCESS" as any,
+        } as any,
+      }).catch(() => null);
+
+      return job;
+    });
 
     return reply.send({ ok: true, tenantId, job, disconnectedProviders: Array.from(new Set(disconnected.map((d: any) => d.provider))) });
   });
@@ -348,14 +374,18 @@ export const listeningRoutes: FastifyPluginAsync = async (app) => {
     const where: any = { tenantId, eventType: "MENTION" };
     if (platform) where.channel = platform;
 
-    const mentions = await prisma.distributionEvent.findMany({
-      where,
-      orderBy: { occurredAt: "desc" },
-      take: limit,
-      select: { id: true, channel: true, url: true, meta: true, occurredAt: true },
-    });
+    const { mentions, total } = await withTenant(tenantId, async (tx) => {
+      const mentions = await tx.distributionEvent.findMany({
+        where,
+        orderBy: { occurredAt: "desc" },
+        take: limit,
+        select: { id: true, channel: true, url: true, meta: true, occurredAt: true },
+      });
 
-    const total = await prisma.distributionEvent.count({ where });
+      const total = await tx.distributionEvent.count({ where });
+
+      return { mentions, total };
+    });
 
     return reply.send({ ok: true, tenantId, mentions, total });
   });

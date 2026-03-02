@@ -10,7 +10,7 @@
  */
 
 import { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import * as comfyui from "../services/comfyui.js";
 import { generateVideo, detectInstalledModels, type VideoModel } from "../services/videoModelRouter.js";
 import { isFfmpegAvailable } from "../services/videoComposer.js";
@@ -113,31 +113,35 @@ export const videoRoutes: FastifyPluginAsync = async (app) => {
     }
 
     // Queue as async job
-    const job = await prisma.job.create({
-      data: {
-        tenantId,
-        jobType: "VIDEO_COMPOSE",
-        status: "queued",
-        priority: 5,
-        input: { images, clips, textOverlays, audioPath, imageDurationSec, outputPath },
-      },
-    });
+    const job = await withTenant(tenantId, async (tx) => {
+      const job = await tx.job.create({
+        data: {
+          tenantId,
+          jobType: "VIDEO_COMPOSE",
+          status: "queued",
+          priority: 5,
+          input: { images, clips, textOverlays, audioPath, imageDurationSec, outputPath },
+        },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "agent",
-        actorUserId: null,
-        actorExternalId: "victor",
-        level: "info",
-        action: "VIDEO_COMPOSE_QUEUED",
-        entityType: "job",
-        entityId: job.id,
-        message: `Victor queued video composition: ${images.length} images, ${clips.length} clips`,
-        meta: { jobId: job.id, images: images.length, clips: clips.length, overlays: textOverlays.length },
-        timestamp: new Date(),
-      },
-    }).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "agent",
+          actorUserId: null,
+          actorExternalId: "victor",
+          level: "info",
+          action: "VIDEO_COMPOSE_QUEUED",
+          entityType: "job",
+          entityId: job.id,
+          message: `Victor queued video composition: ${images.length} images, ${clips.length} clips`,
+          meta: { jobId: job.id, images: images.length, clips: clips.length, overlays: textOverlays.length },
+          timestamp: new Date(),
+        },
+      }).catch(() => null);
+
+      return job;
+    });
 
     return reply.send({ ok: true, jobId: job.id, status: "queued" });
   });
@@ -186,41 +190,45 @@ export const videoRoutes: FastifyPluginAsync = async (app) => {
     }
 
     // Track as a job
-    const job = await prisma.job.create({
-      data: {
-        tenantId,
-        jobType: "VIDEO_GENERATE",
-        status: "queued",
-        priority: 5,
-        input: {
-          mode,
-          prompt,
-          model: result.model,
-          modelReason: result.reason,
-          promptId: result.promptId,
-          negativePrompt: body?.negativePrompt,
-          durationSec: body?.durationSec,
-          width: body?.width,
-          height: body?.height,
+    const job = await withTenant(tenantId, async (tx) => {
+      const job = await tx.job.create({
+        data: {
+          tenantId,
+          jobType: "VIDEO_GENERATE",
+          status: "queued",
+          priority: 5,
+          input: {
+            mode,
+            prompt,
+            model: result.model,
+            modelReason: result.reason,
+            promptId: result.promptId,
+            negativePrompt: body?.negativePrompt,
+            durationSec: body?.durationSec,
+            width: body?.width,
+            height: body?.height,
+          },
         },
-      },
-    });
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "agent",
-        actorUserId: null,
-        actorExternalId: "victor",
-        level: "info",
-        action: "VIDEO_GENERATE_QUEUED",
-        entityType: "job",
-        entityId: job.id,
-        message: `Victor queued AI video (${result.model}): ${mode} — "${prompt.slice(0, 80)}"`,
-        meta: { jobId: job.id, promptId: result.promptId, mode, model: result.model, reason: result.reason },
-        timestamp: new Date(),
-      },
-    }).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "agent",
+          actorUserId: null,
+          actorExternalId: "victor",
+          level: "info",
+          action: "VIDEO_GENERATE_QUEUED",
+          entityType: "job",
+          entityId: job.id,
+          message: `Victor queued AI video (${result.model}): ${mode} — "${prompt.slice(0, 80)}"`,
+          meta: { jobId: job.id, promptId: result.promptId, mode, model: result.model, reason: result.reason },
+          timestamp: new Date(),
+        },
+      }).catch(() => null);
+
+      return job;
+    });
 
     return reply.send({
       ok: true,
@@ -239,9 +247,11 @@ export const videoRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(401).send({ ok: false, error: "unauthorized" });
 
     const { jobId } = req.params as { jobId: string };
-    const job = await prisma.job.findFirst({
-      where: { id: jobId, tenantId },
-    });
+    const job = await withTenant(tenantId, async (tx) =>
+      tx.job.findFirst({
+        where: { id: jobId, tenantId },
+      })
+    );
 
     if (!job) return reply.code(404).send({ ok: false, error: "Job not found" });
 

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { Prisma, LedgerCategory, LedgerEntryType } from "@prisma/client";
 import { randomUUID } from "crypto";
 
@@ -140,10 +140,12 @@ export async function assetsRoutes(app: FastifyInstance) {
 
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId_required" });
 
-    const assets = await prisma.asset.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
-      take: 100,
+    const assets = await withTenant(tenantId, async (tx) => {
+      return tx.asset.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      });
     });
 
     return reply.send({ ok: true, assets });
@@ -186,7 +188,7 @@ export async function assetsRoutes(app: FastifyInstance) {
     // on create, "clear" just means don't set cost.
 
     try {
-      const asset = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const asset = await withTenant(tenantId, async (tx) => {
         const created = await tx.asset.create({
           data: {
             tenantId,
@@ -306,12 +308,13 @@ export async function assetsRoutes(app: FastifyInstance) {
     const requestId = randomUUID();
 
     const reqTenantId = ((req as any).tenantId ?? null) as string | null;
+    if (!reqTenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     try {
-      const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const updated = await withTenant(reqTenantId, async (tx) => {
         const before = await tx.asset.findUnique({ where: { id } });
         if (!before) return { before: null as any, after: null as any };
-        if (reqTenantId && before.tenantId !== reqTenantId) return { before: null as any, after: null as any, forbidden: true };
+        if (before.tenantId !== reqTenantId) return { before: null as any, after: null as any, forbidden: true };
 
         // merge metrics
         const beforeMetrics = (before as any).metrics;
@@ -473,12 +476,13 @@ export async function assetsRoutes(app: FastifyInstance) {
     const actor = getActor(req);
     const requestId = randomUUID();
     const delTenantId = ((req as any).tenantId ?? null) as string | null;
+    if (!delTenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     try {
-      const deleted = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const deleted = await withTenant(delTenantId, async (tx) => {
         const before = await tx.asset.findUnique({ where: { id } });
         if (!before) return null;
-        if (delTenantId && before.tenantId !== delTenantId) return "forbidden";
+        if (before.tenantId !== delTenantId) return "forbidden";
 
         await tx.asset.delete({ where: { id } });
 

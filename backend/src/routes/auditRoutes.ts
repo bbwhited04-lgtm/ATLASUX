@@ -1,16 +1,17 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 
 // Use `any` so missing model names (auditLog vs audit_log) won't break TypeScript compile.
 const prismaAny: any = prisma as any;
 
-function pickAuditModel(): any | null {
+function pickAuditModel(client?: any): any | null {
+  const c = client ?? prismaAny;
   // Try common Prisma model names (depends on your schema.prisma)
-  return prismaAny.auditLog ?? prismaAny.audit_log ?? prismaAny.audit ?? null;
+  return c.auditLog ?? c.audit_log ?? c.audit ?? null;
 }
 
-async function safeFindMany(args: any) {
-  const model = pickAuditModel();
+async function safeFindMany(args: any, client?: any) {
+  const model = pickAuditModel(client);
   if (!model?.findMany) return { ok: false, reason: "NO_MODEL" };
 
   try {
@@ -21,8 +22,8 @@ async function safeFindMany(args: any) {
   }
 }
 
-async function safeFindUnique(args: any) {
-  const model = pickAuditModel();
+async function safeFindUnique(args: any, client?: any) {
+  const model = pickAuditModel(client);
   if (!model?.findUnique) return { ok: false, reason: "NO_MODEL" };
 
   try {
@@ -33,8 +34,8 @@ async function safeFindUnique(args: any) {
   }
 }
 
-async function safeCreate(args: any) {
-  const model = pickAuditModel();
+async function safeCreate(args: any, client?: any) {
+  const model = pickAuditModel(client);
   if (!model?.create) return { ok: false, reason: "NO_MODEL" };
 
   try {
@@ -109,16 +110,29 @@ if (q.level) where.level = q.level;
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     };
 
-    let result = await safeFindMany({ ...baseArgs, orderBy: { createdAt: "desc" } });
+    const tid = where.tenantId as string | undefined;
 
-    if (!result.ok) {
-      // Try "timestamp" ordering (common in your earlier error)
-      result = await safeFindMany({ ...baseArgs, orderBy: { timestamp: "desc" } });
-    }
+    const doQuery = async (client?: any) => {
+      let result = await safeFindMany({ ...baseArgs, orderBy: { createdAt: "desc" } }, client);
 
-    if (!result.ok) {
-      // Last resort: no orderBy
-      result = await safeFindMany(baseArgs);
+      if (!result.ok) {
+        // Try "timestamp" ordering (common in your earlier error)
+        result = await safeFindMany({ ...baseArgs, orderBy: { timestamp: "desc" } }, client);
+      }
+
+      if (!result.ok) {
+        // Last resort: no orderBy
+        result = await safeFindMany(baseArgs, client);
+      }
+
+      return result;
+    };
+
+    let result: any;
+    if (tid) {
+      result = await withTenant(tid, async (tx) => doQuery(tx)).catch(() => ({ ok: false, reason: "QUERY_FAILED" }));
+    } else {
+      result = await doQuery();
     }
 
     if (!result.ok) {
@@ -150,7 +164,12 @@ if (q.level) where.level = q.level;
     const { id } = req.params as any;
     const reqTenantId = (req as any).tenantId as string | undefined;
 
-    const result = await safeFindUnique({ where: { id } });
+    let result: any;
+    if (reqTenantId) {
+      result = await withTenant(reqTenantId, async (tx) => safeFindUnique({ where: { id } }, tx)).catch(() => ({ ok: false, reason: "QUERY_FAILED" }));
+    } else {
+      result = await safeFindUnique({ where: { id } });
+    }
     if (!result.ok) {
       return reply.code(404).send({ ok: false, error: "NOT_FOUND_OR_STORAGE_NOT_READY" });
     }
@@ -187,7 +206,12 @@ if (q.level) where.level = q.level;
       // do NOT force createdAt/timestamp here; let DB defaults handle it
     };
 
-    const result = await safeCreate({ data });
+    let result: any;
+    if (data.tenantId) {
+      result = await withTenant(data.tenantId, async (tx) => safeCreate({ data }, tx)).catch(() => ({ ok: false, reason: "CREATE_FAILED" }));
+    } else {
+      result = await safeCreate({ data });
+    }
 
     if (!result.ok) {
       // Don’t brick the UI while DB/schema is being wired

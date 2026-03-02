@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 
 type EmailRequest = {
   tenantId: string;
@@ -19,37 +19,41 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ ok: false, error: "tenantId, fromAgent, to, subject, text are required" });
     }
 
-    const job = await prisma.job.create({
-      data: {
-        tenantId,
-        requested_by_user_id: (req as any).user?.id ?? tenantId,
-        status: "queued",
-        jobType: "EMAIL_SEND",
-        priority: 5,
-        input: {
-          to: body.to,
-          subject: body.subject,
-          text: body.text,
-          fromAgent: body.fromAgent,
-          traceId: body.traceId ?? null,
+    const job = await withTenant(tenantId, async (tx) => {
+      const j = await tx.job.create({
+        data: {
+          tenantId,
+          requested_by_user_id: (req as any).user?.id ?? tenantId,
+          status: "queued",
+          jobType: "EMAIL_SEND",
+          priority: 5,
+          input: {
+            to: body.to,
+            subject: body.subject,
+            text: body.text,
+            fromAgent: body.fromAgent,
+            traceId: body.traceId ?? null,
+          },
         },
-      },
-    });
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorUserId: null,
-        actorExternalId: String((req as any).user?.id ?? tenantId ?? ""),
-        actorType: "system",
-        level: "info",
-        action: "EMAIL_QUEUED",
-        entityType: "job",
-        entityId: job.id,
-        message: `Queued email from ${body.fromAgent} to ${body.to}`,
-        meta: { to: body.to, fromAgent: body.fromAgent, subject: body.subject, traceId: body.traceId ?? null },
-        timestamp: new Date(),
-      },
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: null,
+          actorExternalId: String((req as any).user?.id ?? tenantId ?? ""),
+          actorType: "system",
+          level: "info",
+          action: "EMAIL_QUEUED",
+          entityType: "job",
+          entityId: j.id,
+          message: `Queued email from ${body.fromAgent} to ${body.to}`,
+          meta: { to: body.to, fromAgent: body.fromAgent, subject: body.subject, traceId: body.traceId ?? null },
+          timestamp: new Date(),
+        },
+      });
+
+      return j;
     });
 
     return reply.send({ ok: true, jobId: job.id });
@@ -60,10 +64,12 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
-    const jobs = await prisma.job.findMany({
-      where: { tenantId, jobType: "EMAIL_SEND" },
-      orderBy: { createdAt: "desc" },
-      take: 100,
+    const jobs = await withTenant(tenantId, async (tx) => {
+      return tx.job.findMany({
+        where: { tenantId, jobType: "EMAIL_SEND" },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      });
     });
 
     return reply.send({ ok: true, jobs });
@@ -83,31 +89,35 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ ok: false, error: "tenantId, teamId, channelId, text required" });
     }
 
-    const job = await prisma.job.create({
-      data: {
-        tenantId,
-        requested_by_user_id: (req as any).user?.id ?? tenantId,
-        status: "queued",
-        jobType: "TEAMS_SEND",
-        priority: 5,
-        input: { teamId, channelId, text, fromAgent, toAgent },
-      },
-    });
+    const job = await withTenant(tenantId, async (tx) => {
+      const j = await tx.job.create({
+        data: {
+          tenantId,
+          requested_by_user_id: (req as any).user?.id ?? tenantId,
+          status: "queued",
+          jobType: "TEAMS_SEND",
+          priority: 5,
+          input: { teamId, channelId, text, fromAgent, toAgent },
+        },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorUserId: null,
-        actorExternalId: fromAgent,
-        actorType: "system",
-        level: "info",
-        action: "TEAMS_QUEUED",
-        entityType: "job",
-        entityId: job.id,
-        message: `Queued Teams message from ${fromAgent}${toAgent ? ` → ${toAgent}` : ""} in channel ${channelId}`,
-        meta: { teamId, channelId, fromAgent, toAgent },
-        timestamp: new Date(),
-      },
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: null,
+          actorExternalId: fromAgent,
+          actorType: "system",
+          level: "info",
+          action: "TEAMS_QUEUED",
+          entityType: "job",
+          entityId: j.id,
+          message: `Queued Teams message from ${fromAgent}${toAgent ? ` → ${toAgent}` : ""} in channel ${channelId}`,
+          meta: { teamId, channelId, fromAgent, toAgent },
+          timestamp: new Date(),
+        },
+      });
+
+      return j;
     });
 
     return reply.send({ ok: true, jobId: job.id });
@@ -117,10 +127,12 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
   app.get("/teams/outbox", async (req, reply) => {
     const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
-    const jobs = await prisma.job.findMany({
-      where: { tenantId, jobType: "TEAMS_SEND" },
-      orderBy: { createdAt: "desc" },
-      take: 50,
+    const jobs = await withTenant(tenantId, async (tx) => {
+      return tx.job.findMany({
+        where: { tenantId, jobType: "TEAMS_SEND" },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
     });
     return reply.send({ ok: true, jobs });
   });
@@ -141,37 +153,41 @@ export const commsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ ok: false, error: "tenantId is required" });
     }
 
-    const job = await prisma.job.create({
-      data: {
-        tenantId,
-        requested_by_user_id: (req as any).user?.id || tenantId,
-        status: "queued",
-        jobType: "SMS_SEND",
-        priority: 5,
-        input: { to, message },
-      },
-    });
-
-    // Best-effort audit.
-    try {
-      await prisma.auditLog.create({
+    const job = await withTenant(tenantId, async (tx) => {
+      const j = await tx.job.create({
         data: {
           tenantId,
-          actorUserId: null,
-          actorExternalId: String((req as any).user?.id ?? ""),
-          actorType: "system",
-          level: "info",
-          action: "SMS_QUEUED",
-          entityType: "job",
-          entityId: job.id,
-          message: `Queued SMS to ${to}`,
-          meta: { to, message },
-          timestamp: new Date(),
+          requested_by_user_id: (req as any).user?.id || tenantId,
+          status: "queued",
+          jobType: "SMS_SEND",
+          priority: 5,
+          input: { to, message },
         },
       });
-    } catch {
-      // ignore
-    }
+
+      // Best-effort audit.
+      try {
+        await tx.auditLog.create({
+          data: {
+            tenantId,
+            actorUserId: null,
+            actorExternalId: String((req as any).user?.id ?? ""),
+            actorType: "system",
+            level: "info",
+            action: "SMS_QUEUED",
+            entityType: "job",
+            entityId: j.id,
+            message: `Queued SMS to ${to}`,
+            meta: { to, message },
+            timestamp: new Date(),
+          },
+        });
+      } catch {
+        // ignore
+      }
+
+      return j;
+    });
 
     return reply.send({ ok: true, jobId: job.id });
   });

@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 
 export const analyticsRoutes: FastifyPluginAsync = async (app) => {
   /**
@@ -15,23 +15,25 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
     const days = range === "24h" ? 1 : range === "30d" ? 30 : range === "90d" ? 90 : 7;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const [events, ledger, growthRuns] = await Promise.all([
-      prisma.distributionEvent.findMany({
-        where: { tenantId, occurredAt: { gte: since } },
-        select: { channel: true, eventType: true, impressions: true, clicks: true, conversions: true, occurredAt: true },
-        orderBy: { occurredAt: "asc" },
-      }),
-      prisma.ledgerEntry.findMany({
-        where: { tenantId, occurredAt: { gte: since } },
-        select: { category: true, amountCents: true, entryType: true, occurredAt: true },
-      }),
-      prisma.growthLoopRun.findMany({
-        where: { tenantId, createdAt: { gte: since } },
-        select: { runDate: true, status: true, summary: true },
-        orderBy: { runDate: "desc" },
-        take: 10,
-      }),
-    ]);
+    const [events, ledger, growthRuns] = await withTenant(tenantId, async (tx) => {
+      return Promise.all([
+        tx.distributionEvent.findMany({
+          where: { tenantId, occurredAt: { gte: since } },
+          select: { channel: true, eventType: true, impressions: true, clicks: true, conversions: true, occurredAt: true },
+          orderBy: { occurredAt: "asc" },
+        }),
+        tx.ledgerEntry.findMany({
+          where: { tenantId, occurredAt: { gte: since } },
+          select: { category: true, amountCents: true, entryType: true, occurredAt: true },
+        }),
+        tx.growthLoopRun.findMany({
+          where: { tenantId, createdAt: { gte: since } },
+          select: { runDate: true, status: true, summary: true },
+          orderBy: { runDate: "desc" },
+          take: 10,
+        }),
+      ]);
+    });
 
     // Aggregate totals
     const totalImpressions = events.reduce((s, e) => s + (e.impressions ?? 0), 0);
@@ -104,10 +106,12 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
     const days = range === "24h" ? 1 : range === "30d" ? 30 : range === "90d" ? 90 : 7;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const snapshots = await prisma.metricsSnapshot.findMany({
-      where: { tenantId, date: { gte: since } },
-      orderBy: { date: "desc" },
-      take: 90,
+    const snapshots = await withTenant(tenantId, async (tx) => {
+      return tx.metricsSnapshot.findMany({
+        where: { tenantId, date: { gte: since } },
+        orderBy: { date: "desc" },
+        take: 90,
+      });
     });
 
     return reply.send({ ok: true, snapshots });
@@ -129,24 +133,26 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
     const priorEnd  = since;                                                        // prior window end
     const priorStart = new Date(since.getTime() - days * 24 * 60 * 60 * 1000);    // prior window start
 
-    const [currentEvents, currentLedger, priorEvents, priorLedger] = await Promise.all([
-      prisma.distributionEvent.findMany({
-        where: { tenantId, occurredAt: { gte: since, lte: now } },
-        select: { impressions: true, clicks: true, conversions: true },
-      }),
-      prisma.ledgerEntry.findMany({
-        where: { tenantId, entryType: "debit", occurredAt: { gte: since, lte: now } },
-        select: { amountCents: true },
-      }),
-      prisma.distributionEvent.findMany({
-        where: { tenantId, occurredAt: { gte: priorStart, lt: priorEnd } },
-        select: { impressions: true, clicks: true, conversions: true },
-      }),
-      prisma.ledgerEntry.findMany({
-        where: { tenantId, entryType: "debit", occurredAt: { gte: priorStart, lt: priorEnd } },
-        select: { amountCents: true },
-      }),
-    ]);
+    const [currentEvents, currentLedger, priorEvents, priorLedger] = await withTenant(tenantId, async (tx) => {
+      return Promise.all([
+        tx.distributionEvent.findMany({
+          where: { tenantId, occurredAt: { gte: since, lte: now } },
+          select: { impressions: true, clicks: true, conversions: true },
+        }),
+        tx.ledgerEntry.findMany({
+          where: { tenantId, entryType: "debit", occurredAt: { gte: since, lte: now } },
+          select: { amountCents: true },
+        }),
+        tx.distributionEvent.findMany({
+          where: { tenantId, occurredAt: { gte: priorStart, lt: priorEnd } },
+          select: { impressions: true, clicks: true, conversions: true },
+        }),
+        tx.ledgerEntry.findMany({
+          where: { tenantId, entryType: "debit", occurredAt: { gte: priorStart, lt: priorEnd } },
+          select: { amountCents: true },
+        }),
+      ]);
+    });
 
     function aggregate(events: typeof currentEvents, ledger: typeof currentLedger) {
       return {
@@ -192,9 +198,11 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
     const days = range === "24h" ? 1 : range === "30d" ? 30 : range === "90d" ? 90 : 7;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const events = await prisma.distributionEvent.findMany({
-      where: { tenantId, occurredAt: { gte: since } },
-      select: { channel: true, impressions: true, clicks: true, conversions: true },
+    const events = await withTenant(tenantId, async (tx) => {
+      return tx.distributionEvent.findMany({
+        where: { tenantId, occurredAt: { gte: since } },
+        select: { channel: true, impressions: true, clicks: true, conversions: true },
+      });
     });
 
     const channelMap: Record<string, { impressions: number; clicks: number; conversions: number; posts: number }> = {};
@@ -229,10 +237,12 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
     const date = new Date(dateStr);
     const data = typeof body.data === "object" && body.data ? body.data : {};
 
-    const snapshot = await prisma.metricsSnapshot.upsert({
-      where: { tenantId_date: { tenantId, date } } as any,
-      update: { data, updatedAt: new Date() },
-      create: { tenantId, date, data },
+    const snapshot = await withTenant(tenantId, async (tx) => {
+      return tx.metricsSnapshot.upsert({
+        where: { tenantId_date: { tenantId, date } } as any,
+        update: { data, updatedAt: new Date() },
+        create: { tenantId, date, data },
+      });
     });
 
     return reply.send({ ok: true, snapshot });

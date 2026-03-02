@@ -21,7 +21,7 @@
 
 import type { FastifyPluginAsync } from "fastify";
 import { saveTelegramChatId, sendTelegramDirect } from "../lib/telegramNotify.js";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { runChat } from "../ai.js";
 import { getSkillBlock, loadAllSkills } from "../core/kb/skillLoader.js";
 import { resolveAgentTools } from "../core/agent/agentTools.js";
@@ -377,21 +377,23 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // Audit log
-      await prisma.auditLog.create({
-        data: {
-          tenantId,
-          actorUserId: null,
-          actorExternalId: `telegram:${username}`,
-          actorType: "user",
-          level: "info",
-          action: "TELEGRAM_CHAT",
-          entityType: "message",
-          entityId: null,
-          message: `Telegram chat with ${agentId}: "${text.slice(0, 120)}"`,
-          meta: { chatId, agentId, userText: text.slice(0, 500), replyLength: aiReply.length },
-          timestamp: new Date(),
-        },
-      } as any).catch(() => null);
+      await withTenant(tenantId, async (tx) => {
+        await tx.auditLog.create({
+          data: {
+            tenantId,
+            actorUserId: null,
+            actorExternalId: `telegram:${username}`,
+            actorType: "user",
+            level: "info",
+            action: "TELEGRAM_CHAT",
+            entityType: "message",
+            entityId: null,
+            message: `Telegram chat with ${agentId}: "${text.slice(0, 120)}"`,
+            meta: { chatId, agentId, userText: text.slice(0, 500), replyLength: aiReply.length },
+            timestamp: new Date(),
+          },
+        } as any);
+      }).catch(() => null);
     } catch (err: any) {
       req.log.error({ err, chatId, agentId }, "Telegram chat engine error");
       await sendTelegramDirect(chatId,
@@ -423,9 +425,11 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
     const tenantId = String((req as any).tenantId ?? "");
     if (!tenantId) return reply.code(401).send({ ok: false, error: "tenantId required" });
     try {
-      const integration = await prisma.integration.findUnique({
-        where: { tenantId_provider: { tenantId, provider: "telegram" } },
-        select: { config: true, connected: true },
+      const integration = await withTenant(tenantId, async (tx) => {
+        return tx.integration.findUnique({
+          where: { tenantId_provider: { tenantId, provider: "telegram" } },
+          select: { config: true, connected: true },
+        });
       });
       const config = (integration?.config ?? {}) as Record<string, any>;
       const chatId = String(config.chat_id ?? "").trim() || null;

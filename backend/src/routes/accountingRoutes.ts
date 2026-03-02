@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { LedgerEntryType } from "@prisma/client";
 
 export const accountingRoutes: FastifyPluginAsync = async (app) => {
@@ -20,19 +20,21 @@ export const accountingRoutes: FastifyPluginAsync = async (app) => {
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
 
-    const [credits, debits, pendingDecisions] = await Promise.all([
-      prisma.ledgerEntry.aggregate({
-        where: { tenantId, entryType: LedgerEntryType.credit },
-        _sum: { amountCents: true },
-      }),
-      prisma.ledgerEntry.aggregate({
-        where: { tenantId, entryType: LedgerEntryType.debit },
-        _sum: { amountCents: true },
-      }),
-      prisma.decisionMemo.count({
-        where: { tenantId, status: "pending" },
-      }),
-    ]);
+    const [credits, debits, pendingDecisions] = await withTenant(tenantId, async (tx) => {
+      return Promise.all([
+        tx.ledgerEntry.aggregate({
+          where: { tenantId, entryType: LedgerEntryType.credit },
+          _sum: { amountCents: true },
+        }),
+        tx.ledgerEntry.aggregate({
+          where: { tenantId, entryType: LedgerEntryType.debit },
+          _sum: { amountCents: true },
+        }),
+        tx.decisionMemo.count({
+          where: { tenantId, status: "pending" },
+        }),
+      ]);
+    });
 
     const revenueCents = Number(credits._sum.amountCents ?? 0);
     const expensesCents = Number(debits._sum.amountCents ?? 0);

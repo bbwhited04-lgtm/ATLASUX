@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { enforceJobLimit } from "../lib/seatEnforcement.js";
 import { meterJobCreated } from "../lib/usageMeter.js";
 
@@ -26,11 +26,13 @@ export const jobsRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const items = await prisma.job.findMany({
-      where: { tenantId: tid },
-      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
-      take: 200,
-    });
+    const items = await withTenant(tid, async (tx) =>
+      tx.job.findMany({
+        where: { tenantId: tid },
+        orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+        take: 200,
+      })
+    );
 
     return reply.send({
       ok: true,
@@ -61,9 +63,11 @@ export const jobsRoutes: FastifyPluginAsync = async (app) => {
     const { id } = req.params as { id: string };
 
     // Hard-delete non-running jobs; never forcibly remove a running job
-    await prisma.job.deleteMany({
-      where: { id, tenantId, status: { in: ["queued", "canceled", "failed", "succeeded"] } },
-    });
+    await withTenant(tenantId, async (tx) =>
+      tx.job.deleteMany({
+        where: { id, tenantId, status: { in: ["queued", "canceled", "failed", "succeeded"] } },
+      })
+    );
 
     return reply.send({ ok: true });
   });
@@ -89,15 +93,17 @@ export const jobsRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    const job = await prisma.job.create({
-      data: {
-        tenantId,
-        jobType,
-        priority: Number(body?.priority ?? 0),
-        input: body?.input ?? {},
-        status: "queued",
-      },
-    });
+    const job = await withTenant(tenantId, async (tx) =>
+      tx.job.create({
+        data: {
+          tenantId,
+          jobType,
+          priority: Number(body?.priority ?? 0),
+          input: body?.input ?? {},
+          status: "queued",
+        },
+      })
+    );
 
     if (userId) meterJobCreated(userId, tenantId);
 

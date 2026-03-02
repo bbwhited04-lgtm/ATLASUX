@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { KbDocumentStatus } from "@prisma/client";
 import { n8nWorkflows } from "../workflows/n8n/manifest.js";
 import { flushKbCache, invalidateKbCache, kbCacheStats } from "../core/kb/kbCache.js";
@@ -81,39 +81,42 @@ export async function kbRoutes(app: FastifyInstance) {
   // List docs
   app.get("/documents", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const q = String((req.query as any)?.q ?? "").trim();
     const statusRaw = String((req.query as any)?.status ?? "").trim();
     const tag = String((req.query as any)?.tag ?? "").trim();
 
     const status = statusRaw ? normalizeStatus(statusRaw) : null;
 
-    const docs = await prisma.kbDocument.findMany({
-      where: {
-        tenantId,
-        ...(status ? { status } : {}),
-        ...(q
-          ? {
-              OR: [
-                { title: { contains: q, mode: "insensitive" } },
-                { slug: { contains: q, mode: "insensitive" } },
-                { body: { contains: q, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-        ...(tag
-          ? {
-              tags: {
-                some: { tag: { name: { equals: tag, mode: "insensitive" } } },
-              },
-            }
-          : {}),
-      },
-      orderBy: [{ updatedAt: "desc" }],
-      take: 200,
-      include: {
-        tags: { include: { tag: true } },
-      },
-    });
+    const docs = await withTenant(tenantId, async (tx) =>
+      tx.kbDocument.findMany({
+        where: {
+          tenantId,
+          ...(status ? { status } : {}),
+          ...(q
+            ? {
+                OR: [
+                  { title: { contains: q, mode: "insensitive" } },
+                  { slug: { contains: q, mode: "insensitive" } },
+                  { body: { contains: q, mode: "insensitive" } },
+                ],
+              }
+            : {}),
+          ...(tag
+            ? {
+                tags: {
+                  some: { tag: { name: { equals: tag, mode: "insensitive" } } },
+                },
+              }
+            : {}),
+        },
+        orderBy: [{ updatedAt: "desc" }],
+        take: 200,
+        include: {
+          tags: { include: { tag: true } },
+        },
+      })
+    );
 
     return reply.send({
       ok: true,
@@ -132,25 +135,34 @@ export async function kbRoutes(app: FastifyInstance) {
   // Get one
   app.get("/documents/:id", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const id = String((req.params as any)?.id ?? "").trim();
 
-    const doc = await prisma.kbDocument.findFirst({
-      where: { id, tenantId },
-      include: { tags: { include: { tag: true } } },
+    const result = await withTenant(tenantId, async (tx) => {
+      const doc = await tx.kbDocument.findFirst({
+        where: { id, tenantId },
+        include: { tags: { include: { tag: true } } },
+      });
+
+      if (!doc) return null;
+
+      // Read chunk count via SQL to avoid Prisma-client model drift in some deployments.
+      const chunkCountRows = (await tx.$queryRaw`
+        select count(*)::int as count
+        from kb_chunks
+        where tenant_id = ${tenantId}::uuid
+          and document_id = ${doc.id}::uuid
+      `) as any[];
+      const chunkCount = chunkCountRows?.[0]?.count ?? 0;
+
+      return { doc, chunkCount };
     });
 
-    if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
+    if (!result) return reply.code(404).send({ ok: false, error: "not_found" });
 
-    // Read chunk count via SQL to avoid Prisma-client model drift in some deployments.
-    const chunkCountRows = (await prisma.$queryRaw`
-      select count(*)::int as count
-      from kb_chunks
-      where tenant_id = ${tenantId}::uuid
-        and document_id = ${doc.id}::uuid
-    `) as any[];
-    const chunkCount = chunkCountRows?.[0]?.count ?? 0;
+    const { doc, chunkCount } = result;
 
-return reply.send({
+    return reply.send({
       ok: true,
       document: {
         id: doc.id,
@@ -170,53 +182,61 @@ return reply.send({
 // Get chunks for a document (read-only, paginated)
 app.get("/documents/:id/chunks", async (req, reply) => {
   const tenantId = (req as any).tenantId as string;
+  if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
   const id = String((req.params as any)?.id ?? "").trim();
   const q = (req.query ?? {}) as any;
   const limit = Math.min(Math.max(Number(q.limit) || 100, 1), 500);
   const offset = Math.max(Number(q.offset) || 0, 0);
 
-  const doc = await prisma.kbDocument.findFirst({
-    where: { id, tenantId },
-    select: { id: true, updatedAt: true },
+  const result = await withTenant(tenantId, async (tx) => {
+    const doc = await tx.kbDocument.findFirst({
+      where: { id, tenantId },
+      select: { id: true, updatedAt: true },
+    });
+    if (!doc) return null;
+
+    const totalRows = (await tx.$queryRaw`
+      select count(*)::int as count
+      from kb_chunks
+      where tenant_id = ${tenantId}::uuid
+        and document_id = ${id}::uuid
+    `) as any[];
+    const total = totalRows?.[0]?.count ?? 0;
+
+    const chunks = ((await tx.$queryRaw`
+      select idx,
+             char_start as "charStart",
+             char_end as "charEnd",
+             content,
+             source_updated_at as "sourceUpdatedAt"
+      from kb_chunks
+      where tenant_id = ${tenantId}::uuid
+        and document_id = ${id}::uuid
+      order by idx asc
+      limit ${limit}
+      offset ${offset}
+    `) as any[]);
+
+    return { total, chunks };
   });
-  if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
 
-  const totalRows = (await prisma.$queryRaw`
-    select count(*)::int as count
-    from kb_chunks
-    where tenant_id = ${tenantId}::uuid
-      and document_id = ${id}::uuid
-  `) as any[];
-  const total = totalRows?.[0]?.count ?? 0;
-
-  const chunks = ((await prisma.$queryRaw`
-    select idx,
-           char_start as "charStart",
-           char_end as "charEnd",
-           content,
-           source_updated_at as "sourceUpdatedAt"
-    from kb_chunks
-    where tenant_id = ${tenantId}::uuid
-      and document_id = ${id}::uuid
-    order by idx asc
-    limit ${limit}
-    offset ${offset}
-  `) as any[]);
+  if (!result) return reply.code(404).send({ ok: false, error: "not_found" });
 
   return reply.send({
     ok: true,
     documentId: id,
-    sourceUpdatedAt: chunks[0]?.sourceUpdatedAt ?? null,
-    total,
+    sourceUpdatedAt: result.chunks[0]?.sourceUpdatedAt ?? null,
+    total: result.total,
     limit,
     offset,
-    chunks,
+    chunks: result.chunks,
   });
 });
 
 // Regenerate chunks for a document (write roles only)
 app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
   const tenantId = (req as any).tenantId as string;
+  if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
   const role = (req as any).tenantRole;
   const userId = (req as any).auth?.userId as string | undefined;
   const id = String((req.params as any)?.id ?? "").trim();
@@ -228,19 +248,19 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
     return reply.code(401).send({ ok: false, error: "missing_user" });
   }
 
-  const doc = await prisma.kbDocument.findFirst({
-    where: { id, tenantId },
-    select: { id: true, body: true, updatedAt: true, title: true, slug: true },
-  });
-  if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
-
   const targetSize = Number((req.body as any)?.chunkSize ?? process.env.KB_CHUNK_SIZE ?? 4000);
   const softWindow = Number((req.body as any)?.softWindow ?? process.env.KB_CHUNK_SOFT_WINDOW ?? 600);
 
-  const body = doc.body ?? "";
-  const chunks = makeChunksByChars(body, targetSize, softWindow);
+  const result = await withTenant(tenantId, async (tx) => {
+    const doc = await tx.kbDocument.findFirst({
+      where: { id, tenantId },
+      select: { id: true, body: true, updatedAt: true, title: true, slug: true },
+    });
+    if (!doc) return null;
 
-  await prisma.$transaction(async (tx) => {
+    const body = doc.body ?? "";
+    const chunks = makeChunksByChars(body, targetSize, softWindow);
+
     // Delete existing chunks
     await tx.$executeRaw`
       delete from kb_chunks
@@ -266,12 +286,16 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
       where: { id },
       data: { updatedBy: userId },
     });
+
+    return { chunksWritten: chunks.length };
   });
+
+  if (!result) return reply.code(404).send({ ok: false, error: "not_found" });
 
   return reply.send({
     ok: true,
     documentId: id,
-    chunksWritten: chunks.length,
+    chunksWritten: result.chunksWritten,
     chunkSize: targetSize,
     softWindow,
   });
@@ -280,6 +304,7 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
   // Create
   app.post("/documents", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const role = (req as any).tenantRole;
     const userId = (req as any).auth?.userId as string | undefined;
 
@@ -301,7 +326,7 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
     const slug = slugify(body?.slug ? String(body.slug) : title);
 
     // upsert tags then connect
-    const created = await prisma.$transaction(async (tx) => {
+    const created = await withTenant(tenantId, async (tx) => {
       const doc = await tx.kbDocument.create({
         data: {
           tenantId,
@@ -338,43 +363,57 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
   // List versions (no body to keep response small)
   app.get("/documents/:id/versions", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const id = String((req.params as any)?.id ?? "").trim();
 
-    const doc = await prisma.kbDocument.findFirst({ where: { id, tenantId }, select: { id: true } });
-    if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const doc = await tx.kbDocument.findFirst({ where: { id, tenantId }, select: { id: true } });
+      if (!doc) return null;
 
-    const versions = await prisma.kbDocumentVersion.findMany({
-      where: { documentId: id, tenantId },
-      select: { id: true, versionNum: true, editedBy: true, editedAt: true, changeSummary: true, title: true },
-      orderBy: { versionNum: "desc" },
+      const versions = await tx.kbDocumentVersion.findMany({
+        where: { documentId: id, tenantId },
+        select: { id: true, versionNum: true, editedBy: true, editedAt: true, changeSummary: true, title: true },
+        orderBy: { versionNum: "desc" },
+      });
+
+      return versions;
     });
 
-    return reply.send({ ok: true, documentId: id, versions });
+    if (!result) return reply.code(404).send({ ok: false, error: "not_found" });
+
+    return reply.send({ ok: true, documentId: id, versions: result });
   });
 
   // Get a specific version by versionNum (includes body)
   app.get("/documents/:id/versions/:vnum", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const id   = String((req.params as any)?.id   ?? "").trim();
     const vnum = parseInt(String((req.params as any)?.vnum ?? ""), 10);
 
     if (isNaN(vnum)) return reply.code(400).send({ ok: false, error: "invalid_version_number" });
 
-    const doc = await prisma.kbDocument.findFirst({ where: { id, tenantId }, select: { id: true } });
-    if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const doc = await tx.kbDocument.findFirst({ where: { id, tenantId }, select: { id: true } });
+      if (!doc) return { found: false as const };
 
-    const version = await prisma.kbDocumentVersion.findFirst({
-      where: { documentId: id, tenantId, versionNum: vnum },
+      const version = await tx.kbDocumentVersion.findFirst({
+        where: { documentId: id, tenantId, versionNum: vnum },
+      });
+
+      return { found: true as const, version };
     });
 
-    if (!version) return reply.code(404).send({ ok: false, error: "version_not_found" });
+    if (!result.found) return reply.code(404).send({ ok: false, error: "not_found" });
+    if (!result.version) return reply.code(404).send({ ok: false, error: "version_not_found" });
 
-    return reply.send({ ok: true, version });
+    return reply.send({ ok: true, version: result.version });
   });
 
   // Manually snapshot current doc body as a new version
   app.post("/documents/:id/versions/snapshot", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const role     = (req as any).tenantRole;
     const userId   = (req as any).auth?.userId as string | undefined;
     const id       = String((req.params as any)?.id ?? "").trim();
@@ -385,7 +424,7 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
     const body = (req.body as any) ?? {};
     const changeSummary = body.changeSummary != null ? String(body.changeSummary) : null;
 
-    const version = await prisma.$transaction(async (tx) => {
+    const version = await withTenant(tenantId, async (tx) => {
       const doc = await tx.kbDocument.findFirst({ where: { id, tenantId } });
       if (!doc) return null;
 
@@ -416,6 +455,7 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
   // Update
   app.patch("/documents/:id", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const role = (req as any).tenantRole;
     const userId = (req as any).auth?.userId as string | undefined;
     const id = String((req.params as any)?.id ?? "").trim();
@@ -439,7 +479,7 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
     // Snapshot before edit if body or title is changing
     const needsSnapshot = content != null || title != null;
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await withTenant(tenantId, async (tx) => {
       const existing = await tx.kbDocument.findFirst({ where: { id, tenantId } });
       if (!existing) return null;
 
@@ -504,6 +544,7 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
   // Delete (soft delete is safer; keep hard delete for now, gated by roles)
   app.delete("/documents/:id", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const role = (req as any).tenantRole;
     const id = String((req.params as any)?.id ?? "").trim();
 
@@ -511,7 +552,9 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
       return reply.code(403).send({ ok: false, error: "role_cannot_write_kb" });
     }
 
-    await prisma.kbDocument.deleteMany({ where: { id, tenantId } });
+    await withTenant(tenantId, async (tx) =>
+      tx.kbDocument.deleteMany({ where: { id, tenantId } })
+    );
 
     return reply.send({ ok: true });
   });
@@ -521,6 +564,7 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
   // Embed + upsert one document's chunks to Pinecone
   app.post("/documents/:id/chunks/embed", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const role = (req as any).tenantRole;
     const id = String((req.params as any)?.id ?? "").trim();
 
@@ -528,19 +572,27 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
       return reply.code(403).send({ ok: false, error: "role_cannot_write_kb" });
     }
 
-    const doc = await prisma.kbDocument.findFirst({
-      where: { id, tenantId },
-      select: { id: true, title: true, slug: true },
-    });
-    if (!doc) return reply.code(404).send({ ok: false, error: "not_found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const doc = await tx.kbDocument.findFirst({
+        where: { id, tenantId },
+        select: { id: true, title: true, slug: true },
+      });
+      if (!doc) return null;
 
-    const chunks = (await prisma.$queryRaw`
-      select id, idx, content
-      from kb_chunks
-      where tenant_id = ${tenantId}::uuid
-        and document_id = ${id}::uuid
-      order by idx asc
-    `) as { id: string; idx: number; content: string }[];
+      const chunks = (await tx.$queryRaw`
+        select id, idx, content
+        from kb_chunks
+        where tenant_id = ${tenantId}::uuid
+          and document_id = ${id}::uuid
+        order by idx asc
+      `) as { id: string; idx: number; content: string }[];
+
+      return { doc, chunks };
+    });
+
+    if (!result) return reply.code(404).send({ ok: false, error: "not_found" });
+
+    const { doc, chunks } = result;
 
     if (chunks.length === 0) {
       return reply.send({ ok: true, embedded: 0, message: "no_chunks" });
@@ -563,20 +615,23 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
   // Bulk embed all chunks for tenant
   app.post("/embed-all", async (req, reply) => {
     const tenantId = (req as any).tenantId as string;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
     const role = (req as any).tenantRole;
 
     if (!canWrite(role)) {
       return reply.code(403).send({ ok: false, error: "role_cannot_write_kb" });
     }
 
-    const rows = (await prisma.$queryRaw`
-      select c.idx, c.content, c.document_id as "documentId",
-             d.title, d.slug
-      from kb_chunks c
-      join kb_documents d on d.id = c.document_id
-      where c.tenant_id = ${tenantId}::uuid
-      order by c.document_id, c.idx
-    `) as { idx: number; content: string; documentId: string; title: string; slug: string }[];
+    const rows = await withTenant(tenantId, async (tx) =>
+      (tx.$queryRaw`
+        select c.idx, c.content, c.document_id as "documentId",
+               d.title, d.slug
+        from kb_chunks c
+        join kb_documents d on d.id = c.document_id
+        where c.tenant_id = ${tenantId}::uuid
+        order by c.document_id, c.idx
+      `) as Promise<{ idx: number; content: string; documentId: string; title: string; slug: string }[]>
+    );
 
     if (rows.length === 0) {
       return reply.send({ ok: true, embedded: 0, message: "no_chunks" });
@@ -628,91 +683,95 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
       return reply.code(400).send({ ok: false, error: "tenantId_required" });
     }
 
-    // Upsert the atlas-workflow tag once
-    const wfTag = await prisma.kbTag.upsert({
-      where: { tenantId_name: { tenantId, name: "atlas-workflow" } },
-      create: { tenantId, name: "atlas-workflow" },
-      update: {},
-    });
+    const result = await withTenant(tenantId, async (tx) => {
+      // Upsert the atlas-workflow tag once
+      const wfTag = await tx.kbTag.upsert({
+        where: { tenantId_name: { tenantId, name: "atlas-workflow" } },
+        create: { tenantId, name: "atlas-workflow" },
+        update: {},
+      });
 
-    let seeded = 0;
-    let skipped = 0;
+      let seeded = 0;
+      let skipped = 0;
 
-    for (const wf of n8nWorkflows) {
-      const slug = `atlas-wf-${wf.id.toLowerCase()}`;
-      const body = [
-        `# ${wf.name}`,
-        ``,
-        `**ID:** ${wf.id}`,
-        `**Category:** ${wf.category}`,
-        `**Owner Agent:** ${wf.ownerAgent}`,
-        `**Trigger:** ${wf.trigger}`,
-        `**Human-in-Loop:** ${wf.humanInLoop ? "Yes" : "No"}`,
-        ``,
-        `## Description`,
-        ``,
-        wf.description,
-        ``,
-        `## File`,
-        ``,
-        `\`${wf.file}\``,
-      ].join("\n");
+      for (const wf of n8nWorkflows) {
+        const slug = `atlas-wf-${wf.id.toLowerCase()}`;
+        const body = [
+          `# ${wf.name}`,
+          ``,
+          `**ID:** ${wf.id}`,
+          `**Category:** ${wf.category}`,
+          `**Owner Agent:** ${wf.ownerAgent}`,
+          `**Trigger:** ${wf.trigger}`,
+          `**Human-in-Loop:** ${wf.humanInLoop ? "Yes" : "No"}`,
+          ``,
+          `## Description`,
+          ``,
+          wf.description,
+          ``,
+          `## File`,
+          ``,
+          `\`${wf.file}\``,
+        ].join("\n");
 
-      try {
-        // Check if already exists
-        const existing = await prisma.kbDocument.findFirst({
-          where: { tenantId, slug },
-          select: { id: true },
-        });
-
-        if (existing) {
-          await prisma.kbDocument.update({
-            where: { id: existing.id },
-            data: { title: wf.name, body, status: KbDocumentStatus.published, updatedBy: SYSTEM_ACTOR },
-          });
-          skipped++;
-        } else {
-          const doc = await prisma.kbDocument.create({
-            data: {
-              tenantId,
-              title: wf.name,
-              slug,
-              body,
-              status: KbDocumentStatus.published,
-              createdBy: SYSTEM_ACTOR,
-            },
+        try {
+          // Check if already exists
+          const existing = await tx.kbDocument.findFirst({
+            where: { tenantId, slug },
+            select: { id: true },
           });
 
-          await prisma.kbTagOnDocument.upsert({
-            where: { documentId_tagId: { documentId: doc.id, tagId: wfTag.id } },
-            create: { documentId: doc.id, tagId: wfTag.id },
-            update: {},
-          });
+          if (existing) {
+            await tx.kbDocument.update({
+              where: { id: existing.id },
+              data: { title: wf.name, body, status: KbDocumentStatus.published, updatedBy: SYSTEM_ACTOR },
+            });
+            skipped++;
+          } else {
+            const doc = await tx.kbDocument.create({
+              data: {
+                tenantId,
+                title: wf.name,
+                slug,
+                body,
+                status: KbDocumentStatus.published,
+                createdBy: SYSTEM_ACTOR,
+              },
+            });
 
-          // Category tag
-          const catTag = await prisma.kbTag.upsert({
-            where: { tenantId_name: { tenantId, name: wf.category } },
-            create: { tenantId, name: wf.category },
-            update: {},
-          });
-          await prisma.kbTagOnDocument.upsert({
-            where: { documentId_tagId: { documentId: doc.id, tagId: catTag.id } },
-            create: { documentId: doc.id, tagId: catTag.id },
-            update: {},
-          });
+            await tx.kbTagOnDocument.upsert({
+              where: { documentId_tagId: { documentId: doc.id, tagId: wfTag.id } },
+              create: { documentId: doc.id, tagId: wfTag.id },
+              update: {},
+            });
 
-          seeded++;
+            // Category tag
+            const catTag = await tx.kbTag.upsert({
+              where: { tenantId_name: { tenantId, name: wf.category } },
+              create: { tenantId, name: wf.category },
+              update: {},
+            });
+            await tx.kbTagOnDocument.upsert({
+              where: { documentId_tagId: { documentId: doc.id, tagId: catTag.id } },
+              create: { documentId: doc.id, tagId: catTag.id },
+              update: {},
+            });
+
+            seeded++;
+          }
+        } catch (err) {
+          // Non-fatal — log and continue
+          console.error(`KB seed failed for ${wf.id}:`, err);
         }
-      } catch (err) {
-        // Non-fatal — log and continue
-        console.error(`KB seed failed for ${wf.id}:`, err);
       }
-    }
+
+      return { seeded, skipped };
+    });
 
     return reply.send({
       ok: true,
-      seeded,
-      updated: skipped,
+      seeded: result.seeded,
+      updated: result.skipped,
       total: n8nWorkflows.length,
     });
   });

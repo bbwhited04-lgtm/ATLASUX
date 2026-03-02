@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { prisma } from "../db/prisma.js";
+import { withTenant } from "../db/prisma.js";
 
 const DistributionEventSchema = z.object({
   agent:       z.string().min(1).max(100).default("unknown"),
@@ -24,37 +24,41 @@ export const distributionRoutes: FastifyPluginAsync = async (app) => {
     try { body = DistributionEventSchema.parse(req.body ?? {}); }
     catch (e: any) { return reply.code(400).send({ ok: false, error: "INVALID_BODY", details: e.errors }); }
 
-    const row = await prisma.distributionEvent.create({
-      data: {
-        tenantId,
-        agent:       body.agent,
-        channel:     body.channel,
-        eventType:   body.eventType,
-        url:         body.url ?? null,
-        meta:        (body.meta as any) ?? undefined,
-        impressions: body.impressions ?? undefined,
-        clicks:      body.clicks ?? undefined,
-        conversions: body.conversions ?? undefined,
-        occurredAt:  body.occurredAt ? new Date(body.occurredAt) : undefined,
-      },
-    });
+    const row = await withTenant(tenantId, async (tx) => {
+      const row = await tx.distributionEvent.create({
+        data: {
+          tenantId,
+          agent:       body.agent,
+          channel:     body.channel,
+          eventType:   body.eventType,
+          url:         body.url ?? null,
+          meta:        (body.meta as any) ?? undefined,
+          impressions: body.impressions ?? undefined,
+          clicks:      body.clicks ?? undefined,
+          conversions: body.conversions ?? undefined,
+          occurredAt:  body.occurredAt ? new Date(body.occurredAt) : undefined,
+        },
+      });
 
-    // Semantic audit — every distribution event is a write worth tracing
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorType: "system",
-        actorUserId: (req as any).auth?.userId ?? null,
-        actorExternalId: body.agent,
-        level: "info",
-        action: "DISTRIBUTION_EVENT_RECORDED",
-        entityType: "distribution_event",
-        entityId: row.id,
-        message: `Distribution event recorded: ${body.eventType} via ${body.channel} by ${body.agent}`,
-        meta: { channel: body.channel, eventType: body.eventType, agent: body.agent, url: body.url ?? null },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+      // Semantic audit — every distribution event is a write worth tracing
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: (req as any).auth?.userId ?? null,
+          actorExternalId: body.agent,
+          level: "info",
+          action: "DISTRIBUTION_EVENT_RECORDED",
+          entityType: "distribution_event",
+          entityId: row.id,
+          message: `Distribution event recorded: ${body.eventType} via ${body.channel} by ${body.agent}`,
+          meta: { channel: body.channel, eventType: body.eventType, agent: body.agent, url: body.url ?? null },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+
+      return row;
+    });
 
     return reply.send({ ok: true, event: row });
   });
@@ -68,10 +72,12 @@ export const distributionRoutes: FastifyPluginAsync = async (app) => {
     const days = Number(q.days ?? 7);
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const events = await prisma.distributionEvent.findMany({
-      where: { tenantId, occurredAt: { gte: since } },
-      orderBy: { occurredAt: "desc" },
-      take: 500,
+    const events = await withTenant(tenantId, async (tx) => {
+      return tx.distributionEvent.findMany({
+        where: { tenantId, occurredAt: { gte: since } },
+        orderBy: { occurredAt: "desc" },
+        take: 500,
+      });
     });
 
     // Aggregate by channel

@@ -36,6 +36,7 @@ export const pinterestRoutes: FastifyPluginAsync = async (app) => {
     try {
       await prisma.auditLog.create({
         data: {
+          tenantId: null,
           actorExternalId: `pinterest-${source}`,
           actorType: "system",
           action: `pinterest.${event}`,

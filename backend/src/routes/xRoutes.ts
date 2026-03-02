@@ -51,6 +51,7 @@ export const xRoutes: FastifyPluginAsync = async (app) => {
     try {
       await prisma.auditLog.create({
         data: {
+          tenantId: null,
           actorExternalId: "x-webhook",
           actorType: "system",
           action: `x.${eventType}`,

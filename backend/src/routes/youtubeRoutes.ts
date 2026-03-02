@@ -9,7 +9,7 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import {
   searchVideos,
   getChannelVideos,
@@ -24,22 +24,24 @@ import {
 
 async function getGoogleToken(tenantId: string): Promise<string | null> {
   try {
-    // Try token_vault (Supabase) first
-    const vault = await prisma.$queryRaw<Array<{ access_token: string }>>`
-      SELECT access_token FROM token_vault
-      WHERE org_id = ${tenantId} AND provider = 'google'
-      ORDER BY created_at DESC LIMIT 1
-    `.catch(() => []);
-    if (vault.length > 0 && vault[0].access_token) return vault[0].access_token;
+    return await withTenant(tenantId, async (tx) => {
+      // Try token_vault (Supabase) first
+      const vault = await tx.$queryRaw<Array<{ access_token: string }>>`
+        SELECT access_token FROM token_vault
+        WHERE org_id = ${tenantId} AND provider = 'google'
+        ORDER BY created_at DESC LIMIT 1
+      `.catch(() => []);
+      if (vault.length > 0 && vault[0].access_token) return vault[0].access_token;
 
-    // Fallback: Integration table
-    const integration = await prisma.integration.findUnique({
-      where: { tenantId_provider: { tenantId, provider: "google" } },
-      select: { access_token: true, connected: true },
+      // Fallback: Integration table
+      const integration = await tx.integration.findUnique({
+        where: { tenantId_provider: { tenantId, provider: "google" } },
+        select: { access_token: true, connected: true },
+      });
+      if (integration?.connected && integration.access_token) return integration.access_token;
+
+      return null;
     });
-    if (integration?.connected && integration.access_token) return integration.access_token;
-
-    return null;
   } catch {
     return null;
   }
@@ -164,85 +166,91 @@ export const youtubeRoutes: FastifyPluginAsync = async (app) => {
       const kbBody = buildYouTubeKbBody(details, transcript);
       const slug = `youtube-video-${details.videoId}`;
 
-      // Upsert: update if exists, create if new
-      const existing = await prisma.kbDocument.findFirst({
-        where: { tenantId, slug },
-        select: { id: true },
-      });
-
-      let docId: string;
-      if (existing) {
-        await prisma.kbDocument.update({
-          where: { id: existing.id },
-          data: { title: details.title, body: kbBody, updatedBy: SYSTEM_ACTOR },
+      const docId = await withTenant(tenantId, async (tx) => {
+        // Upsert: update if exists, create if new
+        const existing = await tx.kbDocument.findFirst({
+          where: { tenantId, slug },
+          select: { id: true },
         });
-        docId = existing.id;
-      } else {
-        const doc = await prisma.kbDocument.create({
-          data: {
-            tenantId,
-            title: details.title,
-            slug,
-            body: kbBody,
-            status: "published",
-            createdBy: SYSTEM_ACTOR,
-          },
-        });
-        docId = doc.id;
 
-        // Tag it
-        const tag = await prisma.kbTag.upsert({
-          where: { tenantId_name: { tenantId, name: "youtube-video" } },
-          create: { tenantId, name: "youtube-video" },
-          update: {},
-        });
-        await prisma.kbTagOnDocument.upsert({
-          where: { documentId_tagId: { documentId: docId, tagId: tag.id } },
-          create: { documentId: docId, tagId: tag.id },
-          update: {},
-        });
-      }
+        let docId: string;
+        if (existing) {
+          await tx.kbDocument.update({
+            where: { id: existing.id },
+            data: { title: details.title, body: kbBody, updatedBy: SYSTEM_ACTOR },
+          });
+          docId = existing.id;
+        } else {
+          const doc = await tx.kbDocument.create({
+            data: {
+              tenantId,
+              title: details.title,
+              slug,
+              body: kbBody,
+              status: "published",
+              createdBy: SYSTEM_ACTOR,
+            },
+          });
+          docId = doc.id;
 
-      // Auto-chunk for retrieval
-      const chunks = makeChunksByChars(kbBody);
-      if (chunks.length > 0) {
-        await prisma.$executeRaw`
-          DELETE FROM kb_chunks
-          WHERE tenant_id = ${tenantId}::uuid AND document_id = ${docId}::uuid
-        `.catch(() => null);
-
-        for (const chunk of chunks) {
-          await prisma.$executeRaw`
-            INSERT INTO kb_chunks (tenant_id, document_id, idx, content, source_updated_at)
-            VALUES (${tenantId}::uuid, ${docId}::uuid, ${chunk.idx}, ${chunk.content}, NOW())
-          `.catch(() => null);
+          // Tag it
+          const tag = await tx.kbTag.upsert({
+            where: { tenantId_name: { tenantId, name: "youtube-video" } },
+            create: { tenantId, name: "youtube-video" },
+            update: {},
+          });
+          await tx.kbTagOnDocument.upsert({
+            where: { documentId_tagId: { documentId: docId, tagId: tag.id } },
+            create: { documentId: docId, tagId: tag.id },
+            update: {},
+          });
         }
-      }
+
+        // Auto-chunk for retrieval
+        const chunks = makeChunksByChars(kbBody);
+        if (chunks.length > 0) {
+          await tx.$executeRaw`
+            DELETE FROM kb_chunks
+            WHERE tenant_id = ${tenantId}::uuid AND document_id = ${docId}::uuid
+          `.catch(() => null);
+
+          for (const chunk of chunks) {
+            await tx.$executeRaw`
+              INSERT INTO kb_chunks (tenant_id, document_id, idx, content, source_updated_at)
+              VALUES (${tenantId}::uuid, ${docId}::uuid, ${chunk.idx}, ${chunk.content}, NOW())
+            `.catch(() => null);
+          }
+        }
+
+        return docId;
+      });
 
       storedIds.push(docId);
     }
 
     // Audit log
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorUserId: null,
-        actorExternalId: "venny",
-        actorType: "agent",
-        level: "info",
-        action: "YOUTUBE_VIDEOS_SCRAPED",
-        entityType: "kb_document",
-        entityId: null,
-        message: `YouTube scrape: ${storedIds.length} videos stored in KB`,
-        meta: {
-          query: body.query ?? null,
-          channelIds: channelIds.length > 0 ? channelIds : null,
-          storedCount: storedIds.length,
-          documentIds: storedIds.slice(0, 20),
+    await withTenant(tenantId, async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: null,
+          actorExternalId: "venny",
+          actorType: "agent",
+          level: "info",
+          action: "YOUTUBE_VIDEOS_SCRAPED",
+          entityType: "kb_document",
+          entityId: null,
+          message: `YouTube scrape: ${storedIds.length} videos stored in KB`,
+          meta: {
+            query: body.query ?? null,
+            channelIds: channelIds.length > 0 ? channelIds : null,
+            storedCount: storedIds.length,
+            documentIds: storedIds.slice(0, 20),
+          },
+          timestamp: new Date(),
         },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+      } as any).catch(() => null);
+    }).catch(() => null);
 
     return reply.send({ ok: true, scraped: storedIds.length, documentIds: storedIds });
   });
@@ -267,11 +275,13 @@ export const youtubeRoutes: FastifyPluginAsync = async (app) => {
     }
 
     // Get M365 token for OneDrive download
-    const m365Token = await prisma.$queryRaw<Array<{ access_token: string }>>`
-      SELECT access_token FROM token_vault
-      WHERE org_id = ${tenantId} AND provider = 'microsoft'
-      ORDER BY created_at DESC LIMIT 1
-    `.catch(() => []);
+    const m365Token = await withTenant(tenantId, async (tx) => {
+      return tx.$queryRaw<Array<{ access_token: string }>>`
+        SELECT access_token FROM token_vault
+        WHERE org_id = ${tenantId} AND provider = 'microsoft'
+        ORDER BY created_at DESC LIMIT 1
+      `.catch(() => []);
+    });
 
     if (!m365Token.length || !m365Token[0].access_token) {
       return reply.code(503).send({ ok: false, error: "Microsoft 365 not connected" });
@@ -318,34 +328,35 @@ export const youtubeRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    // Create distribution event
-    await prisma.distributionEvent.create({
-      data: {
-        tenantId,
-        agent: "venny",
-        channel: "youtube",
-        eventType: "video_upload",
-        url: result.url ?? null,
-        meta: { videoId: result.videoId, title: body.title, tags: body.tags ?? [], privacyStatus: body.privacyStatus ?? "private" },
-      } as any,
-    }).catch(() => null);
+    // Create distribution event + audit log
+    await withTenant(tenantId, async (tx) => {
+      await tx.distributionEvent.create({
+        data: {
+          tenantId,
+          agent: "venny",
+          channel: "youtube",
+          eventType: "video_upload",
+          url: result.url ?? null,
+          meta: { videoId: result.videoId, title: body.title, tags: body.tags ?? [], privacyStatus: body.privacyStatus ?? "private" },
+        } as any,
+      }).catch(() => null);
 
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorUserId: null,
-        actorExternalId: "venny",
-        actorType: "agent",
-        level: "info",
-        action: "YOUTUBE_VIDEO_UPLOADED",
-        entityType: "youtube_video",
-        entityId: result.videoId ?? null,
-        message: `Venny uploaded "${body.title}" to YouTube`,
-        meta: { videoId: result.videoId, url: result.url, title: body.title },
-        timestamp: new Date(),
-      },
-    } as any).catch(() => null);
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: null,
+          actorExternalId: "venny",
+          actorType: "agent",
+          level: "info",
+          action: "YOUTUBE_VIDEO_UPLOADED",
+          entityType: "youtube_video",
+          entityId: result.videoId ?? null,
+          message: `Venny uploaded "${body.title}" to YouTube`,
+          meta: { videoId: result.videoId, url: result.url, title: body.title },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+    }).catch(() => null);
 
     return reply.send({ ok: true, videoId: result.videoId, url: result.url });
   });

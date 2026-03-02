@@ -2456,7 +2456,8 @@ handlers["WF-123"] = async (ctx) => {
 handlers["WF-130"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-130.start", "Browser task execution starting");
 
-  const targetUrl = String(ctx.input?.targetUrl ?? "").trim();
+  // Accept both targetUrl (correct) and targetURL (common LLM variant)
+  const targetUrl = String(ctx.input?.targetUrl ?? ctx.input?.targetURL ?? "").trim();
   const purpose   = String(ctx.input?.purpose ?? "").trim();
   const actions   = (ctx.input?.actions ?? []) as BrowserActionStep[];
 
@@ -2560,7 +2561,8 @@ handlers["WF-131"] = async (ctx) => {
 handlers["WF-140"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-140.start", "Local vision task queued");
 
-  const targetUrl = String(ctx.input?.targetUrl ?? "").trim();
+  // Accept both targetUrl (correct) and targetURL (common LLM variant)
+  const targetUrl = String(ctx.input?.targetUrl ?? ctx.input?.targetURL ?? "").trim();
   const task = String(ctx.input?.task ?? "").trim();
 
   if (!task) {

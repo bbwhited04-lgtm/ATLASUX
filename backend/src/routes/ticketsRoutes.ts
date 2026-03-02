@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { TicketCategory, TicketSeverity, TicketStatus } from "@prisma/client";
 
 // Lightweight beta ticketing (NOT a full helpdesk).
@@ -20,20 +20,22 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
     const title = String(body.title ?? "").trim();
     if (!title) return reply.code(400).send({ ok: false, error: "title required" });
 
-    const ticket = await prisma.ticket.create({
-      data: {
-        tenantId,
-        reporterUserId: body.reporterUserId ? String(body.reporterUserId) : null,
-        runId: body.runId ? String(body.runId) : null,
-        agent: body.agent ? String(body.agent) : null,
-        title,
-        description: body.description ? String(body.description) : null,
-	        category: asEnum(TicketCategory, body.category),
-	        severity: asEnum(TicketSeverity, body.severity),
-	        status: asEnum(TicketStatus, body.status),
-        meta: body.meta ?? undefined,
-      },
-    });
+    const ticket = await withTenant(tenantId, async (tx) =>
+      tx.ticket.create({
+        data: {
+          tenantId,
+          reporterUserId: body.reporterUserId ? String(body.reporterUserId) : null,
+          runId: body.runId ? String(body.runId) : null,
+          agent: body.agent ? String(body.agent) : null,
+          title,
+          description: body.description ? String(body.description) : null,
+	          category: asEnum(TicketCategory, body.category),
+	          severity: asEnum(TicketSeverity, body.severity),
+	          status: asEnum(TicketStatus, body.status),
+          meta: body.meta ?? undefined,
+        },
+      })
+    );
 
     return reply.send({ ok: true, ticket });
   });
@@ -52,11 +54,13 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
     if (q.runId) where.runId = String(q.runId);
 
     const take = Math.min(Number(q.take ?? 50), 200);
-    const tickets = await prisma.ticket.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take,
-    });
+    const tickets = await withTenant(tenantId, async (tx) =>
+      tx.ticket.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take,
+      })
+    );
     return reply.send({ ok: true, tickets });
   });
 
@@ -68,10 +72,12 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
     const id = String((req.params as any).id);
 
     const includeComments = String(q.includeComments ?? "false").toLowerCase() === "true";
-    const ticket = await prisma.ticket.findFirst({
-      where: { id, tenantId },
-      include: includeComments ? { comments: { orderBy: { createdAt: "asc" } } } : undefined,
-    });
+    const ticket = await withTenant(tenantId, async (tx) =>
+      tx.ticket.findFirst({
+        where: { id, tenantId },
+        include: includeComments ? { comments: { orderBy: { createdAt: "asc" } } } : undefined,
+      })
+    );
 
     if (!ticket) return reply.code(404).send({ ok: false, error: "not_found" });
     return reply.send({ ok: true, ticket });
@@ -84,10 +90,6 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
     const id = String((req.params as any).id);
 
-    // Verify tenant boundary BEFORE performing update (prevent TOCTOU)
-    const existing = await prisma.ticket.findFirst({ where: { id, tenantId } });
-    if (!existing) return reply.code(404).send({ ok: false, error: "not_found" });
-
     const data: any = {};
     if (body.status) data.status = String(body.status);
     if (body.severity) data.severity = String(body.severity);
@@ -98,13 +100,22 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
     if (body.description !== undefined) data.description = body.description ? String(body.description) : null;
     if (body.meta !== undefined) data.meta = body.meta;
 
-    const ticket = await prisma.ticket.update({
-      where: { id },
-      data,
-    }).catch(() => null);
+    const result = await withTenant(tenantId, async (tx) => {
+      // Verify tenant boundary BEFORE performing update (prevent TOCTOU)
+      const existing = await tx.ticket.findFirst({ where: { id, tenantId } });
+      if (!existing) return { found: false as const };
 
-    if (!ticket) return reply.code(500).send({ ok: false, error: "update_failed" });
-    return reply.send({ ok: true, ticket });
+      const ticket = await tx.ticket.update({
+        where: { id },
+        data,
+      }).catch(() => null);
+
+      return { found: true as const, ticket };
+    });
+
+    if (!result.found) return reply.code(404).send({ ok: false, error: "not_found" });
+    if (!result.ticket) return reply.code(500).send({ ok: false, error: "update_failed" });
+    return reply.send({ ok: true, ticket: result.ticket });
   });
 
   // List comments for a ticket
@@ -113,14 +124,19 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
     const ticketId = String((req.params as any).id);
 
-    const ticket = await prisma.ticket.findFirst({ where: { id: ticketId, tenantId }, select: { id: true } });
-    if (!ticket) return reply.code(404).send({ ok: false, error: "ticket_not_found" });
+    const result = await withTenant(tenantId, async (tx) => {
+      const ticket = await tx.ticket.findFirst({ where: { id: ticketId, tenantId }, select: { id: true } });
+      if (!ticket) return null;
 
-    const comments = await prisma.ticketComment.findMany({
-      where: { ticketId },
-      orderBy: { createdAt: "asc" },
+      const comments = await tx.ticketComment.findMany({
+        where: { ticketId },
+        orderBy: { createdAt: "asc" },
+      });
+      return comments;
     });
-    return reply.send({ ok: true, comments });
+
+    if (!result) return reply.code(404).send({ ok: false, error: "ticket_not_found" });
+    return reply.send({ ok: true, comments: result });
   });
 
   // Add comment
@@ -130,22 +146,27 @@ export const ticketsRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
     const ticketId = String((req.params as any).id);
 
-    const ticket = await prisma.ticket.findFirst({ where: { id: ticketId, tenantId } });
-    if (!ticket) return reply.code(404).send({ ok: false, error: "ticket_not_found" });
-
     const text = String(body.body ?? "").trim();
     if (!text) return reply.code(400).send({ ok: false, error: "body required" });
 
-    const comment = await prisma.ticketComment.create({
-      data: {
-        tenantId,
-        ticketId,
-        authorUserId: body.authorUserId ? String(body.authorUserId) : null,
-        body: text,
-        meta: body.meta ?? undefined,
-      },
+    const result = await withTenant(tenantId, async (tx) => {
+      const ticket = await tx.ticket.findFirst({ where: { id: ticketId, tenantId } });
+      if (!ticket) return null;
+
+      const comment = await tx.ticketComment.create({
+        data: {
+          tenantId,
+          ticketId,
+          authorUserId: body.authorUserId ? String(body.authorUserId) : null,
+          body: text,
+          meta: body.meta ?? undefined,
+        },
+      });
+
+      return comment;
     });
 
-    return reply.send({ ok: true, comment });
+    if (!result) return reply.code(404).send({ ok: false, error: "ticket_not_found" });
+    return reply.send({ ok: true, comment: result });
   });
 };

@@ -144,7 +144,8 @@ export function validateLocalVisionTask(input: Record<string, any>): {
 } {
   const errors: string[] = [];
 
-  const targetUrl = String(input.targetUrl ?? "").trim();
+  // Accept both targetUrl (correct) and targetURL (common LLM variant)
+  const targetUrl = String(input.targetUrl ?? input.targetURL ?? "").trim();
   const task = String(input.task ?? "").trim();
 
   if (!targetUrl) errors.push("targetUrl is required");

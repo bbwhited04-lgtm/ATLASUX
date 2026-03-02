@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { runChat } from "../ai.js";
 import { sglEvaluate } from "../core/sgl.js";
-import { prisma } from "../db/prisma.js";
+import { prisma, withTenant } from "../db/prisma.js";
 import { getKbContext } from "../core/kb/getKbContext.js";
 import { getKbPack } from "../core/kb/kbCache.js";
 import { getSkillBlock, loadAllSkills } from "../core/kb/skillLoader.js";
@@ -82,22 +82,26 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
 
     const sgl = sglEvaluate(intent);
 
-    await prisma.auditLog.create({
-      data: {
-        tenantId,
-        actorUserId:     null,
-        actorExternalId: String(userId ?? ""),
-        actorType:       "system",
-        level:    sgl.decision === "BLOCK"  ? "security" :
-                  sgl.decision === "REVIEW" ? "warn"     : "info",
-        action:      "SGL_EVALUATED",
-        entityType:  "intent",
-        entityId:    null,
-        message:     `SGL ${sgl.decision} for CHAT_CALL`,
-        meta:        { sgl, intentType: intent.type },
-        timestamp:   new Date(),
-      },
-    });
+    if (tenantId) {
+      await withTenant(tenantId, async (tx) => {
+        await tx.auditLog.create({
+          data: {
+            tenantId,
+            actorUserId:     null,
+            actorExternalId: String(userId ?? ""),
+            actorType:       "system",
+            level:    sgl.decision === "BLOCK"  ? "security" :
+                      sgl.decision === "REVIEW" ? "warn"     : "info",
+            action:      "SGL_EVALUATED",
+            entityType:  "intent",
+            entityId:    null,
+            message:     `SGL ${sgl.decision} for CHAT_CALL`,
+            meta:        { sgl, intentType: intent.type },
+            timestamp:   new Date(),
+          },
+        });
+      });
+    }
 
     if (sgl.decision === "BLOCK") {
       return reply.code(403).send({ ok: false, error: "sgl_block", reasons: sgl.reasons });
@@ -145,10 +149,12 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
         }
 
         // Always: connected integrations (cheap query, one row)
-        const connectedIntegrations = await prisma.integration.findMany({
-          where:  { tenantId, connected: true },
-          select: { provider: true },
-        });
+        const connectedIntegrations = await withTenant(tenantId, async (tx) =>
+          tx.integration.findMany({
+            where:  { tenantId, connected: true },
+            select: { provider: true },
+          })
+        );
         const providerNames = connectedIntegrations.map((i: any) => i.provider).join(", ");
         if (providerNames) {
           contextParts.push(
