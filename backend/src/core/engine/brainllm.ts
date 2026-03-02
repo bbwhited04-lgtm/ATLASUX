@@ -17,6 +17,8 @@
  *   - WORKERS_API_KEY   (Cloudflare Workers AI)
  *   - NVIDIA_API_KEY    (NVIDIA NIM — Kimi 2.5 / Moonshot AI)
  *   - SWARMS_API_KEY   (Swarms.ai — multi-agent orchestration)
+ *   - WATSONX_API_KEY  (IBM watsonx.ai — Granite, Llama, Mixtral)
+ *   - WATSONX_PROJECT_ID (IBM watsonx.ai project)
  *
  * Optional guardrail ENVs seen in your .env:
  *   - AUTO_SPEND_LIMIT          (number, USD/day)
@@ -45,9 +47,11 @@ export type LlmProvider =
   | "deepseek"
   | "openrouter"
   | "cerebras"
+  | "groq"
   | "cloudflare_workers_ai"
   | "nvidia_nim"
-  | "swarms";
+  | "swarms"
+  | "watsonx";
 
 export interface LlmMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -207,12 +211,14 @@ const ALLOWLIST: { providers: Set<LlmProvider>; models: Set<string> } = {
     "openrouter",
     "cerebras",
     "cloudflare_workers_ai",
+    "groq",
     "nvidia_nim",
     "swarms",
+    "watsonx",
   ]),
   models: new Set<string>([
     // Gemini via Vercel or direct
-    "google/gemini-2.0-flash",
+    "google/gemini-2.5-flash",
     "google/gemini-1.5-pro",
     // OpenAI
     "gpt-4o-mini",
@@ -223,9 +229,12 @@ const ALLOWLIST: { providers: Set<LlmProvider>; models: Set<string> } = {
     // OpenRouter
     "openrouter/auto",
     "openrouter/free",
-    // Cerebras
-    "cerebras/llama-4-scout-17b-16e-instruct",
-    "cerebras/llama3.3-70b",
+    // Cerebras (1,800 tok/s on llama3.1-8b)
+    "cerebras/llama3.1-8b",
+    "cerebras/gpt-oss-120b",
+    // Groq (LPU — 1,000+ tok/s)
+    "groq/llama-3.1-8b-instant",
+    "groq/llama-3.3-70b-versatile",
     // Cloudflare Workers AI model placeholders
     "cf/meta/llama",
     // NVIDIA NIM (Kimi 2.5 — Moonshot AI via NVIDIA)
@@ -233,6 +242,9 @@ const ALLOWLIST: { providers: Set<LlmProvider>; models: Set<string> } = {
     // Swarms.ai (multi-model agent orchestration)
     "swarms/gpt-4o",
     "swarms/claude-sonnet-4-20250514",
+    // IBM watsonx.ai
+    "ibm/granite-3-3-8b-instruct",
+    "meta-llama/llama-3-1-8b-instruct",
   ]),
 };
 
@@ -242,28 +254,32 @@ const ALLOWLIST: { providers: Set<LlmProvider>; models: Set<string> } = {
  */
 const ROUTES: Record<LlmRoute, RoutePlanItem[]> = {
   ORCHESTRATION_REASONING: [
-    { provider: "vercel_ai_gateway", model: "google/gemini-2.0-flash", params: { temperature: 0.2, maxOutputTokens: 1200 } },
+    { provider: "cerebras", model: "cerebras/gpt-oss-120b", params: { temperature: 0.2, maxOutputTokens: 1200 } },
+    { provider: "groq", model: "groq/llama-3.3-70b-versatile", params: { temperature: 0.2, maxOutputTokens: 1200 } },
+    { provider: "vercel_ai_gateway", model: "google/gemini-2.5-flash", params: { temperature: 0.2, maxOutputTokens: 1200 } },
     { provider: "nvidia_nim", model: "moonshotai/kimi-k2-instruct", params: { temperature: 0.2, maxOutputTokens: 1200 } },
-    { provider: "vercel_ai_gateway", model: "google/gemini-1.5-pro", params: { temperature: 0.25, maxOutputTokens: 1600 } },
     { provider: "openrouter", model: "openrouter/auto", params: { temperature: 0.25, maxOutputTokens: 1400 } },
-    { provider: "cerebras", model: "cerebras/llama-4-scout-17b-16e-instruct", params: { temperature: 0.25, maxOutputTokens: 1200 } },
   ],
   LONG_CONTEXT_SUMMARY: [
     { provider: "vercel_ai_gateway", model: "google/gemini-1.5-pro", params: { temperature: 0.3, maxOutputTokens: 1600 } },
+    { provider: "cerebras", model: "cerebras/gpt-oss-120b", params: { temperature: 0.3, maxOutputTokens: 1600 } },
     { provider: "nvidia_nim", model: "moonshotai/kimi-k2-instruct", params: { temperature: 0.3, maxOutputTokens: 1600 } },
-    { provider: "vercel_ai_gateway", model: "google/gemini-2.0-flash", params: { temperature: 0.3, maxOutputTokens: 1600 } },
+    { provider: "watsonx", model: "ibm/granite-3-3-8b-instruct", params: { temperature: 0.3, maxOutputTokens: 1600 } },
+    { provider: "vercel_ai_gateway", model: "google/gemini-2.5-flash", params: { temperature: 0.3, maxOutputTokens: 1600 } },
     { provider: "openrouter", model: "openrouter/auto", params: { temperature: 0.3, maxOutputTokens: 1600 } },
-    { provider: "cerebras", model: "cerebras/llama-4-scout-17b-16e-instruct", params: { temperature: 0.3, maxOutputTokens: 1600 } },
   ],
   DRAFT_GENERATION_FAST: [
-    { provider: "cerebras", model: "cerebras/llama-4-scout-17b-16e-instruct", params: { temperature: 0.7, maxOutputTokens: 900 } },
+    { provider: "cerebras", model: "cerebras/llama3.1-8b", params: { temperature: 0.7, maxOutputTokens: 900 } },
+    { provider: "groq", model: "groq/llama-3.1-8b-instant", params: { temperature: 0.7, maxOutputTokens: 900 } },
     { provider: "nvidia_nim", model: "moonshotai/kimi-k2-instruct", params: { temperature: 0.7, maxOutputTokens: 900 } },
-    { provider: "vercel_ai_gateway", model: "google/gemini-2.0-flash", params: { temperature: 0.7, maxOutputTokens: 900 } },
+    { provider: "vercel_ai_gateway", model: "google/gemini-2.5-flash", params: { temperature: 0.7, maxOutputTokens: 900 } },
     { provider: "openrouter", model: "openrouter/auto", params: { temperature: 0.7, maxOutputTokens: 900 } },
   ],
   CLASSIFY_EXTRACT_VALIDATE: [
-    { provider: "vercel_ai_gateway", model: "google/gemini-2.0-flash", params: { temperature: 0.0, maxOutputTokens: 600 } },
-    { provider: "cloudflare_workers_ai", model: "cf/meta/llama", params: { temperature: 0.0, maxOutputTokens: 600 } },
+    { provider: "cerebras", model: "cerebras/llama3.1-8b", params: { temperature: 0.0, maxOutputTokens: 600 } },
+    { provider: "groq", model: "groq/llama-3.1-8b-instant", params: { temperature: 0.0, maxOutputTokens: 600 } },
+    { provider: "vercel_ai_gateway", model: "google/gemini-2.5-flash", params: { temperature: 0.0, maxOutputTokens: 600 } },
+    { provider: "watsonx", model: "ibm/granite-3-3-8b-instruct", params: { temperature: 0.0, maxOutputTokens: 600 } },
     { provider: "swarms", model: "swarms/gpt-4o", params: { temperature: 0.0, maxOutputTokens: 600 } },
   ],
   EMERGENCY_FALLBACK_MINIMAL: [
@@ -361,8 +377,11 @@ const ENDPOINTS = {
   deepseek: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com/v1/chat/completions",
   openrouter: process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1/chat/completions",
   cerebras: process.env.CEREBRAS_BASE_URL || "https://api.cerebras.ai/v1/chat/completions",
+  groq: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1/chat/completions",
   nvidia: process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1/chat/completions",
   swarms: "https://api.swarms.world/v1/agent/completions",
+  watsonx: (baseUrl: string) =>
+    `${baseUrl}/ml/v1/text/chat?version=2024-10-08`,
   geminiGenerate: (model: string) =>
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
   cloudflareWorkers: (accountId: string, model: string) =>
@@ -653,10 +672,16 @@ async function callProvider(args: {
       const cerebrasModel = args.model.startsWith("cerebras/") ? args.model.replace("cerebras/", "") : args.model;
       return callOpenAICompat("cerebras", cerebrasModel, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
     }
+    case "groq": {
+      const groqModel = args.model.startsWith("groq/") ? args.model.replace("groq/", "") : args.model;
+      return callOpenAICompat("groq", groqModel, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+    }
     case "nvidia_nim":
       return callOpenAICompat("nvidia", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
     case "swarms":
       return callSwarms(args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+    case "watsonx":
+      return callWatsonx(args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
     default:
       throw new Error(`Unsupported provider: ${args.provider}`);
   }
@@ -667,7 +692,7 @@ async function callProvider(args: {
  * This covers: Vercel AI Gateway (OpenAI compat), OpenAI, DeepSeek, OpenRouter, Cerebras (if configured compat).
  */
 async function callOpenAICompat(
-  which: "vercel" | "openai" | "deepseek" | "openrouter" | "cerebras" | "nvidia",
+  which: "vercel" | "openai" | "deepseek" | "openrouter" | "cerebras" | "groq" | "nvidia",
   model: string,
   messages: LlmMessage[],
   temperature: number,
@@ -704,7 +729,7 @@ async function callOpenAICompat(
   };
 }
 
-function buildOpenAICompat(which: "vercel" | "openai" | "deepseek" | "openrouter" | "cerebras" | "nvidia"): { url: string; headers: Record<string, string> } {
+function buildOpenAICompat(which: "vercel" | "openai" | "deepseek" | "openrouter" | "cerebras" | "groq" | "nvidia"): { url: string; headers: Record<string, string> } {
   if (which === "vercel") {
     const apiKey = getEnvOrThrow("VERCEL_AI_API_KEY");
     return {
@@ -731,6 +756,11 @@ function buildOpenAICompat(which: "vercel" | "openai" | "deepseek" | "openrouter
     if (process.env.OPENROUTER_APP_NAME) extra["X-Title"] = process.env.OPENROUTER_APP_NAME;
 
     return { url: ENDPOINTS.openrouter, headers: { Authorization: `Bearer ${apiKey}`, ...extra } };
+  }
+
+  if (which === "groq") {
+    const apiKey = getEnvOrThrow("GROQ_API_KEY");
+    return { url: ENDPOINTS.groq, headers: { Authorization: `Bearer ${apiKey}` } };
   }
 
   if (which === "nvidia") {
@@ -897,6 +927,80 @@ async function callSwarms(
     (typeof raw === "string" ? raw : "");
 
   return { text, raw };
+}
+
+/**
+ * IBM watsonx.ai — requires IAM token exchange + project_id.
+ * Token is cached for 50 minutes (IBM tokens expire after ~60 min).
+ */
+let _watsonxToken: { token: string; expiresAt: number } | null = null;
+
+async function getWatsonxIamToken(apiKey: string): Promise<string> {
+  if (_watsonxToken && Date.now() < _watsonxToken.expiresAt) {
+    return _watsonxToken.token;
+  }
+
+  const res = await fetch("https://iam.cloud.ibm.com/identity/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey=${encodeURIComponent(apiKey)}`,
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.errorMessage || `IAM token exchange failed (${res.status})`);
+
+  _watsonxToken = {
+    token: data.access_token,
+    expiresAt: Date.now() + 50 * 60 * 1000, // refresh 10 min before expiry
+  };
+  return _watsonxToken.token;
+}
+
+async function callWatsonx(
+  model: string,
+  messages: LlmMessage[],
+  temperature: number,
+  maxOutputTokens: number,
+  timeoutMs: number
+): Promise<ProviderCallResult> {
+  const apiKey = getEnvOrThrow("WATSONX_API_KEY");
+  const projectId = getEnvOrThrow("WATSONX_PROJECT_ID");
+  const baseUrl = process.env.WATSONX_URL || "https://us-south.ml.cloud.ibm.com";
+
+  const bearerToken = await getWatsonxIamToken(apiKey);
+  const url = ENDPOINTS.watsonx(baseUrl);
+
+  const body = {
+    model_id: model,
+    project_id: projectId,
+    messages: messages.map(m => ({ role: m.role, content: m.content })),
+    max_tokens: maxOutputTokens,
+    temperature,
+  };
+
+  const raw = await fetchJson(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${bearerToken}`,
+    },
+    body: JSON.stringify(body),
+    timeoutMs,
+  });
+
+  // watsonx response is OpenAI-like: choices[0].message.content
+  const text =
+    raw?.choices?.[0]?.message?.content ??
+    raw?.choices?.[0]?.text ??
+    "";
+
+  const usage = raw?.usage || {};
+  return {
+    text,
+    raw,
+    tokensIn: usage.prompt_tokens,
+    tokensOut: usage.completion_tokens,
+  };
 }
 
 /**

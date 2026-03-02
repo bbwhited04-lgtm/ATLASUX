@@ -10,6 +10,7 @@ import { redactMessages } from "./lib/piiRedact.js";
  *              or directly via Anthropic API (ANTHROPIC_API_KEY)
  *   gemini    → Gemini via OpenRouter (OPENROUTER_API_KEY)
  *              or directly via Google API (GEMINI_API_KEY / GL_GOOGLE_API_KEY)
+ *   watsonx   → IBM watsonx.ai (WATSONX_API_KEY + WATSONX_PROJECT_ID)
  */
 export async function runChat(req: any, env: any) {
   const { provider, messages } = req;
@@ -105,13 +106,13 @@ export async function runChat(req: any, env: any) {
         .map((m: any) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
 
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleKey}`,
         { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents }) }
       );
 
       const data = await r.json();
       if (!r.ok) throw new Error(data?.error?.message || "Gemini error");
-      return { provider, model: "gemini-2.0-flash", request_id: null, content: data.candidates?.[0]?.content?.parts?.[0]?.text ?? "" };
+      return { provider, model: "gemini-2.5-flash", request_id: null, content: data.candidates?.[0]?.content?.parts?.[0]?.text ?? "" };
     }
 
     if (orKey) {
@@ -124,12 +125,12 @@ export async function runChat(req: any, env: any) {
           "HTTP-Referer": "https://atlasux.cloud",
           "X-Title": "Atlas UX",
         },
-        body: JSON.stringify({ model: "google/gemini-2.0-flash-exp:free", messages, temperature: 0.7 }),
+        body: JSON.stringify({ model: "google/gemini-2.5-flash-exp:free", messages, temperature: 0.7 }),
       });
 
       const data = await r.json();
       if (!r.ok) throw new Error(data?.error?.message || "OpenRouter/Gemini error");
-      return { provider, model: data.model || "gemini-2.0-flash", request_id: data.id || null, content: data.choices?.[0]?.message?.content ?? "" };
+      return { provider, model: data.model || "gemini-2.5-flash", request_id: data.id || null, content: data.choices?.[0]?.message?.content ?? "" };
     }
 
     throw new Error("No API key for Gemini. Set GEMINI_API_KEY or OPENROUTER_API_KEY.");
@@ -168,6 +169,67 @@ export async function runChat(req: any, env: any) {
     if (!r.ok) throw new Error(data?.error?.message || data?.detail || "Swarms error");
 
     return { provider, model: swarmsModel, request_id: data.id || null, content: data.output ?? data.response ?? data.result ?? "" };
+  }
+
+  // ── IBM watsonx.ai (Granite, Llama — IAM token exchange) ─────────────────
+  if (provider === "watsonx") {
+    const apiKey = env.WATSONX_API_KEY;
+    const projectId = env.WATSONX_PROJECT_ID;
+    if (!apiKey) throw new Error("WATSONX_API_KEY not set");
+    if (!projectId) throw new Error("WATSONX_PROJECT_ID not set");
+
+    const baseUrl = env.WATSONX_URL || "https://us-south.ml.cloud.ibm.com";
+
+    // Exchange API key for IAM bearer token
+    const iamRes = await fetch("https://iam.cloud.ibm.com/identity/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey=${encodeURIComponent(apiKey)}`,
+    });
+    const iamData = await iamRes.json();
+    if (!iamRes.ok) throw new Error(iamData?.errorMessage || "IBM IAM token exchange failed");
+
+    const r = await fetch(`${baseUrl}/ml/v1/text/chat?version=2024-10-08`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${iamData.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model_id: req.model || "ibm/granite-3-3-8b-instruct",
+        project_id: projectId,
+        messages: messages.map((m: any) => ({ role: m.role, content: m.content })),
+        max_tokens: 4096,
+        temperature: 0.7,
+      }),
+    });
+
+    const data = await r.json();
+    if (!r.ok) throw new Error(data?.error?.message || data?.errors?.[0]?.message || "watsonx error");
+
+    return {
+      provider,
+      model: data.model_id || req.model || "ibm/granite-3-3-8b-instruct",
+      request_id: data.id || null,
+      content: data.choices?.[0]?.message?.content ?? "",
+    };
+  }
+
+  // ── Groq (LPU — ultra-fast, OpenAI-compatible) ───────────────────────────
+  if (provider === "groq") {
+    const key = env.GROQ_API_KEY;
+    if (!key) throw new Error("GROQ_API_KEY not set");
+
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: req.model || "llama-3.3-70b-versatile", messages, temperature: 0.7 }),
+    });
+
+    const data = await r.json();
+    if (!r.ok) throw new Error(data?.error?.message || "Groq error");
+
+    return { provider, model: data.model || "llama-3.3-70b-versatile", request_id: data.id || null, content: data.choices?.[0]?.message?.content ?? "" };
   }
 
   // ── NVIDIA NIM (Kimi 2.5 — OpenAI-compatible) ────────────────────────────

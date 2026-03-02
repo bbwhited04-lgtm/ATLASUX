@@ -173,11 +173,19 @@ const EnvSchema = z.object({
   SQUARE_APP_SECRET: z.string().optional(),
   SQUARE_REDIRECT_URI: z.string().optional(),
 
+  // Groq (LPU — ultra-fast inference)
+  GROQ_API_KEY: z.string().optional(),
+
   // NVIDIA NIM (Kimi 2.5 and other NVIDIA-hosted models)
   NVIDIA_API_KEY: z.string().optional(),
 
   // Swarms.ai (multi-agent orchestration API)
   SWARMS_API_KEY: z.string().optional(),
+
+  // IBM watsonx.ai (Granite, Llama, Mixtral models)
+  WATSONX_API_KEY: z.string().optional(),
+  WATSONX_PROJECT_ID: z.string().optional(),
+  WATSONX_URL: z.string().optional(),  // default: https://us-south.ml.cloud.ibm.com
 
   // Composio (23 sub-tool search integrations)
   COMPOSIO_API_KEY: z.string().optional(),
