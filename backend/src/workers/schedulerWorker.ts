@@ -6,6 +6,9 @@
  *
  * Schedule overview (all times UTC):
  *
+ *   HOURLY — Signal Tripwire (every hour at :15):
+ *   :15    Daily-Intel  Hourly Tripwire     WF-035  hourly (HN, Reddit, X, web scan)
+ *
  *   PHASE 1 — Platform Intel Sweep (05:00–05:36 UTC, agents collect hot takes):
  *   05:00  Kelly   X Hot Topics            WF-093  daily
  *   05:03  Fran    Facebook Trends         WF-094  daily
@@ -89,6 +92,8 @@ type ScheduledJob = {
   minuteUTC: number;
   /** 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat — omit for daily */
   dayOfWeek?: number;
+  /** If true, fires once per hour (minuteUTC only, ignores hourUTC). De-duped per hour. */
+  hourly?: boolean;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -109,6 +114,7 @@ function isoWeekUTC(): string {
 }
 
 function dedupeKey(job: ScheduledJob): string {
+  if (job.hourly) return `scheduler:${job.id}:h`;
   return job.dayOfWeek !== undefined
     ? `scheduler:${job.id}:${isoWeekUTC()}`
     : `scheduler:${job.id}`;
@@ -435,6 +441,16 @@ function buildJobs(): ScheduledJob[] {
       hourUTC: 23, minuteUTC: 0,
     },
 
+    // ── Hourly: Signal Tripwire (every hour at :15) ────────────────────────
+    {
+      id: "daily-intel-tripwire",
+      label: "Daily-Intel Hourly Signal Tripwire (WF-035)",
+      agentId: "daily-intel", workflowId: "WF-035",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 0, minuteUTC: 15, // fires at :15 past every hour
+      hourly: true,
+    },
+
     // ── Weekly (Monday): Strategy & Planning ─────────────────────────────────
     {
       id: "mercer-acquisition",
@@ -531,6 +547,33 @@ async function tick() {
   const weekNow    = isoWeekUTC();
 
   for (const job of buildJobs()) {
+    if (job.hourly) {
+      // Hourly jobs: fire at minuteUTC of every hour, de-dup per hour
+      if (Math.abs(minuteNow - job.minuteUTC) > 1) continue;
+      const key   = dedupeKey(job);
+      const token = `${dateNow}-${String(hourNow).padStart(2, "0")}`;
+      const last  = await getLastFiredToken(key);
+      if (last === token) continue;
+      try {
+        await fireJob(job);
+        await markFired(key, token);
+      } catch (err: any) {
+        console.error(`[scheduler] ✗ ${job.label}: ${err?.message ?? err}`);
+        await prisma.auditLog.create({
+          data: {
+            tenantId: RESOLVED_TENANT_ID,
+            actorType: "system", actorUserId: null, actorExternalId: "scheduler",
+            level: "error", action: "SCHEDULER_FIRE_FAILED",
+            entityType: "workflow", entityId: job.workflowId,
+            message: `Scheduler failed to fire ${job.label}: ${err?.message ?? err}`,
+            meta: { jobId: job.id, workflowId: job.workflowId, agentId: job.agentId },
+            timestamp: new Date(),
+          },
+        }).catch(() => null);
+      }
+      continue;
+    }
+
     // Day-of-week gate (weekly jobs)
     if (job.dayOfWeek !== undefined && dayNow !== job.dayOfWeek) continue;
 
@@ -570,10 +613,11 @@ async function tick() {
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 
-const DAILY_COUNT  = buildJobs().filter(j => j.dayOfWeek === undefined).length;
+const HOURLY_COUNT = buildJobs().filter(j => j.hourly).length;
+const DAILY_COUNT  = buildJobs().filter(j => !j.hourly && j.dayOfWeek === undefined).length;
 const WEEKLY_COUNT = buildJobs().filter(j => j.dayOfWeek !== undefined).length;
 
-console.log(`[scheduler] Starting — ${DAILY_COUNT} daily jobs, ${WEEKLY_COUNT} weekly jobs. Poll: ${POLL_MS / 1000}s`);
+console.log(`[scheduler] Starting — ${HOURLY_COUNT} hourly, ${DAILY_COUNT} daily, ${WEEKLY_COUNT} weekly jobs. Poll: ${POLL_MS / 1000}s`);
 
 async function run() {
   try { await tick(); } catch (err) { console.error("[scheduler] tick error:", err); }

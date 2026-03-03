@@ -8,6 +8,8 @@ This folder defines **workflow maps** used by the engine for cloud-surface testi
 - **WF-002** Support Escalation (CHERYL → Executive owners)
 - **WF-010** Daily Executive Brief (BINKY)
 - **WF-020** Engine Run Smoke Test (ATLAS)
+- **WF-033** Daily-Intel Morning Brief (DAILY-INTEL)
+- **WF-035** Hourly Signal Tripwire (DAILY-INTEL)
 
 ## Workflow Spec Format
 

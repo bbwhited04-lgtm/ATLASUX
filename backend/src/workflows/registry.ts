@@ -67,6 +67,8 @@ export const workflowCatalog = [
   { id: "WF-130", name: "Browser Task Execution (Atlas)",     description: "Governed headless browser automation — navigate, extract, interact with web pages via Playwright.", ownerAgent: "atlas" },
   { id: "WF-131", name: "Browser Session Resume (Atlas)",     description: "Resume a paused browser session after decision memo approval for HIGH-risk action.",               ownerAgent: "atlas" },
   { id: "WF-140", name: "Local Vision Task (Vision)",       description: "Queue a browser task for the local vision agent — executes on user's machine via CDP + Claude Vision.", ownerAgent: "vision" },
+  { id: "WF-035", name: "Hourly Signal Tripwire (Daily-Intel)",  description: "Hourly scan of HN, Reddit, X, web for breaking signals — escalates HIGH-relevance items immediately to Atlas.", ownerAgent: "daily-intel" },
+  { id: "WF-033", name: "Daily-Intel Morning Brief",              description: "Morning brief aggregating overnight intel, tripwire alerts, and fresh news scan for Binky and Atlas.",          ownerAgent: "daily-intel" },
   // ── Postiz Social Publishing (WF-200 series) ──────────────────────────────
   { id: "WF-200", name: "TikTok Publish via Postiz (Timmy)",        description: "Publish a TikTok post via Postiz API — caption, hashtags, privacy settings.",               ownerAgent: "timmy"    },
   { id: "WF-201", name: "X (Twitter) Publish via Postiz (Kelly)",   description: "Publish a tweet/post to X via Postiz API.",                                                ownerAgent: "kelly"    },
@@ -2956,6 +2958,337 @@ handlers["WF-223"] = async (ctx) => {
   });
 
   return { ok: true, message: `Cross-platform analytics: ${summaries.length} platforms`, output: { report } };
+};
+
+// ── WF-035 — Hourly Signal Tripwire ──────────────────────────────────────────
+// Lightweight scan of HN, Reddit, X for high-relevance breaking signals.
+// Runs every hour. If nothing hits the relevance threshold → silent.
+// If a signal hits → escalates immediately to Atlas + Billy via email.
+
+handlers["WF-035"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-035.start", "Hourly signal tripwire scan starting");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const hour = new Date().getUTCHours();
+
+  // 1. Quick multi-source scan — HN, Reddit security/AI subs, X, general web
+  const sources: Array<{ label: string; data: string }> = [];
+
+  // Hacker News frontpage
+  try {
+    const hnRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json");
+    if (hnRes.ok) {
+      const ids = (await hnRes.json() as number[]).slice(0, 20);
+      const stories: string[] = [];
+      for (const id of ids.slice(0, 15)) {
+        try {
+          const sRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+          if (sRes.ok) {
+            const s = await sRes.json() as { title?: string; url?: string; score?: number };
+            if (s?.title) stories.push(`[${s.score ?? 0}pts] ${s.title} ${s.url ?? ""}`);
+          }
+        } catch { /* skip individual story */ }
+      }
+      if (stories.length) sources.push({ label: "Hacker News (top 15)", data: stories.join("\n") });
+    }
+  } catch { /* non-fatal */ }
+
+  // Reddit — security + AI subs hot posts
+  try {
+    const redditResult = await searchReddit("AI jailbreak security vulnerability exploit", 10);
+    if (redditResult.ok && redditResult.posts.length) {
+      sources.push({
+        label: "Reddit (AI + security)",
+        data: redditResult.posts.map(p => `[${p.score ?? 0}] r/${p.subreddit}: ${p.title}`).join("\n"),
+      });
+    }
+  } catch { /* non-fatal */ }
+
+  // Web search — breaking AI/tech/security news
+  try {
+    const webResult = await searchWeb(`AI security jailbreak vulnerability breaking news ${today}`, 6);
+    if (webResult.ok) {
+      sources.push({
+        label: "Web (AI security news)",
+        data: webResult.results.map((r, i) => `${i + 1}. ${r.title} — ${r.snippet}`).join("\n"),
+      });
+    }
+  } catch { /* non-fatal */ }
+
+  // X/Twitter trending
+  try {
+    const tweets = await searchRecentTweets("AI jailbreak OR AI security OR AI vulnerability", 10);
+    if (tweets.length) {
+      sources.push({
+        label: "X/Twitter",
+        data: tweets.map(t => t.text?.slice(0, 140) ?? "").join("\n"),
+      });
+    }
+  } catch { /* non-fatal */ }
+
+  if (!sources.length) {
+    await writeStepAudit(ctx, "WF-035.silent", "No source data available — skipping");
+    return { ok: true, message: "Tripwire: no source data", output: { signalsFound: 0, hour } };
+  }
+
+  // 2. LLM triage — is anything here relevant enough to escalate?
+  const sourceBlock = sources.map(s => `── ${s.label} ──\n${s.data}`).join("\n\n");
+  const triageResult = await safeLLM(ctx, {
+    agent: "DAILY-INTEL",
+    purpose: "hourly_tripwire",
+    route: "CLASSIFY_EXTRACT_VALIDATE",
+    system: [
+      "You are DAILY-INTEL's hourly signal tripwire for Atlas UX.",
+      "Atlas UX is an AI employee platform. Its core differentiator is SECURITY-FIRST design with a truth layer and governance constitution.",
+      "",
+      "Your job: scan these headlines/posts and determine if ANY signal warrants an immediate alert.",
+      "",
+      "HIGH-relevance signals (ESCALATE IMMEDIATELY):",
+      "- AI jailbreaks, model exploits, prompt injection attacks (validates our security positioning)",
+      "- Major platform outages or bans (TikTok ban, X downtime, Meta issues — affects our operations)",
+      "- Competitor launches or major moves in AI employee/automation space",
+      "- Regulatory actions on AI (executive orders, EU AI Act enforcement, SEC actions)",
+      "- Security breaches at major AI companies (OpenAI, Google, Anthropic, etc.)",
+      "",
+      "MEDIUM-relevance signals (include in daily report, don't escalate):",
+      "- General AI industry news, funding rounds, product launches",
+      "- Marketing trends, content strategy shifts",
+      "",
+      "LOW-relevance (ignore):",
+      "- Generic tech news, unrelated topics",
+      "",
+      "RESPOND IN THIS EXACT FORMAT:",
+      "VERDICT: ESCALATE | SILENT",
+      "SIGNALS: (number of high-relevance signals found)",
+      "---",
+      "If ESCALATE, for each high signal:",
+      "SIGNAL: [title/summary]",
+      "SOURCE: [where you found it]",
+      "WHY: [why it matters to Atlas UX in 1 sentence]",
+      "ANGLE: [how Atlas UX should capitalize in 1 sentence]",
+      "---",
+      "If SILENT: just say 'No high-relevance signals detected this hour.'",
+    ].join("\n"),
+    user: `Scan timestamp: ${new Date().toISOString()} (hour ${hour} UTC)\n\n${sourceBlock}`,
+  });
+
+  await writeStepAudit(ctx, "WF-035.triage", `Triage complete (${triageResult.length} chars)`);
+
+  // 3. Parse verdict
+  const shouldEscalate = /VERDICT:\s*ESCALATE/i.test(triageResult);
+
+  if (!shouldEscalate) {
+    // Silent — log and move on
+    await writeStepAudit(ctx, "WF-035.silent", `Hour ${hour}: No high signals — silent`);
+    return { ok: true, message: `Tripwire silent (hour ${hour})`, output: { signalsFound: 0, hour, verdict: "SILENT" } };
+  }
+
+  // 4. ESCALATE — send alert to Atlas + Billy immediately
+  const atlasEmail = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
+  const billyEmail = process.env.OWNER_EMAIL?.trim() ?? "billy@deadapp.info";
+  const alertSubject = `🚨 [BREAKING SIGNAL] ${today} ${String(hour).padStart(2, "0")}:00 UTC — Immediate Attention Required`;
+  const alertBody = [
+    "ATLAS UX — HOURLY SIGNAL TRIPWIRE ALERT",
+    `Timestamp: ${new Date().toISOString()}`,
+    `Triggered by: WF-035 Hourly Signal Tripwire`,
+    "",
+    "═".repeat(60),
+    "",
+    triageResult,
+    "",
+    "═".repeat(60),
+    "",
+    "ACTION REQUIRED: Review signals above and decide whether to:",
+    "1. Draft content/social posts capitalizing on the news",
+    "2. Adjust today's agent task orders",
+    "3. Flag for legal/compliance review (Jenny/Benny)",
+    "",
+    `Sources scanned: ${sources.map(s => s.label).join(", ")}`,
+    `Trace: ${ctx.traceId ?? ctx.intentId}`,
+  ].join("\n");
+
+  await queueEmail(ctx, { to: atlasEmail, fromAgent: "daily-intel", subject: alertSubject, text: alertBody });
+  if (billyEmail !== atlasEmail) {
+    await queueEmail(ctx, { to: billyEmail, fromAgent: "daily-intel", subject: alertSubject, text: alertBody });
+  }
+
+  // CC Daily-Intel hub
+  const hubEmail = process.env.AGENT_EMAIL_DAILY_INTEL?.trim();
+  if (hubEmail && hubEmail !== atlasEmail) {
+    await queueEmail(ctx, { to: hubEmail, fromAgent: "daily-intel", subject: `[TRIPWIRE HUB] ${alertSubject}`, text: alertBody });
+  }
+
+  await writeStepAudit(ctx, "WF-035.escalated", `ESCALATED — breaking signal detected at hour ${hour}`, {
+    verdict: "ESCALATE",
+    sourceCount: sources.length,
+  });
+
+  // Ledger
+  await prisma.ledgerEntry.create({
+    data: {
+      tenantId: ctx.tenantId,
+      entryType: "debit",
+      category: "token_spend",
+      amountCents: BigInt(Math.max(1, Math.round(triageResult.length / 100))),
+      description: `WF-035 — Hourly signal tripwire (ESCALATED at ${hour}:00 UTC)`,
+      reference_type: "intent",
+      reference_id: ctx.intentId,
+      run_id: ctx.traceId ?? ctx.intentId,
+      meta: { workflowId: "WF-035", hour, verdict: "ESCALATE" },
+    },
+  }).catch(() => null);
+
+  return {
+    ok: true,
+    message: `Tripwire ESCALATED (hour ${hour})`,
+    output: { signalsFound: sources.length, hour, verdict: "ESCALATE", preview: triageResult.slice(0, 500) },
+  };
+};
+
+// ── WF-033 — Daily-Intel Morning Brief ────────────────────────────────────────
+// Daily-Intel reads all platform intel reports + any tripwire escalations from
+// the past 24 hours, then produces a unified morning brief for Binky.
+
+handlers["WF-033"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-033.start", "Daily-Intel morning brief beginning");
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  // 1. Pull recent audit logs from intel sweeps + tripwire escalations (last 24h)
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  let recentIntel = "";
+  try {
+    const logs = await prisma.auditLog.findMany({
+      where: {
+        tenantId: ctx.tenantId,
+        action: { in: ["SCHEDULER_JOB_FIRED", "WORKFLOW_STEP"] },
+        timestamp: { gte: since },
+        message: { contains: "intel" },
+      },
+      orderBy: { timestamp: "desc" },
+      take: 50,
+      select: { message: true, meta: true, timestamp: true },
+    });
+    if (logs.length) {
+      recentIntel = logs.map(l => `[${(l.timestamp ?? new Date()).toISOString().slice(11, 16)}] ${l.message}`).join("\n");
+    }
+  } catch { /* non-fatal */ }
+
+  // 2. Check for any tripwire escalations in past 24h
+  let tripwireAlerts = "";
+  try {
+    const alerts = await prisma.auditLog.findMany({
+      where: {
+        tenantId: ctx.tenantId,
+        action: "WORKFLOW_STEP",
+        message: { contains: "ESCALATED" },
+        timestamp: { gte: since },
+      },
+      orderBy: { timestamp: "desc" },
+      take: 10,
+      select: { message: true, meta: true, timestamp: true },
+    });
+    if (alerts.length) {
+      tripwireAlerts = `\n⚠️ TRIPWIRE ESCALATIONS (last 24h):\n${alerts.map(a => `[${(a.timestamp ?? new Date()).toISOString().slice(11, 16)}] ${a.message}`).join("\n")}`;
+    }
+  } catch { /* non-fatal */ }
+
+  // 3. KB context
+  const kb = await getKbContext({
+    tenantId: ctx.tenantId,
+    agentId: "daily-intel",
+    query: "daily intelligence briefing platform trends security",
+    intentId: ctx.intentId,
+    requestedBy: ctx.requestedBy,
+  });
+
+  // 4. Fresh web search for morning context
+  let morningNews = "";
+  try {
+    const newsResult = await searchWeb(`AI automation security news today ${today}`, 6);
+    if (newsResult.ok) {
+      morningNews = newsResult.results.map((r, i) => `${i + 1}. ${r.title} — ${r.snippet}`).join("\n");
+    }
+  } catch { /* non-fatal */ }
+
+  // 5. LLM produces the morning brief
+  const briefText = await safeLLM(ctx, {
+    agent: "DAILY-INTEL",
+    purpose: "morning_brief",
+    route: "LONG_CONTEXT_SUMMARY",
+    system: [
+      "You are DAILY-INTEL, the central intelligence aggregator for Atlas UX.",
+      `Date: ${today}`,
+      "",
+      "Produce the DAILY-INTEL MORNING BRIEF for Binky (CRO) and Atlas (CEO).",
+      "",
+      "This brief covers:",
+      "1. OVERNIGHT SIGNALS — What happened while the team slept (tripwire alerts, breaking news)",
+      "2. TODAY'S LANDSCAPE — Key themes across all platforms based on the intel sweep",
+      "3. PRIORITY FLAGS — Anything requiring immediate action or decision",
+      "4. OPPORTUNITIES — Time-sensitive content/positioning opportunities",
+      "5. PLATFORM STATUS — Any platform outages, bans, or disruptions (e.g. TikTok, X)",
+      "",
+      "Be concise, specific, and prioritize actionable intelligence over noise.",
+      tripwireAlerts || "(No tripwire escalations in last 24h.)",
+      recentIntel ? `\nRecent intel activity:\n${recentIntel.slice(0, 1500)}` : "",
+      morningNews ? `\nMorning news scan:\n${morningNews}` : "",
+      kb.text ? `\nKB context:\n${kb.text.slice(0, 1000)}` : "",
+    ].filter(Boolean).join("\n"),
+    user: `Generate the morning brief for ${today}.`,
+  });
+
+  await writeStepAudit(ctx, "WF-033.brief", `Morning brief generated (${briefText.length} chars)`);
+
+  // 6. Email to Binky + Atlas + Billy
+  const { to: binkyEmail } = getReportRecipients("daily-intel");
+  const atlasEmail = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
+  const billyEmail = process.env.OWNER_EMAIL?.trim() ?? "billy@deadapp.info";
+  const briefSubject = `[DAILY-INTEL] Morning Brief — ${today}`;
+  const briefBody = [
+    "DAILY-INTEL — MORNING BRIEF",
+    `Date: ${today}`,
+    "",
+    "═".repeat(60),
+    "",
+    briefText,
+    "",
+    "═".repeat(60),
+    `Trace: ${ctx.traceId ?? ctx.intentId}`,
+  ].join("\n");
+
+  const recipients = new Set([binkyEmail, atlasEmail, billyEmail].filter(Boolean));
+  for (const addr of recipients) {
+    await queueEmail(ctx, { to: addr, fromAgent: "daily-intel", subject: briefSubject, text: briefBody });
+  }
+
+  // 7. Audit + ledger
+  await writeStepAudit(ctx, "WF-033.complete", `Morning brief sent to ${recipients.size} recipients`);
+  await prisma.ledgerEntry.create({
+    data: {
+      tenantId: ctx.tenantId,
+      entryType: "debit",
+      category: "token_spend",
+      amountCents: BigInt(Math.max(1, Math.round(briefText.length / 100))),
+      description: `WF-033 — Daily-Intel morning brief`,
+      reference_type: "intent",
+      reference_id: ctx.intentId,
+      run_id: ctx.traceId ?? ctx.intentId,
+      meta: { workflowId: "WF-033", recipients: [...recipients] },
+    },
+  }).catch(() => null);
+
+  return {
+    ok: true,
+    message: `Morning brief dispatched to ${recipients.size} recipients`,
+    output: {
+      date: today,
+      briefChars: briefText.length,
+      tripwireAlerts: !!tripwireAlerts,
+      recipients: [...recipients],
+      preview: briefText.slice(0, 500),
+    },
+  };
 };
 
 // ── Public API ────────────────────────────────────────────────────────────────
