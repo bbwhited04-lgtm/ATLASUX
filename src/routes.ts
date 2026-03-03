@@ -45,6 +45,7 @@ const KnowledgeBaseHub = lazyRetry(() => import("./components/KnowledgeBaseHub")
 const MessagingHub = lazyRetry(() => import("./components/MessagingHub").then(m => ({ default: m.MessagingHub })));
 const AgentWatcher = lazyRetry(() => import("./components/AgentWatcher").then(m => ({ default: m.AgentWatcher })));
 const BrandAnalytics = lazyRetry(() => import("./components/BrandAnalytics").then(m => ({ default: m.BrandAnalytics })));
+const CalendarScheduling = lazyRetry(() => import("./components/premium/CalendarScheduling").then(m => ({ default: m.CalendarScheduling })));
 
 // Lazy-loaded public pages
 const Privacy = lazyRetry(() => import("./pages/Privacy"));
@@ -119,7 +120,8 @@ export const router = createHashRouter([
       { path: "workflows", Component: () => React.createElement(Navigate, { to: "/app/agents?view=workflows", replace: true }) },
       { path: "deployment", Component: () => React.createElement(Navigate, { to: "/app/agents?view=deployment", replace: true }) },
       { path: "apps", Component: () => React.createElement(Navigate, { to: "/app/settings", replace: true }) },
-      { path: "monitoring", Component: () => React.createElement(S, null, React.createElement(SocialMonitoring)) },
+      { path: "monitoring", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=monitoring", replace: true }) },
+      { path: "calendar", Component: () => React.createElement(S, null, React.createElement(CalendarScheduling)) },
       { path: "crm", Component: () => React.createElement(S, null, React.createElement(CRM)) },
       { path: "analytics", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=intelligence", replace: true }) },
       { path: "automation", Component: () => React.createElement(Navigate, { to: "/app/agents?view=automation", replace: true }) },

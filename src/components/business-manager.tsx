@@ -28,6 +28,7 @@ import { DecisionsInbox } from './DecisionsInbox';
 import { BudgetTracker } from './BudgetTracker';
 import { TicketsView } from './TicketsView';
 import { BlogManager } from './BlogManager';
+import { SocialMonitoring } from './SocialMonitoring';
 
 
 interface Asset {
@@ -86,7 +87,7 @@ interface Tenant {
 }
 
 
-const VALID_TABS = ["assets", "intelligence", "media", "security", "suite", "decisions", "budgets", "tickets", "blog"] as const;
+const VALID_TABS = ["assets", "intelligence", "monitoring", "media", "security", "suite", "decisions", "budgets", "tickets", "blog"] as const;
 
 /** Gate component — shown in place of premium screens for free_beta/starter users */
 function UpgradeGate({ feature }: { feature: string }) {
@@ -617,6 +618,10 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
           <TabsTrigger value="intelligence" className="text-slate-300 data-[state=active]:text-cyan-400">
             <TrendingUp className="w-4 h-4 mr-2" />
             Intelligence
+          </TabsTrigger>
+          <TabsTrigger value="monitoring" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Bell className="w-4 h-4 mr-2" />
+            Monitoring
           </TabsTrigger>
           <TabsTrigger value="decisions" className="text-slate-300 data-[state=active]:text-cyan-400">
             <ClipboardCheck className="w-4 h-4 mr-2" />
@@ -1288,6 +1293,11 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
           <BusinessIntelligence />
         </TabsContent>
 
+        {/* Social Monitoring Tab */}
+        <TabsContent value="monitoring" className="h-[calc(100vh-300px)]">
+          <SocialMonitoring />
+        </TabsContent>
+
         {/* Media Processing Tab */}
         <TabsContent value="media">
           <MediaProcessing />
@@ -1340,7 +1350,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
           {suiteView === 'team-collaboration' && (isPro ? <TeamCollaboration /> : <UpgradeGate feature="Team Collaboration" />)}
           {suiteView === 'business-intelligence' && (isPro ? <BusinessIntelligence /> : <UpgradeGate feature="Business Intelligence" />)}
           {suiteView === 'spreadsheet-analysis' && (isPro ? <SpreadsheetAnalysis /> : <UpgradeGate feature="Spreadsheet Analysis" />)}
-          {suiteView === 'calendar-scheduling' && (isPro ? <CalendarScheduling /> : <UpgradeGate feature="Calendar & Scheduling" />)}
+          {/* Calendar & Scheduling moved to /app/calendar */}
           {suiteView === 'financial-management' && (isPro ? <FinancialManagement /> : <UpgradeGate feature="Financial Management" />)}
           {suiteView === 'smart-automation' && (isPro ? <SmartAutomation /> : <UpgradeGate feature="Smart Automation" />)}
           {suiteView === 'email-client' && (isPro ? <EmailClient /> : <UpgradeGate feature="Email Client" />)}
@@ -1425,19 +1435,19 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                   <div className="text-sm text-slate-400">Upload, inspect, summarize, and extract meaning.</div>
                 </button>
 
-                <button
-                  onClick={() => setSuiteView('calendar-scheduling')}
-                  className="text-left bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-400/40 hover:bg-slate-900/60 transition"
+                <RouterLink
+                  to="/app/calendar"
+                  className="text-left bg-slate-900/50 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-400/40 hover:bg-slate-900/60 transition block"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-cyan-400" />
-                      <div className="text-white font-semibold">Calendar Scheduling</div>
+                      <div className="text-white font-semibold">Calendar & Scheduling</div>
                     </div>
                     <ArrowRight className="w-4 h-4 text-slate-500" />
                   </div>
                   <div className="text-sm text-slate-400">Scheduling, reminders, and coordination across teams.</div>
-                </button>
+                </RouterLink>
 
                 <button
                   onClick={() => setSuiteView('financial-management')}
