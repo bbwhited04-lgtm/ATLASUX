@@ -33,7 +33,9 @@ import {
   Plug,
   Gauge,
   Smartphone,
-  Brain
+  Brain,
+  UserCog,
+  Cpu
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -48,6 +50,8 @@ import * as adminAuth from "../utils/admin-auth";
 import Integrations from './Integrations';
 import { FileManagement } from './FileManagement';
 import AtlasAgentSettings from './AtlasAgentSettings';
+import { AgentsHub } from './AgentsHub';
+import { JobRunner } from './JobRunner';
 import { MobileIntegration } from './premium/MobileIntegration';
 import { getOrgUser } from "../lib/org";
 
@@ -383,6 +387,14 @@ export function Settings() {
             <Lock className="w-4 h-4 mr-2" />
             Security
           </TabsTrigger>
+          <TabsTrigger value="agents" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <UserCog className="w-4 h-4 mr-2" />
+            Agents
+          </TabsTrigger>
+          <TabsTrigger value="jobs" className="text-slate-300 data-[state=active]:text-cyan-400">
+            <Cpu className="w-4 h-4 mr-2" />
+            Jobs
+          </TabsTrigger>
         </TabsList>
 
         {/* Audit Log Tab */}
@@ -630,6 +642,16 @@ export function Settings() {
           <MobileIntegration />
         </TabsContent>
         
+        {/* Agents Tab */}
+        <TabsContent value="agents" className="h-[calc(100vh-300px)]">
+          <AgentsHub />
+        </TabsContent>
+
+        {/* Jobs Tab */}
+        <TabsContent value="jobs" className="h-[calc(100vh-300px)]">
+          <JobRunner />
+        </TabsContent>
+
         {/* Security Tab - Admin Authentication */}
         <TabsContent value="security" className="space-y-4">
           <Card className="bg-slate-900/50 border-cyan-500/20 p-6">

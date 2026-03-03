@@ -33,14 +33,11 @@ function lazyRetry(factory: () => Promise<any>) {
 }
 
 // Lazy-loaded app pages — only fetched when the user navigates to them
-const JobRunner = lazyRetry(() => import("./components/JobRunner").then(m => ({ default: m.JobRunner })));
 const ChatInterface = lazyRetry(() => import("./components/ChatInterface").then(m => ({ default: m.ChatInterface })));
-const SocialMonitoring = lazyRetry(() => import("./components/SocialMonitoring").then(m => ({ default: m.SocialMonitoring })));
 const CRM = lazyRetry(() => import("./components/CRM"));
 const Settings = lazyRetry(() => import("./components/Settings").then(m => ({ default: m.Settings })));
 const BusinessManager = lazyRetry(() => import("./components/business-manager").then(m => ({ default: m.BusinessManager })));
 const HelpPage = lazyRetry(() => import("./components/HelpPage").then(m => ({ default: m.HelpPage })));
-const AgentsHub = lazyRetry(() => import("./components/AgentsHub").then(m => ({ default: m.AgentsHub })));
 const KnowledgeBaseHub = lazyRetry(() => import("./components/KnowledgeBaseHub").then(m => ({ default: m.KnowledgeBaseHub })));
 const MessagingHub = lazyRetry(() => import("./components/MessagingHub").then(m => ({ default: m.MessagingHub })));
 const AgentWatcher = lazyRetry(() => import("./components/AgentWatcher").then(m => ({ default: m.AgentWatcher })));
@@ -113,18 +110,18 @@ export const router = createHashRouter([
       ),
     children: [
       { index: true, Component: Dashboard },
-      { path: "jobs", Component: () => React.createElement(S, null, React.createElement(JobRunner)) },
+      { path: "jobs", Component: () => React.createElement(Navigate, { to: "/app/settings?tab=jobs", replace: true }) },
       { path: "chat", Component: () => React.createElement(S, null, React.createElement(ChatInterface)) },
-      { path: "agents", Component: () => React.createElement(S, null, React.createElement(AgentsHub)) },
-      { path: "tools", Component: () => React.createElement(Navigate, { to: "/app/agents?view=tools", replace: true }) },
-      { path: "workflows", Component: () => React.createElement(Navigate, { to: "/app/agents?view=workflows", replace: true }) },
-      { path: "deployment", Component: () => React.createElement(Navigate, { to: "/app/agents?view=deployment", replace: true }) },
+      { path: "agents", Component: () => React.createElement(Navigate, { to: "/app/settings?tab=agents", replace: true }) },
+      { path: "tools", Component: () => React.createElement(Navigate, { to: "/app/settings?tab=agents", replace: true }) },
+      { path: "workflows", Component: () => React.createElement(Navigate, { to: "/app/settings?tab=agents", replace: true }) },
+      { path: "deployment", Component: () => React.createElement(Navigate, { to: "/app/settings?tab=agents", replace: true }) },
       { path: "apps", Component: () => React.createElement(Navigate, { to: "/app/settings", replace: true }) },
       { path: "monitoring", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=monitoring", replace: true }) },
       { path: "calendar", Component: () => React.createElement(S, null, React.createElement(CalendarScheduling)) },
       { path: "crm", Component: () => React.createElement(S, null, React.createElement(CRM)) },
       { path: "analytics", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=intelligence", replace: true }) },
-      { path: "automation", Component: () => React.createElement(Navigate, { to: "/app/agents?view=automation", replace: true }) },
+      { path: "automation", Component: () => React.createElement(Navigate, { to: "/app/settings?tab=agents", replace: true }) },
       { path: "business-manager", Component: () => React.createElement(S, null, React.createElement(BusinessManager)) },
       { path: "kb", Component: () => React.createElement(S, null, React.createElement(KnowledgeBaseHub)) },
       { path: "blog", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=blog", replace: true }) },
