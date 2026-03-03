@@ -1,436 +1,302 @@
-import { 
-  Activity, 
-  Brain, 
-  CheckCircle2, 
-  Clock, 
-  Zap,
+import {
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  Circle,
+  Sparkles,
   TrendingUp,
-  Globe,
-  FileText,
-  Play,
-  Pause,
-  Cpu,
-  Briefcase,
-  Gauge,
-  ArrowRight
+  Calendar,
+  MessageSquare,
+  Shield,
+  Plug,
+  BarChart3,
+  ChevronRight,
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { Progress } from "./ui/progress";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
 import * as React from "react";
 import { API_BASE } from "../lib/api";
 import { useActiveTenant } from "../lib/activeTenant";
-const imgA = "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800";
+
+/* ── types ── */
+interface Step {
+  id: string;
+  label: string;
+  description: string;
+  done: boolean;
+  action?: { label: string; to: string };
+}
+
+/* ── helpers ── */
+function greetingTime(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 export function Dashboard() {
-const navigate = useNavigate();
+  const navigate = useNavigate();
   const { tenantId } = useActiveTenant();
-  const [pendingDecisionsCount, setPendingDecisionsCount] = React.useState<number>(0);
-  const [liveStats, setLiveStats] = React.useState<{active: number, completed: number, agents: number, kbDocs: number, auditEvents: number, spendUsd: number}>({ active: 0, completed: 0, agents: 0, kbDocs: 0, auditEvents: 0, spendUsd: 0 });
-  const [growthRuns, setGrowthRuns] = React.useState<any[]>([]);
-  const [recentJobs, setRecentJobs] = React.useState<any[]>([]);
 
-  React.useEffect(() => {
+  /* live data */
+  const [pendingDecisions, setPendingDecisions] = useState(0);
+  const [activeJobs, setActiveJobs] = useState(0);
+  const [completedToday, setCompletedToday] = useState(0);
+  const [agentCount, setAgentCount] = useState(0);
+  const [channelCount, setChannelCount] = useState(0);
+  const [spendUsd, setSpendUsd] = useState(0);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+
+  /* fetch all dashboard data */
+  useEffect(() => {
+    if (!tenantId) return;
     let cancelled = false;
-    const fetchCount = async () => {
-      if (!tenantId) {
-        if (!cancelled) setPendingDecisionsCount(0);
-        return;
-      }
-      try {
-        const res = await fetch(`${API_BASE}/v1/decisions?tenantId=${encodeURIComponent(tenantId)}&status=AWAITING_HUMAN&take=200`, {
-          headers: { "x-tenant-id": tenantId },
-        });
-        const json = await res.json();
-        const count = Array.isArray(json?.memos) ? json.memos.length : 0;
-        if (!cancelled) setPendingDecisionsCount(count);
-      } catch {
-        if (!cancelled) setPendingDecisionsCount(0);
-      }
-    };
-    fetchCount();
-    const t = window.setInterval(fetchCount, 30000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(t);
-    };
+    const h = { "x-tenant-id": tenantId };
+
+    (async () => {
+      const [decisionsRes, jobsRes, agentsRes, accountingRes, channelsRes, auditRes] = await Promise.all([
+        fetch(`${API_BASE}/v1/decisions?tenantId=${encodeURIComponent(tenantId)}&status=AWAITING_HUMAN&take=200`, { headers: h }).then(r => r.json()).catch(() => ({})),
+        fetch(`${API_BASE}/v1/jobs?status=running&limit=10`, { headers: h }).then(r => r.json()).catch(() => ({})),
+        fetch(`${API_BASE}/v1/agents`, { headers: h }).then(r => r.json()).catch(() => ({})),
+        fetch(`${API_BASE}/v1/accounting/summary`, { headers: h }).then(r => r.json()).catch(() => ({})),
+        fetch(`${API_BASE}/v1/postiz/channels`, { headers: { ...h, org_id: tenantId } }).then(r => r.json()).catch(() => ({})),
+        fetch(`${API_BASE}/v1/audit/list?limit=8`, { headers: h }).then(r => r.json()).catch(() => ({})),
+      ]);
+      if (cancelled) return;
+
+      setPendingDecisions(Array.isArray(decisionsRes?.memos) ? decisionsRes.memos.length : 0);
+
+      const jobs: any[] = Array.isArray(jobsRes?.jobs) ? jobsRes.jobs : Array.isArray(jobsRes?.data) ? jobsRes.data : [];
+      setActiveJobs(jobs.filter((j: any) => j.status === "running" || j.status === "RUNNING").length);
+      setCompletedToday(typeof jobsRes?.completedToday === "number" ? jobsRes.completedToday : 0);
+
+      setAgentCount(Array.isArray(agentsRes?.agents) ? agentsRes.agents.length : 0);
+
+      const cents = accountingRes?.summary?.totalDebitsCents;
+      setSpendUsd(typeof cents === "number" ? cents / 100 : 0);
+
+      const chs: any[] = Array.isArray(channelsRes?.channels) ? channelsRes.channels : [];
+      setChannelCount(chs.length);
+
+      const auditItems = Array.isArray(auditRes?.items) ? auditRes.items : Array.isArray(auditRes?.rows) ? auditRes.rows : [];
+      setRecentActivity(auditItems.slice(0, 6));
+    })();
+
+    const t = setInterval(() => {
+      fetch(`${API_BASE}/v1/decisions?tenantId=${encodeURIComponent(tenantId)}&status=AWAITING_HUMAN&take=200`, { headers: h })
+        .then(r => r.json())
+        .then(j => { if (!cancelled) setPendingDecisions(Array.isArray(j?.memos) ? j.memos.length : 0); })
+        .catch(() => {});
+    }, 30000);
+
+    return () => { cancelled = true; clearInterval(t); };
   }, [tenantId]);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    const fetchLiveData = async () => {
-      if (!tenantId) return;
-      const h = { "x-tenant-id": tenantId };
-      try {
-        const [jobsRes, growthRes, agentsRes, accountingRes, auditRes] = await Promise.all([
-          fetch(`${API_BASE}/v1/jobs?status=running&limit=5`, { headers: h }).then(r => r.json()).catch(() => ({})),
-          fetch(`${API_BASE}/v1/analytics/summary?range=7d`, { headers: h }).then(r => r.json()).catch(() => ({})),
-          fetch(`${API_BASE}/v1/agents`, { headers: h }).then(r => r.json()).catch(() => ({})),
-          fetch(`${API_BASE}/v1/accounting/summary`, { headers: h }).then(r => r.json()).catch(() => ({})),
-          fetch(`${API_BASE}/v1/audit/list?limit=1`, { headers: h }).then(r => r.json()).catch(() => ({})),
-        ]);
+  /* ── steps: Atlas guides you ── */
+  const steps: Step[] = useMemo(() => [
+    {
+      id: "business",
+      label: "Set up your business",
+      description: "Create a business profile so Atlas knows who you are",
+      done: !!tenantId,
+      action: { label: "Open Business Manager", to: "/app/business-manager" },
+    },
+    {
+      id: "channels",
+      label: "Connect your channels",
+      description: "Link social accounts so Atlas can post and track metrics",
+      done: channelCount > 0,
+      action: { label: "Add Channels", to: "/app/settings?tab=integrations" },
+    },
+    {
+      id: "review",
+      label: "Review pending decisions",
+      description: pendingDecisions > 0
+        ? `${pendingDecisions} item${pendingDecisions !== 1 ? "s" : ""} waiting for your approval`
+        : "Nothing to approve right now",
+      done: pendingDecisions === 0 && !!tenantId,
+      action: pendingDecisions > 0 ? { label: "Review Now", to: "/app/business-manager?tab=decisions" } : undefined,
+    },
+    {
+      id: "analytics",
+      label: "Check your analytics",
+      description: "See how your brand is performing across all platforms",
+      done: false, // always available
+      action: { label: "View Analytics", to: "/app/brand" },
+    },
+  ], [tenantId, channelCount, pendingDecisions]);
 
-        if (!cancelled) {
-          const jobs: any[] = Array.isArray(jobsRes?.jobs) ? jobsRes.jobs :
-                              Array.isArray(jobsRes?.data) ? jobsRes.data : [];
-          const activeCount = jobs.filter((j: any) => j.status === "running" || j.status === "RUNNING").length;
-          const completedCount = typeof jobsRes?.completedToday === "number" ? jobsRes.completedToday : 0;
-          const agentCount = Array.isArray(agentsRes?.agents) ? agentsRes.agents.length : 0;
-          const spendUsd = typeof accountingRes?.summary?.totalDebitsCents === "number"
-            ? accountingRes.summary.totalDebitsCents / 100
-            : 0;
-          const auditTotal = typeof auditRes?.total === "number" ? auditRes.total : (Array.isArray(auditRes?.items) ? auditRes.items.length : 0);
-          setLiveStats({ active: activeCount, completed: completedCount, agents: agentCount, kbDocs: 0, auditEvents: auditTotal, spendUsd });
-          setRecentJobs(jobs);
+  const completedSteps = steps.filter(s => s.done).length;
+  const nextStep = steps.find(s => !s.done);
 
-          const runs: any[] = Array.isArray(growthRes?.runs) ? growthRes.runs :
-                               Array.isArray(growthRes?.timeline) ? growthRes.timeline : [];
-          setGrowthRuns(runs);
-        }
-      } catch {
-        // non-fatal
-      }
-    };
-    fetchLiveData();
-  }, [tenantId]);
-
-  const stats = [
-    { label: "Active Jobs", value: String(liveStats.active), icon: Activity, color: "cyan" },
-    { label: "Completed Today", value: String(liveStats.completed), icon: CheckCircle2, color: "green" },
-    { label: "Registered Agents", value: String(liveStats.agents), icon: Brain, color: "purple" },
-    { label: "Total Spend", value: `$${liveStats.spendUsd.toFixed(2)}`, icon: TrendingUp, color: "yellow" },
-  ];
-  
   return (
-    <div className="p-6 space-y-6">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-blue-900/50 to-slate-900 border border-cyan-500/20 p-8">
-        <div className="relative z-10 flex items-center justify-between">
-          <div className="space-y-3">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-              Welcome to Atlas UX
-            </h2>
-            <p className="text-slate-300 max-w-xl">
-              Your AI workforce of {liveStats.agents || "—"} agents is live — monitoring social media,
-              executing workflows, and logging every action. Atlas access control is active.
-            </p>
-            <div className="flex gap-3 pt-2">
-              
-              <button
-                type="button"
-                onClick={() => navigate("/app/agents?view=automation")}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-cyan-500/20"
-              >
-              New Task
-              </button>
+    <div className="p-6 max-w-4xl mx-auto space-y-8">
 
-              <button onClick={() => navigate("/app/jobs")} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors border border-cyan-500/20">
-                View All Jobs
-              </button>
-            </div>
-          </div>
-          <img src="./atlas_hero.png"  alt="Atlas AI" className="w-64 h-64 object-cover opacity-60" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
+      {/* ── Greeting ── */}
+      <div className="space-y-1">
+        <h2 className="text-2xl font-bold text-white">
+          {greetingTime()}
+        </h2>
+        <p className="text-slate-400 text-sm">
+          {nextStep
+            ? <>Atlas recommends: <span className="text-cyan-400">{nextStep.label.toLowerCase()}</span></>
+            : "Everything looks good. You're all set."
+          }
+        </p>
       </div>
-      
-      {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
+
+      {/* ── Progress bar ── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between text-xs text-slate-400">
+          <span>Setup progress</span>
+          <span>{completedSteps}/{steps.length} complete</span>
+        </div>
+        <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-700"
+            style={{ width: `${(completedSteps / steps.length) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* ── Steps ── */}
+      <div className="space-y-3">
+        {steps.map((step, i) => {
+          const isNext = step === nextStep;
           return (
-            <Card key={stat.label} className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4 hover:bg-slate-900/70 transition-all">
-              <div className="flex items-start justify-between mb-3">
-                <div className={`w-10 h-10 rounded-lg bg-${stat.color}-500/20 flex items-center justify-center`}>
-                  <Icon className={`w-5 h-5 text-${stat.color}-400`} />
+            <Card
+              key={step.id}
+              className={`border transition-all ${
+                step.done
+                  ? "bg-slate-900/30 border-slate-800"
+                  : isNext
+                    ? "bg-slate-900/60 border-cyan-500/30 shadow-lg shadow-cyan-500/5"
+                    : "bg-slate-900/40 border-slate-800/60"
+              } p-4`}
+            >
+              <div className="flex items-start gap-4">
+                {/* step indicator */}
+                <div className="pt-0.5">
+                  {step.done ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-400" />
+                  ) : isNext ? (
+                    <div className="w-5 h-5 rounded-full border-2 border-cyan-400 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-cyan-400" />
+                    </div>
+                  ) : (
+                    <Circle className="w-5 h-5 text-slate-600" />
+                  )}
                 </div>
-                <Badge variant="outline" className="text-xs border-cyan-500/20 text-cyan-400">
-                  Live
-                </Badge>
-              </div>
-              <div className="space-y-1">
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <div className="text-xs text-slate-400">{stat.label}</div>
+
+                {/* content */}
+                <div className="flex-1 min-w-0">
+                  <div className={`font-medium text-sm ${step.done ? "text-slate-500 line-through" : "text-white"}`}>
+                    {step.label}
+                  </div>
+                  <div className={`text-xs mt-0.5 ${step.done ? "text-slate-600" : "text-slate-400"}`}>
+                    {step.description}
+                  </div>
+                </div>
+
+                {/* action */}
+                {step.action && !step.done && (
+                  <button
+                    onClick={() => navigate(step.action!.to)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                      isNext
+                        ? "bg-cyan-500 text-white hover:bg-cyan-400"
+                        : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    }`}
+                  >
+                    {step.action.label}
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </Card>
           );
         })}
       </div>
 
-      {/* Operator Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-5">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="text-xs text-slate-400">Needs Approval</div>
-              <div className="text-2xl font-bold text-slate-100 mt-1">{pendingDecisionsCount}</div>
-              <div className="text-sm text-slate-400 mt-1">Decision memos awaiting Exec.</div>
+      {/* ── Quick stats ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "Channels", value: String(channelCount), icon: Plug, color: "text-cyan-400" },
+          { label: "Agents", value: String(agentCount), icon: Sparkles, color: "text-purple-400" },
+          { label: "Active Jobs", value: String(activeJobs), icon: Clock, color: "text-yellow-400" },
+          { label: "Spend", value: `$${spendUsd.toFixed(2)}`, icon: Shield, color: "text-green-400" },
+        ].map((s) => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/40 border border-slate-800">
+              <Icon className={`w-4 h-4 ${s.color}`} />
+              <div>
+                <div className="text-lg font-bold text-white leading-none">{s.value}</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">{s.label}</div>
+              </div>
             </div>
-            <div className={`w-10 h-10 rounded-lg bg-red-500/15 flex items-center justify-center border border-red-500/20`}>
-              <Clock className="w-5 h-5 text-red-300" />
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate("/app/business-manager?tab=decisions")}
-            className="mt-4 w-full px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-bold border border-cyan-500/20 flex items-center justify-center gap-2"
-          >
-            Review Decisions <ArrowRight className="w-4 h-4" />
-          </button>
-          {!tenantId && (
-            <div className="mt-2 text-xs text-amber-300">Select a Business in Business Manager to enable approvals.</div>
-          )}
-        </Card>
-
-        <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-5">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="text-xs text-slate-400">Daily Control</div>
-              <div className="text-lg font-bold text-slate-100 mt-1">One action per day</div>
-              <div className="text-sm text-slate-400 mt-1">Guardrails enforce a slow, safe alpha cadence.</div>
-            </div>
-            <div className={`w-10 h-10 rounded-lg bg-cyan-500/15 flex items-center justify-center border border-cyan-500/20`}>
-              <Gauge className="w-5 h-5 text-cyan-300" />
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate("/app/agents?view=automation")}
-            className="mt-4 w-full px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-bold border border-cyan-500/20 flex items-center justify-center gap-2"
-          >
-            View Growth Loop <ArrowRight className="w-4 h-4" />
-          </button>
-        </Card>
-
-        <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-5">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="text-xs text-slate-400">Public Surface</div>
-              <div className="text-lg font-bold text-slate-100 mt-1">Product + Blog</div>
-              <div className="text-sm text-slate-400 mt-1">Bots can’t see /#/app — publish to /product and /blog.</div>
-            </div>
-            <div className={`w-10 h-10 rounded-lg bg-blue-500/15 flex items-center justify-center border border-blue-500/20`}>
-              <Globe className="w-5 h-5 text-blue-300" />
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate("/app/business-manager?tab=blog")}
-            className="mt-4 w-full px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-bold border border-cyan-500/20 flex items-center justify-center gap-2"
-          >
-            Open Blog <ArrowRight className="w-4 h-4" />
-          </button>
-        </Card>
+          );
+        })}
       </div>
-      
-      <div className="grid grid-cols-3 gap-6">
-        {/* Job Runner Status */}
-        <div className="col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-cyan-400" />
-              Job Runner
-            </h3>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-xs text-slate-400">{liveStats.active} Active Job{liveStats.active !== 1 ? "s" : ""}</span>
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            {recentJobs.length === 0 ? (
-              <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-8">
-                <div className="text-center text-slate-400">
-                  <Activity className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No active jobs. Create a task to get started.</p>
-                </div>
-              </Card>
-            ) : (
-              recentJobs.map((job) => (
-                <Card key={job.id} className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      {job.status === "running" && (
-                        <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                          <Activity className="w-4 h-4 text-cyan-400 animate-pulse" />
-                        </div>
-                      )}
-                      {job.status === "completed" && (
-                        <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                          <CheckCircle2 className="w-4 h-4 text-green-400" />
-                        </div>
-                      )}
-                      {job.status === "queued" && (
-                        <div className="w-8 h-8 rounded-lg bg-slate-700/50 flex items-center justify-center">
-                          <Clock className="w-4 h-4 text-slate-400" />
-                        </div>
-                      )}
-                      <div>
-                        <div className="font-medium text-sm">{job.name}</div>
-                        <div className="text-xs text-slate-400">{job.time}</div>
-                      </div>
-                    </div>
-                    <Badge 
-                      variant={job.status === "completed" ? "default" : "outline"}
-                      className={`text-xs ${
-                        job.status === "running" ? "border-cyan-500/40 text-cyan-400" : 
-                        job.status === "completed" ? "bg-green-500/20 border-green-500/40 text-green-400" :
-                        "border-slate-500/40 text-slate-400"
-                      }`}
-                    >
-                      {job.status}
-                    </Badge>
-                  </div>
-                  {job.progress > 0 && (
-                    <div className="space-y-1">
-                      <Progress value={job.progress} className="h-1.5" />
-                      <div className="text-xs text-slate-400 text-right">{job.progress}%</div>
-                    </div>
-                  )}
-                </Card>
-              ))
-            )}
-          </div>
-        </div>
-        
-        {/* Atlas Access Control */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Globe className="w-5 h-5 text-blue-400" />
-              Atlas Control
-            </h3>
-          </div>
-          
-          <Card className="bg-slate-900/50 border-cyan-500/20 backdrop-blur-xl p-4">
-            <div className="space-y-2">
-              <div className="text-xs text-slate-400 font-medium mb-3">Today's Atlas Run</div>
-              {growthRuns.length === 0 ? (
-                <div className="text-xs text-slate-500 text-center py-4">No runs today</div>
-              ) : (
-                growthRuns.slice(0, 5).map((run: any, i: number) => (
-                  <div key={i} className="flex items-center gap-2 text-xs">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      run.status === "COMPLETED" ? "bg-green-400" :
-                      run.status === "STARTED" ? "bg-yellow-400 animate-pulse" :
-                      "bg-slate-500"
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-slate-300 truncate">{run.runDate?.slice(0, 10) ?? "—"}</div>
-                      <div className="text-slate-500">{run.status}</div>
-                    </div>
-                  </div>
-                ))
+
+      {/* ── Quick nav ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "AI Chat", icon: MessageSquare, to: "/app/chat", color: "from-blue-500/10 to-indigo-500/10 border-blue-500/20" },
+          { label: "Calendar", icon: Calendar, to: "/app/calendar", color: "from-purple-500/10 to-fuchsia-500/10 border-purple-500/20" },
+          { label: "Analytics", icon: BarChart3, to: "/app/brand", color: "from-cyan-500/10 to-teal-500/10 border-cyan-500/20" },
+          { label: "Decisions", icon: Shield, to: "/app/business-manager?tab=decisions", color: "from-amber-500/10 to-orange-500/10 border-amber-500/20",
+            badge: pendingDecisions > 0 ? pendingDecisions : undefined },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.label}
+              onClick={() => navigate(item.to)}
+              className={`group flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br ${item.color} border transition-all hover:scale-[1.02]`}
+            >
+              <Icon className="w-4 h-4 text-slate-300" />
+              <span className="text-sm font-medium text-slate-200">{item.label}</span>
+              {item.badge && (
+                <Badge className="ml-auto bg-red-500/20 text-red-300 border-red-500/30 text-[10px] px-1.5">
+                  {item.badge}
+                </Badge>
               )}
-            </div>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-cyan-500/30 backdrop-blur-xl p-4">
-            <div className="text-sm font-medium mb-2">Workforce</div>
-            <div className="flex items-center gap-3">
-              <Brain className="w-8 h-8 text-purple-400" />
-              <div className="flex-1">
-                <div className="text-2xl font-bold text-white">{liveStats.agents}</div>
-                <div className="text-xs text-slate-400">
-                  Registered agents • {liveStats.auditEvents} audit events
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Recent activity ── */}
+      {recentActivity.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-slate-400">Recent activity</h3>
+            <button
+              onClick={() => navigate("/app/settings?tab=audit")}
+              className="text-xs text-slate-500 hover:text-cyan-400 transition-colors"
+            >
+              View all
+            </button>
+          </div>
+          <div className="space-y-1">
+            {recentActivity.map((item: any, i: number) => (
+              <div key={item?.id ?? i} className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-slate-900/40 transition-colors">
+                <div className="w-1.5 h-1.5 rounded-full bg-cyan-500/60 flex-shrink-0" />
+                <div className="flex-1 min-w-0 text-xs text-slate-400 truncate">
+                  {item?.action ?? item?.event ?? "event"}
+                </div>
+                <div className="text-[10px] text-slate-600 flex-shrink-0">
+                  {item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
                 </div>
               </div>
-            </div>
-          </Card>
+            ))}
+          </div>
         </div>
-      </div>
-      
-      {/* Quick Actions for New Features */}
-      <div className="grid md:grid-cols-3 gap-6">
-        <button type="button" onClick={() => navigate("/app/brand")} className="group text-left w-full">
-          <Card className="bg-gradient-to-br from-purple-500/10 to-fuchsia-500/10 border-purple-500/30 backdrop-blur-xl p-6 hover:from-purple-500/20 hover:to-fuchsia-500/20 transition-all">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-fuchsia-500 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-white" />
-              </div>
-              <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">Brand Analytics</h3>
-            <p className="text-sm text-slate-400 mb-4">
-              Cross-platform social metrics — reach, engagement, followers, and rankings across all channels
-            </p>
-            <div className="flex items-center gap-4 text-xs">
-              <div>
-                <div className="text-slate-500">Channels</div>
-                <div className="text-purple-400 font-semibold">15+</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Metrics</div>
-                <div className="text-fuchsia-400 font-semibold">Live</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Rankings</div>
-                <div className="text-purple-400 font-semibold">Per metric</div>
-              </div>
-            </div>
-          </Card>
-        </button>
-
-        <button type="button" onClick={() => navigate("/app/business-manager")} className="group text-left">
-          <Card className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-cyan-500/30 backdrop-blur-xl p-6 hover:from-cyan-500/20 hover:to-blue-500/20 transition-all">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
-                <Briefcase className="w-6 h-6 text-white" />
-              </div>
-              <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">Business Assets</h3>
-            <p className="text-sm text-slate-400 mb-4">
-              Manage your portfolio of businesses and assets (see Business Manager)
-            </p>
-            <div className="flex items-center gap-4 text-xs">
-              <div>
-                <div className="text-slate-500">Businesses</div>
-                <div className="text-slate-400 italic font-semibold">Live data</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Assets</div>
-                <div className="text-slate-400 italic font-semibold">Live data</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Value</div>
-                <div className="text-slate-400 italic font-semibold">Live data</div>
-              </div>
-            </div>
-          </Card>
-        </button>
-        
-        <button onClick={() => navigate("/app/settings")} className="group text-left w-full">
-          <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30 backdrop-blur-xl p-6 hover:from-green-500/20 hover:to-emerald-500/20 transition-all">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                <Gauge className="w-6 h-6 text-white" />
-              </div>
-              <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-green-400 group-hover:translate-x-1 transition-all" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">GPU Acceleration</h3>
-            <p className="text-sm text-slate-400 mb-4">
-              Hardware acceleration active - 16.5x faster AI processing with RTX 4090
-            </p>
-            <div className="flex items-center gap-4 text-xs">
-              <div>
-                <div className="text-slate-500">CPU Usage</div>
-                <div className="text-blue-400 font-semibold">45%</div>
-              </div>
-              <div>
-                <div className="text-slate-500">GPU Usage</div>
-                <div className="text-cyan-400 font-semibold">32%</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Speed Boost</div>
-                <div className="text-green-400 font-semibold">16.5x</div>
-              </div>
-            </div>
-          </Card>
-        </button>
-      </div>
+      )}
     </div>
-  )
-};
+  );
+}
