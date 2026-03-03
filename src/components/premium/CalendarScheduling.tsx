@@ -44,6 +44,17 @@ type Channel = {
   followers?: number;
 };
 
+type PostizPost = {
+  id: string;
+  content: string;
+  publishDate: string | null;
+  image: string[];
+  platform: string;
+  channelName: string;
+  channelPicture: string | null;
+  state: string;
+};
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTime(iso: string | null): string {
@@ -181,6 +192,7 @@ export function CalendarScheduling() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [addChannelOpen, setAddChannelOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("week");
+  const [posts, setPosts] = useState<PostizPost[]>([]);
 
   // Week navigation
   const [baseDate, setBaseDate] = useState(() => new Date());
@@ -247,6 +259,21 @@ export function CalendarScheduling() {
       .catch(() => {});
   }, [org_id]);
 
+  // ── Fetch Postiz posts ───────────────────────────────────────────────────
+  useEffect(() => {
+    const start = new Date(rangeStart);
+    start.setDate(start.getDate() - 1);
+    const end = new Date(rangeEnd);
+    end.setDate(end.getDate() + 1);
+    fetch(
+      `${API_BASE}/v1/postiz/posts?startDate=${start.toISOString()}&endDate=${end.toISOString()}`,
+      { headers: { "x-tenant-id": org_id } },
+    )
+      .then((r) => r.json())
+      .then((d) => { if (d.ok && Array.isArray(d.posts)) setPosts(d.posts); })
+      .catch(() => {});
+  }, [org_id, rangeStart, rangeEnd]);
+
   useEffect(() => { checkStatus(); }, [checkStatus]);
   useEffect(() => { if (connected) fetchEvents(); }, [connected, fetchEvents]);
 
@@ -284,6 +311,22 @@ export function CalendarScheduling() {
 
   function getAllDayEvents(day: Date): CalendarEvent[] {
     return events.filter((e) => e.start && e.isAllDay && isSameDay(getEventDate(e.start), day));
+  }
+
+  function getPostsForCell(day: Date, hour: number): PostizPost[] {
+    return posts.filter((p) => {
+      if (!p.publishDate) return false;
+      const d = new Date(p.publishDate);
+      return isSameDay(new Date(d.getFullYear(), d.getMonth(), d.getDate()), day) && d.getHours() === hour;
+    });
+  }
+
+  function getPostsForDay(day: Date): PostizPost[] {
+    return posts.filter((p) => {
+      if (!p.publishDate) return false;
+      const d = new Date(p.publishDate);
+      return isSameDay(new Date(d.getFullYear(), d.getMonth(), d.getDate()), day);
+    });
   }
 
   const hasAllDay = events.some((e) => e.isAllDay);
@@ -550,10 +593,13 @@ export function CalendarScheduling() {
                 </div>
                 {weekDays.map((day, di) => {
                   const cellEvents = getEventsForCell(day, hour);
+                  const cellPosts = getPostsForCell(day, hour);
                   const isToday_ = isSameDay(day, today);
                   const MAX_SHOW = 3;
-                  const visible = cellEvents.slice(0, MAX_SHOW);
-                  const overflow = cellEvents.length - MAX_SHOW;
+                  const totalItems = cellEvents.length + cellPosts.length;
+                  const visibleEvents = cellEvents.slice(0, MAX_SHOW);
+                  const visiblePosts = cellPosts.slice(0, Math.max(0, MAX_SHOW - visibleEvents.length));
+                  const overflow = totalItems - visibleEvents.length - visiblePosts.length;
                   return (
                     <div
                       key={di}
@@ -561,7 +607,8 @@ export function CalendarScheduling() {
                         isToday_ ? "bg-purple-500/[0.03]" : ""
                       }`}
                     >
-                      {visible.map((evt) => (
+                      {/* Calendar events */}
+                      {visibleEvents.map((evt) => (
                         <div
                           key={evt.id}
                           onClick={() => setSelectedEvent(evt)}
@@ -582,9 +629,60 @@ export function CalendarScheduling() {
                           </div>
                         </div>
                       ))}
+                      {/* Postiz social posts */}
+                      {visiblePosts.map((post) => {
+                        const color = PLATFORM_COLORS[post.platform] ?? "#64748b";
+                        const thumb = post.image?.[0];
+                        return (
+                          <div
+                            key={post.id}
+                            className="mb-0.5 rounded-md overflow-hidden border border-slate-700/50 hover:border-slate-600 transition cursor-pointer group"
+                            style={{ borderTopColor: color, borderTopWidth: 2 }}
+                          >
+                            {thumb ? (
+                              <div className="relative">
+                                <img
+                                  src={thumb}
+                                  alt=""
+                                  className="w-full h-12 object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                <div className="absolute bottom-0.5 left-1.5 right-1 flex items-center gap-1">
+                                  <div
+                                    className="w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0"
+                                    style={{ backgroundColor: color }}
+                                  >
+                                    <PlatformMiniIcon platform={post.platform} />
+                                  </div>
+                                  <span className="text-[9px] text-white/90 truncate font-medium">
+                                    {post.channelName}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="px-1.5 py-1.5 bg-slate-800/40">
+                                <div className="flex items-center gap-1 mb-0.5">
+                                  <div
+                                    className="w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0"
+                                    style={{ backgroundColor: color }}
+                                  >
+                                    <PlatformMiniIcon platform={post.platform} />
+                                  </div>
+                                  <span className="text-[9px] text-slate-400 truncate">
+                                    {post.channelName}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-300 truncate leading-tight">
+                                  {post.content.slice(0, 60)}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                       {overflow > 0 && (
                         <div className="text-[10px] text-purple-400 text-center py-0.5 cursor-pointer hover:text-purple-300">
-                          + Show more ({overflow})
+                          + {overflow} more
                         </div>
                       )}
                     </div>

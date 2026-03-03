@@ -183,6 +183,50 @@ export const postizRoutes: FastifyPluginAsync = async (app) => {
     return { ok: true, metrics, rankings };
   });
 
+  /**
+   * GET /v1/postiz/posts?startDate=...&endDate=...
+   * Returns scheduled/published posts with content, images, and channel info.
+   */
+  app.get("/posts", async (req, reply) => {
+    const q = req.query as any;
+    const endDate = q.endDate ?? new Date().toISOString();
+    const startDate =
+      q.startDate ?? new Date(Date.now() - 30 * 86_400_000).toISOString();
+
+    try {
+      const data = (await postizGet(
+        `/posts?startDate=${startDate}&endDate=${endDate}`,
+      )) as any;
+
+      const posts = Array.isArray(data?.posts)
+        ? data.posts
+        : Array.isArray(data)
+          ? data
+          : [];
+
+      // Normalize into a clean shape
+      const normalized = posts.map((p: any) => ({
+        id: p.id ?? p.postId ?? "",
+        content: p.content ?? "",
+        publishDate: p.publishDate ?? p.releaseURL ?? null,
+        image: Array.isArray(p.image) ? p.image : p.image ? [p.image] : [],
+        platform:
+          (
+            p.integration?.providerIdentifier ??
+            p.providerIdentifier ??
+            ""
+          ).toLowerCase(),
+        channelName: p.integration?.name ?? p.channelName ?? "",
+        channelPicture: p.integration?.picture ?? null,
+        state: p.state ?? p.status ?? "unknown",
+      }));
+
+      return { ok: true, posts: normalized };
+    } catch (e: any) {
+      return reply.code(502).send({ ok: false, error: e.message });
+    }
+  });
+
   app.get<{ Params: { integrationId: string } }>(
     "/analytics/:integrationId",
     async (req, reply) => {
