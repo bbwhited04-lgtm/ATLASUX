@@ -11,6 +11,7 @@ import {
   Plus,
   Link2,
   ExternalLink,
+  GripVertical,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE } from "@/lib/api";
@@ -254,24 +255,25 @@ function PlatformMiniIcon({ platform }: { platform: string }) {
 
 // ── Channel Avatar with platform badge ──────────────────────────────────────
 
-function ChannelAvatar({ channel }: { channel: Channel }) {
+function ChannelAvatar({ channel, size = 36 }: { channel: Channel; size?: number }) {
   const bg = PLATFORM_COLORS[channel.platform] ?? "#64748b";
+  const px = `${size}px`;
   return (
-    <div className="relative w-8 h-8 flex-shrink-0">
+    <div className="relative flex-shrink-0" style={{ width: px, height: px }}>
       {channel.picture ? (
         <img
           src={channel.picture}
           alt={channel.name}
-          className="w-8 h-8 rounded-lg object-cover"
+          className="rounded-lg object-cover w-full h-full"
         />
       ) : (
-        <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-300">
+        <div className="w-full h-full rounded-lg bg-slate-700 flex items-center justify-center text-sm font-semibold text-slate-300">
           {channel.name.charAt(0).toUpperCase()}
         </div>
       )}
       {/* Platform badge */}
       <div
-        className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center ring-1 ring-slate-950"
+        className="absolute -bottom-1 -right-1 w-[18px] h-[18px] rounded-full flex items-center justify-center border-2 border-slate-950"
         style={{ backgroundColor: bg }}
       >
         <PlatformMiniIcon platform={channel.platform} />
@@ -398,38 +400,44 @@ export function BrandAnalytics() {
           {/* All Channels */}
           <button
             onClick={() => setSelectedChannel(null)}
-            className={`w-full text-left px-4 py-2.5 flex items-center gap-2 text-sm transition ${
+            className={`w-full text-left mx-2 my-1 px-3 py-2.5 flex items-center gap-3 text-sm rounded-lg transition-all ${
               selectedChannel === null
-                ? "bg-cyan-500/10 text-white font-semibold"
-                : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+                ? "bg-cyan-500/10 text-white font-semibold border border-cyan-500/20"
+                : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
             }`}
+            style={{ width: "calc(100% - 16px)" }}
           >
-            <Star className="w-3.5 h-3.5 text-cyan-400" />
-            All Channels
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
+              <Star className="w-4 h-4 text-cyan-400" />
+            </div>
+            <span className="font-medium">All Channels</span>
           </button>
 
           {/* Individual channels */}
-          {channels.map((ch) => (
-            <button
-              key={ch.id}
-              onClick={() => setSelectedChannel(ch.id)}
-              className={`w-full text-left px-4 py-2.5 flex items-center gap-3 text-sm transition ${
-                selectedChannel === ch.id
-                  ? "bg-cyan-500/10 text-white font-semibold"
-                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
-              }`}
-            >
-              <ChannelAvatar channel={ch} />
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="truncate">{ch.name}</span>
-                {ch.followers != null && (
-                  <span className="text-[10px] text-slate-500 leading-tight">
-                    {formatNumber(ch.followers)} followers
-                  </span>
-                )}
-              </div>
-            </button>
-          ))}
+          <div className="px-2 py-1 space-y-0.5">
+            {channels.map((ch) => (
+              <button
+                key={ch.id}
+                onClick={() => setSelectedChannel(ch.id)}
+                className={`w-full text-left px-3 py-2.5 flex items-center gap-3 text-sm rounded-lg transition-all group ${
+                  selectedChannel === ch.id
+                    ? "bg-cyan-500/10 text-white font-semibold border border-cyan-500/20"
+                    : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+                }`}
+              >
+                <ChannelAvatar channel={ch} />
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="truncate font-medium">{ch.name}</span>
+                  {ch.followers != null && (
+                    <span className="text-[10px] text-slate-500 leading-tight">
+                      {formatNumber(ch.followers)} followers
+                    </span>
+                  )}
+                </div>
+                <GripVertical className="w-4 h-4 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 cursor-grab" />
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
