@@ -188,7 +188,94 @@ function MetricCard({
   );
 }
 
-// ── Platform badge (small colored pill) ──────────────────────────────────────
+// ── Platform mini-icon SVGs ──────────────────────────────────────────────────
+
+function PlatformMiniIcon({ platform }: { platform: string }) {
+  const size = 10;
+  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "white" } as const;
+  switch (platform) {
+    case "facebook":
+      return (
+        <svg {...common}>
+          <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+        </svg>
+      );
+    case "instagram":
+      return (
+        <svg {...common} fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="2" width="20" height="20" rx="5" />
+          <circle cx="12" cy="12" r="5" />
+          <circle cx="17.5" cy="6.5" r="1.5" fill="white" stroke="none" />
+        </svg>
+      );
+    case "youtube":
+      return (
+        <svg {...common}>
+          <path d="M23 7s-.3-2-1.2-2.8C20.7 3.2 19.5 3 12 3S3.3 3.2 2.2 4.2C1.3 5 1 7 1 7s-.3 2-.3 4v2c0 2 .3 4 .3 4s.3 2 1.2 2.8c1.1 1 2.3 1.2 9.8 1.2s8.7-.2 9.8-1.2c.9-.8 1.2-2.8 1.2-2.8s.3-2 .3-4v-2c0-2-.3-4-.3-4zM9.5 16V8l6.5 4-6.5 4z" />
+        </svg>
+      );
+    case "x":
+      return (
+        <svg {...common}>
+          <path d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.63 7.58H.48l8.6-9.83L0 1.15h7.6l5.24 6.93 6.06-6.93zm-1.29 19.5h2.04L6.48 3.24H4.3l13.31 17.41z" />
+        </svg>
+      );
+    case "linkedin":
+      return (
+        <svg {...common}>
+          <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.95v5.66H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 110-4.13 2.06 2.06 0 010 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.23 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.46c.98 0 1.77-.77 1.77-1.72V1.72C24 .77 23.21 0 22.23 0z" />
+        </svg>
+      );
+    case "tiktok":
+      return (
+        <svg {...common}>
+          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.4a6.34 6.34 0 0010.82 4.48c1.7-1.7 2.65-4 2.65-6.4V8.78a8.18 8.18 0 004.77 1.53V6.86a4.83 4.83 0 01-1.8-.17z" />
+        </svg>
+      );
+    case "threads":
+      return (
+        <svg {...common}>
+          <path d="M16.79 11.48c-.08-.04-.15-.07-.23-.1a7.3 7.3 0 00-2.2-4.1c-1.15-1.06-2.62-1.6-4.22-1.53-2.27.1-3.95 1.18-4.87 3.13l2.5 1.32c.54-1.14 1.48-1.7 2.8-1.67.92.02 1.65.32 2.17.88.38.4.63.94.75 1.6a10.38 10.38 0 00-2.94-.14c-2.93.29-4.82 1.98-4.66 4.17.08 1.1.62 2.05 1.52 2.68.77.54 1.76.8 2.79.74 1.36-.08 2.43-.56 3.18-1.42.57-.65.93-1.48 1.1-2.52.66.4 1.15.93 1.4 1.59.44 1.14.46 3.01-1.1 4.57-1.36 1.37-3 1.96-5.48 1.98-2.76-.03-4.86-.9-6.22-2.6-1.27-1.57-1.93-3.83-1.97-6.7.04-2.87.7-5.13 1.97-6.7C4.44 4.9 6.54 4.03 9.3 4c2.79.03 4.92.92 6.32 2.63a9.84 9.84 0 011.75 3.7l2.6-.69a12.3 12.3 0 00-2.27-4.78C15.84 2.6 13.05 1.45 9.32 1.42c-3.57.03-6.32 1.3-8.15 3.76C-.56 7.5-1.33 10.35-.08 13.6c.06 2.87.82 5.13 2.26 6.71 1.84 2.46 4.59 3.73 8.16 3.76 2.89-.02 5.04-.8 6.8-2.57 2.44-2.44 2.35-5.48 1.6-7.47a5.89 5.89 0 00-2.95-2.55zm-5.07 5.27c-1.14.07-2.33-.45-2.4-1.45-.05-.73.52-1.55 2.2-1.72.38-.04.76-.05 1.12-.03.3.01.6.04.88.08-.2 2.3-1.15 3.07-1.8 3.12z" />
+        </svg>
+      );
+    default:
+      return (
+        <span className="text-[7px] font-bold text-white leading-none">
+          {platform.charAt(0).toUpperCase()}
+        </span>
+      );
+  }
+}
+
+// ── Channel Avatar with platform badge ──────────────────────────────────────
+
+function ChannelAvatar({ channel }: { channel: Channel }) {
+  const bg = PLATFORM_COLORS[channel.platform] ?? "#64748b";
+  return (
+    <div className="relative w-8 h-8 flex-shrink-0">
+      {channel.picture ? (
+        <img
+          src={channel.picture}
+          alt={channel.name}
+          className="w-8 h-8 rounded-lg object-cover"
+        />
+      ) : (
+        <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-300">
+          {channel.name.charAt(0).toUpperCase()}
+        </div>
+      )}
+      {/* Platform badge */}
+      <div
+        className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center ring-1 ring-slate-950"
+        style={{ backgroundColor: bg }}
+      >
+        <PlatformMiniIcon platform={channel.platform} />
+      </div>
+    </div>
+  );
+}
+
+// ── Platform badge (small colored pill — used in rankings) ───────────────────
 
 function PlatformBadge({ platform }: { platform: string }) {
   const bg = PLATFORM_COLORS[platform] ?? "#64748b";
@@ -264,7 +351,7 @@ export function BrandAnalytics() {
 
       {/* ── Sidebar ──────────────────────────────────────────────────── */}
       {sidebarOpen && (
-        <div className="w-56 flex-shrink-0 border-r border-slate-700/50 bg-slate-950/30 overflow-y-auto">
+        <div className="w-60 flex-shrink-0 border-r border-slate-700/50 bg-slate-950/30 overflow-y-auto">
           <div className="flex items-center justify-between px-4 pt-4 pb-2">
             <h3 className="text-sm font-semibold text-slate-300">Channels</h3>
             <button
@@ -293,19 +380,21 @@ export function BrandAnalytics() {
             <button
               key={ch.id}
               onClick={() => setSelectedChannel(ch.id)}
-              className={`w-full text-left px-4 py-2 flex items-center gap-2 text-sm transition ${
+              className={`w-full text-left px-4 py-2.5 flex items-center gap-3 text-sm transition ${
                 selectedChannel === ch.id
                   ? "bg-cyan-500/10 text-white font-semibold"
                   : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
-              <PlatformBadge platform={ch.platform} />
-              <span className="truncate flex-1">{ch.name}</span>
-              {ch.followers != null && (
-                <span className="text-[10px] text-slate-500">
-                  {formatNumber(ch.followers)}
-                </span>
-              )}
+              <ChannelAvatar channel={ch} />
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="truncate">{ch.name}</span>
+                {ch.followers != null && (
+                  <span className="text-[10px] text-slate-500 leading-tight">
+                    {formatNumber(ch.followers)} followers
+                  </span>
+                )}
+              </div>
             </button>
           ))}
         </div>
