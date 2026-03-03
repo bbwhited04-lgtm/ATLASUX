@@ -201,8 +201,10 @@ const EnvSchema = z.object({
   YOU_COM_API_KEY: z.string().optional(),
   TAVILY_API_KEY:  z.string().optional(),
 
-  // NewsData.io — structured breaking news API (used by WF-035 Hourly Signal Tripwire)
-  NEWSDATA_API_KEY: z.string().optional(),
+  // News APIs — used by WF-035 Hourly Signal Tripwire
+  NEWSDATA_API_KEY:   z.string().optional(), // NewsData.io
+  NYT_API_KEY:        z.string().optional(), // New York Times Article Search + Top Stories
+  MEDIASTACK_API_KEY: z.string().optional(), // MediaStack global news
 });
 
 export type Env = z.infer<typeof EnvSchema>;

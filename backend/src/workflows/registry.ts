@@ -4,7 +4,7 @@ import { runLLM, type AuditHook } from "../core/engine/brainllm.js";
 import { agentRegistry } from "../agents/registry.js";
 import { getSkill } from "../core/kb/skillLoader.js";
 import { appendMemory } from "../core/agent/agentMemory.js";
-import { searchWeb, searchReddit, searchNewsData } from "../lib/webSearch.js";
+import { searchWeb, searchReddit, searchNewsData, searchNYT, fetchNYTTopStories, searchMediaStack } from "../lib/webSearch.js";
 import { searchRecentTweets } from "../services/x.js";
 import { executeBrowserSession, resumeBrowserSession } from "../tools/browser/browserService.js";
 import { validateSessionConfig, createBrowserSessionMemo } from "../tools/browser/browserGovernance.js";
@@ -3006,6 +3006,71 @@ handlers["WF-035"] = async (ctx) => {
         label: "NewsData.io (verified news)",
         data: allArticles.map((a, i) => `${i + 1}. [${a.source}] ${a.title}\n   ${a.snippet.slice(0, 150)}\n   ${a.url}`).join("\n\n"),
         clips: allArticles,
+      });
+    }
+  } catch { /* non-fatal */ }
+
+  // New York Times — Article Search (AI/security/tech) + Top Stories
+  try {
+    const todayForNYT = today.replace(/-/g, "");
+    const nytSearch = await searchNYT("artificial intelligence security jailbreak", {
+      beginDate: todayForNYT,
+      sort: "newest",
+      section: "Technology",
+    });
+    if (nytSearch.ok && nytSearch.articles.length) {
+      sources.push({
+        label: "New York Times (Article Search)",
+        data: nytSearch.articles.map((a, i) => `${i + 1}. [NYT] ${a.headline}\n   ${a.snippet.slice(0, 150)}\n   ${a.webUrl}`).join("\n\n"),
+        clips: nytSearch.articles.map(a => ({
+          title: a.headline,
+          url: a.webUrl,
+          snippet: a.leadParagraph || a.snippet,
+          source: "The New York Times",
+        })),
+      });
+    }
+  } catch { /* non-fatal */ }
+
+  try {
+    const nytTop = await fetchNYTTopStories("technology");
+    if (nytTop.ok && nytTop.articles.length) {
+      // Only add if we didn't already get results from search
+      const topRelevant = nytTop.articles.filter(a =>
+        /ai |artificial intelligence|security|jailbreak|hack|cyber|regulation/i.test(a.title + " " + a.abstract)
+      );
+      if (topRelevant.length) {
+        sources.push({
+          label: "NYT Top Stories (Technology)",
+          data: topRelevant.map((a, i) => `${i + 1}. ${a.title}\n   ${a.abstract.slice(0, 150)}\n   ${a.url}`).join("\n\n"),
+          clips: topRelevant.map(a => ({
+            title: a.title,
+            url: a.url,
+            snippet: a.abstract,
+            source: "NYT Top Stories",
+          })),
+        });
+      }
+    }
+  } catch { /* non-fatal */ }
+
+  // MediaStack — global news aggregator
+  try {
+    const msResult = await searchMediaStack("AI security jailbreak artificial intelligence vulnerability", {
+      categories: "technology",
+      countries: "us,gb",
+      limit: 10,
+    });
+    if (msResult.ok && msResult.articles.length) {
+      sources.push({
+        label: "MediaStack (global news)",
+        data: msResult.articles.map((a, i) => `${i + 1}. [${a.source}] ${a.title}\n   ${a.description.slice(0, 150)}\n   ${a.url}`).join("\n\n"),
+        clips: msResult.articles.map(a => ({
+          title: a.title,
+          url: a.url,
+          snippet: a.description,
+          source: a.source || "MediaStack",
+        })),
       });
     }
   } catch { /* non-fatal */ }

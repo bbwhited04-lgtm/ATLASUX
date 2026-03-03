@@ -314,3 +314,211 @@ export async function searchReddit(
     return { ok: false, posts: [], error: err?.message ?? String(err) };
   }
 }
+
+// ── New York Times API — premium verified journalism ─────────────────────────
+
+export type NYTArticle = {
+  id:           string;
+  headline:     string;
+  snippet:      string;
+  leadParagraph: string;
+  abstract:     string;
+  webUrl:       string;
+  source:       string;
+  section:      string;
+  pubDate:      string;
+  byline:       string;
+  keywords:     string[];
+  wordCount:    number;
+};
+
+export type NYTSearchResponse = {
+  ok:       boolean;
+  articles: NYTArticle[];
+  total:    number;
+  error?:   string;
+};
+
+/**
+ * Search NYT Article Search API v2 for articles matching a query.
+ * Returns up to 10 articles per call (NYT API limit).
+ */
+export async function searchNYT(
+  query: string,
+  opts: {
+    beginDate?: string; // YYYYMMDD
+    endDate?: string;   // YYYYMMDD
+    sort?: "newest" | "oldest" | "relevance";
+    section?: string;   // e.g. "Technology", "Business"
+    page?: number;
+  } = {},
+): Promise<NYTSearchResponse> {
+  const apiKey = process.env.NYT_API_KEY?.trim();
+  if (!apiKey) return { ok: false, articles: [], total: 0, error: "NYT_API_KEY not configured" };
+
+  try {
+    const params = new URLSearchParams({
+      "api-key": apiKey,
+      q: query,
+      sort: opts.sort ?? "newest",
+    });
+    if (opts.beginDate) params.set("begin_date", opts.beginDate);
+    if (opts.endDate) params.set("end_date", opts.endDate);
+    if (opts.page !== undefined) params.set("page", String(opts.page));
+    if (opts.section) params.set("fq", `section_name:("${opts.section}")`);
+
+    const res = await fetch(`https://api.nytimes.com/svc/search/v2/articlesearch.json?${params}`, {
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      return { ok: false, articles: [], total: 0, error: `NYT ${res.status}: ${text.slice(0, 200)}` };
+    }
+
+    const json = (await res.json()) as any;
+    const docs = json?.response?.docs ?? [];
+    const total = json?.response?.meta?.hits ?? 0;
+
+    const articles: NYTArticle[] = docs.map((d: any) => ({
+      id:            d._id ?? "",
+      headline:      d.headline?.main ?? "",
+      snippet:       d.snippet ?? "",
+      leadParagraph: d.lead_paragraph ?? "",
+      abstract:      d.abstract ?? "",
+      webUrl:        d.web_url ?? "",
+      source:        d.source ?? "The New York Times",
+      section:       d.section_name ?? "",
+      pubDate:       d.pub_date ?? "",
+      byline:        d.byline?.original ?? "",
+      keywords:      (d.keywords ?? []).map((k: any) => k.value).filter(Boolean),
+      wordCount:     d.word_count ?? 0,
+    }));
+
+    return { ok: true, articles, total };
+  } catch (err: any) {
+    return { ok: false, articles: [], total: 0, error: err?.message ?? String(err) };
+  }
+}
+
+/**
+ * Fetch NYT Top Stories for a given section.
+ * Sections: home, arts, automobiles, books/review, business, fashion,
+ * food, health, insider, magazine, movies, nyregion, obituaries, opinion,
+ * politics, realestate, science, sports, sundayreview, technology,
+ * theater, t-magazine, travel, upshot, us, world
+ */
+export async function fetchNYTTopStories(
+  section = "technology",
+): Promise<{ ok: boolean; articles: Array<{ title: string; abstract: string; url: string; section: string; byline: string; publishedDate: string }>; error?: string }> {
+  const apiKey = process.env.NYT_API_KEY?.trim();
+  if (!apiKey) return { ok: false, articles: [], error: "NYT_API_KEY not configured" };
+
+  try {
+    const res = await fetch(
+      `https://api.nytimes.com/svc/topstories/v2/${encodeURIComponent(section)}.json?api-key=${apiKey}`,
+      { signal: AbortSignal.timeout(15_000) },
+    );
+
+    if (!res.ok) {
+      return { ok: false, articles: [], error: `NYT Top Stories ${res.status}` };
+    }
+
+    const json = (await res.json()) as any;
+    const results = (json?.results ?? []).map((r: any) => ({
+      title:         r.title ?? "",
+      abstract:      r.abstract ?? "",
+      url:           r.url ?? "",
+      section:       r.section ?? section,
+      byline:        r.byline ?? "",
+      publishedDate: r.published_date ?? "",
+    }));
+
+    return { ok: true, articles: results };
+  } catch (err: any) {
+    return { ok: false, articles: [], error: err?.message ?? String(err) };
+  }
+}
+
+// ── MediaStack API — global news aggregator ──────────────────────────────────
+
+export type MediaStackArticle = {
+  title:       string;
+  description: string;
+  url:         string;
+  source:      string;
+  author:      string;
+  image:       string | null;
+  category:    string;
+  language:    string;
+  country:     string;
+  publishedAt: string;
+};
+
+export type MediaStackResponse = {
+  ok:       boolean;
+  articles: MediaStackArticle[];
+  total:    number;
+  error?:   string;
+};
+
+/**
+ * Search MediaStack for live news articles.
+ */
+export async function searchMediaStack(
+  keywords: string,
+  opts: {
+    categories?: string; // e.g. "technology,business"
+    countries?: string;  // e.g. "us,gb"
+    languages?: string;  // e.g. "en"
+    sort?: "published_desc" | "published_asc" | "popularity";
+    limit?: number;
+  } = {},
+): Promise<MediaStackResponse> {
+  const apiKey = process.env.MEDIASTACK_API_KEY?.trim();
+  if (!apiKey) return { ok: false, articles: [], total: 0, error: "MEDIASTACK_API_KEY not configured" };
+
+  try {
+    const params = new URLSearchParams({
+      access_key: apiKey,
+      keywords,
+      languages: opts.languages ?? "en",
+      sort: opts.sort ?? "published_desc",
+      limit: String(opts.limit ?? 10),
+    });
+    if (opts.categories) params.set("categories", opts.categories);
+    if (opts.countries) params.set("countries", opts.countries);
+
+    // MediaStack free tier requires http (not https)
+    const res = await fetch(`http://api.mediastack.com/v1/news?${params}`, {
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!res.ok) {
+      return { ok: false, articles: [], total: 0, error: `MediaStack ${res.status}` };
+    }
+
+    const json = (await res.json()) as any;
+    if (json?.error) {
+      return { ok: false, articles: [], total: 0, error: `MediaStack: ${json.error.message ?? json.error.code}` };
+    }
+
+    const total = json?.pagination?.total ?? 0;
+    const articles: MediaStackArticle[] = (json?.data ?? []).map((a: any) => ({
+      title:       a.title ?? "",
+      description: a.description ?? "",
+      url:         a.url ?? "",
+      source:      a.source ?? "",
+      author:      a.author ?? "",
+      image:       a.image ?? null,
+      category:    a.category ?? "",
+      language:    a.language ?? "",
+      country:     a.country ?? "",
+      publishedAt: a.published_at ?? "",
+    }));
+
+    return { ok: true, articles, total };
+  } catch (err: any) {
+    return { ok: false, articles: [], total: 0, error: err?.message ?? String(err) };
+  }
+}
