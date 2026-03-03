@@ -3,8 +3,9 @@ import {
   Clock, Users, MapPin, Video,
   AlertCircle, RefreshCw, Loader2,
   ChevronLeft, ChevronRight, Star,
-  ExternalLink, X,
+  ExternalLink, X, Plus, Link2,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '@/lib/api';
 import { getOrgUser } from '@/lib/org';
 
@@ -165,6 +166,7 @@ function ChannelAvatar({ channel }: { channel: Channel }) {
 
 export function CalendarScheduling() {
   const BACKEND_URL = API_BASE;
+  const navigate = useNavigate();
   const { org_id } = useMemo(() => getOrgUser(), []);
 
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -296,6 +298,32 @@ export function CalendarScheduling() {
               className="text-slate-500 hover:text-slate-300"
             >
               <ChevronLeft className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Action buttons */}
+          <div className="px-4 pb-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate("/app/settings?tab=integrations")}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm text-slate-300 font-medium transition-colors"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                Add Channel
+              </button>
+              <button
+                onClick={() => navigate("/app/settings?tab=integrations")}
+                className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <button
+              onClick={() => navigate("/app/business-manager?tab=blog")}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-sm text-white font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Create Post
             </button>
           </div>
 
