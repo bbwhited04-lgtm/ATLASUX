@@ -192,6 +192,96 @@ export async function fetchUrlContent(
 
 // ── Reddit search ────────────────────────────────────────────────────────────
 
+// ── NewsData.io — structured breaking news API ──────────────────────────────
+
+export type NewsDataArticle = {
+  article_id:  string;
+  title:       string;
+  description: string;
+  content:     string;
+  link:        string;
+  source_id:   string;
+  source_name: string;
+  pubDate:     string;
+  category:    string[];
+  country:     string[];
+  language:    string;
+  image_url:   string | null;
+  sentiment:   string | null;
+};
+
+export type NewsDataResponse = {
+  ok:       boolean;
+  articles: NewsDataArticle[];
+  error?:   string;
+};
+
+/**
+ * Search NewsData.io for breaking news articles.
+ * Supports keyword search, category filtering, and timeframe limiting.
+ */
+export async function searchNewsData(
+  query: string,
+  opts: {
+    category?: string;
+    timeframe?: number; // hours (1-48)
+    language?: string;
+    size?: number;
+    removeDuplicates?: boolean;
+    priorityDomain?: "top" | "medium" | "low";
+  } = {},
+): Promise<NewsDataResponse> {
+  const apiKey = process.env.NEWSDATA_API_KEY?.trim();
+  if (!apiKey) return { ok: false, articles: [], error: "NEWSDATA_API_KEY not configured" };
+
+  try {
+    const params = new URLSearchParams({
+      apikey: apiKey,
+      q: query,
+      language: opts.language ?? "en",
+      removeduplicate: opts.removeDuplicates !== false ? "1" : "0",
+    });
+    if (opts.category) params.set("category", opts.category);
+    if (opts.timeframe) params.set("timeframe", String(opts.timeframe));
+    if (opts.size) params.set("size", String(Math.min(opts.size, 50)));
+    if (opts.priorityDomain) params.set("prioritydomain", opts.priorityDomain);
+
+    const res = await fetch(`https://newsdata.io/api/1/latest?${params}`, {
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      return { ok: false, articles: [], error: `NewsData ${res.status}: ${text.slice(0, 200)}` };
+    }
+
+    const json = (await res.json()) as any;
+    if (json?.status !== "success") {
+      return { ok: false, articles: [], error: json?.results?.message ?? "Unknown NewsData error" };
+    }
+
+    const articles: NewsDataArticle[] = (json.results ?? []).map((a: any) => ({
+      article_id:  a.article_id ?? "",
+      title:       a.title ?? "",
+      description: a.description ?? "",
+      content:     (a.content ?? "").slice(0, 1000),
+      link:        a.link ?? "",
+      source_id:   a.source_id ?? "",
+      source_name: a.source_name ?? "",
+      pubDate:     a.pubDate ?? "",
+      category:    Array.isArray(a.category) ? a.category : [],
+      country:     Array.isArray(a.country) ? a.country : [],
+      language:    a.language ?? "",
+      image_url:   a.image_url ?? null,
+      sentiment:   a.sentiment ?? null,
+    }));
+
+    return { ok: true, articles };
+  } catch (err: any) {
+    return { ok: false, articles: [], error: err?.message ?? String(err) };
+  }
+}
+
 /**
  * Search Reddit's public JSON API (no auth needed).
  */

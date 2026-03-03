@@ -4,7 +4,7 @@ import { runLLM, type AuditHook } from "../core/engine/brainllm.js";
 import { agentRegistry } from "../agents/registry.js";
 import { getSkill } from "../core/kb/skillLoader.js";
 import { appendMemory } from "../core/agent/agentMemory.js";
-import { searchWeb, searchReddit } from "../lib/webSearch.js";
+import { searchWeb, searchReddit, searchNewsData } from "../lib/webSearch.js";
 import { searchRecentTweets } from "../services/x.js";
 import { executeBrowserSession, resumeBrowserSession } from "../tools/browser/browserService.js";
 import { validateSessionConfig, createBrowserSessionMemo } from "../tools/browser/browserGovernance.js";
@@ -2971,25 +2971,70 @@ handlers["WF-035"] = async (ctx) => {
   const today = new Date().toISOString().slice(0, 10);
   const hour = new Date().getUTCHours();
 
-  // 1. Quick multi-source scan — HN, Reddit security/AI subs, X, general web
-  const sources: Array<{ label: string; data: string }> = [];
+  // 1. Multi-source scan — NewsData.io, HN, Reddit, X, web search
+  const sources: Array<{ label: string; data: string; clips: Array<{ title: string; url: string; snippet: string; source: string }> }> = [];
+
+  // NewsData.io — primary breaking news source (verified journalism)
+  try {
+    const newsQueries = [
+      { q: "AI jailbreak OR AI security OR AI vulnerability OR prompt injection", cat: "technology" },
+      { q: "TikTok ban OR social media platform outage OR platform shutdown", cat: "technology" },
+      { q: "AI regulation OR AI executive order OR EU AI Act", cat: "politics" },
+    ];
+    const allArticles: Array<{ title: string; url: string; snippet: string; source: string }> = [];
+    for (const nq of newsQueries) {
+      const newsResult = await searchNewsData(nq.q, {
+        category: nq.cat,
+        timeframe: 2, // last 2 hours only
+        size: 10,
+        priorityDomain: "top",
+        removeDuplicates: true,
+      });
+      if (newsResult.ok) {
+        for (const a of newsResult.articles) {
+          allArticles.push({
+            title: a.title,
+            url: a.link,
+            snippet: a.description || a.content.slice(0, 300),
+            source: a.source_name,
+          });
+        }
+      }
+    }
+    if (allArticles.length) {
+      sources.push({
+        label: "NewsData.io (verified news)",
+        data: allArticles.map((a, i) => `${i + 1}. [${a.source}] ${a.title}\n   ${a.snippet.slice(0, 150)}\n   ${a.url}`).join("\n\n"),
+        clips: allArticles,
+      });
+    }
+  } catch { /* non-fatal */ }
 
   // Hacker News frontpage
   try {
     const hnRes = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json");
     if (hnRes.ok) {
       const ids = (await hnRes.json() as number[]).slice(0, 20);
-      const stories: string[] = [];
+      const stories: Array<{ title: string; url: string; snippet: string; source: string }> = [];
       for (const id of ids.slice(0, 15)) {
         try {
           const sRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
           if (sRes.ok) {
             const s = await sRes.json() as { title?: string; url?: string; score?: number };
-            if (s?.title) stories.push(`[${s.score ?? 0}pts] ${s.title} ${s.url ?? ""}`);
+            if (s?.title) stories.push({
+              title: s.title,
+              url: s.url ?? `https://news.ycombinator.com/item?id=${id}`,
+              snippet: `${s.score ?? 0} points on Hacker News`,
+              source: "Hacker News",
+            });
           }
         } catch { /* skip individual story */ }
       }
-      if (stories.length) sources.push({ label: "Hacker News (top 15)", data: stories.join("\n") });
+      if (stories.length) sources.push({
+        label: "Hacker News (top 15)",
+        data: stories.map(s => `[${s.snippet}] ${s.title} ${s.url}`).join("\n"),
+        clips: stories,
+      });
     }
   } catch { /* non-fatal */ }
 
@@ -3000,6 +3045,12 @@ handlers["WF-035"] = async (ctx) => {
       sources.push({
         label: "Reddit (AI + security)",
         data: redditResult.posts.map(p => `[${p.score ?? 0}] r/${p.subreddit}: ${p.title}`).join("\n"),
+        clips: redditResult.posts.map(p => ({
+          title: p.title,
+          url: p.permalink,
+          snippet: p.selftext.slice(0, 200) || `Score: ${p.score}, by ${p.author}`,
+          source: `Reddit r/${p.subreddit}`,
+        })),
       });
     }
   } catch { /* non-fatal */ }
@@ -3011,6 +3062,12 @@ handlers["WF-035"] = async (ctx) => {
       sources.push({
         label: "Web (AI security news)",
         data: webResult.results.map((r, i) => `${i + 1}. ${r.title} — ${r.snippet}`).join("\n"),
+        clips: webResult.results.map(r => ({
+          title: r.title,
+          url: r.url,
+          snippet: r.snippet,
+          source: r.source,
+        })),
       });
     }
   } catch { /* non-fatal */ }
@@ -3022,6 +3079,12 @@ handlers["WF-035"] = async (ctx) => {
       sources.push({
         label: "X/Twitter",
         data: tweets.map(t => t.text?.slice(0, 140) ?? "").join("\n"),
+        clips: tweets.map(t => ({
+          title: t.text?.slice(0, 80) ?? "",
+          url: `https://x.com/i/status/${t.id}`,
+          snippet: t.text ?? "",
+          source: "X/Twitter",
+        })),
       });
     }
   } catch { /* non-fatal */ }
@@ -3042,6 +3105,8 @@ handlers["WF-035"] = async (ctx) => {
       "Atlas UX is an AI employee platform. Its core differentiator is SECURITY-FIRST design with a truth layer and governance constitution.",
       "",
       "Your job: scan these headlines/posts and determine if ANY signal warrants an immediate alert.",
+      "IMPORTANT: Cross-reference signals across sources. A story appearing on NewsData AND Hacker News AND Reddit = VERIFIED.",
+      "A story appearing on only one source = check carefully before escalating.",
       "",
       "HIGH-relevance signals (ESCALATE IMMEDIATELY):",
       "- AI jailbreaks, model exploits, prompt injection attacks (validates our security positioning)",
@@ -3049,6 +3114,7 @@ handlers["WF-035"] = async (ctx) => {
       "- Competitor launches or major moves in AI employee/automation space",
       "- Regulatory actions on AI (executive orders, EU AI Act enforcement, SEC actions)",
       "- Security breaches at major AI companies (OpenAI, Google, Anthropic, etc.)",
+      "- Trending mentions of Atlas UX, Dead App Corp, or direct competitors",
       "",
       "MEDIUM-relevance signals (include in daily report, don't escalate):",
       "- General AI industry news, funding rounds, product launches",
@@ -3060,12 +3126,15 @@ handlers["WF-035"] = async (ctx) => {
       "RESPOND IN THIS EXACT FORMAT:",
       "VERDICT: ESCALATE | SILENT",
       "SIGNALS: (number of high-relevance signals found)",
+      "VERIFIED: YES (seen in 2+ sources) | SINGLE-SOURCE",
       "---",
       "If ESCALATE, for each high signal:",
       "SIGNAL: [title/summary]",
-      "SOURCE: [where you found it]",
+      "SOURCE: [primary source where you found it]",
+      "CORROBORATED: [other sources that mention it, or 'single source only']",
       "WHY: [why it matters to Atlas UX in 1 sentence]",
       "ANGLE: [how Atlas UX should capitalize in 1 sentence]",
+      "ROUTE_TO: [which agent(s) should act — e.g. 'Kelly (X), Link (LinkedIn), Donna (Reddit)' or 'Benny (IP), Jenny (Legal)']",
       "---",
       "If SILENT: just say 'No high-relevance signals detected this hour.'",
     ].join("\n"),
@@ -3078,38 +3147,98 @@ handlers["WF-035"] = async (ctx) => {
   const shouldEscalate = /VERDICT:\s*ESCALATE/i.test(triageResult);
 
   if (!shouldEscalate) {
-    // Silent — log and move on
     await writeStepAudit(ctx, "WF-035.silent", `Hour ${hour}: No high signals — silent`);
     return { ok: true, message: `Tripwire silent (hour ${hour})`, output: { signalsFound: 0, hour, verdict: "SILENT" } };
   }
 
-  // 4. ESCALATE — send alert to Atlas + Billy immediately
+  // 4. Clip & save — store signal evidence in KB for agent retrieval
+  const allClips = sources.flatMap(s => s.clips);
+  let savedClips = 0;
+  const clipSlugBase = `tripwire-${today}-${String(hour).padStart(2, "0")}`;
+  for (let i = 0; i < Math.min(allClips.length, 20); i++) {
+    const clip = allClips[i];
+    try {
+      await prisma.kbDocument.create({
+        data: {
+          tenantId: ctx.tenantId,
+          title: `[SIGNAL ${today}] ${clip.title.slice(0, 200)}`,
+          slug: `${clipSlugBase}-${i}`,
+          body: [
+            `**Source:** ${clip.source}`,
+            `**URL:** ${clip.url}`,
+            `**Captured:** ${new Date().toISOString()}`,
+            `**Workflow:** WF-035 Hourly Signal Tripwire`,
+            "",
+            clip.snippet,
+          ].join("\n"),
+          status: "published",
+          createdBy: ctx.requestedBy,
+        },
+      });
+      savedClips++;
+    } catch { /* skip duplicates or failures */ }
+  }
+
+  await writeStepAudit(ctx, "WF-035.clipped", `${savedClips} clips saved to KB for agent retrieval`);
+
+  // 5. ESCALATE — send alert to Atlas + Billy + route to relevant agents
   const atlasEmail = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
   const billyEmail = process.env.OWNER_EMAIL?.trim() ?? "billy@deadapp.info";
-  const alertSubject = `🚨 [BREAKING SIGNAL] ${today} ${String(hour).padStart(2, "0")}:00 UTC — Immediate Attention Required`;
+  const alertSubject = `[BREAKING SIGNAL] ${today} ${String(hour).padStart(2, "0")}:00 UTC — Immediate Attention Required`;
   const alertBody = [
     "ATLAS UX — HOURLY SIGNAL TRIPWIRE ALERT",
     `Timestamp: ${new Date().toISOString()}`,
     `Triggered by: WF-035 Hourly Signal Tripwire`,
+    `Sources scanned: ${sources.map(s => s.label).join(", ")}`,
+    `Evidence clips saved to KB: ${savedClips}`,
     "",
-    "═".repeat(60),
+    "=".repeat(60),
     "",
     triageResult,
     "",
-    "═".repeat(60),
+    "=".repeat(60),
     "",
     "ACTION REQUIRED: Review signals above and decide whether to:",
     "1. Draft content/social posts capitalizing on the news",
     "2. Adjust today's agent task orders",
     "3. Flag for legal/compliance review (Jenny/Benny)",
     "",
-    `Sources scanned: ${sources.map(s => s.label).join(", ")}`,
     `Trace: ${ctx.traceId ?? ctx.intentId}`,
   ].join("\n");
 
   await queueEmail(ctx, { to: atlasEmail, fromAgent: "daily-intel", subject: alertSubject, text: alertBody });
   if (billyEmail !== atlasEmail) {
     await queueEmail(ctx, { to: billyEmail, fromAgent: "daily-intel", subject: alertSubject, text: alertBody });
+  }
+
+  // Route alert to agents mentioned in ROUTE_TO lines
+  const routeMatches = triageResult.matchAll(/ROUTE_TO:\s*(.+)/gi);
+  const routedAgents = new Set<string>();
+  for (const m of routeMatches) {
+    const names = m[1].toLowerCase().match(/\b(kelly|fran|dwight|timmy|terry|cornwall|link|emma|donna|reynolds|penny|archy|venny|sunday|binky|benny|jenny|larry|tina|cheryl|mercer|frank|petra|porter|sandy|claire|lucy)\b/g);
+    if (names) names.forEach(n => routedAgents.add(n));
+  }
+  for (const agId of routedAgents) {
+    const agMail = agentEmail(agId);
+    if (agMail && agMail !== atlasEmail) {
+      await queueEmail(ctx, {
+        to: agMail,
+        fromAgent: "daily-intel",
+        subject: `[SIGNAL ALERT] ${today} — Action may be required`,
+        text: [
+          `DAILY-INTEL SIGNAL ALERT — Routed to ${agId.toUpperCase()}`,
+          `Timestamp: ${new Date().toISOString()}`,
+          "",
+          "You were identified as a relevant agent for the following breaking signal.",
+          "Review the alert below and prepare content/response as appropriate.",
+          "",
+          triageResult,
+          "",
+          `Evidence clips saved to KB (search category: "tripwire-signal").`,
+          `Trace: ${ctx.traceId ?? ctx.intentId}`,
+        ].join("\n"),
+      });
+    }
   }
 
   // CC Daily-Intel hub
@@ -3121,6 +3250,8 @@ handlers["WF-035"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-035.escalated", `ESCALATED — breaking signal detected at hour ${hour}`, {
     verdict: "ESCALATE",
     sourceCount: sources.length,
+    clipsStored: savedClips,
+    routedAgents: [...routedAgents],
   });
 
   // Ledger
@@ -3134,14 +3265,14 @@ handlers["WF-035"] = async (ctx) => {
       reference_type: "intent",
       reference_id: ctx.intentId,
       run_id: ctx.traceId ?? ctx.intentId,
-      meta: { workflowId: "WF-035", hour, verdict: "ESCALATE" },
+      meta: { workflowId: "WF-035", hour, verdict: "ESCALATE", clipsStored: savedClips, routedAgents: [...routedAgents] },
     },
   }).catch(() => null);
 
   return {
     ok: true,
-    message: `Tripwire ESCALATED (hour ${hour})`,
-    output: { signalsFound: sources.length, hour, verdict: "ESCALATE", preview: triageResult.slice(0, 500) },
+    message: `Tripwire ESCALATED (hour ${hour}) — ${savedClips} clips saved, routed to ${routedAgents.size} agents`,
+    output: { signalsFound: sources.length, hour, verdict: "ESCALATE", clipsStored: savedClips, routedAgents: [...routedAgents], preview: triageResult.slice(0, 500) },
   };
 };
 
