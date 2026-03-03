@@ -15,7 +15,7 @@ export function organizationSchema() {
     url: SITE_URL,
     logo: LOGO_URL,
     description:
-      "AI-powered employee platform with autonomous agents for CRM, marketing, finance, HR, and executive operations.",
+      "AI agent orchestrator platform with autonomous agents for business automation — CRM, marketing automation, financial management, AI workflows, video conferencing, and enterprise operations.",
     founder: {
       "@type": "Person",
       name: "Billy Whited",
@@ -52,7 +52,9 @@ export function productSchema() {
     applicationCategory: "BusinessApplication",
     operatingSystem: "Windows, macOS, Linux, Web",
     description:
-      "Standalone AI employee platform — autonomous agents that handle CRM, marketing, finance, HR, and executive operations for small businesses.",
+      "AI agent orchestrator platform for business automation — 30+ autonomous AI agents that handle CRM, marketing automation, financial management, video conferencing, AI workflows, and business operations for small businesses.",
+    keywords:
+      "ai agent, ai automation, ai workflows, orchestrator agent, CRM, marketing automation, financial management, video conferencing, AI solutions for business operations",
     offers: {
       "@type": "AggregateOffer",
       priceCurrency: "USD",
@@ -62,10 +64,15 @@ export function productSchema() {
     },
     featureList: [
       "30+ autonomous AI agents",
+      "AI orchestrator with agent coordination",
+      "CRM and customer relationship management",
+      "Marketing automation across 13+ social platforms",
+      "Financial management and spend controls",
+      "Video conferencing integration",
+      "AI workflow automation engine",
       "Decision memos with human approval",
       "Full audit trail",
       "Microsoft 365 integration",
-      "CRM, marketing, finance automation",
       "Cross-platform desktop app",
     ],
   };

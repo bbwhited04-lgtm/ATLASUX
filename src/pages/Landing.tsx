@@ -162,15 +162,18 @@ export default function Landing() {
   return (
     <div className="min-h-screen text-white relative">
       <SEO
-        title="ATLAS UX — Standalone Multi-Platform AI Employee Platform"
-        description="1 Orchestrator + 29 specialized AI agents. CRM, Social Media, Analytics, Workflows, Jobs Queue, and more. Wired to Twilio, Microsoft Office, Telegram & SMS."
+        title="ATLAS UX — AI Agent Platform for Business Automation & Orchestration"
+        description="AI agent orchestrator platform with 30+ autonomous agents. Marketing automation, CRM, financial management, video conferencing, AI workflows, and business operations — all governed with human-in-the-loop safety."
+        keywords="ai agent orchestrator, multi-agent ai platform, autonomous ai employee, ai agent CRM, ai agent marketing, ai workforce platform, ai powered business operations, ai orchestrator for business, 30 ai agents, ai employee platform, ai agent social media manager, ai agent financial management, ai decision memo, human in the loop ai, governed ai agents, ai workflow engine, autonomous business agents, ai operations platform"
         schema={[
           organizationSchema(),
           productSchema(),
           faqSchema([
-            { question: "What is Atlas UX?", answer: "Atlas UX is a cross-platform AI employee platform that connects your accounts, orchestrates autonomous agents, and executes real business workflows with human-in-the-loop safety." },
-            { question: "How many AI agents does Atlas UX have?", answer: "Atlas UX includes 30+ specialized AI agents covering CRM, marketing, finance, HR, legal, IT, and executive operations." },
-            { question: "Is Atlas UX safe to use?", answer: "Yes. Every risky or paid action requires a decision memo with human approval. All actions are logged to an immutable audit trail." },
+            { question: "What is Atlas UX?", answer: "Atlas UX is an AI agent orchestrator platform that deploys 30+ autonomous AI agents to automate business operations — CRM, marketing automation, financial management, AI workflows, and more — with human-in-the-loop safety and full audit trails." },
+            { question: "What is a multi-agent AI platform?", answer: "A multi-agent AI platform deploys multiple specialized AI agents that work together autonomously. Atlas UX runs 30+ governed agents — each with a defined role (CRM, marketing, finance, support) — coordinated by an orchestrator agent that routes tasks, enforces safety policies, and requires human approval for high-risk decisions." },
+            { question: "What AI automation features does Atlas UX include?", answer: "Atlas UX includes AI-powered CRM, marketing automation across 13+ social platforms, financial management with spend controls, video conferencing integration, agent workflows with approval chains, and autonomous task execution governed by safety policies." },
+            { question: "Is Atlas UX safe to use for business operations?", answer: "Yes. Every high-risk action requires a decision memo with human approval. All agent actions are logged to an immutable audit trail. Spend limits, daily action caps, and role-based permissions ensure AI agents operate within defined boundaries." },
+            { question: "What is an AI agent orchestrator?", answer: "An AI agent orchestrator coordinates multiple autonomous AI agents to accomplish complex business tasks. Atlas UX's orchestrator (Atlas) acts as a CEO-tier agent that routes tasks, enforces governance rules, and coordinates 29 specialized agents across CRM, marketing, finance, and operations." },
           ]),
         ]}
       />
@@ -623,7 +626,7 @@ export default function Landing() {
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Mar 2, 2026</span>
+            <span className="text-sm text-white/60">Last updated: Mar 3, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
             <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>
@@ -802,6 +805,12 @@ export default function Landing() {
             <li>[Claude Code] GDPR DPIA for AI processing — full Data Protection Impact Assessment (Art. 35) covering all LLM providers (OpenAI, DeepSeek, Anthropic, Gemini, OpenRouter), autonomous agent execution, KB RAG pipeline, outbound email/Telegram, social publishing across 10+ platforms; identifies 10 risks with honest gap analysis including DeepSeek China transfer and consent enforcement gaps; references real code paths and actual controls (SGL governance, HIL approvals, tenant isolation, audit trail, spend/rate limits)</li>
             <li>Listed on Product Hunt — Atlas UX is now live on Product Hunt for community discovery and upvotes</li>
             <li>[Claude Code] Compliance gap closure — appointed HIPAA Security Officer, PII redaction geo-fence for DeepSeek China transfers (strips email/phone/SSN/card/IP/address before cross-border send), GitHub Actions CI pipeline, BAA template for healthcare tenants, ISMS scope document for ISO 27001 certification path; updated all 7 compliance framework docs with current hardening status; 6 of 11 original compliance gaps now resolved</li>
+            <li>[Claude Code] FAQ page — standalone /faq page with 36 questions across 6 categories (Getting Started, AI Agents &amp; Orchestration, Business Features, Safety &amp; Governance, Technical &amp; Integration, What Makes Us Different); FAQPage + WebPage JSON-LD schema for rich snippets; details/summary accordions; SEO keyword targeting for long-tail terms (ai agent orchestrator, multi-agent ai platform, autonomous ai employee, governed ai agents)</li>
+            <li>[Claude Code] Getting Started page — standalone /getting-started guide with 4-step onboarding flow, interactive feature cards, and direct links to app sections; WebPage JSON-LD schema</li>
+            <li>[Claude Code] AIME 2025 benchmark — ran all 30 AIME math competition problems (15 AIME I + 15 AIME II) against Claude Sonnet 4.6; scored 18/30 (60%) at $0.55 total cost</li>
+            <li>[Claude Code] Social media sales campaign — 32-post cross-platform blitz via Postiz API across TikTok, X, LinkedIn, Facebook, Instagram, Threads, Reddit (9 subreddits), Pinterest, YouTube (4 channels); AEO-optimized content targeting Claude Search (FAQ format), ChatGPT Search (direct-answer-first), and Monica Search (structured/indexed); all posts promote $39/mo, BETA50 50% off, zero token spend, SGL governance</li>
+            <li>[Claude Code] Security comparison video — 8-second vertical short (1080x1920, 30fps) comparing competitor security pricing (Vanta $7,500, Drata $7,500, SecureFrame $6,000, Sprinto $6,000, Thoropass $10,000) vs Atlas UX $19.50/mo with BETA50; generated with Python Pillow + moviepy; blasted across all video platforms via Postiz</li>
+            <li>[Claude Code] Brand Analytics — new Postiz-powered analytics dashboard at /app/brand; backend proxy (postizRoutes.ts) keeps API key server-side with 3 endpoints: channels list with Business Manager asset merge, per-channel metrics, and aggregate metrics with cross-platform rankings; frontend (BrandAnalytics.tsx) with collapsible channel sidebar, sparkline area charts (Recharts), percentage change badges, platform ranking badges (#1 TikTok, #2 X, etc.), 7/30 day time range; "All Channels" aggregate display sums metrics across all 15 connected integrations</li>
           </ul>
 
           <div className="mt-5 flex gap-3">

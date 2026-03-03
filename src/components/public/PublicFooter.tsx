@@ -269,6 +269,18 @@ export default function PublicFooter() {
               >
                 Compare
               </Link>
+              <Link
+                to="/faq"
+                className="text-sm text-white/80 hover:text-white hover:underline"
+              >
+                FAQ
+              </Link>
+              <Link
+                to="/getting-started"
+                className="text-sm text-white/80 hover:text-white hover:underline"
+              >
+                Getting Started
+              </Link>
               <span className="text-white/30">·</span>
               <Link
                 to="/terms"

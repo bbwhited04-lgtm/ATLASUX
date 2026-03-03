@@ -343,7 +343,36 @@ const navigate = useNavigate();
       </div>
       
       {/* Quick Actions for New Features */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-3 gap-6">
+        <button type="button" onClick={() => navigate("/app/brand")} className="group text-left w-full">
+          <Card className="bg-gradient-to-br from-purple-500/10 to-fuchsia-500/10 border-purple-500/30 backdrop-blur-xl p-6 hover:from-purple-500/20 hover:to-fuchsia-500/20 transition-all">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-fuchsia-500 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Brand Analytics</h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Cross-platform social metrics — reach, engagement, followers, and rankings across all channels
+            </p>
+            <div className="flex items-center gap-4 text-xs">
+              <div>
+                <div className="text-slate-500">Channels</div>
+                <div className="text-purple-400 font-semibold">15+</div>
+              </div>
+              <div>
+                <div className="text-slate-500">Metrics</div>
+                <div className="text-fuchsia-400 font-semibold">Live</div>
+              </div>
+              <div>
+                <div className="text-slate-500">Rankings</div>
+                <div className="text-purple-400 font-semibold">Per metric</div>
+              </div>
+            </div>
+          </Card>
+        </button>
+
         <button type="button" onClick={() => navigate("/app/business-manager")} className="group text-left">
           <Card className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-cyan-500/30 backdrop-blur-xl p-6 hover:from-cyan-500/20 hover:to-blue-500/20 transition-all">
             <div className="flex items-start justify-between mb-4">

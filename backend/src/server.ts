@@ -48,6 +48,7 @@ import { telegramRoutes } from "./routes/telegramRoutes.js";
 import { teamsRoutes } from "./routes/teamsRoutes.js";
 import { crmRoutes } from "./routes/crmRoutes.js";
 import { analyticsRoutes } from "./routes/analyticsRoutes.js";
+import { postizRoutes } from "./routes/postizRoutes.js";
 import { cannedResponseRoutes } from "./routes/cannedResponseRoutes.js";
 import { budgetRoutes } from "./routes/budgetRoutes.js";
 import { filesRoutes } from "./routes/filesRoutes.js";
@@ -274,6 +275,9 @@ await app.register(crmRoutes, { prefix: "/v1/crm" });
 
 // Analytics — aggregated metrics, period comparison, ROI by channel
 await app.register(analyticsRoutes, { prefix: "/v1/analytics" });
+
+// Postiz — social media analytics proxy (channels, per-channel + aggregate)
+await app.register(postizRoutes, { prefix: "/v1/postiz" });
 
 // Canned responses (messaging templates)
 await app.register(cannedResponseRoutes, { prefix: "/v1/canned-responses" });

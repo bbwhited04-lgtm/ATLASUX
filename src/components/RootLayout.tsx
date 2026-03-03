@@ -198,6 +198,7 @@ function RootLayoutInner() {
     { path: "/app/chat", icon: MessageSquare, label: "AI Chat" },
     { path: "/app/agents", icon: UserCog, label: "Agents" },
     { path: "/app/monitoring", icon: Radio, label: "Monitoring" },
+    { path: "/app/brand", icon: Activity, label: "Analytics" },
     { path: "/app/crm", icon: Users, label: "CRM" },
     { path: "/app/business-manager", icon: Briefcase, label: "Business Manager", badge: pendingDecisionsCount },
     { path: "/app/kb", icon: BookOpen, label: "Knowledge Base" },

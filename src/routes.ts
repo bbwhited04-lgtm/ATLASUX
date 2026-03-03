@@ -44,6 +44,7 @@ const AgentsHub = lazyRetry(() => import("./components/AgentsHub").then(m => ({ 
 const KnowledgeBaseHub = lazyRetry(() => import("./components/KnowledgeBaseHub").then(m => ({ default: m.KnowledgeBaseHub })));
 const MessagingHub = lazyRetry(() => import("./components/MessagingHub").then(m => ({ default: m.MessagingHub })));
 const AgentWatcher = lazyRetry(() => import("./components/AgentWatcher").then(m => ({ default: m.AgentWatcher })));
+const BrandAnalytics = lazyRetry(() => import("./components/BrandAnalytics").then(m => ({ default: m.BrandAnalytics })));
 
 // Lazy-loaded public pages
 const Privacy = lazyRetry(() => import("./pages/Privacy"));
@@ -60,6 +61,8 @@ const Compare = lazyRetry(() => import("./pages/Compare"));
 const Support = lazyRetry(() => import("./pages/Support"));
 const Docs = lazyRetry(() => import("./pages/Docs"));
 const Configure = lazyRetry(() => import("./pages/Configure"));
+const FAQ = lazyRetry(() => import("./pages/FAQ"));
+const GettingStarted = lazyRetry(() => import("./pages/GettingStarted"));
 
 /** Minimal loading spinner shown while lazy chunks load */
 function LazyFallback() {
@@ -90,6 +93,8 @@ export const router = createHashRouter([
       { path: "/support", Component: () => React.createElement(S, null, React.createElement(Support)) },
       { path: "/docs", Component: () => React.createElement(S, null, React.createElement(Docs)) },
       { path: "/configure", Component: () => React.createElement(S, null, React.createElement(Configure)) },
+      { path: "/faq", Component: () => React.createElement(S, null, React.createElement(FAQ)) },
+      { path: "/getting-started", Component: () => React.createElement(S, null, React.createElement(GettingStarted)) },
       { path: "/blog", Component: () => React.createElement(S, null, React.createElement(BlogHome)) },
       { path: "/blog/category/:category", Component: () => React.createElement(S, null, React.createElement(BlogCategory)) },
       { path: "/blog/:slug", Component: () => React.createElement(S, null, React.createElement(BlogPost)) },
@@ -131,6 +136,7 @@ export const router = createHashRouter([
       { path: "messaging", Component: () => React.createElement(S, null, React.createElement(MessagingHub)) },
       { path: "tickets", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=tickets", replace: true }) },
       { path: "budgets", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=budgets", replace: true }) },
+      { path: "brand", Component: () => React.createElement(S, null, React.createElement(BrandAnalytics)) },
       { path: "watcher", Component: () => React.createElement(S, null, React.createElement(AgentWatcher)) },
       ],
   },

@@ -35,8 +35,9 @@ export default function About() {
   return (
     <div className="min-h-screen text-white relative">
       <SEO
-        title="About Atlas UX — Meet the Team"
-        description="Atlas UX was built from scratch by Billy Whited — from Figma wireframe to live product. Learn about the mission, tech stack, and timeline behind the AI employee platform."
+        title="About Atlas UX — AI Agent Platform for Business Automation"
+        description="Atlas UX — AI agent orchestrator built from scratch by Billy Whited. 30+ autonomous agents for marketing automation, CRM, financial management, AI workflows, and business operations."
+        keywords="ai agent orchestrator, multi-agent ai platform, autonomous ai employee, ai workforce platform, ai powered business operations, governed ai agents, human in the loop ai, ai employee platform, autonomous business agents"
         path="about"
         schema={[organizationSchema(), webPageSchema("About Atlas UX", "Learn about the founder, tech stack, and mission behind Atlas UX.")]}
       />

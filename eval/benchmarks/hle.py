@@ -68,9 +68,17 @@ class HLEBenchmark(Benchmark):
             # --- image ---------------------------------------------------
             image_bytes: bytes | None = None
             if row.get("image") is not None:
-                buf = io.BytesIO()
-                row["image"].save(buf, format="PNG")
-                image_bytes = buf.getvalue()
+                img = row["image"]
+                if hasattr(img, "save"):
+                    # PIL Image object
+                    buf = io.BytesIO()
+                    img.save(buf, format="PNG")
+                    image_bytes = buf.getvalue()
+                elif isinstance(img, bytes):
+                    image_bytes = img
+                elif isinstance(img, str) and img:
+                    # URL or path — skip for now, mark as having image
+                    image_bytes = None  # will be skipped in vision check
 
             # --- answer type ---------------------------------------------
             answer_type = (

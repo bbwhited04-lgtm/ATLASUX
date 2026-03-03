@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 interface SEOProps {
   title: string;
   description: string;
+  keywords?: string;
   path?: string;
   image?: string;
   type?: string;
@@ -15,6 +16,7 @@ const DEFAULT_IMAGE = `${SITE_URL}/og-default.png`;
 export default function SEO({
   title,
   description,
+  keywords,
   path = "",
   image,
   type = "website",
@@ -34,6 +36,7 @@ export default function SEO({
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
+      {keywords && <meta name="keywords" content={keywords} />}
       <link rel="canonical" href={url} />
 
       {/* Open Graph */}

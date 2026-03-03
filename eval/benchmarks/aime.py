@@ -47,32 +47,36 @@ class AIMEBenchmark(Benchmark):
         fall back through ``problem`` / ``question`` / ``input`` for the
         problem statement and always coerce the answer to a string.
         """
-        ds = load_dataset(
-            "opencompass/AIME2025", split="test", cache_dir=cache_dir
-        )
         questions: list[BenchmarkQuestion] = []
+        idx = 0
 
-        for i, row in enumerate(ds):
-            problem = (
-                row.get("problem")
-                or row.get("question")
-                or row.get("input", "")
+        for config in ("AIME2025-I", "AIME2025-II"):
+            ds = load_dataset(
+                "opencompass/AIME2025", config, split="test", cache_dir=cache_dir
             )
-            answer = str(row.get("answer", "")).strip()
-
-            questions.append(
-                BenchmarkQuestion(
-                    id=f"aime_{i}",
-                    question=problem,
-                    choices=None,
-                    answer=answer,
-                    answer_type="integer",
-                    metadata={
-                        "problem_type": row.get("problem_type", "unknown"),
-                        "problem_idx": row.get("problem_idx", i),
-                    },
+            for row in ds:
+                problem = (
+                    row.get("problem")
+                    or row.get("question")
+                    or row.get("input", "")
                 )
-            )
+                answer = str(row.get("answer", "")).strip()
+
+                questions.append(
+                    BenchmarkQuestion(
+                        id=f"aime_{idx}",
+                        question=problem,
+                        choices=None,
+                        answer=answer,
+                        answer_type="integer",
+                        metadata={
+                            "config": config,
+                            "problem_type": row.get("problem_type", "unknown"),
+                            "problem_idx": row.get("problem_idx", idx),
+                        },
+                    )
+                )
+                idx += 1
 
         return questions
 

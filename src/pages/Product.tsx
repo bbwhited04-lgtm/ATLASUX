@@ -6,8 +6,9 @@ export default function Product() {
   return (
     <div className="min-h-screen text-white relative">
       <SEO
-        title="Product — Autonomous AI Agents"
-        description="A governed AI coworker system built for real workflows: auditability, cost control, decision memos, and repeatable execution. Simple, safe, and business-friendly."
+        title="Product — AI Agent Orchestrator for Business Automation"
+        description="AI agent orchestrator platform with 30+ autonomous agents for CRM, marketing automation, financial management, AI workflows, and business operations. Governed, auditable, and enterprise-ready."
+        keywords="ai agent orchestrator, multi-agent ai platform, autonomous ai employee, ai agent CRM, ai agent marketing, ai workforce platform, governed ai agents, human in the loop ai, ai decision memo, ai workflow engine, autonomous business agents, ai operations platform"
         path="product"
         schema={[productSchema()]}
       />
