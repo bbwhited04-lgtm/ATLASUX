@@ -8,6 +8,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '@/lib/api';
 import { getOrgUser } from '@/lib/org';
+import { AddChannelModal } from '../AddChannelModal';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -177,6 +178,7 @@ export function CalendarScheduling() {
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [addChannelOpen, setAddChannelOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("week");
 
   // Week navigation
@@ -305,7 +307,7 @@ export function CalendarScheduling() {
           <div className="px-4 pb-3 space-y-2">
             <div className="flex items-center gap-2">
               <button
-                onClick={() => navigate("/app/settings?tab=integrations")}
+                onClick={() => setAddChannelOpen(true)}
                 className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm text-slate-300 font-medium transition-colors"
               >
                 <Link2 className="w-3.5 h-3.5" />
@@ -744,6 +746,8 @@ export function CalendarScheduling() {
           </div>
         </div>
       )}
+
+      <AddChannelModal open={addChannelOpen} onClose={() => setAddChannelOpen(false)} />
     </div>
   );
 }
