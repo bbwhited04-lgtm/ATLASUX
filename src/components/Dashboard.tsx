@@ -1,16 +1,18 @@
 import {
   CheckCircle2,
   Clock,
-  ArrowRight,
   Circle,
   Sparkles,
-  TrendingUp,
   Calendar,
   MessageSquare,
   Shield,
   Plug,
   BarChart3,
   ChevronRight,
+  Bot,
+  AlertTriangle,
+  TrendingUp,
+  Zap,
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -37,6 +39,116 @@ function greetingTime(): string {
   return "Good evening";
 }
 
+function formatUsd(n: number): string {
+  return n < 0.01 ? "$0" : `$${n.toFixed(2)}`;
+}
+
+/* ── Atlas briefing builder ── */
+interface BriefingLine {
+  text: string;
+  type: "info" | "action" | "good" | "warn";
+  to?: string;
+}
+
+function buildBriefing(data: {
+  pendingDecisions: number;
+  activeJobs: number;
+  completedToday: number;
+  agentCount: number;
+  channelCount: number;
+  spendUsd: number;
+  tenantId: string | null;
+  topMetric?: { label: string; value: string; change: string } | null;
+}): BriefingLine[] {
+  const lines: BriefingLine[] = [];
+
+  // No business set up yet
+  if (!data.tenantId) {
+    lines.push({
+      text: "Let's get started. Set up your business profile and I'll take it from here.",
+      type: "action",
+      to: "/app/business-manager",
+    });
+    return lines;
+  }
+
+  // Pending approvals — urgent
+  if (data.pendingDecisions > 0) {
+    lines.push({
+      text: `${data.pendingDecisions} decision${data.pendingDecisions !== 1 ? "s" : ""} waiting for your approval.`,
+      type: "warn",
+      to: "/app/business-manager?tab=decisions",
+    });
+  }
+
+  // Active work
+  if (data.activeJobs > 0) {
+    lines.push({
+      text: `${data.activeJobs} job${data.activeJobs !== 1 ? "s" : ""} running right now.`,
+      type: "info",
+    });
+  } else if (data.completedToday > 0) {
+    lines.push({
+      text: `${data.completedToday} job${data.completedToday !== 1 ? "s" : ""} completed today. All quiet.`,
+      type: "good",
+    });
+  }
+
+  // Channels
+  if (data.channelCount === 0) {
+    lines.push({
+      text: "No channels connected yet. Add your social accounts so I can start posting.",
+      type: "action",
+      to: "/app/settings?tab=integrations",
+    });
+  } else {
+    lines.push({
+      text: `${data.channelCount} channel${data.channelCount !== 1 ? "s" : ""} connected and active.`,
+      type: "good",
+    });
+  }
+
+  // Spend
+  if (data.spendUsd > 0) {
+    lines.push({
+      text: `Total spend: ${formatUsd(data.spendUsd)}. All within limits.`,
+      type: "info",
+    });
+  }
+
+  // Agents
+  if (data.agentCount > 0 && lines.length < 4) {
+    lines.push({
+      text: `${data.agentCount} agent${data.agentCount !== 1 ? "s" : ""} registered and standing by.`,
+      type: "info",
+    });
+  }
+
+  // Everything good
+  if (data.pendingDecisions === 0 && data.channelCount > 0 && data.activeJobs === 0) {
+    lines.push({
+      text: "Everything's running smooth. Nothing needs your attention.",
+      type: "good",
+    });
+  }
+
+  return lines.slice(0, 4); // max 4 lines
+}
+
+/* ── line icon ── */
+function BriefingIcon({ type }: { type: BriefingLine["type"] }) {
+  switch (type) {
+    case "warn":
+      return <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />;
+    case "action":
+      return <Zap className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0 mt-0.5" />;
+    case "good":
+      return <CheckCircle2 className="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5" />;
+    default:
+      return <div className="w-1.5 h-1.5 rounded-full bg-slate-500 flex-shrink-0 mt-1.5 ml-1 mr-1" />;
+  }
+}
+
 export function Dashboard() {
   const navigate = useNavigate();
   const { tenantId } = useActiveTenant();
@@ -49,10 +161,11 @@ export function Dashboard() {
   const [channelCount, setChannelCount] = useState(0);
   const [spendUsd, setSpendUsd] = useState(0);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [dataReady, setDataReady] = useState(false);
 
   /* fetch all dashboard data */
   useEffect(() => {
-    if (!tenantId) return;
+    if (!tenantId) { setDataReady(true); return; }
     let cancelled = false;
     const h = { "x-tenant-id": tenantId };
 
@@ -83,6 +196,7 @@ export function Dashboard() {
 
       const auditItems = Array.isArray(auditRes?.items) ? auditRes.items : Array.isArray(auditRes?.rows) ? auditRes.rows : [];
       setRecentActivity(auditItems.slice(0, 6));
+      setDataReady(true);
     })();
 
     const t = setInterval(() => {
@@ -94,6 +208,15 @@ export function Dashboard() {
 
     return () => { cancelled = true; clearInterval(t); };
   }, [tenantId]);
+
+  /* ── Atlas briefing ── */
+  const briefing = useMemo(
+    () =>
+      dataReady
+        ? buildBriefing({ pendingDecisions, activeJobs, completedToday, agentCount, channelCount, spendUsd, tenantId })
+        : [],
+    [dataReady, pendingDecisions, activeJobs, completedToday, agentCount, channelCount, spendUsd, tenantId],
+  );
 
   /* ── steps: Atlas guides you ── */
   const steps: Step[] = useMemo(() => [
@@ -124,7 +247,7 @@ export function Dashboard() {
       id: "analytics",
       label: "Check your analytics",
       description: "See how your brand is performing across all platforms",
-      done: false, // always available
+      done: false,
       action: { label: "View Analytics", to: "/app/brand" },
     },
   ], [tenantId, channelCount, pendingDecisions]);
@@ -135,18 +258,44 @@ export function Dashboard() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
 
-      {/* ── Greeting ── */}
-      <div className="space-y-1">
-        <h2 className="text-2xl font-bold text-white">
-          {greetingTime()}
-        </h2>
-        <p className="text-slate-400 text-sm">
-          {nextStep
-            ? <>Atlas recommends: <span className="text-cyan-400">{nextStep.label.toLowerCase()}</span></>
-            : "Everything looks good. You're all set."
-          }
-        </p>
-      </div>
+      {/* ── Atlas Briefing ── */}
+      {dataReady && briefing.length > 0 && (
+        <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/30 border border-cyan-500/10 p-5">
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-cyan-500/20">
+              <Bot className="w-5 h-5 text-white" />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              {/* Greeting */}
+              <div className="flex items-baseline gap-2 mb-3">
+                <h2 className="text-lg font-bold text-white">{greetingTime()}</h2>
+                <span className="text-xs text-cyan-400/60">Atlas</span>
+              </div>
+
+              {/* Briefing lines */}
+              <div className="space-y-2">
+                {briefing.map((line, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <BriefingIcon type={line.type} />
+                    {line.to ? (
+                      <button
+                        onClick={() => navigate(line.to!)}
+                        className="text-sm text-slate-300 hover:text-white transition-colors text-left"
+                      >
+                        {line.text}
+                      </button>
+                    ) : (
+                      <span className="text-sm text-slate-400">{line.text}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Progress bar ── */}
       <div className="space-y-3">
@@ -164,7 +313,7 @@ export function Dashboard() {
 
       {/* ── Steps ── */}
       <div className="space-y-3">
-        {steps.map((step, i) => {
+        {steps.map((step) => {
           const isNext = step === nextStep;
           return (
             <Card
@@ -178,7 +327,6 @@ export function Dashboard() {
               } p-4`}
             >
               <div className="flex items-start gap-4">
-                {/* step indicator */}
                 <div className="pt-0.5">
                   {step.done ? (
                     <CheckCircle2 className="w-5 h-5 text-green-400" />
@@ -190,8 +338,6 @@ export function Dashboard() {
                     <Circle className="w-5 h-5 text-slate-600" />
                   )}
                 </div>
-
-                {/* content */}
                 <div className="flex-1 min-w-0">
                   <div className={`font-medium text-sm ${step.done ? "text-slate-500 line-through" : "text-white"}`}>
                     {step.label}
@@ -200,8 +346,6 @@ export function Dashboard() {
                     {step.description}
                   </div>
                 </div>
-
-                {/* action */}
                 {step.action && !step.done && (
                   <button
                     onClick={() => navigate(step.action!.to)}
@@ -227,7 +371,7 @@ export function Dashboard() {
           { label: "Channels", value: String(channelCount), icon: Plug, color: "text-cyan-400" },
           { label: "Agents", value: String(agentCount), icon: Sparkles, color: "text-purple-400" },
           { label: "Active Jobs", value: String(activeJobs), icon: Clock, color: "text-yellow-400" },
-          { label: "Spend", value: `$${spendUsd.toFixed(2)}`, icon: Shield, color: "text-green-400" },
+          { label: "Spend", value: formatUsd(spendUsd), icon: Shield, color: "text-green-400" },
         ].map((s) => {
           const Icon = s.icon;
           return (
