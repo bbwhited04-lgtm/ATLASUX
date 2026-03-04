@@ -5,6 +5,12 @@
  * posts with its own display name and emoji avatar.
  * Agents hang out in Slack channels, chat when idle, and
  * every message is recorded in Slack's history.
+ *
+ * Capabilities:
+ *   - Channel messaging (send, read, reply in threads)
+ *   - DMs between agents (private channels named dm-{agent1}-{agent2})
+ *   - File upload/download/list (share docs, reports, code)
+ *   - Workflow creation (automated multi-step Slack workflows)
  */
 
 const SLACK_API = "https://slack.com/api";
@@ -123,6 +129,29 @@ export type SlackPostResult = {
   ts?: string;
   channel?: string;
   error?: string;
+};
+
+export type SlackFile = {
+  id: string;
+  name: string;
+  title: string;
+  mimetype: string;
+  size: number;
+  url_private: string;
+  permalink: string;
+  created: number;
+  user?: string;
+};
+
+export type SlackWorkflowStep = {
+  action: "send_message" | "upload_file" | "set_topic" | "add_reaction" | "wait";
+  channel?: string;
+  agentId?: string;
+  text?: string;
+  filename?: string;
+  content?: string;
+  emoji?: string;
+  delayMs?: number;
 };
 
 // ── Core API helper ─────────────────────────────────────────────────────────
@@ -294,4 +323,446 @@ export async function getAgentChannels(): Promise<{
 
   _channelCache = { general: general ?? undefined, execs: execs ?? undefined };
   return { general, execs };
+}
+
+// ── DMs between agents ──────────────────────────────────────────────────────
+
+/**
+ * DM channel cache: "atlas:binky" → channel ID.
+ * Private channels named dm-{sorted agents} simulate 1:1 DMs
+ * where each agent posts with their own identity.
+ */
+const _dmCache = new Map<string, string>();
+
+function dmChannelName(agentA: string, agentB: string): string {
+  const sorted = [agentA, agentB].sort();
+  return `dm-${sorted[0]}-${sorted[1]}`;
+}
+
+/**
+ * Get or create a DM channel between two agents.
+ * Creates a private channel named dm-{agent1}-{agent2} (alphabetically sorted).
+ */
+export async function openDM(agentA: string, agentB: string): Promise<string | null> {
+  const key = [agentA, agentB].sort().join(":");
+  const cached = _dmCache.get(key);
+  if (cached) return cached;
+
+  const name = dmChannelName(agentA, agentB);
+
+  // Check if channel already exists
+  const existing = await getChannelByName(name, true);
+  if (existing) {
+    _dmCache.set(key, existing.id);
+    return existing.id;
+  }
+
+  // Create a new private channel for this DM pair
+  try {
+    const data = await slackApi("conversations.create", {
+      name,
+      is_private: true,
+    });
+    const channelId = data.channel?.id;
+    if (channelId) {
+      _dmCache.set(key, channelId);
+
+      // Set channel purpose
+      await slackApi("conversations.setPurpose", {
+        channel: channelId,
+        purpose: `DM between ${getAgentDisplayName(agentA)} and ${getAgentDisplayName(agentB)}`,
+      }).catch(() => null);
+
+      return channelId;
+    }
+  } catch (err) {
+    // Channel might already exist with a different case or was just created
+    const retry = await getChannelByName(name, true);
+    if (retry) {
+      _dmCache.set(key, retry.id);
+      return retry.id;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Send a DM from one agent to another.
+ * Creates the DM channel if it doesn't exist.
+ */
+export async function sendDM(
+  fromAgent: string,
+  toAgent: string,
+  text: string,
+  options?: { threadTs?: string },
+): Promise<SlackPostResult> {
+  const channelId = await openDM(fromAgent, toAgent);
+  if (!channelId) {
+    return { ok: false, error: `Could not open DM channel between ${fromAgent} and ${toAgent}` };
+  }
+  return postAsAgent(channelId, fromAgent, text, options);
+}
+
+/**
+ * Read DM history between two agents.
+ */
+export async function readDM(
+  agentA: string,
+  agentB: string,
+  limit = 20,
+): Promise<SlackMessage[]> {
+  const channelId = await openDM(agentA, agentB);
+  if (!channelId) return [];
+  return readHistory(channelId, limit);
+}
+
+// ── File operations ─────────────────────────────────────────────────────────
+
+/**
+ * Upload a file to a Slack channel (or DM channel).
+ * Uses files.uploadV2 for the newer API.
+ */
+export async function uploadFile(
+  channelId: string,
+  opts: {
+    filename: string;
+    content: string;
+    title?: string;
+    agentId?: string;
+  },
+): Promise<{ ok: boolean; fileId?: string; permalink?: string; error?: string }> {
+  try {
+    // files.uploadV2 uses multipart, but we can use the content param for text
+    const res = await fetch(`${SLACK_API}/files.upload`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${getBotToken()}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        channels: channelId,
+        filename: opts.filename,
+        content: opts.content,
+        title: opts.title ?? opts.filename,
+        initial_comment: opts.agentId
+          ? `${AGENT_EMOJI[opts.agentId] ?? ":robot_face:"} Shared by ${getAgentDisplayName(opts.agentId)}`
+          : "",
+      }),
+    });
+
+    const data = await res.json() as any;
+    if (!data.ok) {
+      return { ok: false, error: data.error ?? "upload failed" };
+    }
+
+    return {
+      ok: true,
+      fileId: data.file?.id,
+      permalink: data.file?.permalink,
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
+ * List files in a channel.
+ */
+export async function listFiles(
+  channelId: string,
+  limit = 20,
+): Promise<SlackFile[]> {
+  try {
+    const data = await slackApi("files.list", {
+      channel: channelId,
+      count: limit,
+    });
+    return (data.files ?? []).map((f: any) => ({
+      id: f.id,
+      name: f.name,
+      title: f.title ?? f.name,
+      mimetype: f.mimetype ?? "unknown",
+      size: f.size ?? 0,
+      url_private: f.url_private ?? "",
+      permalink: f.permalink ?? "",
+      created: f.created ?? 0,
+      user: f.user,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Get file info by ID.
+ */
+export async function getFileInfo(fileId: string): Promise<SlackFile | null> {
+  try {
+    const data = await slackApi("files.info", { file: fileId });
+    const f = data.file;
+    if (!f) return null;
+    return {
+      id: f.id,
+      name: f.name,
+      title: f.title ?? f.name,
+      mimetype: f.mimetype ?? "unknown",
+      size: f.size ?? 0,
+      url_private: f.url_private ?? "",
+      permalink: f.permalink ?? "",
+      created: f.created ?? 0,
+      user: f.user,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Download a file's content (text-based files only).
+ */
+export async function downloadFile(fileUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(fileUrl, {
+      headers: { Authorization: `Bearer ${getBotToken()}` },
+    });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
+// ── Channel management ──────────────────────────────────────────────────────
+
+/**
+ * Create a new channel.
+ */
+export async function createChannel(
+  name: string,
+  opts?: { isPrivate?: boolean; purpose?: string; topic?: string },
+): Promise<SlackChannel | null> {
+  try {
+    const data = await slackApi("conversations.create", {
+      name: name.toLowerCase().replace(/[^a-z0-9-_]/g, "-"),
+      is_private: opts?.isPrivate ?? false,
+    });
+
+    const ch = data.channel;
+    if (!ch) return null;
+
+    const channelId = ch.id;
+
+    if (opts?.purpose) {
+      await slackApi("conversations.setPurpose", { channel: channelId, purpose: opts.purpose }).catch(() => null);
+    }
+    if (opts?.topic) {
+      await slackApi("conversations.setTopic", { channel: channelId, topic: opts.topic }).catch(() => null);
+    }
+
+    return {
+      id: channelId,
+      name: ch.name,
+      is_member: true,
+      purpose: opts?.purpose,
+      topic: opts?.topic,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Set channel topic.
+ */
+export async function setTopic(channelId: string, topic: string): Promise<boolean> {
+  try {
+    await slackApi("conversations.setTopic", { channel: channelId, topic });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Add a reaction to a message.
+ */
+export async function addReaction(channelId: string, ts: string, emoji: string): Promise<boolean> {
+  try {
+    await slackApi("reactions.add", {
+      channel: channelId,
+      timestamp: ts,
+      name: emoji.replace(/^:|:$/g, ""),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ── Workflows (multi-step automated sequences) ─────────────────────────────
+
+/**
+ * Execute a workflow — a sequence of Slack actions run in order.
+ * Agents use this to automate multi-step processes:
+ * send messages, upload files, set topics, add reactions, with delays.
+ */
+export async function runWorkflow(
+  steps: SlackWorkflowStep[],
+  defaults?: { channel?: string; agentId?: string },
+): Promise<{ ok: boolean; results: { step: number; ok: boolean; error?: string }[] }> {
+  const results: { step: number; ok: boolean; error?: string }[] = [];
+
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    const channelId = step.channel ?? defaults?.channel;
+    const agent = step.agentId ?? defaults?.agentId ?? "atlas";
+
+    try {
+      switch (step.action) {
+        case "send_message": {
+          if (!channelId || !step.text) {
+            results.push({ step: i, ok: false, error: "Missing channel or text" });
+            break;
+          }
+          const res = await postAsAgent(channelId, agent, step.text);
+          results.push({ step: i, ok: res.ok, error: res.error });
+          break;
+        }
+
+        case "upload_file": {
+          if (!channelId || !step.filename || !step.content) {
+            results.push({ step: i, ok: false, error: "Missing channel, filename, or content" });
+            break;
+          }
+          const res = await uploadFile(channelId, {
+            filename: step.filename,
+            content: step.content,
+            agentId: agent,
+          });
+          results.push({ step: i, ok: res.ok, error: res.error });
+          break;
+        }
+
+        case "set_topic": {
+          if (!channelId || !step.text) {
+            results.push({ step: i, ok: false, error: "Missing channel or text" });
+            break;
+          }
+          const ok = await setTopic(channelId, step.text);
+          results.push({ step: i, ok });
+          break;
+        }
+
+        case "add_reaction": {
+          if (!channelId || !step.emoji) {
+            results.push({ step: i, ok: false, error: "Missing channel or emoji" });
+            break;
+          }
+          results.push({ step: i, ok: false, error: "Reactions require a message timestamp — use after send_message" });
+          break;
+        }
+
+        case "wait": {
+          const delay = step.delayMs ?? 1000;
+          await new Promise(r => setTimeout(r, Math.min(delay, 10000))); // cap at 10s
+          results.push({ step: i, ok: true });
+          break;
+        }
+
+        default:
+          results.push({ step: i, ok: false, error: `Unknown action: ${(step as any).action}` });
+      }
+    } catch (err) {
+      results.push({ step: i, ok: false, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  const allOk = results.every(r => r.ok);
+  return { ok: allOk, results };
+}
+
+// ── Canvases (collaborative documents in Slack) ─────────────────────────────
+
+/**
+ * Create a Slack Canvas (rich document) in a channel.
+ * Canvases support markdown-like content that agents can collaborate on.
+ */
+export async function createCanvas(
+  title: string,
+  content: string,
+  channelId?: string,
+  agentId?: string,
+): Promise<{ ok: boolean; canvasId?: string; error?: string }> {
+  try {
+    // Create canvas via canvases.create
+    const data = await slackApi("canvases.create", {
+      title,
+      document_content: {
+        type: "markdown",
+        markdown: content,
+      },
+    });
+
+    const canvasId = data.canvas_id;
+
+    // If a channel is specified, share the canvas there
+    if (channelId && canvasId) {
+      // Post a message with the canvas link
+      const displayName = agentId ? getAgentDisplayName(agentId) : "Atlas UX";
+      const emoji = agentId ? (AGENT_EMOJI[agentId] ?? ":robot_face:") : ":page_facing_up:";
+
+      await slackApi("chat.postMessage", {
+        channel: channelId,
+        text: `${emoji} *${displayName}* created a new canvas: *${title}*`,
+        username: displayName,
+        icon_emoji: emoji,
+        unfurl_links: false,
+      }).catch(() => null);
+    }
+
+    return { ok: true, canvasId };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
+ * Update (append to) an existing Slack Canvas.
+ */
+export async function updateCanvas(
+  canvasId: string,
+  content: string,
+  operation: "replace" | "append" = "append",
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    // canvases.edit supports inserting/replacing sections
+    if (operation === "replace") {
+      await slackApi("canvases.edit", {
+        canvas_id: canvasId,
+        changes: [{
+          operation: "replace",
+          document_content: {
+            type: "markdown",
+            markdown: content,
+          },
+        }],
+      });
+    } else {
+      await slackApi("canvases.edit", {
+        canvas_id: canvasId,
+        changes: [{
+          operation: "insert_at_end",
+          document_content: {
+            type: "markdown",
+            markdown: `\n\n${content}`,
+          },
+        }],
+      });
+    }
+
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
 }
