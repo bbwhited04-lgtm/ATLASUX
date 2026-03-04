@@ -98,7 +98,7 @@ export default function BlogHome() {
 
       <footer className="border-t border-cyan-500/20 bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-slate-500">
-          &copy; {new Date().getFullYear()} ATLAS UX &bull; Built for governed automation
+          &copy; {new Date().getFullYear()} Atlas UX &bull; Built for governed automation
         </div>
       </footer>
     </div>

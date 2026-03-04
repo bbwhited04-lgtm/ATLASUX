@@ -27,7 +27,7 @@ export function MobileApp() {
             </div>
             <div>
               <h1 className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                ATLAS UX
+                Atlas UX
               </h1>
               <span className="text-[10px] text-slate-400 font-semibold">MOBILE COMPANION</span>
             </div>

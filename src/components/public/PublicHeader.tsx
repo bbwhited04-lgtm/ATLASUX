@@ -28,10 +28,10 @@ export default function PublicHeader({
           <Link to="/" className="flex items-center gap-2">
             <img
               src="/icon.svg"
-              alt="ATLAS UX"
+              alt="Atlas UX"
               className="h-8 w-8"
             />
-            <span className="text-base font-bold text-white">ATLAS UX</span>
+            <span className="text-base font-bold text-white">Atlas UX</span>
           </Link>
           <div className="hidden items-center gap-1 md:flex">
             <NavLink to="/store">Store</NavLink>

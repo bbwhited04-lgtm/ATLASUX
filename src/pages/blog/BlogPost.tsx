@@ -131,7 +131,7 @@ export default function BlogPost() {
                     href="#/app"
                     className="inline-flex rounded-2xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-600"
                   >
-                    Open ATLAS UX
+                    Open Atlas UX
                   </a>
                 </div>
               </div>
@@ -150,7 +150,7 @@ export default function BlogPost() {
 
       <footer className="border-t border-cyan-500/20 bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-slate-500">
-          &copy; {new Date().getFullYear()} ATLAS UX &bull; Simple, safe, business-friendly
+          &copy; {new Date().getFullYear()} Atlas UX &bull; Simple, safe, business-friendly
         </div>
       </footer>
     </div>

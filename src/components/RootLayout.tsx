@@ -320,7 +320,7 @@ function RootLayoutInner() {
         <header className="h-16 bg-slate-900/30 backdrop-blur-xl border-b border-cyan-500/20 flex items-center justify-between px-6">
           <div>
             <h1 className="text-xl font-semibold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-              ATLAS UX
+              Atlas UX
             </h1>
             <p className="text-xs text-slate-400">The AI Worker who works Where You Work</p>
           </div>

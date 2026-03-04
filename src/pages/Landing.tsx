@@ -162,7 +162,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen text-white relative">
       <SEO
-        title="ATLAS UX — AI Agent Platform for Business Automation & Orchestration"
+        title="Atlas UX — AI Agent Platform for Business Automation & Orchestration"
         description="AI agent orchestrator platform with 30+ autonomous agents. Marketing automation, CRM, financial management, video conferencing, AI workflows, and business operations — all governed with human-in-the-loop safety."
         keywords="ai agent orchestrator, multi-agent ai platform, autonomous ai employee, ai agent CRM, ai agent marketing, ai workforce platform, ai powered business operations, ai orchestrator for business, 30 ai agents, ai employee platform, ai agent social media manager, ai agent financial management, ai decision memo, human in the loop ai, governed ai agents, ai workflow engine, autonomous business agents, ai operations platform"
         schema={[
@@ -206,8 +206,10 @@ export default function Landing() {
                   You Work.
                 </h1>
 
-                <p className="mt-6 max-w-lg text-lg text-[#bab2b5]">
-                  <strong className="text-white">Atlas UX</strong> is an AI employee platform that automates CRM, marketing, finance, HR, and executive operations for small businesses.
+                <p className="mt-6 max-w-lg text-xl font-semibold text-white">
+                  Atlas UX is an AI-powered business automation platform that deploys 30+ autonomous agents to run your CRM, marketing, finance, and operations.
+                </p>
+                <p className="mt-3 max-w-lg text-base text-[#bab2b5]">
                   1 Orchestrator. 29 Specialized Agents. Wired to Twilio, Microsoft Office,
                   Telegram &amp; SMS. Every action logged, every decision traceable.
                 </p>
@@ -703,7 +705,7 @@ export default function Landing() {
             <li>seedAiKb.ts — 62 comprehensive AI/tech KB documents across 11 categories: prompt engineering, AI agents, RAG retrieval, LLMOps, AI marketing, AI CRM, productivity, security, strategy, data engineering, and social media AI</li>
             <li>Full codebase audit sweep — fixed 100+ findings across 45 files: removed all Neptune/Pluto legacy naming, replaced demo_org stubs, fixed false feature claims in Store/HelpSection, converted Store/About/Product/Blog pages to dark theme, corrected agent role descriptions and emails, deleted duplicate/orphan files, updated license to DEAD APP CORP, replaced all simulated/mock responses with honest error states, moved OAuth PKCE/CSRF state from in-memory maps to Postgres-backed oauth_state table</li>
             <li>CRM CSV import — you can now upload a .csv file (iCloud contacts, Outlook export, any standard CSV) directly from the CRM Import modal; parser handles quoted fields, flexible column names (First Name/firstName/First), and imports up to 5,000 contacts per batch with audit trail logging</li>
-            <li>Corporate structure updated — footer and legal text now reflects ATLAS UX as a product of DEAD APP CORP, a Missouri closed corporation owned by THE DEAD APP CORP TRUST</li>
+            <li>Corporate structure updated — footer and legal text now reflects Atlas UX as a product of DEAD APP CORP, a Missouri closed corporation owned by THE DEAD APP CORP TRUST</li>
             <li>vCard (.vcf) import — CRM Import modal now natively parses iCloud, Outlook, and Google Contacts vCard exports; handles vCard 2.1/3.0/4.0, multi-line folding, escaped chars, and extracts name, email, phone, org, and notes per card</li>
             <li>Blog Studio edit + delete — each post in the Published Posts panel now has hover Edit (loads title, body, category, featured image into the editor) and Trash buttons; PATCH and DELETE endpoints added to /v1/blog/posts; featured image upload now correctly sends to /v1/files/upload and fetches a signed URL</li>
             <li>CRM import body limit raised to 20 MB — large CSV/vCard files (thousands of contacts) no longer hit "payload too large" error</li>
