@@ -44,7 +44,22 @@
   <body>
     <!-- Meta Pixel noscript fallback -->
     <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2062758617907932&ev=PageView&noscript=1" /></noscript>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Pre-render content for crawlers/bots that don't execute JS. React replaces this on mount. -->
+      <div style="padding:40px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#020617;color:#e2e8f0;max-width:800px;margin:0 auto">
+        <h1 style="font-size:2rem;font-weight:700">Atlas UX</h1>
+        <p style="font-size:1.25rem;font-weight:600;margin-top:16px;color:#fff">Atlas UX is an AI-powered business automation platform that deploys 30+ autonomous agents to run your CRM, marketing, finance, and operations.</p>
+        <p style="color:#94a3b8;line-height:1.7;margin-top:12px">1 Orchestrator. 29 Specialized Agents. Wired to Twilio, Microsoft Office, Telegram &amp; SMS. Every action logged, every decision traceable. Desktop app + cloud deployment with decision memos, audit trails, and human-in-the-loop safety.</p>
+        <nav style="margin-top:24px">
+          <a href="#/about" style="color:#67e8f9;margin-right:16px">About</a>
+          <a href="#/blog" style="color:#67e8f9;margin-right:16px">Blog</a>
+          <a href="#/store" style="color:#67e8f9;margin-right:16px">Store</a>
+          <a href="#/privacy" style="color:#67e8f9;margin-right:16px">Privacy Policy</a>
+          <a href="#/terms" style="color:#67e8f9;margin-right:16px">Terms of Service</a>
+        </nav>
+        <p style="margin-top:24px;font-size:0.875rem;color:#64748b">&copy; 2026 Atlas UX. All rights reserved.</p>
+      </div>
+    </div>
     <!-- Crawler-visible content (hidden once React mounts) -->
     <noscript>
       <div style="padding:40px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#020617;color:#e2e8f0;max-width:800px;margin:0 auto">
