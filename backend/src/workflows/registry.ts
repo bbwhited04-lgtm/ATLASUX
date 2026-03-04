@@ -9,6 +9,7 @@ import { searchRecentTweets } from "../services/x.js";
 import { executeBrowserSession, resumeBrowserSession } from "../tools/browser/browserService.js";
 import { validateSessionConfig, createBrowserSessionMemo } from "../tools/browser/browserGovernance.js";
 import { calculateSessionRiskTier, type BrowserSessionConfig, type BrowserActionStep } from "../tools/browser/browserActions.js";
+import { postAsAgent, getChannelByName } from "../services/slack.js";
 
 export type WorkflowContext = {
   tenantId: string;
@@ -3213,6 +3214,17 @@ handlers["WF-035"] = async (ctx) => {
 
   if (!shouldEscalate) {
     await writeStepAudit(ctx, "WF-035.silent", `Hour ${hour}: No high signals — silent`);
+
+    // Post to #intel channel
+    try {
+      const intelCh = await getChannelByName("intel", true);
+      if (intelCh) {
+        await postAsAgent(intelCh.id, "daily-intel",
+          `:green_circle: *Hourly Scan — ${today} ${String(hour).padStart(2, "0")}:00 UTC*\nSources: ${sources.map(s => s.label).join(", ")}\nVerdict: SILENT — no high-relevance signals detected.`
+        );
+      }
+    } catch { /* non-fatal */ }
+
     return { ok: true, message: `Tripwire silent (hour ${hour})`, output: { signalsFound: 0, hour, verdict: "SILENT" } };
   }
 
@@ -3311,6 +3323,17 @@ handlers["WF-035"] = async (ctx) => {
   if (hubEmail && hubEmail !== atlasEmail) {
     await queueEmail(ctx, { to: hubEmail, fromAgent: "daily-intel", subject: `[TRIPWIRE HUB] ${alertSubject}`, text: alertBody });
   }
+
+  // Post escalation to #intel channel
+  try {
+    const intelCh = await getChannelByName("intel", true);
+    if (intelCh) {
+      const routedList = routedAgents.size > 0 ? `\nRouted to: ${[...routedAgents].join(", ")}` : "";
+      await postAsAgent(intelCh.id, "daily-intel",
+        `:red_circle: *ESCALATION — ${today} ${String(hour).padStart(2, "0")}:00 UTC*\nSources: ${sources.map(s => s.label).join(", ")}\nClips saved: ${savedClips}${routedList}\n\n${triageResult.slice(0, 1500)}`
+      );
+    }
+  } catch { /* non-fatal */ }
 
   await writeStepAudit(ctx, "WF-035.escalated", `ESCALATED — breaking signal detected at hour ${hour}`, {
     verdict: "ESCALATE",
