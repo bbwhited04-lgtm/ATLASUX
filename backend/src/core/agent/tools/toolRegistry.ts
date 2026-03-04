@@ -26,6 +26,7 @@ import { dropboxFilesTool }   from "./dropboxFiles.js";
 import { xAnalyticsTool }       from "./xAnalytics.js";
 import { postizPublishTool }    from "./postizPublish.js";
 import { postizAnalyticsTool }  from "./postizAnalytics.js";
+import { postizBroadcastTool }  from "./postizBroadcast.js";
 
 // ── Tool registry ────────────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ const ALL_TOOLS: ToolDefinition[] = [
   xAnalyticsTool,
   postizPublishTool,
   postizAnalyticsTool,
+  postizBroadcastTool,
 ];
 
 export function getAllTools(): ToolDefinition[] {

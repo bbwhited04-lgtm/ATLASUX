@@ -1047,7 +1047,7 @@ const LOCAL_VISION_PATTERNS = [
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   // ── Executives ───────────────────────────────────────────────────────
-  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast"],
   binky:       ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "discord", "telegramFull"],
   cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull"],
   tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory", "delegate", "gmailRead", "googleSheets", "excel", "dropbox"],
@@ -1064,23 +1064,23 @@ const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   "daily-intel": ["calendar", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio"],
 
   // ── Content & Comms ──────────────────────────────────────────────────
-  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics"],
-  archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics"],
+  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast"],
+  archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast"],
   venny:       ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1", "postizPublish", "postizAnalytics"],
   victor:      ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate", "postizPublish", "postizAnalytics"],
   reynolds:    ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "hackerNews"],
 
   // ── Social Publishers ────────────────────────────────────────────────
-  kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch", "xAnalytics", "postizPublish", "postizAnalytics"],
-  fran:        ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics"],
-  dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics"],
-  timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics"],
-  terry:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics"],
-  cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics"],
-  link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "discord", "postizPublish", "postizAnalytics"],
-  emma:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics"],
-  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate", "redditSearch", "browser", "hackerNews", "postizPublish", "postizAnalytics"],
-  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "webSearch", "browser", "composio", "postizPublish", "postizAnalytics"],
+  kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast"],
+  fran:        ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast"],
+  dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast"],
+  timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast"],
+  terry:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast"],
+  cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast"],
+  link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "discord", "postizPublish", "postizAnalytics", "postizBroadcast"],
+  emma:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast"],
+  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate", "redditSearch", "browser", "hackerNews", "postizPublish", "postizAnalytics", "postizBroadcast"],
+  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "webSearch", "browser", "composio", "postizPublish", "postizAnalytics", "postizBroadcast"],
 };
 
 export type ToolNeeds = {
@@ -1126,6 +1126,7 @@ export type ToolNeeds = {
   xAnalytics:      boolean;
   postizPublish:   boolean;
   postizAnalytics: boolean;
+  postizBroadcast: boolean;
   query:          string;
 };
 
