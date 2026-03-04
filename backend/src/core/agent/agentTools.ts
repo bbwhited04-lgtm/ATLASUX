@@ -1047,40 +1047,40 @@ const LOCAL_VISION_PATTERNS = [
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   // ── Executives ───────────────────────────────────────────────────────
-  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast"],
-  binky:       ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "discord", "telegramFull"],
-  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull"],
-  tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory", "delegate", "gmailRead", "googleSheets", "excel", "dropbox"],
-  larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "telegram", "memory", "delegate", "composio", "dropbox"],
-  jenny:       ["calendar", "legal", "policy", "knowledge", "telegram", "memory", "delegate", "webSearch", "arxiv", "composio"],
-  benny:       ["calendar", "legal", "ipRegister", "knowledge", "telegram", "memory", "delegate", "webSearch", "composio"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  binky:       ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "discord", "telegramFull", "slackChat"],
+  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat"],
+  tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory", "delegate", "gmailRead", "googleSheets", "excel", "dropbox", "slackChat"],
+  larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "telegram", "memory", "delegate", "composio", "dropbox", "slackChat"],
+  jenny:       ["calendar", "legal", "policy", "knowledge", "telegram", "memory", "delegate", "webSearch", "arxiv", "composio", "slackChat"],
+  benny:       ["calendar", "legal", "ipRegister", "knowledge", "telegram", "memory", "delegate", "webSearch", "composio", "slackChat"],
 
   // ── Ops & Support ────────────────────────────────────────────────────
-  petra:       ["calendar", "planner", "telegram", "memory", "delegate", "googleCalendar", "googleSheets", "discord", "telegramFull"],
-  mercer:      ["crm", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "composio", "discord"],
-  frank:       ["userProfile", "telegram", "memory", "delegate", "telegramFull"],
-  sandy:       ["calendar", "email", "userProfile", "telegram", "memory", "delegate", "gmailRead", "googleCalendar"],
-  claire:      ["calendar", "email", "telegram", "memory", "delegate", "gmailRead", "googleCalendar"],
-  "daily-intel": ["calendar", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio"],
+  petra:       ["calendar", "planner", "telegram", "memory", "delegate", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat"],
+  mercer:      ["crm", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "composio", "discord", "slackChat"],
+  frank:       ["userProfile", "telegram", "memory", "delegate", "telegramFull", "slackChat"],
+  sandy:       ["calendar", "email", "userProfile", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat"],
+  claire:      ["calendar", "email", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat"],
+  "daily-intel": ["calendar", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "slackChat"],
 
   // ── Content & Comms ──────────────────────────────────────────────────
-  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast"],
-  archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast"],
-  venny:       ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1", "postizPublish", "postizAnalytics"],
-  victor:      ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate", "postizPublish", "postizAnalytics"],
-  reynolds:    ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "hackerNews"],
+  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  venny:       ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1", "postizPublish", "postizAnalytics", "slackChat"],
+  victor:      ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate", "postizPublish", "postizAnalytics", "slackChat"],
+  reynolds:    ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "hackerNews", "slackChat"],
 
   // ── Social Publishers ────────────────────────────────────────────────
-  kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast"],
-  fran:        ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast"],
-  dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast"],
-  timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast"],
-  terry:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast"],
-  cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast"],
-  link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "discord", "postizPublish", "postizAnalytics", "postizBroadcast"],
-  emma:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast"],
-  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate", "redditSearch", "browser", "hackerNews", "postizPublish", "postizAnalytics", "postizBroadcast"],
-  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "webSearch", "browser", "composio", "postizPublish", "postizAnalytics", "postizBroadcast"],
+  kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  fran:        ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  terry:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "discord", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  emma:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate", "redditSearch", "browser", "hackerNews", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "webSearch", "browser", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
 };
 
 export type ToolNeeds = {
@@ -1127,6 +1127,7 @@ export type ToolNeeds = {
   postizPublish:   boolean;
   postizAnalytics: boolean;
   postizBroadcast: boolean;
+  slackChat:       boolean;
   query:          string;
 };
 

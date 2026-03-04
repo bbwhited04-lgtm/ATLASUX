@@ -27,6 +27,7 @@ import { xAnalyticsTool }       from "./xAnalytics.js";
 import { postizPublishTool }    from "./postizPublish.js";
 import { postizAnalyticsTool }  from "./postizAnalytics.js";
 import { postizBroadcastTool }  from "./postizBroadcast.js";
+import { slackChatTool }        from "./slackChat.js";
 
 // ── Tool registry ────────────────────────────────────────────────────────────
 
@@ -45,6 +46,7 @@ const ALL_TOOLS: ToolDefinition[] = [
   postizPublishTool,
   postizAnalyticsTool,
   postizBroadcastTool,
+  slackChatTool,
 ];
 
 export function getAllTools(): ToolDefinition[] {

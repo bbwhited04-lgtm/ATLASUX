@@ -20,7 +20,10 @@ export type AgentSummary = {
 };
 
 function withM365(id: string, base: Omit<AgentSummary, "m365Tools">): AgentSummary {
-  return { ...base, m365Tools: getAgentM365Tools(id) };
+  // Every agent gets Slack chat access for inter-agent communication
+  const tools = base.toolsAllowed ?? [];
+  if (!tools.includes("Slack chat")) tools.push("Slack chat");
+  return { ...base, toolsAllowed: tools, m365Tools: getAgentM365Tools(id) };
 }
 
 export const agentRegistry: AgentSummary[] = [

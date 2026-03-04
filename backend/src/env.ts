@@ -162,6 +162,10 @@ const EnvSchema = z.object({
   // Slack OAuth2 v2 (redirect built from APP_URL at runtime)
   SLACK_CLIENT_ID: z.string().optional(),
   SLACK_CLIENT_SECRET: z.string().optional(),
+  SLACK_SIGNING_SECRET: z.string().optional(),
+  SLACK_BOT_TOKEN: z.string().optional(),    // xoxb-* bot token for inter-agent chat
+  SLACK_USER_TOKEN: z.string().optional(),   // xoxp-* user token (fallback)
+  SLACK_APP_TOKEN: z.string().optional(),    // xoxe-* app-level token
 
   // PayPal OAuth2
   PAYPAL_CLIENT_ID: z.string().optional(),
