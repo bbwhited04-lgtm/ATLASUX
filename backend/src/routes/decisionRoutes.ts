@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma, withTenant } from "../db/prisma.js";
-import { approveDecisionMemo, createDecisionMemo, rejectDecisionMemo } from "../services/decisionMemos.js";
+import { approveDecisionMemo, createDecisionMemo, rejectDecisionMemo, executeApprovedBroadcast } from "../services/decisionMemos.js";
 
 const CreateMemoSchema = z.object({
   agent:            z.string().min(1).max(100),
@@ -212,6 +212,14 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
     ).catch(() => null);
 
     if (!res.ok) return reply.code(409).send({ ok: false, error: "guardrail_block", guard: res.guard, memo: res.memo });
+
+    // If this is a broadcast memo, trigger delivery (fire-and-forget)
+    if (res.ok && (res.memo.payload as any)?.type === "broadcast") {
+      executeApprovedBroadcast(res.memo).catch(err => {
+        app.log.error({ err }, "Broadcast delivery failed after approval");
+      });
+    }
+
     return reply.send({ ok: true, memo: res.memo, guard: res.guard });
   });
 

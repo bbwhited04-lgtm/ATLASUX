@@ -1,5 +1,6 @@
 import { prisma } from "../db/prisma.js";
 import { checkGuardrails } from "./guardrails.js";
+import { deliverBroadcast, type BroadcastChannel } from "../core/agent/tools/broadcastDelivery.js";
 
 export type CreateDecisionMemoInput = {
   tenantId: string;
@@ -60,6 +61,71 @@ export async function approveDecisionMemo(params: { tenantId: string; memoId: st
 
   const updated = await prisma.decisionMemo.update({ where: { id: memo.id }, data: { status: "APPROVED" } });
   return { ok: true, memo: updated, guard };
+}
+
+/**
+ * Execute an approved broadcast decision memo.
+ * Called after approveDecisionMemo() succeeds for memos with payload.type === "broadcast".
+ * Delivers content to all channels via the 3-tier pipeline and updates the memo with results.
+ */
+export async function executeApprovedBroadcast(memo: {
+  id: string;
+  tenantId: string;
+  payload: any;
+}) {
+  const payload = memo.payload as {
+    type: string;
+    topic: string;
+    content: string;
+    channels: BroadcastChannel[];
+  };
+
+  if (payload?.type !== "broadcast" || !payload.content || !payload.channels?.length) {
+    return;
+  }
+
+  const result = await deliverBroadcast({
+    tenantId: memo.tenantId,
+    content: payload.content,
+    channels: payload.channels,
+  });
+
+  // Update memo payload with delivery results
+  await prisma.decisionMemo.update({
+    where: { id: memo.id },
+    data: {
+      payload: {
+        ...payload,
+        deliveryResults: result.results,
+        deliverySummary: result.summary,
+        deliveredAt: new Date().toISOString(),
+      },
+    },
+  });
+
+  // Audit log for broadcast delivery
+  await prisma.auditLog.create({
+    data: {
+      tenantId: memo.tenantId,
+      actorType: "system",
+      actorExternalId: "broadcast_delivery",
+      level: result.results.every(r => r.success) ? "info" : "warn",
+      action: "BROADCAST_DELIVERED",
+      entityType: "decision_memo",
+      entityId: memo.id,
+      message: result.summary,
+      meta: {
+        memoId: memo.id,
+        topic: payload.topic,
+        channelCount: payload.channels.length,
+        successCount: result.results.filter(r => r.success).length,
+        failCount: result.results.filter(r => !r.success).length,
+      },
+      timestamp: new Date(),
+    },
+  } as any).catch(() => null);
+
+  return result;
 }
 
 export async function rejectDecisionMemo(params: { tenantId: string; memoId: string; reason?: string }) {
