@@ -66,12 +66,12 @@ export default function CRM() {
   const [newActivity, setNewActivity] = useState({ type: "note", subject: "", body: "" });
 
   // Companies state
-  type Company = { id: string; name: string; domain?: string; industry?: string; notes?: string; createdAt?: string };
+  type Company = { id: string; name: string; domain?: string; industry?: string; phone?: string; website?: string; contactName?: string; address?: string; notes?: string; createdAt?: string };
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [companyQuery, setCompanyQuery] = useState("");
   const [showAddCompany, setShowAddCompany] = useState(false);
-  const [newCompany, setNewCompany] = useState({ name: "", domain: "", industry: "", notes: "" });
+  const [newCompany, setNewCompany] = useState({ name: "", domain: "", industry: "", phone: "", website: "", contactName: "", address: "", notes: "" });
 
   // Segments state
   const [segments, setSegments] = useState<any[]>([]);
@@ -463,13 +463,17 @@ export default function CRM() {
           name: newCompany.name.trim(),
           domain: newCompany.domain.trim() || undefined,
           industry: newCompany.industry.trim() || undefined,
+          phone: newCompany.phone.trim() || undefined,
+          website: newCompany.website.trim() || undefined,
+          contactName: newCompany.contactName.trim() || undefined,
+          address: newCompany.address.trim() || undefined,
           notes: newCompany.notes.trim() || undefined,
         }),
       });
       const json = await res.json();
       if (json.ok && json.company) {
         setCompanies((prev) => [json.company, ...prev]);
-        setNewCompany({ name: "", domain: "", industry: "", notes: "" });
+        setNewCompany({ name: "", domain: "", industry: "", phone: "", website: "", contactName: "", address: "", notes: "" });
         setShowAddCompany(false);
       }
     } catch {}
@@ -823,10 +827,11 @@ export default function CRM() {
           {/* Companies table */}
           <div className="rounded-2xl border border-white/10 overflow-hidden">
             <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs uppercase tracking-wide opacity-70 bg-white/5">
-              <div className="col-span-3">Name</div>
-              <div className="col-span-3">Domain</div>
+              <div className="col-span-2">Name</div>
+              <div className="col-span-2">Contact</div>
+              <div className="col-span-2">Phone</div>
+              <div className="col-span-2">Website</div>
               <div className="col-span-2">Industry</div>
-              <div className="col-span-2">Contacts</div>
               <div className="col-span-2">Actions</div>
             </div>
 
@@ -842,22 +847,17 @@ export default function CRM() {
                   key={co.id}
                   className="grid grid-cols-12 gap-2 px-4 py-3 text-sm border-t border-white/10 hover:bg-white/5 transition"
                 >
-                  <div className="col-span-3 font-medium">{co.name}</div>
-                  <div className="col-span-3 opacity-80">{co.domain ?? "—"}</div>
-                  <div className="col-span-2 opacity-80">{co.industry ?? "—"}</div>
-                  <div className="col-span-2">
-                    {contactsByCompany[co.name.toLowerCase()] ? (
-                      <button
-                        type="button"
-                        onClick={() => { setActiveTab("contacts"); setQuery(co.name); }}
-                        className="text-cyan-400 hover:text-cyan-300 text-xs underline"
-                      >
-                        {contactsByCompany[co.name.toLowerCase()]} contacts
-                      </button>
-                    ) : (
-                      <span className="opacity-50 text-xs">0</span>
-                    )}
+                  <div className="col-span-2 font-medium truncate" title={co.name}>{co.name}</div>
+                  <div className="col-span-2 opacity-80 truncate" title={co.contactName ?? ""}>{co.contactName ?? "—"}</div>
+                  <div className="col-span-2 opacity-80 truncate" title={co.phone ?? ""}>{co.phone ?? "—"}</div>
+                  <div className="col-span-2 opacity-80 truncate">
+                    {co.website ? (
+                      <a href={co.website.startsWith("http") ? co.website : `https://${co.website}`} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">
+                        {co.domain || co.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
+                      </a>
+                    ) : "—"}
                   </div>
+                  <div className="col-span-2 opacity-80 truncate" title={co.industry ?? ""}>{co.industry ?? "—"}</div>
                   <div className="col-span-2 flex gap-2">
                     <button
                       type="button"

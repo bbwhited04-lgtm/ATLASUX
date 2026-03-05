@@ -211,9 +211,11 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     const where: any = { tenantId };
     if (search) {
       where.OR = [
-        { name:     { contains: search, mode: "insensitive" } },
-        { domain:   { contains: search, mode: "insensitive" } },
-        { industry: { contains: search, mode: "insensitive" } },
+        { name:        { contains: search, mode: "insensitive" } },
+        { domain:      { contains: search, mode: "insensitive" } },
+        { industry:    { contains: search, mode: "insensitive" } },
+        { phone:       { contains: search, mode: "insensitive" } },
+        { contactName: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -238,10 +240,14 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
       return tx.crmCompany.create({
         data: {
           tenantId,
-          name:     s(body.name)!,
-          domain:   s(body.domain)   ?? undefined,
-          industry: s(body.industry) ?? undefined,
-          notes:    s(body.notes)    ?? undefined,
+          name:        s(body.name)!,
+          domain:      s(body.domain)      ?? undefined,
+          industry:    s(body.industry)    ?? undefined,
+          phone:       s(body.phone)       ?? undefined,
+          website:     s(body.website)     ?? undefined,
+          contactName: s(body.contactName) ?? undefined,
+          address:     s(body.address)     ?? undefined,
+          notes:       s(body.notes)       ?? undefined,
         },
       });
     });
