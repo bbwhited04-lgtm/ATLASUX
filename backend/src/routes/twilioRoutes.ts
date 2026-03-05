@@ -102,11 +102,9 @@ export const twilioRoutes: FastifyPluginAsync = async (app) => {
       const params = (req.body as Record<string, string>) ?? {};
 
       if (!validateTwilioSignature(authToken, sig, url, params)) {
-        app.log.warn({ url }, "Invalid Twilio signature");
-        // Don't reject in dev — Twilio signature relies on public URL matching
-        if (process.env.NODE_ENV === "production") {
-          return reply.status(403).send({ error: "Invalid signature" });
-        }
+        // Warn only — don't block. Behind Render's proxy the reconstructed URL
+        // may not match what Twilio signed, causing false rejections.
+        app.log.warn({ url, sig }, "Twilio signature mismatch (not blocking)");
       }
     });
 
