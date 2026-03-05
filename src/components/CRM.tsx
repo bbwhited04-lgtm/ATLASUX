@@ -19,7 +19,7 @@ type Contact = {
   createdAt?: string;
 };
 
-type ImportSource = "google" | "csv" | "vcf" | "hubspot" | "salesforce" | "manual";
+type ImportSource = "google" | "csv" | "vcf" | "company-csv" | "company-paste" | "hubspot" | "salesforce" | "manual";
 
 function normalizeContactName(c: Contact): string {
   const full = `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim();
@@ -48,6 +48,8 @@ export default function CRM() {
 
   const [showImportModal, setShowImportModal] = useState(false);
   const [importSource, setImportSource] = useState<ImportSource>("google");
+  const [pasteText, setPasteText] = useState("");
+  const [pasteIndustry, setPasteIndustry] = useState("");
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newContact, setNewContact] = useState<Partial<Contact>>({
@@ -216,6 +218,58 @@ export default function CRM() {
     });
   }
 
+  /**
+   * Parse raw pasted text into company records.
+   * Expects groups separated by blank lines. Within each group:
+   * - First line = company name
+   * - Lines with phone patterns = phone
+   * - Lines with URLs = website
+   * - Lines with zip codes = address
+   * - Other lines = contact name (first non-company text line)
+   */
+  function parsePastedCompanies(text: string): Record<string, string>[] {
+    const phoneRe = /^[\d\.\-\(\)\s]{7,}$/;
+    const urlRe = /^(https?:\/\/|www\.|[a-z0-9][\w-]*\.(com|net|org|gov|edu|io|co|us|biz|info))/i;
+    const zipRe = /\d{5}/;
+
+    // Split into groups by blank lines
+    const groups: string[][] = [];
+    let current: string[] = [];
+    for (const raw of text.split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line) {
+        if (current.length) { groups.push(current); current = []; }
+      } else {
+        current.push(line);
+      }
+    }
+    if (current.length) groups.push(current);
+
+    const results: Record<string, string>[] = [];
+    for (const group of groups) {
+      if (!group.length) continue;
+      const entry: Record<string, string> = { name: group[0] };
+      let gotContact = false;
+
+      for (let i = 1; i < group.length; i++) {
+        const line = group[i];
+        const stripped = line.replace(/[\s\-\.\(\)]/g, "");
+        if (/^\d{7,}$/.test(stripped) && !entry.phone) {
+          entry.phone = line;
+        } else if (urlRe.test(line) && !entry.website) {
+          entry.website = line.startsWith("http") ? line : `https://${line}`;
+        } else if (zipRe.test(line) && line.length > 10 && !entry.address) {
+          entry.address = line;
+        } else if (!gotContact && !phoneRe.test(stripped) && !urlRe.test(line)) {
+          entry.contact = line;
+          gotContact = true;
+        }
+      }
+      if (entry.name && entry.name !== ".") results.push(entry);
+    }
+    return results;
+  }
+
   /** Parse vCard (.vcf) text into contact row objects. Handles vCard 2.1, 3.0, and 4.0 formats. */
   function parseVcf(text: string): Record<string, string>[] {
     const contacts: Record<string, string>[] = [];
@@ -327,7 +381,84 @@ export default function CRM() {
     return { created: totalCreated, skipped: totalSkipped, errors: allErrors };
   }
 
+  async function importCompaniesBatched(rows: Record<string, string>[]) {
+    const BATCH_SIZE = 200;
+    let totalCreated = 0;
+    let totalSkipped = 0;
+    const allErrors: string[] = [];
+
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const batch = rows.slice(i, i + BATCH_SIZE);
+      // Add industry tag to each row if set
+      if (pasteIndustry.trim()) {
+        batch.forEach(r => { if (!r.industry) r.industry = pasteIndustry.trim(); });
+      }
+      const res = await fetch(`${API_BASE}/v1/crm/companies/import-csv`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-tenant-id": tenantId ?? "" },
+        body: JSON.stringify({ rows: batch }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? `Batch ${Math.floor(i / BATCH_SIZE) + 1} failed`);
+      totalCreated += data.created ?? 0;
+      totalSkipped += data.skipped ?? 0;
+      if (data.errors?.length) allErrors.push(...data.errors);
+    }
+    return { created: totalCreated, skipped: totalSkipped, errors: allErrors };
+  }
+
   const handleRunImport = async () => {
+    // Company paste import
+    if (importSource === "company-paste" && pasteText.trim()) {
+      setLoading(true);
+      setError(null);
+      setImportResult(null);
+      try {
+        const rows = parsePastedCompanies(pasteText);
+        if (!rows.length) {
+          setError("No companies found. Separate entries with blank lines. First line of each = company name.");
+          setLoading(false);
+          return;
+        }
+        const result = await importCompaniesBatched(rows);
+        setImportResult({ created: result.created, skipped: result.skipped, errors: result.errors.slice(0, 10) });
+
+        // Reload companies
+        const listRes = await fetch(`${API_BASE}/v1/crm/companies`, { headers: { "x-tenant-id": tenantId ?? "" } });
+        const listData = await listRes.json();
+        if (listRes.ok) setCompanies(listData.companies ?? []);
+      } catch (e: any) {
+        setError(e?.message ?? "Company paste import failed");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Company CSV import
+    if (importSource === "company-csv" && csvFile) {
+      setLoading(true);
+      setError(null);
+      setImportResult(null);
+      try {
+        const text = await csvFile.text();
+        const rows = parseCsv(text);
+        if (!rows.length) { setError("CSV has no data rows."); setLoading(false); return; }
+        const result = await importCompaniesBatched(rows);
+        setImportResult({ created: result.created, skipped: result.skipped, errors: result.errors.slice(0, 10) });
+
+        const listRes = await fetch(`${API_BASE}/v1/crm/companies`, { headers: { "x-tenant-id": tenantId ?? "" } });
+        const listData = await listRes.json();
+        if (listRes.ok) setCompanies(listData.companies ?? []);
+      } catch (e: any) {
+        setError(e?.message ?? "Company CSV import failed");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Contact CSV / VCF import
     if ((importSource === "csv" || importSource === "vcf") && csvFile) {
       setLoading(true);
       setError(null);
@@ -972,9 +1103,9 @@ export default function CRM() {
           <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0b0b0c] p-6 space-y-4">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-lg font-semibold">Import Contacts</h2>
+                <h2 className="text-lg font-semibold">Import</h2>
                 <p className="text-sm opacity-70">
-                  Upload a vCard (.vcf) or CSV file to import your contacts.
+                  Import contacts or companies from CSV, vCard, or paste raw text.
                 </p>
               </div>
               <button
@@ -990,14 +1121,22 @@ export default function CRM() {
               <label className="text-sm opacity-80">Source</label>
               <select
                 value={importSource}
-                onChange={(e) => { setImportSource(e.target.value as ImportSource); setCsvFile(null); setImportResult(null); }}
+                onChange={(e) => { setImportSource(e.target.value as ImportSource); setCsvFile(null); setImportResult(null); setPasteText(""); }}
                 className="w-full h-11 px-4 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-white/25"
               >
-                <option value="vcf">vCard (.vcf) — iCloud, Outlook, Google</option>
-                <option value="csv">CSV Upload</option>
-                <option value="google">Google (coming soon)</option>
-                <option value="hubspot">HubSpot (coming soon)</option>
-                <option value="salesforce">Salesforce (coming soon)</option>
+                <optgroup label="Companies">
+                  <option value="company-paste">Paste Companies (raw text)</option>
+                  <option value="company-csv">Company CSV Upload</option>
+                </optgroup>
+                <optgroup label="Contacts">
+                  <option value="vcf">vCard (.vcf) — iCloud, Outlook, Google</option>
+                  <option value="csv">Contact CSV Upload</option>
+                </optgroup>
+                <optgroup label="Coming Soon">
+                  <option value="google">Google</option>
+                  <option value="hubspot">HubSpot</option>
+                  <option value="salesforce">Salesforce</option>
+                </optgroup>
               </select>
             </div>
 
@@ -1028,9 +1167,63 @@ export default function CRM() {
               </div>
             )}
 
-            {importSource !== "csv" && importSource !== "vcf" && (
+            {importSource === "company-paste" && (
+              <div className="space-y-3">
+                <textarea
+                  value={pasteText}
+                  onChange={(e) => { setPasteText(e.target.value); setImportResult(null); }}
+                  placeholder={"Acme Plumbing\n123 Main St, Springfield MO 65801\n(573) 555-1234\nwww.acmeplumbing.com\nJohn Smith\n\nBob's Electric\n456 Oak Ave, Mexico MO 65265\n(573) 555-5678"}
+                  rows={10}
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-white/25 text-sm font-mono resize-y"
+                />
+                <div className="flex gap-3 items-center">
+                  <label className="text-xs opacity-70 shrink-0">Industry tag:</label>
+                  <input
+                    value={pasteIndustry}
+                    onChange={(e) => setPasteIndustry(e.target.value)}
+                    placeholder="e.g. Construction, Chamber of Commerce"
+                    className="flex-1 h-9 px-3 rounded-lg bg-white/5 border border-white/10 outline-none focus:border-white/25 text-sm"
+                  />
+                </div>
+                <p className="text-xs opacity-60">
+                  Separate each company with a <span className="text-white/80">blank line</span>. First line = company name.
+                  Phone numbers, websites, and addresses are auto-detected. Other lines become the contact name.
+                </p>
+              </div>
+            )}
+
+            {importSource === "company-csv" && (
+              <div className="space-y-3">
+                <div className="rounded-xl border border-dashed border-white/20 bg-white/5 p-4 text-center">
+                  <input
+                    type="file"
+                    accept=".csv,.txt"
+                    onChange={(e) => { setCsvFile(e.target.files?.[0] ?? null); setImportResult(null); }}
+                    className="block mx-auto text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-4 file:py-2 file:text-sm file:font-medium file:text-cyan-400 hover:file:bg-cyan-500/30"
+                  />
+                  {csvFile && (
+                    <p className="mt-2 text-xs opacity-70">{csvFile.name} ({(csvFile.size / 1024).toFixed(1)} KB)</p>
+                  )}
+                </div>
+                <div className="flex gap-3 items-center">
+                  <label className="text-xs opacity-70 shrink-0">Industry tag:</label>
+                  <input
+                    value={pasteIndustry}
+                    onChange={(e) => setPasteIndustry(e.target.value)}
+                    placeholder="e.g. Construction, Chamber of Commerce"
+                    className="flex-1 h-9 px-3 rounded-lg bg-white/5 border border-white/10 outline-none focus:border-white/25 text-sm"
+                  />
+                </div>
+                <p className="text-xs opacity-60">
+                  Expected columns: <span className="font-mono text-cyan-400/80">Name, Phone, Website, Contact, Address, Industry</span>.
+                  Also accepts: <span className="font-mono text-cyan-400/80">Company Name, Phone Number, Web Site, Contact Person</span>.
+                </p>
+              </div>
+            )}
+
+            {!["csv", "vcf", "company-paste", "company-csv"].includes(importSource) && (
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm opacity-70 text-center">
-                This import source is not yet available. Use vCard (.vcf) or CSV to import your contacts.
+                This import source is coming soon.
               </div>
             )}
 
@@ -1059,7 +1252,11 @@ export default function CRM() {
                 <button
                   type="button"
                   onClick={handleRunImport}
-                  disabled={(importSource === "csv" || importSource === "vcf") && !csvFile}
+                  disabled={
+                    ((importSource === "csv" || importSource === "vcf" || importSource === "company-csv") && !csvFile) ||
+                    (importSource === "company-paste" && !pasteText.trim()) ||
+                    (!["csv", "vcf", "company-paste", "company-csv"].includes(importSource))
+                  }
                   className="h-11 px-4 rounded-xl bg-white text-black font-semibold hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Import

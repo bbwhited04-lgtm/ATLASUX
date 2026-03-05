@@ -273,6 +273,86 @@ export const crmRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ ok: true });
   });
 
+  // ── Company CSV Import ──────────────────────────────────────────────────────
+
+  app.post("/companies/import-csv", { bodyLimit: 20 * 1024 * 1024 }, async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const body = (req.body ?? {}) as any;
+    const rows: any[] = Array.isArray(body.rows) ? body.rows : [];
+    if (!rows.length) return reply.code(400).send({ ok: false, error: "No rows provided" });
+    if (rows.length > 5000) return reply.code(400).send({ ok: false, error: "Max 5000 rows per import" });
+
+    const result = await withTenant(tenantId, async (tx) => {
+      let created = 0;
+      let skipped = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const name = s(row.name ?? row.Name ?? row["Company Name"] ?? row["Company"] ?? row["company"]);
+        if (!name) { skipped++; continue; }
+
+        const phone       = s(row.phone ?? row.Phone ?? row["Phone Number"] ?? row["Phone number"]);
+        const website     = s(row.website ?? row.Website ?? row["Web Site"] ?? row["URL"] ?? row["url"]);
+        const contactName = s(row.contactName ?? row.contact ?? row.Contact ?? row["Contact Name"] ?? row["Contact Person"]);
+        const address     = s(row.address ?? row.Address ?? row["Street Address"] ?? row["Location"]);
+        const industry    = s(row.industry ?? row.Industry ?? row["Industry"]);
+        const notes       = s(row.notes ?? row.Notes ?? row["Note"]);
+
+        // Derive domain from website
+        let domain: string | null = null;
+        if (website) {
+          try {
+            const url = new URL(website.startsWith("http") ? website : `https://${website}`);
+            domain = url.hostname.replace(/^www\./, "");
+          } catch { /* non-fatal */ }
+        }
+
+        try {
+          await tx.crmCompany.create({
+            data: {
+              tenantId,
+              name,
+              domain:      domain ?? s(row.domain ?? row.Domain) ?? undefined,
+              phone:       phone ?? undefined,
+              website:     website ?? undefined,
+              contactName: contactName ?? undefined,
+              address:     address ?? undefined,
+              industry:    industry ?? undefined,
+              notes:       notes ?? undefined,
+            },
+          });
+          created++;
+        } catch (err: any) {
+          errors.push(`Row ${i + 1}: ${err?.message?.slice(0, 80) ?? "unknown error"}`);
+          skipped++;
+        }
+      }
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorType: "system",
+          actorUserId: null,
+          actorExternalId: (req as any).auth?.userId ?? null,
+          level: "info",
+          action: "CRM_COMPANIES_IMPORTED",
+          entityType: "crm_company",
+          entityId: null,
+          message: `Company CSV import: ${created} created, ${skipped} skipped`,
+          meta: { created, skipped, totalRows: rows.length, errorCount: errors.length },
+          timestamp: new Date(),
+        },
+      } as any).catch(() => null);
+
+      return { created, skipped, errors: errors.slice(0, 10) };
+    });
+
+    return reply.send({ ok: true, created: result.created, skipped: result.skipped, errors: result.errors });
+  });
+
   // ── Contact Activities ─────────────────────────────────────────────────────
 
   app.get("/contacts/:id/activities", async (req, reply) => {
