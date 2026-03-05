@@ -1,3 +1,4 @@
+import "dotenv/config";
 /**
  * Donna's Reddit Worker (WF-051 / WF-052 / WF-053)
  *

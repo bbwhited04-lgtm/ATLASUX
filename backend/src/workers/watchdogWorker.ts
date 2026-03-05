@@ -1,3 +1,4 @@
+import "dotenv/config";
 /**
  * Watchdog Worker — periodic health checks for self-healing.
  *

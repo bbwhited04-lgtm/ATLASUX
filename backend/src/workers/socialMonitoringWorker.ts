@@ -1,3 +1,4 @@
+import "dotenv/config";
 /**
  * Social Monitoring Worker — continuous polling per-tenant.
  *

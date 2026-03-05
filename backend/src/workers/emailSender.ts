@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { prisma } from "../db/prisma.js";
 import { getSystemState } from "../services/systemState.js";
 import { handleJobFailure } from "../lib/jobFailureHandler.js";

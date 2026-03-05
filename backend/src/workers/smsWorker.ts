@@ -1,3 +1,4 @@
+import "dotenv/config";
 /**
  * SMS Worker — processes SMS_SEND jobs using Twilio.
  * Reads TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER from env.

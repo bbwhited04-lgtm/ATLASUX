@@ -1,3 +1,4 @@
+import "dotenv/config";
 /**
  * Scheduler Worker — fully autonomous Atlas agent cadence.
  *

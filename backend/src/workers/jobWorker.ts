@@ -1,3 +1,4 @@
+import "dotenv/config";
 /**
  * Job Worker — processes SOCIAL_POST and WORKFLOW job types.
  * SOCIAL_POST: publishes content to social platform via connected integration.

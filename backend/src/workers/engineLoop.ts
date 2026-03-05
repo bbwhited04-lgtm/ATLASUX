@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { engineTick } from "../core/engine/engine.js";
 import { getSystemState, setSystemState } from "../services/systemState.js";
 

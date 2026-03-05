@@ -1,3 +1,4 @@
+import "dotenv/config";
 /**
  * Local Vision Agent — runs on your machine, polls the Render backend
  * for LOCAL_VISION_TASK jobs, uses Playwright CDP to interact with your
