@@ -2487,6 +2487,7 @@ const POSTIZ_PLATFORM_SETTINGS: Record<string, Record<string, unknown>> = {
   tiktok: {
     __type: "tiktok",
     privacy_level: "SELF_ONLY",
+    who_can_reply_post: "everyone",
     duet: false,
     stitch: false,
     comment: true,
@@ -2498,7 +2499,7 @@ const POSTIZ_PLATFORM_SETTINGS: Record<string, Record<string, unknown>> = {
   },
   x:         { __type: "x" },
   facebook:  { __type: "facebook" },
-  reddit:    { __type: "reddit", subreddit: [] },
+  reddit:    { __type: "reddit", subreddit: ["atlas-ux-dev", "atlasux", "buffaloherde"] },
   threads:   { __type: "threads" },
   linkedin:  { __type: "linkedin", post_as_images_carousel: false },
   pinterest: { __type: "pinterest", title: "", link: "", dominant_color: "#000000", board: "" },
