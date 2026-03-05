@@ -92,7 +92,7 @@ const INTEGRATIONS: Integration[] = [
   { id: "tumblr",   name: "Tumblr",      category: "Social",   description: "Publish blog posts and track distribution.",   oauth: "tumblr" },
   { id: "linkedin", name: "LinkedIn",    category: "Social",   description: "Company + personal publishing.",               oauth: "linkedin" },
   { id: "pinterest",name: "Pinterest",   category: "Social",   description: "Pins, boards, and trends.",                   oauth: "pinterest" },
-  { id: "tiktok",   name: "TikTok",      category: "Social",   description: "Post videos and view analytics.",             oauth: null, pendingNote: "Pending TikTok for Business approval." },
+  { id: "tiktok",   name: "TikTok",      category: "Social",   description: "Post videos and view analytics.",             oauth: "tiktok" },
   { id: "reddit",   name: "Reddit",      category: "Social",   description: "Post, comment, monitor mentions.",            oauth: "reddit" },
   { id: "snapchat", name: "Snapchat",    category: "Social",   description: "Spotlight and campaigns.",                    oauth: null, pendingNote: "Pending Snap Partner approval." },
   { id: "twitch",   name: "Twitch",      category: "Social",   description: "Streams, clips, channel ops.",                oauth: null },
@@ -240,6 +240,7 @@ export default function Integrations() {
       : i.oauth === "paypal"    ? `${BACKEND_URL}/v1/oauth/paypal/start`
       : i.oauth === "square"    ? `${BACKEND_URL}/v1/oauth/square/start`
       : i.oauth === "meetup"    ? `${BACKEND_URL}/v1/oauth/meetup/start`
+      : i.oauth === "tiktok"   ? `${BACKEND_URL}/v1/oauth/tiktok/start`
       : `${BACKEND_URL}/v1/oauth/x/start`;
 
     const params = new URLSearchParams({ tenantId: realTenantId, org_id: realTenantId, user_id });

@@ -13,6 +13,7 @@ import { prisma } from "../../../db/prisma.js";
 import { loadEnv } from "../../../env.js";
 import { getProviderToken } from "../../../lib/tokenStore.js";
 import { postTweet } from "../../../services/x.js";
+import { publishVideo } from "../../../services/tiktok.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -105,7 +106,7 @@ const PLATFORM_SETTINGS: Record<string, Record<string, unknown>> = {
 const MEDIA_ONLY = new Set(["youtube", "pinterest", "tiktok"]);
 
 // Platforms where Tier 1 (direct API) is supported
-const TIER1_PLATFORMS = new Set(["x"]);
+const TIER1_PLATFORMS = new Set(["x", "tiktok"]);
 
 // Platform → vision target URL for Tier 3
 const PLATFORM_URLS: Record<string, string> = {
@@ -118,6 +119,7 @@ const PLATFORM_URLS: Record<string, string> = {
   tumblr:    "https://www.tumblr.com/new",
   mastodon:  "https://mastodon.social/publish",
   bluesky:   "https://bsky.app",
+  tiktok:    "https://www.tiktok.com/creator#/upload",
 };
 
 // ── Tier 1: Direct API ──────────────────────────────────────────────────────
@@ -144,6 +146,12 @@ async function tryTier1(
         return { tier: 1, success: true };
       }
       return { tier: 1, success: false, error: result.error, faultCode: FAULT.TIER1_API_ERROR };
+    }
+
+    if (platform === "tiktok") {
+      // TikTok requires a video URL — content alone isn't enough for direct API
+      // For now, skip to Tier 2/3 unless a videoUrl is provided in the content
+      return { tier: 1, success: false, faultCode: FAULT.TIER1_NOT_SUPPORTED };
     }
 
     return { tier: 1, success: false, faultCode: FAULT.TIER1_NOT_SUPPORTED };

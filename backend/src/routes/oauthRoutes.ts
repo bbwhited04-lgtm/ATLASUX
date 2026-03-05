@@ -17,6 +17,7 @@ import {
   buildPayPalAuthUrl, exchangePayPalCode,
   buildSquareAuthUrl, exchangeSquareCode,
   buildMeetupAuthUrl, exchangeMeetupCode,
+  buildTikTokAuthUrl, exchangeTikTokCode, fetchTikTokUserInfo,
 } from "../oauth.js";
 import { tumblrAccessToken, tumblrAuthorizeUrl, tumblrRequestToken } from "../integrations/tumblr.client.js";
 import { prisma } from "../db/prisma.js";
@@ -890,6 +891,72 @@ export const oauthRoutes: FastifyPluginAsync = async (app) => {
       return reply.redirect(buildReturnUrl({ connected: "microsoft", org_id, user_id }));
     } catch (e: any) {
       return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "microsoft_token_exchange_failed" }));
+    }
+  });
+
+  // ── TikTok OAuth2 ──────────────────────────────────────────────────────────
+
+  app.get("/tiktok/start", oauthRateLimit, async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    const org_id = String(q.org_id ?? q.orgId ?? q.tenantId ?? "");
+    const user_id = String(q.user_id ?? q.userId ?? "");
+
+    if (!oauthEnabled("tiktok", env)) {
+      return reply.redirect(buildReturnUrl({ error: "oauth_not_configured", provider: "tiktok", org_id, user_id }));
+    }
+
+    const nonce = genNonce();
+    await setOAuthState(`csrf:${nonce}`, { org_id, user_id });
+    const state = b64urlJson({ org_id, user_id, nonce });
+    return reply.redirect(buildTikTokAuthUrl(env, state));
+  });
+
+  app.get("/tiktok/callback", async (req, reply) => {
+    const q = (req.query ?? {}) as any;
+    if (q.error) return reply.redirect(buildReturnUrl({ oauth_error: String(q.error_description ?? q.error) }));
+
+    let state: any = {};
+    try { state = parseState(String(q.state || "")); } catch {}
+    const org_id = String(state.org_id || "");
+    const user_id = String(state.user_id || "");
+
+    const nonce = String(state.nonce || "");
+    const csrfData = nonce ? await getOAuthState(`csrf:${nonce}`) : null;
+    if (!nonce || !csrfData) {
+      return reply.redirect(buildReturnUrl({ oauth_error: "csrf_invalid" }));
+    }
+    await deleteOAuthState(`csrf:${nonce}`);
+
+    try {
+      const tok = await exchangeTikTokCode(env, String(q.code || ""));
+      const expires_at = tok.expires_in ? new Date(Date.now() + tok.expires_in * 1000).toISOString() : null;
+
+      // Fetch user profile info to store with the token
+      let userInfo: any = {};
+      try {
+        userInfo = await fetchTikTokUserInfo(tok.access_token);
+      } catch {
+        // Non-fatal — we still have the token
+      }
+
+      await storeTokenVault(env, {
+        org_id, user_id, provider: "tiktok",
+        access_token: tok.access_token,
+        refresh_token: tok.refresh_token ?? null,
+        expires_at, scope: tok.scope ?? null,
+        meta: {
+          token_type: tok.token_type,
+          open_id: tok.open_id,
+          display_name: userInfo.display_name,
+          avatar_url: userInfo.avatar_url,
+          bio: userInfo.bio_description,
+          is_verified: userInfo.is_verified,
+        },
+      });
+      await markConnected(org_id, "tiktok");
+      return reply.redirect(buildReturnUrl({ connected: "tiktok", org_id, user_id }));
+    } catch (e: any) {
+      return reply.redirect(buildReturnUrl({ oauth_error: e?.message ? String(e.message) : "tiktok_token_exchange_failed" }));
     }
   });
 };

@@ -3,7 +3,7 @@ import { makeSupabase } from "./supabase.js";
 import { webcrypto } from "node:crypto";
 import { writeTokenVault } from "./lib/tokenStore.js";
 
-export type Provider = "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "zoom" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square" | "meetup";
+export type Provider = "google" | "meta" | "x" | "tumblr" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "zoom" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square" | "meetup" | "tiktok";
 
 export function oauthEnabled(provider: Provider, env: Env): boolean {
   if (provider === "google") return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI);
@@ -54,6 +54,9 @@ export function oauthEnabled(provider: Provider, env: Env): boolean {
   }
   if (provider === "meetup") {
     return !!(env.MEETUP_CLIENT_ID && env.MEETUP_CLIENT_SECRET && env.MEETUP_REDIRECT_URI);
+  }
+  if (provider === "tiktok") {
+    return !!(env.TIKTOK_CLIENT_KEY && env.TIKTOK_CLIENT_SECRET && env.TIKTOK_REDIRECT_URI);
   }
   return false;
 }
@@ -717,6 +720,61 @@ export async function exchangeMeetupCode(env: Env, code: string) {
     expires_in: number;
     token_type: string;
   };
+}
+
+// ── TikTok OAuth 2.0 ──────────────────────────────────────────────────────────
+
+const TIKTOK_SCOPES = ["user.info.basic", "user.info.profile", "video.upload", "video.publish"].join(",");
+
+export function buildTikTokAuthUrl(env: Env, state: string) {
+  const params = new URLSearchParams({
+    client_key: env.TIKTOK_CLIENT_KEY!,
+    response_type: "code",
+    scope: TIKTOK_SCOPES,
+    redirect_uri: env.TIKTOK_REDIRECT_URI!,
+    state,
+  });
+  return `https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`;
+}
+
+export async function exchangeTikTokCode(env: Env, code: string): Promise<{
+  access_token: string;
+  refresh_token?: string;
+  expires_in: number;
+  open_id: string;
+  scope: string;
+  token_type: string;
+}> {
+  const r = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_key: env.TIKTOK_CLIENT_KEY!,
+      client_secret: env.TIKTOK_CLIENT_SECRET!,
+      code,
+      grant_type: "authorization_code",
+      redirect_uri: env.TIKTOK_REDIRECT_URI!,
+    }),
+  });
+  const data = await r.json().catch(() => ({})) as any;
+  if (!r.ok || data.error) throw new Error(`TikTok token exchange failed: ${data.error_description ?? data.error ?? JSON.stringify(data)}`);
+  return data;
+}
+
+export async function fetchTikTokUserInfo(accessToken: string): Promise<{
+  open_id: string;
+  display_name: string;
+  avatar_url: string;
+  profile_deep_link?: string;
+  bio_description?: string;
+  is_verified?: boolean;
+}> {
+  const r = await fetch("https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url,profile_deep_link,bio_description,is_verified", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const data = await r.json().catch(() => ({})) as any;
+  if (!r.ok || data.error?.code) throw new Error(`TikTok user info failed: ${data.error?.message ?? JSON.stringify(data)}`);
+  return data.data?.user ?? data;
 }
 
 // Token vault storage (Supabase table: token_vault)
