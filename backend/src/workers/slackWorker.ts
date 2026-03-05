@@ -32,15 +32,12 @@ import { prisma } from "../db/prisma.js";
 const POLL_MS = Math.max(1000, Number(process.env.SLACK_POLL_MS ?? 5000));
 const CONTEXT_MESSAGES = Math.max(1, Math.min(50, Number(process.env.SLACK_CONTEXT_MESSAGES ?? 10)));
 const TENANT_ID = process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
-const CHANNEL_NAME = "atlas-ux";
+const CHANNEL_NAMES = ["atlas-ux", "intel", "water-cooler"];
 
-// ── State ─────────────────────────────────────────────────────────────────────
+// ── State (per channel) ───────────────────────────────────────────────────────
 
-/** Slack message timestamp of the last message we processed. */
-let lastSeenTs: string | null = null;
-
-/** Cached channel object so we don't look it up every tick. */
-let cachedChannel: SlackChannel | null = null;
+const lastSeenByChannel = new Map<string, string | null>();
+const cachedChannels = new Map<string, SlackChannel>();
 
 // ── Agent detection ───────────────────────────────────────────────────────────
 
@@ -248,22 +245,29 @@ async function tick() {
     return;
   }
 
+  for (const channelName of CHANNEL_NAMES) {
+    await tickChannel(channelName);
+  }
+}
+
+async function tickChannel(channelName: string) {
   // Resolve the channel (cache it)
-  if (!cachedChannel) {
+  let channel = cachedChannels.get(channelName);
+  if (!channel) {
     try {
-      cachedChannel = await getChannelByName(CHANNEL_NAME, true);
+      const found = await getChannelByName(channelName, true);
+      if (!found) return; // Channel not found — skip silently
+      channel = found;
+      cachedChannels.set(channelName, channel);
+      console.log(`[slackWorker] Resolved #${channelName} → ${channel.id}`);
     } catch (err: any) {
-      console.error(`[slackWorker] Failed to resolve #${CHANNEL_NAME}: ${err?.message ?? err}`);
+      console.error(`[slackWorker] Failed to resolve #${channelName}: ${err?.message ?? err}`);
       return;
     }
-    if (!cachedChannel) {
-      console.error(`[slackWorker] Channel #${CHANNEL_NAME} not found`);
-      return;
-    }
-    console.log(`[slackWorker] Resolved #${CHANNEL_NAME} → ${cachedChannel.id}`);
   }
 
-  const channelId = cachedChannel.id;
+  const channelId = channel.id;
+  const lastSeenTs = lastSeenByChannel.get(channelName) ?? null;
 
   // Fetch recent messages (use oldest param to only get new ones)
   let messages: SlackMessage[];
@@ -272,7 +276,7 @@ async function tick() {
       oldest: lastSeenTs ?? undefined,
     });
   } catch (err: any) {
-    console.error(`[slackWorker] readHistory failed: ${err?.message ?? err}`);
+    console.error(`[slackWorker] readHistory #${channelName} failed: ${err?.message ?? err}`);
     return;
   }
 
@@ -294,7 +298,7 @@ async function tick() {
 
   // Update lastSeenTs to the newest message timestamp
   const newestTs = newMessages[newMessages.length - 1].ts;
-  lastSeenTs = newestTs;
+  lastSeenByChannel.set(channelName, newestTs);
 
   // Human messages always get a response
   const humanMessages = newMessages.filter((m) => !m.bot_id);
@@ -412,7 +416,7 @@ function sleep(ms: number) {
 
 async function main() {
   console.log(
-    `[slackWorker] Starting — polling #${CHANNEL_NAME} every ${POLL_MS / 1000}s, context window: ${CONTEXT_MESSAGES} messages`,
+    `[slackWorker] Starting — polling ${CHANNEL_NAMES.map(c => "#" + c).join(", ")} every ${POLL_MS / 1000}s, context window: ${CONTEXT_MESSAGES} messages`,
   );
 
   if (!process.env.SLACK_BOT_TOKEN) {
