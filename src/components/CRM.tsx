@@ -228,20 +228,32 @@ export default function CRM() {
    * - Other lines = contact name (first non-company text line)
    */
   function parsePastedCompanies(text: string): Record<string, string>[] {
-    const phoneRe = /^[\d\.\-\(\)\s]{7,}$/;
     const urlRe = /^(https?:\/\/|www\.|[a-z0-9][\w-]*\.(com|net|org|gov|edu|io|co|us|biz|info))/i;
-    const zipRe = /\d{5}/;
+    // Matches phone lines: (573) 527-2143, 314-997-6600, 800.468.3785, etc.
+    const isPhone = (s: string) => /^\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/.test(s.trim());
+    // Matches city/state/zip lines: "Rolla, MO65401" or "Saint Louis, MO 63132-2303"
+    const isAddress = (s: string) => /[A-Z][a-z].*,\s*[A-Z]{2}\s*\d{5}/.test(s.trim());
+    const isUrl = (s: string) => urlRe.test(s.trim());
+    const isDataLine = (s: string) => isPhone(s) || isAddress(s) || isUrl(s);
 
-    // Split into groups by blank lines
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+    // Step 1: Group lines into companies.
+    // A "company name" line is any line that isn't a phone, address, or URL.
+    // When we see a company name and already have a current entry, flush it.
     const groups: string[][] = [];
     let current: string[] = [];
-    for (const raw of text.split(/\r?\n/)) {
-      const line = raw.trim();
-      if (!line) {
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const blank = text.split(/\r?\n/);
+      // Check if there was a blank line before this line (original text)
+      // We already filtered blanks, so detect name lines by type
+      if (!isDataLine(line)) {
+        // This is a company name line — flush previous group
         if (current.length) { groups.push(current); current = []; }
-      } else {
-        current.push(line);
       }
+      current.push(line);
     }
     if (current.length) groups.push(current);
 
@@ -249,20 +261,15 @@ export default function CRM() {
     for (const group of groups) {
       if (!group.length) continue;
       const entry: Record<string, string> = { name: group[0] };
-      let gotContact = false;
 
       for (let i = 1; i < group.length; i++) {
         const line = group[i];
-        const stripped = line.replace(/[\s\-\.\(\)]/g, "");
-        if (/^\d{7,}$/.test(stripped) && !entry.phone) {
+        if (isPhone(line) && !entry.phone) {
           entry.phone = line;
-        } else if (urlRe.test(line) && !entry.website) {
+        } else if (isUrl(line) && !entry.website) {
           entry.website = line.startsWith("http") ? line : `https://${line}`;
-        } else if (zipRe.test(line) && line.length > 10 && !entry.address) {
+        } else if (isAddress(line) && !entry.address) {
           entry.address = line;
-        } else if (!gotContact && !phoneRe.test(stripped) && !urlRe.test(line)) {
-          entry.contact = line;
-          gotContact = true;
         }
       }
       if (entry.name && entry.name !== ".") results.push(entry);
