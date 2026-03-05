@@ -10,6 +10,12 @@
  *   search_atlasux_knowledge  — KB RAG for product/how-to questions
  *   read_calendar             — upcoming events via M365 Graph API
  *   read_crm_contacts         — CRM contact records from DB
+ *   read_crm_companies        — CRM company records from DB
+ *   read_contact_activity     — recent contact activities from DB
+ *   read_ops_data             — jobs, intents, and decision memos from DB
+ *   read_tickets              — support tickets from DB
+ *   read_assets               — content assets from DB
+ *   read_integrations         — connected integrations from DB
  *   read_ledger               — recent ledger/spend entries from DB
  *   read_email                — agent inbox events from DB
  *   read_user_profile         — tenant member profile from DB
@@ -198,6 +204,157 @@ async function readCrmContacts(tenantId: string, query?: string): Promise<ToolRe
     return { tool: "read_crm_contacts", data: `CRM contacts (${contacts.length}):\n${lines.join("\n")}`, usedAt: new Date().toISOString() };
   } catch (err: any) {
     return { tool: "read_crm_contacts", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
+// ── Tool: read_crm_companies ─────────────────────────────────────────────────
+
+async function readCrmCompanies(tenantId: string, query?: string): Promise<ToolResult> {
+  try {
+    const companies = await prisma.crmCompany.findMany({
+      where: {
+        tenantId,
+        ...(query ? {
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { industry: { contains: query, mode: "insensitive" } },
+            { domain: { contains: query, mode: "insensitive" } },
+            { contactName: { contains: query, mode: "insensitive" } },
+          ],
+        } : {}),
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 15,
+      select: { name: true, domain: true, industry: true, phone: true, website: true, contactName: true, address: true, updatedAt: true },
+    });
+    if (!companies.length) return { tool: "read_crm_companies", data: "No CRM companies found.", usedAt: new Date().toISOString() };
+    const lines = companies.map((c, i) =>
+      `${i + 1}. ${c.name} | ${c.industry ?? "—"} | ${c.domain ?? "—"} | contact: ${c.contactName ?? "—"} | ${c.phone ?? "—"}`
+    );
+    return { tool: "read_crm_companies", data: `CRM companies (${companies.length}):\n${lines.join("\n")}`, usedAt: new Date().toISOString() };
+  } catch (err: any) {
+    return { tool: "read_crm_companies", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
+// ── Tool: read_contact_activity ──────────────────────────────────────────────
+
+async function readContactActivity(tenantId: string): Promise<ToolResult> {
+  try {
+    const activities = await prisma.contactActivity.findMany({
+      where: { tenantId },
+      orderBy: { occurredAt: "desc" },
+      take: 15,
+      select: { type: true, subject: true, body: true, occurredAt: true, contact: { select: { firstName: true, lastName: true } } },
+    });
+    if (!activities.length) return { tool: "read_contact_activity", data: "No contact activities found.", usedAt: new Date().toISOString() };
+    const lines = activities.map((a, i) => {
+      const name = [a.contact?.firstName, a.contact?.lastName].filter(Boolean).join(" ") || "—";
+      return `${i + 1}. [${a.type}] ${name}: ${a.subject ?? "—"} (${new Date(a.occurredAt).toLocaleDateString()})`;
+    });
+    return { tool: "read_contact_activity", data: `Recent contact activities (${activities.length}):\n${lines.join("\n")}`, usedAt: new Date().toISOString() };
+  } catch (err: any) {
+    return { tool: "read_contact_activity", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
+// ── Tool: read_ops_data ──────────────────────────────────────────────────────
+
+async function readOpsData(tenantId: string): Promise<ToolResult> {
+  try {
+    const [jobs, intents, decisions] = await Promise.all([
+      prisma.job.findMany({
+        where: { tenantId }, orderBy: { createdAt: "desc" }, take: 10,
+        select: { jobType: true, status: true, priority: true, createdAt: true, startedAt: true, finishedAt: true },
+      }),
+      prisma.intent.findMany({
+        where: { tenantId }, orderBy: { createdAt: "desc" }, take: 10,
+        select: { intentType: true, status: true, sglResult: true, createdAt: true },
+      }),
+      prisma.decisionMemo.findMany({
+        where: { tenantId }, orderBy: { createdAt: "desc" }, take: 10,
+        select: { agent: true, title: true, status: true, riskTier: true, estimatedCostUsd: true, createdAt: true },
+      }),
+    ]);
+
+    const parts: string[] = [];
+    if (jobs.length) {
+      parts.push(`Jobs (${jobs.length}):\n` + jobs.map((j, i) =>
+        `  ${i + 1}. ${j.jobType} [${j.status}] prio=${j.priority} ${new Date(j.createdAt!).toLocaleDateString()}`
+      ).join("\n"));
+    }
+    if (intents.length) {
+      parts.push(`Intents (${intents.length}):\n` + intents.map((n, i) =>
+        `  ${i + 1}. ${n.intentType ?? "—"} [${n.status}] sgl=${n.sglResult ?? "—"} ${new Date(n.createdAt!).toLocaleDateString()}`
+      ).join("\n"));
+    }
+    if (decisions.length) {
+      parts.push(`Decisions (${decisions.length}):\n` + decisions.map((d, i) =>
+        `  ${i + 1}. ${d.agent}: ${d.title} [${d.status}] risk=${d.riskTier} cost=$${d.estimatedCostUsd.toFixed(2)}`
+      ).join("\n"));
+    }
+    if (!parts.length) return { tool: "read_ops_data", data: "No operational data found.", usedAt: new Date().toISOString() };
+    return { tool: "read_ops_data", data: parts.join("\n\n"), usedAt: new Date().toISOString() };
+  } catch (err: any) {
+    return { tool: "read_ops_data", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
+// ── Tool: read_tickets ───────────────────────────────────────────────────────
+
+async function readTickets(tenantId: string): Promise<ToolResult> {
+  try {
+    const tickets = await prisma.ticket.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: "desc" },
+      take: 15,
+      select: { title: true, status: true, severity: true, category: true, agent: true, createdAt: true },
+    });
+    if (!tickets.length) return { tool: "read_tickets", data: "No tickets found.", usedAt: new Date().toISOString() };
+    const lines = tickets.map((t, i) =>
+      `${i + 1}. [${t.status}/${t.severity}] ${t.title} (${t.category}) agent=${t.agent ?? "—"} ${new Date(t.createdAt).toLocaleDateString()}`
+    );
+    return { tool: "read_tickets", data: `Tickets (${tickets.length}):\n${lines.join("\n")}`, usedAt: new Date().toISOString() };
+  } catch (err: any) {
+    return { tool: "read_tickets", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
+// ── Tool: read_assets ────────────────────────────────────────────────────────
+
+async function readAssets(tenantId: string): Promise<ToolResult> {
+  try {
+    const assets = await prisma.asset.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: "desc" },
+      take: 15,
+      select: { name: true, type: true, platform: true, url: true, createdAt: true },
+    });
+    if (!assets.length) return { tool: "read_assets", data: "No assets found.", usedAt: new Date().toISOString() };
+    const lines = assets.map((a, i) =>
+      `${i + 1}. ${a.name} [${a.type}] ${a.platform ?? "—"} ${a.url}`
+    );
+    return { tool: "read_assets", data: `Assets (${assets.length}):\n${lines.join("\n")}`, usedAt: new Date().toISOString() };
+  } catch (err: any) {
+    return { tool: "read_assets", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
+// ── Tool: read_integrations ──────────────────────────────────────────────────
+
+async function readIntegrations(tenantId: string): Promise<ToolResult> {
+  try {
+    const integrations = await prisma.integration.findMany({
+      where: { tenantId },
+      select: { provider: true, connected: true, last_sync_at: true, created_at: true },
+    });
+    if (!integrations.length) return { tool: "read_integrations", data: "No integrations configured.", usedAt: new Date().toISOString() };
+    const lines = integrations.map((ig, idx) =>
+      `${idx + 1}. ${ig.provider} [${ig.connected ? "connected" : "disconnected"}] last sync: ${ig.last_sync_at ? new Date(ig.last_sync_at).toLocaleDateString() : "never"}`
+    );
+    return { tool: "read_integrations", data: `Integrations (${integrations.length}):\n${lines.join("\n")}`, usedAt: new Date().toISOString() };
+  } catch (err: any) {
+    return { tool: "read_integrations", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
   }
 }
 
@@ -890,6 +1047,27 @@ const CRM_PATTERNS = [
   /\b(company|organization|firm|account holder)\b/i,
 ];
 
+const OPS_PATTERNS = [
+  /\b(job|jobs|intent|intents|decision|decisions|decision memo|workflow run|engine|pipeline|queue)\b/i,
+  /\b(what.*running|what.*queued|pending.*job|recent.*job|active.*intent|operation|ops)\b/i,
+  /\b(approval|proposed|approved|rejected|risk tier|cost estimate)\b/i,
+];
+
+const TICKET_PATTERNS = [
+  /\b(ticket|tickets|bug|issue|support request|incident|escalat|severity|open ticket)\b/i,
+  /\b(bug report|pending.*ticket|recent.*ticket|ticket.*status)\b/i,
+];
+
+const ASSET_PATTERNS = [
+  /\b(asset|assets|published content|media library|our.*content|content.*library)\b/i,
+  /\b(what.*published|recent.*content|creative|our.*media)\b/i,
+];
+
+const INTEGRATION_PATTERNS = [
+  /\b(integration|integrations|connected.*platform|provider|sync status|oauth|what.*connected)\b/i,
+  /\b(which.*platform|integration.*status|connected.*service)\b/i,
+];
+
 const LEDGER_PATTERNS = [
   /\b(ledger|spend|expense|transaction|financial|cash flow|balance|budget)\b/i,
   /\b(how much.*spent|total.*cost|recent.*charge|recent.*spend)\b/i,
@@ -1047,40 +1225,40 @@ const LOCAL_VISION_PATTERNS = [
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   // ── Executives ───────────────────────────────────────────────────────
-  atlas:       ["subscription", "calendar", "ledger", "team", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  binky:       ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "discord", "telegramFull", "slackChat"],
-  cheryl:      ["subscription", "team", "knowledge", "crm", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat"],
-  tina:        ["calendar", "ledger", "crm", "subscription", "policy", "telegram", "memory", "delegate", "gmailRead", "googleSheets", "excel", "dropbox", "slackChat"],
-  larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "telegram", "memory", "delegate", "composio", "dropbox", "slackChat"],
-  jenny:       ["calendar", "legal", "policy", "knowledge", "telegram", "memory", "delegate", "webSearch", "arxiv", "composio", "slackChat"],
-  benny:       ["calendar", "legal", "ipRegister", "knowledge", "telegram", "memory", "delegate", "webSearch", "composio", "slackChat"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  binky:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "discord", "telegramFull", "slackChat"],
+  cheryl:      ["subscription", "team", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat"],
+  tina:        ["calendar", "ledger", "crm", "ops", "tickets", "assets", "integrations", "subscription", "policy", "telegram", "memory", "delegate", "gmailRead", "googleSheets", "excel", "dropbox", "slackChat"],
+  larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "composio", "dropbox", "slackChat"],
+  jenny:       ["calendar", "legal", "policy", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "arxiv", "composio", "slackChat"],
+  benny:       ["calendar", "legal", "ipRegister", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "composio", "slackChat"],
 
   // ── Ops & Support ────────────────────────────────────────────────────
-  petra:       ["calendar", "planner", "telegram", "memory", "delegate", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat"],
-  mercer:      ["crm", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "composio", "discord", "slackChat"],
-  frank:       ["userProfile", "telegram", "memory", "delegate", "telegramFull", "slackChat"],
-  sandy:       ["calendar", "email", "userProfile", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat"],
-  claire:      ["calendar", "email", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat"],
-  "daily-intel": ["calendar", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "slackChat"],
+  petra:       ["calendar", "planner", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat"],
+  mercer:      ["crm", "ops", "tickets", "assets", "integrations", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "composio", "discord", "slackChat"],
+  frank:       ["userProfile", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "telegramFull", "slackChat"],
+  sandy:       ["calendar", "email", "userProfile", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat"],
+  claire:      ["calendar", "email", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat"],
+  "daily-intel": ["calendar", "email", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "slackChat"],
 
   // ── Content & Comms ──────────────────────────────────────────────────
-  sunday:      ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  archy:       ["calendar", "knowledge", "email", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  venny:       ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1", "postizPublish", "postizAnalytics", "slackChat"],
-  victor:      ["calendar", "knowledge", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate", "postizPublish", "postizAnalytics", "slackChat"],
-  reynolds:    ["calendar", "knowledge", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "hackerNews", "slackChat"],
+  sunday:      ["calendar", "knowledge", "email", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  archy:       ["calendar", "knowledge", "email", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  venny:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1", "postizPublish", "postizAnalytics", "slackChat"],
+  victor:      ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate", "postizPublish", "postizAnalytics", "slackChat"],
+  reynolds:    ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "hackerNews", "slackChat"],
 
   // ── Social Publishers ────────────────────────────────────────────────
-  kelly:       ["calendar", "knowledge", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  fran:        ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  dwight:      ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  timmy:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  terry:       ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  cornwall:    ["calendar", "knowledge", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  link:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "discord", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  emma:        ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  donna:       ["calendar", "knowledge", "telegram", "memory", "delegate", "redditSearch", "browser", "hackerNews", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  penny:       ["calendar", "knowledge", "crm", "telegram", "memory", "delegate", "webSearch", "browser", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  kelly:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  fran:        ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  dwight:      ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  timmy:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  terry:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  cornwall:    ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  link:        ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "discord", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  emma:        ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  donna:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "redditSearch", "browser", "hackerNews", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  penny:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "browser", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
 };
 
 export type ToolNeeds = {
@@ -1089,6 +1267,10 @@ export type ToolNeeds = {
   knowledge:    boolean;
   calendar:     boolean;
   crm:          boolean;
+  ops:          boolean;
+  tickets:      boolean;
+  assets:       boolean;
+  integrations: boolean;
   ledger:       boolean;
   email:        boolean;
   userProfile:  boolean;
@@ -1143,6 +1325,10 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     knowledge:    can("knowledge")    && PRODUCT_PATTERNS.some(p => p.test(q)),
     calendar:     can("calendar")     && CALENDAR_PATTERNS.some(p => p.test(q)),
     crm:          can("crm")          && CRM_PATTERNS.some(p => p.test(q)),
+    ops:          can("ops")          && OPS_PATTERNS.some(p => p.test(q)),
+    tickets:      can("tickets")      && TICKET_PATTERNS.some(p => p.test(q)),
+    assets:       can("assets")       && ASSET_PATTERNS.some(p => p.test(q)),
+    integrations: can("integrations") && INTEGRATION_PATTERNS.some(p => p.test(q)),
     ledger:       can("ledger")       && LEDGER_PATTERNS.some(p => p.test(q)),
     email:        can("email")        && EMAIL_PATTERNS.some(p => p.test(q)),
     userProfile:  can("userProfile")  && USER_PROFILE_PATTERNS.some(p => p.test(q)),
@@ -1333,6 +1519,12 @@ export async function resolveAgentTools(
     needs.knowledge    ? searchAtlasUXKnowledge(tenantId, needs.query)         : Promise.resolve(null),
     needs.calendar     ? readCalendar(tenantId)                                : Promise.resolve(null),
     needs.crm          ? readCrmContacts(tenantId, needs.query.slice(0, 60))   : Promise.resolve(null),
+    needs.crm          ? readCrmCompanies(tenantId, needs.query.slice(0, 60))  : Promise.resolve(null),
+    needs.crm          ? readContactActivity(tenantId)                         : Promise.resolve(null),
+    needs.ops          ? readOpsData(tenantId)                                 : Promise.resolve(null),
+    needs.tickets      ? readTickets(tenantId)                                 : Promise.resolve(null),
+    needs.assets       ? readAssets(tenantId)                                  : Promise.resolve(null),
+    needs.integrations ? readIntegrations(tenantId)                            : Promise.resolve(null),
     needs.ledger       ? readLedger(tenantId)                                  : Promise.resolve(null),
     needs.email        ? readEmail(tenantId, aid)                              : Promise.resolve(null),
     needs.userProfile  ? readUserProfile(tenantId)                             : Promise.resolve(null),
