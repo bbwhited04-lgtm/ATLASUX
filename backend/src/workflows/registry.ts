@@ -3222,8 +3222,12 @@ handlers["WF-035"] = async (ctx) => {
         await postAsAgent(intelCh.id, "daily-intel",
           `:green_circle: *Hourly Scan — ${today} ${String(hour).padStart(2, "0")}:00 UTC*\nSources: ${sources.map(s => s.label).join(", ")}\nVerdict: SILENT — no high-relevance signals detected.`
         );
+      } else {
+        await writeStepAudit(ctx, "WF-035.slack-miss", "#intel channel not found — invite bot to channel");
       }
-    } catch { /* non-fatal */ }
+    } catch (slackErr: any) {
+      await writeStepAudit(ctx, "WF-035.slack-error", `#intel post failed: ${slackErr?.message ?? slackErr}`);
+    }
 
     return { ok: true, message: `Tripwire silent (hour ${hour})`, output: { signalsFound: 0, hour, verdict: "SILENT" } };
   }
@@ -3332,8 +3336,12 @@ handlers["WF-035"] = async (ctx) => {
       await postAsAgent(intelCh.id, "daily-intel",
         `:red_circle: *ESCALATION — ${today} ${String(hour).padStart(2, "0")}:00 UTC*\nSources: ${sources.map(s => s.label).join(", ")}\nClips saved: ${savedClips}${routedList}\n\n${triageResult.slice(0, 1500)}`
       );
+    } else {
+      await writeStepAudit(ctx, "WF-035.slack-miss", "#intel channel not found for escalation — invite bot to channel");
     }
-  } catch { /* non-fatal */ }
+  } catch (slackErr: any) {
+    await writeStepAudit(ctx, "WF-035.slack-error", `#intel escalation post failed: ${slackErr?.message ?? slackErr}`);
+  }
 
   await writeStepAudit(ctx, "WF-035.escalated", `ESCALATED — breaking signal detected at hour ${hour}`, {
     verdict: "ESCALATE",
