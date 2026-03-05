@@ -387,4 +387,15 @@ export const agentRegistry: AgentSummary[] = [
     toolsForbidden: ["Password fields", "Payment forms", "Banking sites", "Crypto wallets", "Direct execution without task queue"],
     escalationTargets: ["atlas"],
   }),
+  withM365("claude-code", {
+    id: "claude-code",
+    name: "Claude Code",
+    title: "Engineering & Dev Ops",
+    tier: "Specialist",
+    reportsTo: "atlas",
+    summary: "The engineering brain — builds features, fixes bugs, reviews code, manages deployments, and maintains the Atlas UX platform infrastructure. Responds to technical questions and dev requests from any agent.",
+    toolsAllowed: ["Code editing", "Terminal/CLI", "Git operations", "Build systems", "Database migrations", "API debugging"],
+    toolsForbidden: ["Direct production DB writes without approval", "Credential access"],
+    escalationTargets: ["atlas", "chairman"],
+  }),
 ];

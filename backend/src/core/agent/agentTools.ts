@@ -1258,6 +1258,9 @@ const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   emma:        ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
   donna:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "redditSearch", "browser", "hackerNews", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
   penny:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "browser", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+
+  // ── Engineering ────────────────────────────────────────────────────
+  "claude-code": ["knowledge", "crm", "ops", "tickets", "assets", "integrations", "memory", "delegate", "webSearch", "fetchUrl", "deepResearch", "slackChat"],
 };
 
 export type ToolNeeds = {
