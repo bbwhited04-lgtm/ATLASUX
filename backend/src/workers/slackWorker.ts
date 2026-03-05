@@ -1,10 +1,14 @@
 /**
- * Slack Polling Worker — monitors #atlas-ux for human messages and dispatches
- * AI-powered agent responses.
+ * Slack Polling Worker — monitors multiple channels, threads, and DMs for
+ * messages and dispatches AI-powered agent responses.
  *
- * Polls the #atlas-ux channel every few seconds, detects which agent the human
- * is addressing (via @mention or name mention), generates a response using
- * runLLM with the agent's personality, and posts it back as that agent.
+ * Features:
+ *   - Multi-channel polling (configurable via CHANNEL_NAMES)
+ *   - Thread reply detection — agents respond to new thread activity
+ *   - DM polling — Atlas responds to direct messages (every 3rd tick)
+ *   - Workspace directory — caches user info for display names
+ *   - Agent-to-agent chatter — 25% chance agents react to each other
+ *   - Workflow detection — "run WF-xxx" triggers engine intents
  *
  * Env:
  *   SLACK_BOT_TOKEN          required — Slack bot token with chat:write.customize
@@ -19,8 +23,12 @@ import {
   readHistory,
   postAsAgent,
   getChannelByName,
+  listDMs,
+  getUserInfo,
+  listWorkspaceUsers,
   type SlackMessage,
   type SlackChannel,
+  type SlackUser,
 } from "../services/slack.js";
 import { agentRegistry } from "../agents/registry.js";
 import { runLLM } from "../core/engine/brainllm.js";
@@ -32,12 +40,24 @@ import { prisma } from "../db/prisma.js";
 const POLL_MS = Math.max(1000, Number(process.env.SLACK_POLL_MS ?? 5000));
 const CONTEXT_MESSAGES = Math.max(1, Math.min(50, Number(process.env.SLACK_CONTEXT_MESSAGES ?? 10)));
 const TENANT_ID = process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
-const CHANNEL_NAMES = ["atlas-ux", "intel", "water-cooler"];
+const CHANNEL_NAMES = ["atlas-ux", "intel", "water-cooler", "atlas-ux-execs", "all-shortypro", "social"];
 
 // ── State (per channel) ───────────────────────────────────────────────────────
 
 const lastSeenByChannel = new Map<string, string | null>();
 const cachedChannels = new Map<string, SlackChannel>();
+
+// DM state
+const lastSeenByDM = new Map<string, string | null>();
+let dmTickCounter = 0;
+
+// Thread state — track which threads we've already replied in recently
+const repliedThreads = new Set<string>();
+
+// Directory cache
+let workspaceUsers: SlackUser[] = [];
+let usersLastFetched = 0;
+const userCache = new Map<string, string>(); // userId → display name
 
 // ── Agent detection ───────────────────────────────────────────────────────────
 
@@ -245,8 +265,25 @@ async function tick() {
     return;
   }
 
+  // Refresh workspace directory every 5 minutes
+  if (Date.now() - usersLastFetched > 5 * 60 * 1000) {
+    try {
+      workspaceUsers = await listWorkspaceUsers();
+      for (const u of workspaceUsers) userCache.set(u.id, u.realName || u.name);
+      usersLastFetched = Date.now();
+      if (workspaceUsers.length) console.log(`[slackWorker] Directory refreshed: ${workspaceUsers.length} users`);
+    } catch { /* non-fatal */ }
+  }
+
+  // Poll channels
   for (const channelName of CHANNEL_NAMES) {
     await tickChannel(channelName);
+  }
+
+  // Poll DMs every 3rd tick (~15s) to avoid rate limits
+  dmTickCounter++;
+  if (dmTickCounter % 3 === 0) {
+    await tickDMs();
   }
 }
 
@@ -404,6 +441,147 @@ async function tickChannel(channelName: string) {
       console.error(
         `[slackWorker] LLM/post error for ${agent.id}: ${err?.message ?? err}`,
       );
+    }
+  }
+
+  // Check for new thread replies (pass old lastSeen so we detect new activity correctly)
+  await checkThreadReplies(channelId, channelName, contextMessages, lastSeenTs);
+}
+
+// ── Thread reply checking ────────────────────────────────────────────────────
+
+/**
+ * Check for new thread replies in recent channel messages.
+ * Called from tickChannel after processing top-level messages.
+ */
+async function checkThreadReplies(channelId: string, channelName: string, messages: SlackMessage[], prevLastSeen: string | null) {
+  const lastSeen = prevLastSeen;
+
+  // Find parent messages with thread replies newer than our last check
+  const threadParents = messages.filter(
+    (m) => m.reply_count && m.reply_count > 0 && m.latest_reply &&
+      (!lastSeen || parseFloat(m.latest_reply) > parseFloat(lastSeen)) &&
+      !repliedThreads.has(m.ts),
+  );
+
+  for (const parent of threadParents.slice(0, 3)) { // Cap at 3 threads per tick
+    try {
+      const replies = await readHistory(channelId, 5, { threadTs: parent.ts });
+      // Get only human replies (not our own agent replies)
+      const humanReplies = replies.filter(
+        (r) => !r.bot_id && r.ts !== parent.ts &&
+          (!lastSeen || parseFloat(r.ts) > parseFloat(lastSeen)),
+      );
+
+      if (!humanReplies.length) continue;
+
+      // Have a random agent respond in the thread
+      const latestReply = humanReplies[humanReplies.length - 1];
+      const candidates = agentRegistry.filter((a) => a.id !== "chairman");
+      const agent = candidates[Math.floor(Math.random() * candidates.length)];
+
+      const threadContext = replies.map((r) => {
+        const who = r.bot_id ? (r.username ?? "agent") : (userCache.get(r.user) ?? "someone");
+        return `${who}: ${r.text}`;
+      }).join("\n");
+
+      const response = await runLLM({
+        runId: `slack-thread-${agent.id}-${Date.now()}`,
+        agent: agent.id.toUpperCase(),
+        purpose: "slack_chat",
+        route: "DRAFT_GENERATION_FAST",
+        messages: [
+          { role: "system", content: buildSystemPrompt(agent) },
+          { role: "user", content: `Thread in #${channelName}:\n${threadContext}\n\nReply to this thread naturally. Keep it short.` },
+        ],
+      });
+
+      const reply = response.text.trim();
+      if (reply) {
+        await postAsAgent(channelId, agent.id, reply, { threadTs: parent.ts });
+        repliedThreads.add(parent.ts);
+        console.log(`[slackWorker] ${agent.name} replied in thread (${reply.length} chars) #${channelName}`);
+      }
+    } catch (err: any) {
+      console.error(`[slackWorker] Thread check error: ${err?.message ?? err}`);
+    }
+  }
+
+  // Prune old thread tracking (keep last 100)
+  if (repliedThreads.size > 100) {
+    const entries = [...repliedThreads];
+    entries.slice(0, entries.length - 100).forEach((ts) => repliedThreads.delete(ts));
+  }
+}
+
+// ── DM polling ───────────────────────────────────────────────────────────────
+
+async function tickDMs() {
+  let dms: { id: string; userId: string }[];
+  try {
+    dms = await listDMs();
+  } catch {
+    return; // Slack API error — skip silently
+  }
+
+  for (const dm of dms) {
+    try {
+      const lastSeen = lastSeenByDM.get(dm.id) ?? null;
+      const messages = await readHistory(dm.id, 5, {
+        oldest: lastSeen ?? undefined,
+      });
+
+      if (!messages.length) continue;
+
+      messages.sort((a, b) => parseFloat(a.ts) - parseFloat(b.ts));
+
+      const newMessages = lastSeen
+        ? messages.filter((m) => parseFloat(m.ts) > parseFloat(lastSeen!) && !m.bot_id)
+        : messages.filter((m) => !m.bot_id);
+
+      if (!newMessages.length) {
+        // Still update lastSeen to avoid re-processing
+        const newestTs = messages[messages.length - 1].ts;
+        lastSeenByDM.set(dm.id, newestTs);
+        continue;
+      }
+
+      const newestTs = messages[messages.length - 1].ts;
+      lastSeenByDM.set(dm.id, newestTs);
+
+      // Resolve who's DMing us
+      let senderName = userCache.get(dm.userId);
+      if (!senderName) {
+        const info = await getUserInfo(dm.userId);
+        senderName = info?.realName ?? info?.name ?? "someone";
+        userCache.set(dm.userId, senderName);
+      }
+
+      // Atlas handles all DMs
+      const agent = agentRegistry.find((a) => a.id === "atlas") ?? agentRegistry[0];
+
+      for (const msg of newMessages.slice(0, 2)) { // Cap at 2 DM responses per tick
+        console.log(`[slackWorker] DM from ${senderName}: "${(msg.text ?? "").slice(0, 80)}"`);
+
+        const response = await runLLM({
+          runId: `slack-dm-${agent.id}-${Date.now()}`,
+          agent: agent.id.toUpperCase(),
+          purpose: "slack_chat",
+          route: "DRAFT_GENERATION_FAST",
+          messages: [
+            { role: "system", content: buildSystemPrompt(agent) + "\nYou are responding to a direct message. Be helpful and personal." },
+            { role: "user", content: `DM from ${senderName}: ${msg.text}` },
+          ],
+        });
+
+        const reply = response.text.trim();
+        if (reply) {
+          await postAsAgent(dm.id, agent.id, reply);
+          console.log(`[slackWorker] Atlas replied to DM (${reply.length} chars)`);
+        }
+      }
+    } catch (err: any) {
+      console.error(`[slackWorker] DM tick error: ${err?.message ?? err}`);
     }
   }
 }

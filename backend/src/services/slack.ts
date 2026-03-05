@@ -111,8 +111,17 @@ export type SlackMessage = {
   user: string;
   text: string;
   thread_ts?: string;
+  reply_count?: number;
+  latest_reply?: string;
   bot_id?: string;
   username?: string;
+};
+
+export type SlackUser = {
+  id: string;
+  name: string;
+  realName: string;
+  isBot: boolean;
 };
 
 export type SlackChannel = {
@@ -236,7 +245,16 @@ export async function readHistory(
   if (options?.oldest) body.oldest = options.oldest;
 
   const data = await slackApi(method, body);
-  return (data.messages ?? []) as SlackMessage[];
+  return (data.messages ?? []).map((m: any) => ({
+    ts: m.ts,
+    user: m.user,
+    text: m.text ?? "",
+    thread_ts: m.thread_ts,
+    reply_count: m.reply_count,
+    latest_reply: m.latest_reply,
+    bot_id: m.bot_id,
+    username: m.username,
+  })) as SlackMessage[];
 }
 
 /**
@@ -325,7 +343,58 @@ export async function getAgentChannels(): Promise<{
   return { general, execs };
 }
 
-// ── DMs between agents ──────────────────────────────────────────────────────
+// ── DM (IM) conversations ───────────────────────────────────────────────────
+
+/**
+ * List direct message (IM) conversations the bot is part of.
+ */
+export async function listDMs(limit = 100): Promise<{ id: string; userId: string }[]> {
+  const data = await slackApi("conversations.list", {
+    types: "im",
+    limit,
+    exclude_archived: true,
+  });
+  return (data.channels ?? []).map((c: any) => ({
+    id: c.id,
+    userId: c.user,
+  }));
+}
+
+// ── User directory ──────────────────────────────────────────────────────────
+
+/**
+ * Get info for a single Slack user by ID.
+ */
+export async function getUserInfo(userId: string): Promise<SlackUser | null> {
+  try {
+    const data = await slackApi("users.info", { user: userId });
+    return {
+      id: data.user?.id ?? userId,
+      name: data.user?.name ?? userId,
+      realName: data.user?.real_name ?? data.user?.name ?? userId,
+      isBot: data.user?.is_bot ?? false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * List all workspace users (directory).
+ */
+export async function listWorkspaceUsers(limit = 200): Promise<SlackUser[]> {
+  const data = await slackApi("users.list", { limit });
+  return (data.members ?? [])
+    .filter((u: any) => !u.deleted)
+    .map((u: any) => ({
+      id: u.id,
+      name: u.name ?? "",
+      realName: u.real_name ?? u.name ?? "",
+      isBot: u.is_bot ?? false,
+    }));
+}
+
+// ── Agent-to-agent DMs (private channels) ───────────────────────────────────
 
 /**
  * DM channel cache: "atlas:binky" → channel ID.
