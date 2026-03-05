@@ -653,7 +653,6 @@ async function delegateTask(
     const job = await prisma.job.create({
       data: {
         tenantId,
-        requested_by_user_id: fromAgentId,
         status: "queued",
         jobType,
         priority: 1,

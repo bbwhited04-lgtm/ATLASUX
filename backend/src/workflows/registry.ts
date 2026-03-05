@@ -124,7 +124,6 @@ export async function queueEmail(
   const job = await prisma.job.create({
     data: {
       tenantId: ctx.tenantId,
-      requested_by_user_id: ctx.requestedBy,
       status: "queued",
       jobType: "EMAIL_SEND",
       priority: 5,
@@ -2444,7 +2443,6 @@ handlers["WF-140"] = async (ctx) => {
   const job = await prisma.job.create({
     data: {
       tenantId: ctx.tenantId,
-      requested_by_user_id: ctx.agentId,
       status: "queued",
       jobType: "LOCAL_VISION_TASK",
       priority: 1,
