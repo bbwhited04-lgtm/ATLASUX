@@ -29,6 +29,7 @@ const SKIP_PREFIXES = [
   "/v1/x/webhook",
   "/v1/tiktok/webhook",
   "/v1/telegram/webhook",
+  "/v1/twilio/",
   "/v1/linkedin/webhook",
   "/v1/alignable/webhook",
   "/v1/tumblr/webhook",

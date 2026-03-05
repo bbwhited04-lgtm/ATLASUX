@@ -86,6 +86,13 @@ const EnvSchema = z.object({
   TIKTOK_CLIENT_SECRET: z.string().optional(),
   TIKTOK_REDIRECT_URI: z.string().optional(),
 
+  // Twilio (voice + SMS)
+  TWILIO_ACCOUNT_SID:    z.string().optional(),
+  TWILIO_AUTH_TOKEN:     z.string().optional(),
+  TWILIO_FROM_NUMBER:    z.string().optional(),
+  TWILIO_API_KEY_SID:    z.string().optional(),
+  TWILIO_API_KEY_SECRET: z.string().optional(),
+
   // Stripe
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
