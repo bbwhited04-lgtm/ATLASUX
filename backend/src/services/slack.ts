@@ -270,23 +270,36 @@ export async function readHistory(
 }
 
 /**
- * List channels the bot can see.
+ * List channels the bot can see. Paginates automatically to get all channels.
  */
-export async function listChannels(limit = 100): Promise<SlackChannel[]> {
-  const data = await slackApi("conversations.list", {
-    types: "public_channel,private_channel",
-    limit,
-    exclude_archived: true,
-  });
+export async function listChannels(limit = 200): Promise<SlackChannel[]> {
+  const all: SlackChannel[] = [];
+  let cursor: string | undefined;
 
-  return (data.channels ?? []).map((c: any) => ({
-    id: c.id,
-    name: c.name,
-    is_member: c.is_member ?? false,
-    topic: c.topic?.value,
-    purpose: c.purpose?.value,
-    num_members: c.num_members,
-  }));
+  do {
+    const body: Record<string, any> = {
+      types: "public_channel,private_channel",
+      limit: Math.min(limit, 1000),
+      exclude_archived: true,
+    };
+    if (cursor) body.cursor = cursor;
+
+    const data = await slackApi("conversations.list", body);
+
+    const page = (data.channels ?? []).map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      is_member: c.is_member ?? false,
+      topic: c.topic?.value,
+      purpose: c.purpose?.value,
+      num_members: c.num_members,
+    }));
+    all.push(...page);
+
+    cursor = data.response_metadata?.next_cursor || undefined;
+  } while (cursor);
+
+  return all;
 }
 
 /**
