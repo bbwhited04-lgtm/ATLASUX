@@ -26,6 +26,8 @@ import {
   listDMs,
   getUserInfo,
   listWorkspaceUsers,
+  downloadFile,
+  downloadFileBuffer,
   type SlackMessage,
   type SlackChannel,
   type SlackUser,
@@ -34,6 +36,7 @@ import { agentRegistry } from "../agents/registry.js";
 import { runLLM } from "../core/engine/brainllm.js";
 import { workflowCatalog } from "../workflows/registry.js";
 import { prisma } from "../db/prisma.js";
+import { PDFParse } from "pdf-parse";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -53,6 +56,9 @@ let dmTickCounter = 0;
 
 // Thread state — track which threads we've already replied in recently
 const repliedThreads = new Set<string>();
+
+// File ingestion state — track which Slack file IDs we've already processed
+const processedFiles = new Set<string>();
 
 // Directory cache
 let workspaceUsers: SlackUser[] = [];
@@ -337,6 +343,9 @@ async function tickChannel(channelName: string) {
   const newestTs = newMessages[newMessages.length - 1].ts;
   lastSeenByChannel.set(channelName, newestTs);
 
+  // Ingest any file uploads into KB before agents respond
+  await processFileUploads(channelId, channelName, newMessages);
+
   // Human messages always get a response
   const humanMessages = newMessages.filter((m) => !m.bot_id);
 
@@ -446,6 +455,175 @@ async function tickChannel(channelName: string) {
 
   // Check for new thread replies (pass old lastSeen so we detect new activity correctly)
   await checkThreadReplies(channelId, channelName, contextMessages, lastSeenTs);
+}
+
+// ── File upload → KB ingestion ───────────────────────────────────────────────
+
+/** Chunk text into KB-sized pieces (same algorithm as scripts/chunkKbDocuments.ts). */
+function chunkText(body: string, targetSize = 4000, softWindow = 600) {
+  const len = body.length;
+  if (len === 0) return [];
+
+  const chunks: { idx: number; charStart: number; charEnd: number; content: string }[] = [];
+  let pos = 0;
+  let idx = 0;
+
+  while (pos < len) {
+    let end = Math.min(pos + targetSize, len);
+
+    if (end < len) {
+      const forward = body.indexOf("\n", end);
+      if (forward !== -1 && forward - end <= softWindow) {
+        end = forward + 1;
+      } else {
+        const back = body.lastIndexOf("\n", end);
+        if (back > pos + 200) end = back + 1;
+      }
+    }
+
+    if (end <= pos) end = Math.min(pos + targetSize, len);
+    chunks.push({ idx, charStart: pos, charEnd: end, content: body.slice(pos, end) });
+    idx++;
+    pos = end;
+  }
+
+  return chunks;
+}
+
+/** Sanitize a string into a URL-safe slug. */
+function slugify(input: string): string {
+  return input.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+/** Supported file types for KB ingestion. */
+const INGESTIBLE_MIMETYPES = new Set([
+  "application/pdf",
+  "text/plain",
+  "text/markdown",
+  "text/html",
+  "text/csv",
+  "application/json",
+]);
+
+function isIngestible(mimetype: string, name: string): boolean {
+  if (INGESTIBLE_MIMETYPES.has(mimetype)) return true;
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  return ["txt", "md", "csv", "json", "html", "pdf"].includes(ext);
+}
+
+/**
+ * Detect file uploads in messages and ingest them into the KB.
+ * Called from tickChannel before message processing so agents can reference new docs.
+ */
+async function processFileUploads(channelId: string, channelName: string, messages: SlackMessage[]) {
+  for (const msg of messages) {
+    if (!msg.files?.length) continue;
+
+    for (const file of msg.files) {
+      // Skip already processed or non-ingestible files
+      if (processedFiles.has(file.id)) continue;
+      if (!isIngestible(file.mimetype, file.name)) {
+        console.log(`[slackWorker] Skipping non-ingestible file: ${file.name} (${file.mimetype})`);
+        processedFiles.add(file.id); // Don't retry
+        continue;
+      }
+
+      // Size guard: skip files > 10MB
+      if (file.size > 10 * 1024 * 1024) {
+        console.log(`[slackWorker] Skipping oversized file: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+        processedFiles.add(file.id);
+        continue;
+      }
+
+      try {
+        let text: string | null = null;
+
+        if (file.mimetype === "application/pdf") {
+          const buf = await downloadFileBuffer(file.url_private);
+          if (buf) {
+            const parser = new PDFParse({ data: buf });
+            const result = await parser.getText();
+            text = result.text;
+            await parser.destroy();
+          }
+        } else {
+          text = await downloadFile(file.url_private);
+        }
+
+        if (!text || text.trim().length < 20) {
+          console.log(`[slackWorker] File empty or too short: ${file.name}`);
+          processedFiles.add(file.id);
+          continue;
+        }
+
+        const title = file.title || file.name;
+        const slug = `slack-upload/${channelName}/${slugify(title)}`;
+
+        // Upsert KB document (avoid duplicates by slug)
+        const SYSTEM_ACTOR = "00000000-0000-0000-0000-000000000001";
+        const doc = await prisma.kbDocument.upsert({
+          where: { tenantId_slug: { tenantId: TENANT_ID, slug } },
+          create: {
+            tenantId: TENANT_ID,
+            title,
+            slug,
+            body: text,
+            status: "published",
+            createdBy: SYSTEM_ACTOR,
+          },
+          update: {
+            body: text,
+            title,
+            updatedBy: SYSTEM_ACTOR,
+            updatedAt: new Date(),
+          },
+        });
+
+        // Chunk if body is large enough
+        let chunkCount = 0;
+        if (text.length > 4000) {
+          const chunks = chunkText(text);
+          // Delete stale chunks and insert fresh ones
+          await prisma.$transaction(async (tx) => {
+            await tx.kbChunk.deleteMany({ where: { documentId: doc.id } });
+            if (chunks.length > 0) {
+              await tx.kbChunk.createMany({
+                data: chunks.map((c) => ({
+                  tenantId: TENANT_ID,
+                  documentId: doc.id,
+                  idx: c.idx,
+                  charStart: c.charStart,
+                  charEnd: c.charEnd,
+                  content: c.content,
+                  sourceUpdatedAt: doc.updatedAt,
+                })),
+              });
+            }
+          });
+          chunkCount = chunks.length;
+        }
+
+        processedFiles.add(file.id);
+
+        const sizeStr = text.length > 1000 ? `${(text.length / 1000).toFixed(1)}k` : `${text.length}`;
+        const chunkStr = chunkCount > 0 ? `, ${chunkCount} chunks` : "";
+        await postAsAgent(channelId, "atlas",
+          `Ingested "${title}" into the knowledge base (${sizeStr} chars${chunkStr}). All agents can now reference this document.`,
+        );
+
+        console.log(`[slackWorker] KB ingested: "${title}" (${text.length} chars, ${chunkCount} chunks) from #${channelName}`);
+      } catch (err: any) {
+        console.error(`[slackWorker] File ingestion error for ${file.name}: ${err?.message ?? err}`);
+        processedFiles.add(file.id); // Don't retry on error
+      }
+    }
+  }
+
+  // Prune old file tracking (keep last 500)
+  if (processedFiles.size > 500) {
+    const entries = [...processedFiles];
+    entries.slice(0, entries.length - 500).forEach((id) => processedFiles.delete(id));
+  }
 }
 
 // ── Thread reply checking ────────────────────────────────────────────────────

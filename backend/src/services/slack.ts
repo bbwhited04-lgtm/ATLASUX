@@ -115,6 +115,7 @@ export type SlackMessage = {
   latest_reply?: string;
   bot_id?: string;
   username?: string;
+  files?: SlackFile[];
 };
 
 export type SlackUser = {
@@ -254,6 +255,17 @@ export async function readHistory(
     latest_reply: m.latest_reply,
     bot_id: m.bot_id,
     username: m.username,
+    files: m.files?.map((f: any) => ({
+      id: f.id,
+      name: f.name,
+      title: f.title ?? f.name,
+      mimetype: f.mimetype ?? "unknown",
+      size: f.size ?? 0,
+      url_private: f.url_private ?? "",
+      permalink: f.permalink ?? "",
+      created: f.created ?? 0,
+      user: f.user,
+    })),
   })) as SlackMessage[];
 }
 
@@ -597,6 +609,21 @@ export async function downloadFile(fileUrl: string): Promise<string | null> {
     });
     if (!res.ok) return null;
     return await res.text();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Download a file as a binary Buffer (for PDFs and other binary formats).
+ */
+export async function downloadFileBuffer(fileUrl: string): Promise<Buffer | null> {
+  try {
+    const res = await fetch(fileUrl, {
+      headers: { Authorization: `Bearer ${getBotToken()}` },
+    });
+    if (!res.ok) return null;
+    return Buffer.from(await res.arrayBuffer());
   } catch {
     return null;
   }
