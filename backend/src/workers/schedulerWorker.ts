@@ -451,6 +451,15 @@ function buildJobs(): ScheduledJob[] {
       hourUTC: 0, minuteUTC: 15, // fires at :15 past every hour
       hourly: true,
     },
+    // ── Hourly: Water Cooler Chat (business hours gated inside WF-300) ──────
+    {
+      id: "water-cooler-chat",
+      label: "Water Cooler Agent Chat (WF-300)",
+      agentId: "atlas", workflowId: "WF-300",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 0, minuteUTC: 45, // fires at :45 past every hour
+      hourly: true,
+    },
 
     // ── Weekly (Monday): Strategy & Planning ─────────────────────────────────
     {

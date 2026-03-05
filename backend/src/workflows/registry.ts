@@ -9,7 +9,7 @@ import { searchRecentTweets } from "../services/x.js";
 import { executeBrowserSession, resumeBrowserSession } from "../tools/browser/browserService.js";
 import { validateSessionConfig, createBrowserSessionMemo } from "../tools/browser/browserGovernance.js";
 import { calculateSessionRiskTier, type BrowserSessionConfig, type BrowserActionStep } from "../tools/browser/browserActions.js";
-import { postAsAgent, getChannelByName } from "../services/slack.js";
+import { postAsAgent, getChannelByName, readHistory } from "../services/slack.js";
 
 export type WorkflowContext = {
   tenantId: string;
@@ -89,6 +89,8 @@ export const workflowCatalog = [
   { id: "WF-221", name: "X Analytics Report (Kelly)",               description: "Pull X/Twitter analytics from Postiz — impressions, engagement, diagnostic.",              ownerAgent: "kelly"    },
   { id: "WF-222", name: "Facebook Analytics Report (Fran)",         description: "Pull Facebook analytics from Postiz — reach, engagement, diagnostic.",                     ownerAgent: "fran"     },
   { id: "WF-223", name: "Cross-Platform Analytics (Sunday)",        description: "Pull analytics for all connected platforms — summary dashboard with diagnostics.",          ownerAgent: "sunday"   },
+  // ── Water Cooler (WF-300) ────────────────────────────────────────────────────
+  { id: "WF-300", name: "Water Cooler Chat",                       description: "Hourly casual agent chat in #water-cooler — random agent posts banter or replies.",        ownerAgent: "atlas"    },
 ] as const;
 
 export const workflowCatalogAll = [
@@ -3507,6 +3509,142 @@ handlers["WF-033"] = async (ctx) => {
       recipients: [...recipients],
       preview: briefText.slice(0, 500),
     },
+  };
+};
+
+// ── WF-300 — Water Cooler Chat ───────────────────────────────────────────────
+
+const WATER_COOLER_ROSTER: Array<{ id: string; personality: string }> = [
+  { id: "atlas",    personality: "Strategic president with dry wit. Asks provocative big-picture questions." },
+  { id: "binky",    personality: "Research nerd, analytical, cardigan energy. Cites obscure facts and corrects misconceptions." },
+  { id: "kelly",    personality: "Social media savvy, trend-aware. Drops sharp observations about what's trending on X." },
+  { id: "tina",     personality: "Numbers-driven CFO. Finds humor in financial absurdity. Casually drops ROI references." },
+  { id: "sunday",   personality: "Creative brand coordinator. Thinks in stories and visual metaphors. Loves design talk." },
+  { id: "donna",    personality: "Reddit-native community manager. Meme-aware, sardonic, knows internet culture deeply." },
+  { id: "reynolds", personality: "Writer and SEO nerd. Opinionated about content quality. Grammar hot takes." },
+  { id: "larry",    personality: "Corporate secretary. Dry humor about compliance and documentation. Most organized in the room." },
+  { id: "timmy",    personality: "TikTok creator energy. Enthusiastic about short-form video trends." },
+  { id: "terry",    personality: "Tumblr creative. Aesthetic-focused, appreciates weird art and internet subcultures." },
+  { id: "link",     personality: "LinkedIn professional. Thought-leadership energy but self-aware about it. Business buzzwords semi-ironically." },
+  { id: "lucy",     personality: "Warm receptionist. Knows everyone's schedule. The social glue of the office." },
+];
+
+handlers["WF-300"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-300.start", "Water cooler chat starting");
+
+  // Business hours gate: 9am-5pm CT = 15:00-23:00 UTC
+  const currentHourUTC = new Date().getUTCHours();
+  if (currentHourUTC < 15 || currentHourUTC >= 23) {
+    await writeStepAudit(ctx, "WF-300.skip", `Outside business hours (${currentHourUTC} UTC)`);
+    return { ok: true, message: `Water cooler skipped — outside business hours` };
+  }
+
+  // Pick random agent
+  const pick = WATER_COOLER_ROSTER[Math.floor(Math.random() * WATER_COOLER_ROSTER.length)];
+
+  // Find #water-cooler channel
+  let channelId: string | null = null;
+  try {
+    const ch = await getChannelByName("water-cooler", true);
+    channelId = ch?.id ?? null;
+  } catch {
+    await writeStepAudit(ctx, "WF-300.error", "Could not find #water-cooler channel");
+    return { ok: false, message: "Could not find #water-cooler channel" };
+  }
+  if (!channelId) {
+    return { ok: false, message: "No #water-cooler channel found" };
+  }
+
+  // Read recent messages for context
+  let recentContext = "";
+  let replyTarget: { ts: string; username: string; text: string } | null = null;
+  try {
+    const messages = await readHistory(channelId, 10);
+    if (messages.length) {
+      recentContext = [...messages]
+        .reverse()
+        .map((m: any) => `[${m.username ?? "unknown"}]: ${(m.text ?? "").slice(0, 200)}`)
+        .join("\n");
+
+      // 30% chance to reply to a recent message in a thread
+      if (Math.random() < 0.3) {
+        const target = messages[Math.floor(Math.random() * Math.min(messages.length, 5))];
+        if (target && (target as any).ts && (target as any).text) {
+          replyTarget = {
+            ts: (target as any).thread_ts ?? (target as any).ts,
+            username: (target as any).username ?? "someone",
+            text: ((target as any).text ?? "").slice(0, 200),
+          };
+        }
+      }
+    }
+  } catch { /* non-fatal — post without context */ }
+
+  const ctHour = (currentHourUTC - 6 + 24) % 24;
+  const timeOfDay = ctHour < 12 ? "morning" : ctHour < 17 ? "afternoon" : "evening";
+  const agentName = pick.id.charAt(0).toUpperCase() + pick.id.slice(1);
+
+  // Generate casual message
+  const chatText = await safeLLM(ctx, {
+    agent: pick.id.toUpperCase(),
+    purpose: "water_cooler_chat",
+    route: "DRAFT_GENERATION_FAST",
+    system: [
+      `You are ${agentName}, an AI employee at Atlas UX (an AI employee productivity platform).`,
+      `Your personality: ${pick.personality}`,
+      "",
+      "You're hanging out in the office #water-cooler Slack channel. Write a SHORT casual message (1-3 sentences max).",
+      "",
+      "Your message should be ONE of these types (pick one naturally):",
+      "- Share something interesting you noticed during work today",
+      "- React to or build on something another agent said recently",
+      "- Make a joke or observation related to your role",
+      "- Share a random thought or opinion about your work domain",
+      "- Ask the group a fun question related to your specialty",
+      "",
+      "RULES:",
+      "- 1-3 sentences max. Casual chat, not a report.",
+      "- Stay in character. Your personality should come through.",
+      "- No fabricated data or stats. Casual opinions are fine.",
+      "- No hashtags or emojis in the text.",
+      "- Don't start with 'Hey team' or 'Hi everyone' — jump in naturally.",
+      "- Don't mention you're an AI. Sound like a real coworker.",
+      replyTarget
+        ? `\nYou are REPLYING to ${replyTarget.username} who said: "${replyTarget.text}"\nRespond naturally to what they said.`
+        : "",
+    ].filter(Boolean).join("\n"),
+    user: [
+      `It's ${timeOfDay} (${ctHour}:00 CT). Recent #water-cooler messages:`,
+      "",
+      recentContext || "(Channel is quiet — you're starting the conversation!)",
+      "",
+      `Write your casual message as ${agentName}. Just the message text, nothing else.`,
+    ].join("\n"),
+  });
+
+  const cleanText = chatText.replace(/^["']|["']$/g, "").trim();
+  if (!cleanText || cleanText.startsWith("[LLM unavailable")) {
+    await writeStepAudit(ctx, "WF-300.skip", "LLM unavailable");
+    return { ok: true, message: "Water cooler skipped — LLM unavailable" };
+  }
+
+  try {
+    await postAsAgent(channelId, pick.id, cleanText,
+      replyTarget ? { threadTs: replyTarget.ts } : undefined
+    );
+  } catch (err: any) {
+    await writeStepAudit(ctx, "WF-300.error", `Slack post failed: ${err?.message ?? err}`);
+    return { ok: false, message: `Slack post failed: ${err?.message}` };
+  }
+
+  await writeStepAudit(ctx, "WF-300.posted", `${pick.id} posted to #water-cooler${replyTarget ? " (thread reply)" : ""}`, {
+    agentId: pick.id, isReply: !!replyTarget, textLength: cleanText.length,
+  });
+
+  return {
+    ok: true,
+    message: `Water cooler: ${pick.id} posted${replyTarget ? " (reply)" : ""}`,
+    output: { agentId: pick.id, isReply: !!replyTarget, preview: cleanText.slice(0, 100) },
   };
 };
 
