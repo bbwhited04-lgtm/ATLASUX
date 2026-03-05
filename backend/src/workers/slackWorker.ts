@@ -296,10 +296,17 @@ async function tick() {
   const newestTs = newMessages[newMessages.length - 1].ts;
   lastSeenTs = newestTs;
 
-  // Filter to human messages only (skip bot messages — our agents post as bots)
+  // Human messages always get a response
   const humanMessages = newMessages.filter((m) => !m.bot_id);
 
-  if (!humanMessages.length) return;
+  // Agent messages: 25% chance another agent jumps in (creates natural back-and-forth)
+  const agentMessages = newMessages.filter((m) => !!m.bot_id);
+  const agentChatter = agentMessages.filter(() => Math.random() < 0.25);
+
+  // Combine: all human messages + occasional agent messages to react to
+  const messagesToProcess = [...humanMessages, ...agentChatter];
+
+  if (!messagesToProcess.length) return;
 
   // Fetch context window for conversation history (separate from new-message detection)
   let contextMessages: SlackMessage[] = [];
@@ -309,37 +316,51 @@ async function tick() {
     // Non-fatal — proceed without context
   }
 
-  // Process each human message
-  for (const msg of humanMessages) {
-    // Check for workflow trigger before LLM response
-    const workflow = detectWorkflow(msg.text);
-    if (workflow) {
-      console.log(
-        `[slackWorker] Workflow command detected → ${workflow.id} (${workflow.name}): "${msg.text.slice(0, 80)}"`,
-      );
-      try {
-        await queueWorkflow(workflow, channelId);
-      } catch (err: any) {
-        console.error(`[slackWorker] Failed to queue workflow: ${err?.message ?? err}`);
-        await postAsAgent(channelId, "atlas",
-          `Failed to queue workflow ${workflow.id}: ${err?.message ?? "unknown error"}`,
+  // Process messages (human messages + occasional agent chatter)
+  for (const msg of messagesToProcess) {
+    const isAgentMsg = !!msg.bot_id;
+
+    // Check for workflow trigger before LLM response (human messages only)
+    if (!isAgentMsg) {
+      const workflow = detectWorkflow(msg.text);
+      if (workflow) {
+        console.log(
+          `[slackWorker] Workflow command detected → ${workflow.id} (${workflow.name}): "${msg.text.slice(0, 80)}"`,
         );
+        try {
+          await queueWorkflow(workflow, channelId);
+        } catch (err: any) {
+          console.error(`[slackWorker] Failed to queue workflow: ${err?.message ?? err}`);
+          await postAsAgent(channelId, "atlas",
+            `Failed to queue workflow ${workflow.id}: ${err?.message ?? "unknown error"}`,
+          );
+        }
+        continue; // Skip LLM response — workflow is the action
       }
-      continue; // Skip LLM response — workflow is the action
     }
 
-    const agent = detectAgent(msg.text);
+    // Pick responding agent: for human messages use detectAgent, for agent messages pick a random different agent
+    let agent: (typeof agentRegistry)[number];
+    if (isAgentMsg) {
+      const senderName = (msg.username ?? "").toLowerCase().split(" ")[0];
+      const candidates = agentRegistry.filter((a) => a.id !== senderName && a.id !== "chairman");
+      agent = candidates[Math.floor(Math.random() * candidates.length)] ?? agentRegistry.find((a) => a.id === "atlas")!;
+    } else {
+      agent = detectAgent(msg.text);
+    }
+
     const systemPrompt = buildSystemPrompt(agent);
     const context = formatContext(contextMessages);
 
+    const sender = isAgentMsg ? (msg.username ?? "an agent") : "Billy";
     const userMessage = context
-      ? `${context}\n\nNew message from Billy:\n${msg.text}`
-      : `Billy says: ${msg.text}`;
+      ? `${context}\n\nNew message from ${sender}:\n${msg.text}`
+      : `${sender} says: ${msg.text}`;
 
     const runId = `slack-${agent.id}-${Date.now()}`;
 
     console.log(
-      `[slackWorker] Human message detected → routing to ${agent.name} (${agent.id}): "${msg.text.slice(0, 80)}${msg.text.length > 80 ? "..." : ""}"`,
+      `[slackWorker] ${isAgentMsg ? "Agent chatter" : "Human message"} → routing to ${agent.name} (${agent.id}): "${(msg.text ?? "").slice(0, 80)}${(msg.text ?? "").length > 80 ? "..." : ""}"`,
     );
 
     try {
