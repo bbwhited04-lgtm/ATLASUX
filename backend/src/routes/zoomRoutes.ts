@@ -17,6 +17,7 @@ import type { FastifyPluginAsync } from "fastify";
 import crypto from "crypto";
 import { prisma } from "../db/prisma.js";
 import { downloadTranscriptFromWebhook, summarizeTranscript } from "../services/zoom.js";
+import { dispatchOrgBrainHook } from "../core/orgBrain/hooks.js";
 
 const webhookSecret = process.env.ZOOM_WEBHOOK_SECRET ?? "";
 const TENANT_ID = process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
@@ -222,6 +223,7 @@ async function handleRecordingCompleted(app: any, body: any) {
       ? new Date(payload.start_time).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0];
 
+    let meetingNoteId: string;
     if (existing) {
       await prisma.meetingNote.update({
         where: { id: existing.id },
@@ -234,8 +236,9 @@ async function handleRecordingCompleted(app: any, body: any) {
           processedAt: new Date(),
         },
       });
+      meetingNoteId = existing.id;
     } else {
-      await prisma.meetingNote.create({
+      const created = await prisma.meetingNote.create({
         data: {
           tenantId: TENANT_ID,
           externalMeetingId: meetingId,
@@ -252,6 +255,7 @@ async function handleRecordingCompleted(app: any, body: any) {
           processedAt: new Date(),
         },
       });
+      meetingNoteId = created.id;
     }
 
     // Ingest into KB so agents can reference meeting content
@@ -290,6 +294,13 @@ async function handleRecordingCompleted(app: any, body: any) {
       { meetingId, topic, chars: transcript.length },
       "Zoom recording processed — transcript summarized and ingested to KB",
     );
+
+    // Fire org brain hook to extract organizational insights
+    dispatchOrgBrainHook({
+      tenantId: TENANT_ID,
+      event: "meeting_processed",
+      entityId: meetingNoteId,
+    }).catch(() => {});
   } catch (err) {
     app.log.error({ err, meetingId }, "Failed to process Zoom recording");
   }

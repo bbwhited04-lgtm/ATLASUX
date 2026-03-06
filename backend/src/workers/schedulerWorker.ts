@@ -75,6 +75,8 @@ import "dotenv/config";
 
 import { prisma } from "../db/prisma.js";
 import { getSystemState, setSystemState } from "../services/systemState.js";
+import { runSlackHook } from "../core/orgBrain/slackHook.js";
+import { runDecisionHook } from "../core/orgBrain/decisionHook.js";
 
 const POLL_MS = Math.max(15_000, Number(process.env.SCHEDULER_POLL_MS ?? 60_000));
 const TENANT_ID = process.env.TENANT_ID ?? "";
@@ -95,6 +97,8 @@ type ScheduledJob = {
   dayOfWeek?: number;
   /** If true, fires once per hour (minuteUTC only, ignores hourUTC). De-duped per hour. */
   hourly?: boolean;
+  /** If set, run this function directly instead of creating an engine intent. */
+  hookFn?: () => Promise<any>;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -135,6 +139,13 @@ async function markFired(key: string, token: string) {
 }
 
 async function fireJob(job: ScheduledJob) {
+  // Hook jobs run directly — no engine intent needed
+  if (job.hookFn) {
+    const result = await job.hookFn();
+    console.log(`[scheduler] ✓ ${job.label} (hook)`, result ?? "");
+    return;
+  }
+
   const intent = await prisma.intent.create({
     data: {
       tenantId: RESOLVED_TENANT_ID,
@@ -540,6 +551,24 @@ function buildJobs(): ScheduledJob[] {
       agentId: "frank", workflowId: "WF-086",
       payload: { triggeredBy: "scheduler" },
       hourUTC: 16, minuteUTC: 0, dayOfWeek: 5,
+    },
+
+    // ── Org Brain Hooks ───────────────────────────────────────────────────────
+    {
+      id: "orgbrain-slack-daily",
+      label: "Org Brain Slack Analysis (HOOK-400)",
+      agentId: "atlas", workflowId: "HOOK-400",
+      payload: {},
+      hourUTC: 23, minuteUTC: 30,
+      hookFn: () => runSlackHook({ tenantId: RESOLVED_TENANT_ID }),
+    },
+    {
+      id: "orgbrain-decision-weekly",
+      label: "Org Brain Decision Review (HOOK-401)",
+      agentId: "atlas", workflowId: "HOOK-401",
+      payload: {},
+      hourUTC: 21, minuteUTC: 0, dayOfWeek: 5,
+      hookFn: () => runDecisionHook({ tenantId: RESOLVED_TENANT_ID }),
     },
   ];
 }

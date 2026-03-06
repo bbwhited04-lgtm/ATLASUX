@@ -3,6 +3,7 @@ import { buildPackets } from "./packets.js";
 import { prisma } from "../../prisma.js";
 import { atlasExecuteGate } from "../exec/atlasGate.js";
 import { getWorkflowHandler, workflowCatalogAll } from "../../workflows/registry.js";
+import { dispatchOrgBrainHook } from "../orgBrain/hooks.js";
 
 // Build a fast lookup set of all canonical workflow keys (WF-001 … WF-106+)
 const CANONICAL_WORKFLOW_KEYS = new Set<string>(workflowCatalogAll.map((w) => w.id));
@@ -193,6 +194,14 @@ export async function engineTick() {
         message: `[${workflowId}] ${res?.ok ? "Completed" : "Failed"}: ${res?.message ?? ""}`,
         meta: { workflowId, agentId, ok: res?.ok ?? false, output: res?.output ?? null },
       });
+
+      // Fire org brain hook to track workflow success/failure patterns
+      dispatchOrgBrainHook({
+        tenantId: intent.tenantId,
+        event: "workflow_complete",
+        entityId: intent.id,
+        data: { workflowId, ok: res?.ok ?? false, message: res?.message ?? "" },
+      }).catch(() => {});
     }
 
     await prisma.intent.update({

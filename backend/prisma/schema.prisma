@@ -431,11 +431,29 @@ model DecisionMemo {
   sourceJob        Job?            @relation(fields: [jobId], references: [id], onUpdate: NoAction)
   sourceIntent     Intent?         @relation(fields: [intentId], references: [id], onUpdate: NoAction)
   growth_loop_runs GrowthLoopRun[]
+  outcomes         DecisionOutcome[]
 
   @@index([tenantId, createdAt(sort: Desc)], map: "decision_memos_tenant_time_idx")
   @@index([jobId], map: "decision_memos_job_idx")
   @@index([intentId], map: "decision_memos_intent_idx")
   @@map("decision_memos")
+}
+
+model DecisionOutcome {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String       @map("tenant_id") @db.Uuid
+  decisionId  String       @map("decision_id") @db.Uuid
+  outcome     String       // positive, negative, neutral, mixed
+  evidence    String
+  impactScore Float?       @map("impact_score")
+  detectedBy  String       @map("detected_by") // agent:binky, manual, hook:auto
+  detectedAt  DateTime     @default(now()) @map("detected_at") @db.Timestamptz(6)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  decision    DecisionMemo @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, decisionId])
+  @@index([tenantId, detectedAt(sort: Desc)])
+  @@map("decision_outcomes")
 }
 
 model Ticket {
