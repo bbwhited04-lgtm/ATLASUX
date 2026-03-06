@@ -67,11 +67,9 @@ type Tab = "code" | "signin";
 export default function AppGate({ children }: { children: React.ReactNode }) {
   const { setTenantId } = useActiveTenant();
 
-  // Support comma-separated codes (owner + cloud seats baked at build time)
-  const bakedCodes = useMemo(() => {
-    const raw = normalize(import.meta.env.VITE_APP_GATE_CODE ?? "");
-    if (!raw) return [];
-    return raw.split(",").map((c) => c.trim()).filter(Boolean);
+  // Gate is enabled when the env var is set (value is validated server-side only)
+  const gateEnabled = useMemo(() => {
+    return normalize(import.meta.env.VITE_APP_GATE_CODE ?? "").length > 0;
   }, []);
 
   const [authed, setAuthed] = useState(false);
@@ -142,7 +140,7 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Fail closed if not configured
-  if (!bakedCodes.length) {
+  if (!gateEnabled) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-6">
         <Card className="w-full max-w-md border-cyan-500/20">
@@ -171,18 +169,7 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
 
     const trimmed = normalize(code);
 
-    // 1. Check baked-in codes (instant, works offline)
-    if (bakedCodes.includes(trimmed)) {
-      const remote = await validateRemote(trimmed).catch(() => null);
-      if (remote && !remote.valid && remote.error === "seat_revoked") {
-        setError("This access code has been revoked.");
-        return;
-      }
-      grantAccess(remote?.seat ?? { label: "Owner", role: "owner" });
-      return;
-    }
-
-    // 2. Check backend cloud seats DB
+    // All code validation is done server-side
     setChecking(true);
     const result = await validateRemote(trimmed);
     setChecking(false);
@@ -196,7 +183,9 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
     const nextFails = fails + 1;
     setFails(nextFails);
 
-    if (result.error === "seat_revoked") {
+    if (result.error === "backend_unreachable") {
+      setError("Cannot reach server. Please try again.");
+    } else if (result.error === "seat_revoked") {
       setError("This access code has been revoked.");
     } else {
       setError("Invalid access code.");

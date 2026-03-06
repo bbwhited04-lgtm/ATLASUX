@@ -39,6 +39,13 @@ function getBotToken(): string {
   return token;
 }
 
+/** Strip the bot token from any string to prevent leaking it in error responses */
+function sanitize(msg: string): string {
+  const token = String(process.env.BOTFATHERTOKEN ?? "").trim();
+  if (!token) return msg;
+  return msg.replaceAll(token, "[REDACTED]");
+}
+
 // ── Conversation memory per chat (in-memory, last N turns) ──────────────────
 // Key: `${chatId}` → array of {role, content}
 const chatHistory = new Map<string, Array<{ role: string; content: string }>>();
@@ -187,7 +194,7 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
       const data = (await res.json()) as any;
       return reply.send({ ok: data.ok, bot: data.result ?? null });
     } catch (e: any) {
-      return reply.code(503).send({ ok: false, error: e.message });
+      return reply.code(503).send({ ok: false, error: sanitize(e.message) });
     }
   });
 
@@ -218,7 +225,7 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
       if (!data.ok) throw new Error(data.description ?? "telegram_send_failed");
       return reply.send({ ok: true, message_id: data.result?.message_id });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      return reply.code(502).send({ ok: false, error: sanitize(e.message) });
     }
   });
 
@@ -232,7 +239,7 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
       const data = (await res.json()) as any;
       return reply.send({ ok: data.ok, updates: data.result ?? [] });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      return reply.code(502).send({ ok: false, error: sanitize(e.message) });
     }
   });
 
@@ -397,7 +404,7 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
     } catch (err: any) {
       req.log.error({ err, chatId, agentId }, "Telegram chat engine error");
       await sendTelegramDirect(chatId,
-        `Sorry, I hit an error processing that. Try again in a moment.\n\n_${(err?.message ?? "unknown error").slice(0, 200)}_`,
+        `Sorry, I hit an error processing that. Try again in a moment.\n\n_${sanitize((err?.message ?? "unknown error")).slice(0, 200)}_`,
         "Markdown",
       );
     }
@@ -416,7 +423,7 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
       await saveTelegramChatId(tenantId, chatId);
       return reply.send({ ok: true, chatId });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      return reply.code(502).send({ ok: false, error: sanitize(e.message) });
     }
   });
 
@@ -435,7 +442,7 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
       const chatId = String(config.chat_id ?? "").trim() || null;
       return reply.send({ ok: true, chatId });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      return reply.code(502).send({ ok: false, error: sanitize(e.message) });
     }
   });
 
@@ -461,7 +468,7 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
       const data = (await res.json()) as any;
       return reply.send({ ok: data.ok, description: data.description });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      return reply.code(502).send({ ok: false, error: sanitize(e.message) });
     }
   });
 
@@ -473,7 +480,7 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
       const data = (await res.json()) as any;
       return reply.send({ ok: data.ok, description: data.description });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      return reply.code(502).send({ ok: false, error: sanitize(e.message) });
     }
   });
 
@@ -485,7 +492,7 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
       const data = (await res.json()) as any;
       return reply.send({ ok: data.ok, info: data.result ?? null });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      return reply.code(502).send({ ok: false, error: sanitize(e.message) });
     }
   });
 };

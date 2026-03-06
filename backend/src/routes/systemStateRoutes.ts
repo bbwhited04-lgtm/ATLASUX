@@ -1,7 +1,18 @@
 import { FastifyPluginAsync } from "fastify";
 import { getSystemState, setSystemState } from "../services/systemState.js";
 
+const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
 export const systemStateRoutes: FastifyPluginAsync = async (app) => {
+  // Require authentication for all state-changing endpoints
+  app.addHook("preHandler", async (req, reply) => {
+    if (!MUTATING.has(req.method.toUpperCase())) return;
+    const auth = (req as any).auth;
+    if (!auth?.userId) {
+      return reply.code(401).send({ ok: false, error: "not_authenticated" });
+    }
+  });
+
   app.get("/api/system/state/:key", async (req) => {
     const key = (req.params as any).key as string;
     let state = await getSystemState(key);

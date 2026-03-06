@@ -1,12 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL ||
-  `https://wxeomtjipoirzetjngco.supabase.co`;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4ZW9tdGppcG9pcnpldGpuZ2NvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNjkwMTEsImV4cCI6MjA4NTY0NTAxMX0._ZJvIZ88G1m8cRyM75VoSYCwSXf5QHtoSQqgTcpUkqg";
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY env vars. " +
+    "Add them to your .env file (see .env.example).",
+  );
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -33,15 +35,6 @@ export async function supabaseSignUp(email: string, password: string) {
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) throw error;
   return { user: data.user, session: data.session };
-}
-
-export async function supabaseSignOut() {
-  await supabase.auth.signOut();
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-  } catch {
-    // ignore
-  }
 }
 
 export function getSupabaseToken(): string | null {

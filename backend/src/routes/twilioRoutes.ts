@@ -94,7 +94,10 @@ export const twilioRoutes: FastifyPluginAsync = async (app) => {
 
     // Twilio signature check as preHandler on all webhook routes
     webhooks.addHook("preHandler", async (req, reply) => {
-      if (!authToken) return; // skip validation if not configured
+      if (!authToken) {
+        app.log.warn("TWILIO_AUTH_TOKEN not configured — rejecting webhook");
+        return reply.code(503).send("");
+      }
       const sig = (req.headers as any)["x-twilio-signature"] as string | undefined;
       const proto = (req.headers as any)["x-forwarded-proto"] ?? "https";
       const host = (req.headers as any)["host"] ?? "localhost";
@@ -102,9 +105,13 @@ export const twilioRoutes: FastifyPluginAsync = async (app) => {
       const params = (req.body as Record<string, string>) ?? {};
 
       if (!validateTwilioSignature(authToken, sig, url, params)) {
-        // Warn only — don't block. Behind Render's proxy the reconstructed URL
-        // may not match what Twilio signed, causing false rejections.
-        app.log.warn({ url, sig }, "Twilio signature mismatch (not blocking)");
+        // Also try with the canonical base URL (proxy may alter the host/proto)
+        const baseUrl = (process.env.TWILIO_WEBHOOK_BASE_URL ?? "").trim();
+        const altUrl = baseUrl ? `${baseUrl}${req.url}` : "";
+        if (!altUrl || !validateTwilioSignature(authToken, sig, altUrl, params)) {
+          app.log.warn({ url, altUrl, sig }, "Twilio signature mismatch — rejecting");
+          return reply.code(403).send("");
+        }
       }
     });
 
