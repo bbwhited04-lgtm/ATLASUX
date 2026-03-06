@@ -10,7 +10,7 @@ import { prisma } from "../db/prisma.js";
 import { readTokenVault, updateTokenVaultAccessToken, clearTokenVault } from "./tokenStore.js";
 import { refreshRedditToken } from "../oauth.js";
 
-type Provider = "google" | "meta" | "x" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square" | "meetup";
+type Provider = "google" | "meta" | "x" | "microsoft" | "reddit" | "pinterest" | "linkedin" | "notion" | "airtable" | "dropbox" | "slack" | "paypal" | "square" | "meetup" | "zoom";
 
 const REFRESH_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -194,6 +194,25 @@ async function refreshSquare(_env: Env, refreshToken: string) {
   return { access_token: data.access_token as string, expires_in: expiresIn };
 }
 
+async function refreshZoom(env: Env, refreshToken: string) {
+  const basic = Buffer.from(`${env.ZOOM_CLIENT_ID!}:${env.ZOOM_CLIENT_SECRET!}`).toString("base64");
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+  const r = await fetch("https://zoom.us/oauth/token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  const data = (await r.json()) as any;
+  if (!r.ok) throw new Error(`Zoom refresh failed: ${data?.reason ?? data?.error ?? JSON.stringify(data)}`);
+  return { access_token: data.access_token as string, expires_in: data.expires_in as number };
+}
+
 async function refreshMeetup(env: Env, refreshToken: string) {
   const body = new URLSearchParams({
     client_id: env.MEETUP_CLIENT_ID!,
@@ -280,6 +299,10 @@ export async function refreshTokenIfNeeded(
       case "meetup":
         if (!vault.refresh_token) return vault.access_token;
         result = await refreshMeetup(env, vault.refresh_token);
+        break;
+      case "zoom":
+        if (!vault.refresh_token) return vault.access_token;
+        result = await refreshZoom(env, vault.refresh_token);
         break;
       // Notion and Slack tokens don't expire — no refresh needed
       case "notion":
@@ -445,6 +468,9 @@ export async function revokeToken(
           break;
         case "meetup":
           // Meetup doesn't have a token revocation endpoint.
+          break;
+        case "zoom":
+          // Zoom doesn't have a public token revocation endpoint.
           break;
       }
     } catch {

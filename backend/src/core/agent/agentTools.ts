@@ -24,6 +24,7 @@
  *   read_ip_register          — IP request records from DB
  *   read_planner              — Microsoft Planner tasks via Graph API
  *   send_telegram_message     — send a Telegram notification to the tenant's default chat
+ *   read_meetings             — upcoming + recent meeting notes, transcripts, summaries, action items
  *   search_my_memories        — unified recall: conversation memory, audit trail, workflow history, agent KB
  *   delegate_task             — agent-to-agent task handoff: creates a queued AGENT_TASK job for another agent
  *   post_to_x                — post a tweet via X API v2 (Kelly's primary tool)
@@ -478,6 +479,60 @@ async function readPlanner(tenantId: string): Promise<ToolResult> {
     return { tool: "read_planner", data: `Planner tasks (${tasks.length}):\n${lines.join("\n")}`, usedAt: new Date().toISOString() };
   } catch (err: any) {
     return { tool: "read_planner", data: `[error reading planner: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
+// ── Tool: read_meetings ──────────────────────────────────────────────────────
+
+async function readMeetings(tenantId: string): Promise<ToolResult> {
+  try {
+    // Upcoming scheduled + recently processed meetings
+    const [upcoming, recent] = await Promise.all([
+      prisma.meetingNote.findMany({
+        where: { tenantId, status: { in: ["scheduled", "in_progress"] } },
+        orderBy: { scheduledAt: "asc" },
+        take: 10,
+      }),
+      prisma.meetingNote.findMany({
+        where: { tenantId, status: { in: ["completed", "processed"] } },
+        orderBy: { scheduledAt: "desc" },
+        take: 5,
+      }),
+    ]);
+
+    const lines: string[] = [];
+
+    if (upcoming.length) {
+      lines.push("**Upcoming/Active Meetings:**");
+      for (const m of upcoming) {
+        const date = m.scheduledAt.toLocaleDateString();
+        const time = m.scheduledAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const dur = m.durationMinutes ? ` (${m.durationMinutes}min)` : "";
+        lines.push(`- ${m.title} — ${date} ${time}${dur} [${m.platform}] [${m.status}]`);
+      }
+    }
+
+    if (recent.length) {
+      lines.push("");
+      lines.push("**Recent Meetings:**");
+      for (const m of recent) {
+        const date = m.scheduledAt.toLocaleDateString();
+        const hasSummary = m.summary ? " ✓ summarized" : "";
+        lines.push(`- ${m.title} — ${date} [${m.platform}]${hasSummary}`);
+        if (m.summary) lines.push(`  Summary: ${m.summary.slice(0, 200)}...`);
+        if (Array.isArray(m.actionItems) && (m.actionItems as any[]).length) {
+          lines.push(`  Action items: ${(m.actionItems as any[]).map((a: any) => a.text).join("; ")}`);
+        }
+      }
+    }
+
+    if (!lines.length) {
+      return { tool: "read_meetings", data: "No meetings found.", usedAt: new Date().toISOString() };
+    }
+
+    return { tool: "read_meetings", data: lines.join("\n"), usedAt: new Date().toISOString() };
+  } catch (err: any) {
+    return { tool: "read_meetings", data: `[error reading meetings: ${err?.message}]`, usedAt: new Date().toISOString() };
   }
 }
 
@@ -1219,26 +1274,33 @@ const LOCAL_VISION_PATTERNS = [
   /\buse\s+(my|the)\s+browser\b/i,
 ];
 
+const MEETING_PATTERNS = [
+  /\b(meeting|zoom|call|conference|standup|sync|vc|video call)\b/i,
+  /\b(transcript|recording|action items|meeting notes|minutes)\b/i,
+  /\b(what.*discussed|what.*happened|recap|debrief)\b/i,
+  /\b(upcoming.*meeting|next.*call|scheduled.*meeting)\b/i,
+];
+
 // ── Agent → allowed tools map (from WF-107 approved proposals) ───────────────
 // Controls which tools can fire for which agent — prevents unnecessary DB hits.
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   // ── Executives ───────────────────────────────────────────────────────
-  atlas:       ["subscription", "calendar", "ledger", "team", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  binky:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "discord", "telegramFull", "slackChat"],
-  cheryl:      ["subscription", "team", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "meetings"],
+  binky:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "discord", "telegramFull", "slackChat", "meetings"],
+  cheryl:      ["subscription", "team", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat", "meetings"],
   tina:        ["calendar", "ledger", "crm", "ops", "tickets", "assets", "integrations", "subscription", "policy", "telegram", "memory", "delegate", "gmailRead", "googleSheets", "excel", "dropbox", "slackChat"],
   larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "composio", "dropbox", "slackChat"],
   jenny:       ["calendar", "legal", "policy", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "arxiv", "composio", "slackChat"],
   benny:       ["calendar", "legal", "ipRegister", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "composio", "slackChat"],
 
   // ── Ops & Support ────────────────────────────────────────────────────
-  petra:       ["calendar", "planner", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat"],
-  mercer:      ["crm", "ops", "tickets", "assets", "integrations", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "composio", "discord", "slackChat"],
+  petra:       ["calendar", "planner", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat", "meetings"],
+  mercer:      ["crm", "ops", "tickets", "assets", "integrations", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "composio", "discord", "slackChat", "meetings"],
   frank:       ["userProfile", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "telegramFull", "slackChat"],
-  sandy:       ["calendar", "email", "userProfile", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat"],
+  sandy:       ["calendar", "email", "userProfile", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat", "meetings"],
   claire:      ["calendar", "email", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat"],
-  "daily-intel": ["calendar", "email", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "slackChat"],
+  "daily-intel": ["calendar", "email", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "slackChat", "meetings"],
 
   // ── Content & Comms ──────────────────────────────────────────────────
   sunday:      ["calendar", "knowledge", "email", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
@@ -1312,6 +1374,7 @@ export type ToolNeeds = {
   postizAnalytics: boolean;
   postizBroadcast: boolean;
   slackChat:       boolean;
+  meetings:        boolean;
   query:          string;
 };
 
@@ -1354,6 +1417,7 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     deepResearch:   can("deepResearch")   && DEEP_RESEARCH_PATTERNS.some(p => p.test(q)),
     browser:        can("browser")        && BROWSER_PATTERNS.some(p => p.test(q)),
     localVision:    can("localVision")    && LOCAL_VISION_PATTERNS.some(p => p.test(q)),
+    meetings:       can("meetings")       && MEETING_PATTERNS.some(p => p.test(q)),
     // Modular tools — delegated to tool registry
     ...detectModularNeeds(q, allowed),
     query:          q,
@@ -1550,6 +1614,7 @@ export async function resolveAgentTools(
     needs.deepResearch   ? deepResearchTool(tenantId, aid, needs.query)           : Promise.resolve(null),
     needs.browser        ? Promise.resolve(browserToolInfo(aid))                    : Promise.resolve(null),
     needs.localVision    ? Promise.resolve(localVisionToolInfo(aid))                : Promise.resolve(null),
+    needs.meetings       ? readMeetings(tenantId)                                    : Promise.resolve(null),
     approvedToolsPromise,
   ];
 

@@ -1281,24 +1281,26 @@ model AtlasConversation {
 /// Meeting notes — stores manually added or calendar-imported meetings,
 /// with optional transcript + AI-generated summary & action items.
 model MeetingNote {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId        String    @map("tenant_id") @db.Uuid
-  platform        String    // zoom, microsoft-teams, google-meet, webex, etc.
-  title           String
-  meetingUrl      String?   @map("meeting_url")
-  scheduledAt     DateTime  @map("scheduled_at") @db.Timestamptz(6)
-  durationMinutes Int?      @map("duration_minutes")
-  attendees       Json      @default("[]") // [{ name, email }]
-  transcript      String?   // raw transcript text
-  summary         String?   // AI-generated summary
-  actionItems     Json      @default("[]") @map("action_items") // [{ text, assignee?, done }]
-  keyPoints       Json      @default("[]") @map("key_points")   // string[]
-  status          String    @default("scheduled") // scheduled, in_progress, completed, processed, failed
-  processedAt     DateTime? @map("processed_at") @db.Timestamptz(6)
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  platform          String    // zoom, microsoft-teams, google-meet, webex, etc.
+  title             String
+  meetingUrl        String?   @map("meeting_url")
+  externalMeetingId String?   @map("external_meeting_id") // Zoom/Teams meeting ID
+  scheduledAt       DateTime  @map("scheduled_at") @db.Timestamptz(6)
+  durationMinutes   Int?      @map("duration_minutes")
+  attendees         Json      @default("[]") // [{ name, email }]
+  transcript        String?   // raw transcript text
+  summary           String?   // AI-generated summary
+  actionItems       Json      @default("[]") @map("action_items") // [{ text, assignee?, done }]
+  keyPoints         Json      @default("[]") @map("key_points")   // string[]
+  status            String    @default("scheduled") // scheduled, in_progress, completed, processed, failed
+  processedAt       DateTime? @map("processed_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@unique([tenantId, externalMeetingId])
   @@index([tenantId, scheduledAt(sort: Desc)])
   @@index([tenantId, status])
   @@map("meeting_notes")

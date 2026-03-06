@@ -35,6 +35,7 @@ const SKIP_PREFIXES = [
   "/v1/tumblr/webhook",
   "/v1/pinterest/webhook",
   "/v1/teams/webhook",
+  "/v1/zoom/",
   "/v1/gate/",
   "/v1/health",
   "/v1/auth/provision",
