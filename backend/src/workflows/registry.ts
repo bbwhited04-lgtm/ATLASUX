@@ -3288,45 +3288,50 @@ handlers["WF-035"] = async (ctx) => {
     `Trace: ${ctx.traceId ?? ctx.intentId}`,
   ].join("\n");
 
-  await queueEmail(ctx, { to: atlasEmail, fromAgent: "daily-intel", subject: alertSubject, text: alertBody });
-  if (billyEmail !== atlasEmail) {
-    await queueEmail(ctx, { to: billyEmail, fromAgent: "daily-intel", subject: alertSubject, text: alertBody });
-  }
-
-  // Route alert to agents mentioned in ROUTE_TO lines
+  // Parse routed agents from triage result (used for both email and Slack)
   const routeMatches = triageResult.matchAll(/ROUTE_TO:\s*(.+)/gi);
   const routedAgents = new Set<string>();
   for (const m of routeMatches) {
     const names = m[1].toLowerCase().match(/\b(kelly|fran|dwight|timmy|terry|cornwall|link|emma|donna|reynolds|penny|archy|venny|sunday|binky|benny|jenny|larry|tina|cheryl|mercer|frank|petra|porter|sandy|claire|lucy)\b/g);
     if (names) names.forEach(n => routedAgents.add(n));
   }
-  for (const agId of routedAgents) {
-    const agMail = agentEmail(agId);
-    if (agMail && agMail !== atlasEmail) {
-      await queueEmail(ctx, {
-        to: agMail,
-        fromAgent: "daily-intel",
-        subject: `[SIGNAL ALERT] ${today} — Action may be required`,
-        text: [
-          `DAILY-INTEL SIGNAL ALERT — Routed to ${agId.toUpperCase()}`,
-          `Timestamp: ${new Date().toISOString()}`,
-          "",
-          "You were identified as a relevant agent for the following breaking signal.",
-          "Review the alert below and prepare content/response as appropriate.",
-          "",
-          triageResult,
-          "",
-          `Evidence clips saved to KB (search category: "tripwire-signal").`,
-          `Trace: ${ctx.traceId ?? ctx.intentId}`,
-        ].join("\n"),
-      });
-    }
-  }
 
-  // CC Daily-Intel hub
-  const hubEmail = process.env.AGENT_EMAIL_DAILY_INTEL?.trim();
-  if (hubEmail && hubEmail !== atlasEmail) {
-    await queueEmail(ctx, { to: hubEmail, fromAgent: "daily-intel", subject: `[TRIPWIRE HUB] ${alertSubject}`, text: alertBody });
+  // Email alerts — disabled by default, enable with TRIPWIRE_EMAIL_ENABLED=true
+  const tripwireEmailEnabled = (process.env.TRIPWIRE_EMAIL_ENABLED ?? "false").toLowerCase() === "true";
+  if (tripwireEmailEnabled) {
+    await queueEmail(ctx, { to: atlasEmail, fromAgent: "daily-intel", subject: alertSubject, text: alertBody });
+    if (billyEmail !== atlasEmail) {
+      await queueEmail(ctx, { to: billyEmail, fromAgent: "daily-intel", subject: alertSubject, text: alertBody });
+    }
+
+    for (const agId of routedAgents) {
+      const agMail = agentEmail(agId);
+      if (agMail && agMail !== atlasEmail) {
+        await queueEmail(ctx, {
+          to: agMail,
+          fromAgent: "daily-intel",
+          subject: `[SIGNAL ALERT] ${today} — Action may be required`,
+          text: [
+            `DAILY-INTEL SIGNAL ALERT — Routed to ${agId.toUpperCase()}`,
+            `Timestamp: ${new Date().toISOString()}`,
+            "",
+            "You were identified as a relevant agent for the following breaking signal.",
+            "Review the alert below and prepare content/response as appropriate.",
+            "",
+            triageResult,
+            "",
+            `Evidence clips saved to KB (search category: "tripwire-signal").`,
+            `Trace: ${ctx.traceId ?? ctx.intentId}`,
+          ].join("\n"),
+        });
+      }
+    }
+
+    // CC Daily-Intel hub
+    const hubEmail = process.env.AGENT_EMAIL_DAILY_INTEL?.trim();
+    if (hubEmail && hubEmail !== atlasEmail) {
+      await queueEmail(ctx, { to: hubEmail, fromAgent: "daily-intel", subject: `[TRIPWIRE HUB] ${alertSubject}`, text: alertBody });
+    }
   }
 
   // Post escalation to #intel channel
