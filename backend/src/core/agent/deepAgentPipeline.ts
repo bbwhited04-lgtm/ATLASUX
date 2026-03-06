@@ -82,6 +82,21 @@ export async function runDeepAgent(params: DeepAgentParams): Promise<string> {
     memoryBlock = `[CONVERSATION MEMORY — last ${memory.length} turns]\n${turns}`;
   }
 
+  // ── Stage 1b: Recall org memory (silent — always runs) ────────────────────
+  let orgMemoryBlock = "";
+  try {
+    const { recallOrgMemory } = await import("./orgMemory.js");
+    const orgResult = await recallOrgMemory({
+      tenantId,
+      query: rawQuery,
+      topK: 5,
+      minScore: 0.35,
+    });
+    if (orgResult.memories.length > 0) {
+      orgMemoryBlock = `[ORGANIZATIONAL MEMORY — ${orgResult.memories.length} relevant insights]\n${orgResult.text}`;
+    }
+  } catch { /* non-fatal — org memory is optional enrichment */ }
+
   // ── Stage 2: Planning sub-agent ─────────────────────────────────────────────
   let plan = "";
   try {
@@ -110,8 +125,9 @@ export async function runDeepAgent(params: DeepAgentParams): Promise<string> {
   // Inject memory + plan into the system message of the already-enriched messages.
   const augmentedMsgs = [...messages];
   const extras: string[] = [];
-  if (memoryBlock) extras.push(memoryBlock);
-  if (plan)        extras.push(`[EXECUTION PLAN — follow this approach]\n${plan}`);
+  if (memoryBlock)    extras.push(memoryBlock);
+  if (orgMemoryBlock) extras.push(orgMemoryBlock);
+  if (plan)           extras.push(`[EXECUTION PLAN — follow this approach]\n${plan}`);
 
   if (extras.length > 0) {
     const extra   = extras.join("\n\n");

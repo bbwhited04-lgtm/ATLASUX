@@ -60,6 +60,7 @@ model Tenant {
   vendorAssessments                        VendorAssessment[]
   meetingNotes                             MeetingNote[]
   browserSessions                          BrowserSession[]
+  orgMemories                              OrgMemory[]
 
   @@map("tenants")
 }
@@ -1345,6 +1346,29 @@ model BrowserAction {
 
   @@index([sessionId, executedAt])
   @@map("browser_actions")
+}
+
+model OrgMemory {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  category       String    // preference, insight, pattern, outcome, glossary, relationship
+  content        String
+  source         String    // agent:kelly, hook:meeting, hook:slack, manual
+  sourceId       String?   @map("source_id") @db.Uuid
+  confidence     Float     @default(0.7)
+  accessCount    Int       @default(0) @map("access_count")
+  lastAccessedAt DateTime? @map("last_accessed_at") @db.Timestamptz(6)
+  validUntil     DateTime? @map("valid_until") @db.Timestamptz(6)
+  supersededBy   String?   @map("superseded_by") @db.Uuid
+  tags           String[]  @default([])
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, category])
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([tenantId, accessCount(sort: Desc)])
+  @@map("org_memories")
 }
 
 model RevokedToken {

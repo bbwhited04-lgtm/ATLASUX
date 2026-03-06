@@ -30,6 +30,8 @@
  *   post_to_x                — post a tweet via X API v2 (Kelly's primary tool)
  *   search_x                 — search recent tweets on X (app-only bearer token)
  *   deep_research            — multi-query parallel research with cited report synthesis
+ *   recall_org_memory        — semantic search over persistent organizational memories
+ *   store_org_memory         — store an organizational insight, preference, or pattern
  *
  * Modular tools (from tools/ directory — see tools/toolRegistry.ts):
  *   hacker_news_search       — HackerNews via Algolia API (public)
@@ -1281,45 +1283,57 @@ const MEETING_PATTERNS = [
   /\b(upcoming.*meeting|next.*call|scheduled.*meeting)\b/i,
 ];
 
+const ORG_MEMORY_RECALL_PATTERNS = [
+  /\b(org(anizational)?\s+memory|company\s+memory|what\s+(do\s+)?we\s+know)\b/i,
+  /\b(the\s+company\s+(prefer|like|want)|tribal\s+knowledge)\b/i,
+  /\b(what\s+worked|what\s+didn.t\s+work|lessons?\s+learned)\b/i,
+  /\b(preference|org\s+context|past\s+experience|institutional\s+knowledge)\b/i,
+];
+
+const ORG_MEMORY_STORE_PATTERNS = [
+  /\b(remember|store\s+memory|save\s+insight|note\s+that|learn\s+that)\b/i,
+  /\b(org\s+memory\s*[:\-]|store\s+org|save\s+this\s+(insight|learning|pattern))\b/i,
+];
+
 // ── Agent → allowed tools map (from WF-107 approved proposals) ───────────────
 // Controls which tools can fire for which agent — prevents unnecessary DB hits.
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   // ── Executives ───────────────────────────────────────────────────────
-  atlas:       ["subscription", "calendar", "ledger", "team", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "meetings"],
-  binky:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "discord", "telegramFull", "slackChat", "meetings"],
-  cheryl:      ["subscription", "team", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat", "meetings"],
-  tina:        ["calendar", "ledger", "crm", "ops", "tickets", "assets", "integrations", "subscription", "policy", "telegram", "memory", "delegate", "gmailRead", "googleSheets", "excel", "dropbox", "slackChat"],
-  larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "composio", "dropbox", "slackChat"],
-  jenny:       ["calendar", "legal", "policy", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "arxiv", "composio", "slackChat"],
-  benny:       ["calendar", "legal", "ipRegister", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "composio", "slackChat"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
+  binky:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "discord", "telegramFull", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
+  cheryl:      ["subscription", "team", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
+  tina:        ["calendar", "ledger", "crm", "ops", "tickets", "assets", "integrations", "subscription", "policy", "telegram", "memory", "delegate", "gmailRead", "googleSheets", "excel", "dropbox", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
+  larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "composio", "dropbox", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
+  jenny:       ["calendar", "legal", "policy", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "arxiv", "composio", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
+  benny:       ["calendar", "legal", "ipRegister", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "composio", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
 
   // ── Ops & Support ────────────────────────────────────────────────────
-  petra:       ["calendar", "planner", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat", "meetings"],
-  mercer:      ["crm", "ops", "tickets", "assets", "integrations", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "composio", "discord", "slackChat", "meetings"],
-  frank:       ["userProfile", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "telegramFull", "slackChat"],
-  sandy:       ["calendar", "email", "userProfile", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat", "meetings"],
-  claire:      ["calendar", "email", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat"],
-  "daily-intel": ["calendar", "email", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "slackChat", "meetings"],
+  petra:       ["calendar", "planner", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
+  mercer:      ["crm", "ops", "tickets", "assets", "integrations", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "composio", "discord", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
+  frank:       ["userProfile", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "telegramFull", "slackChat", "orgMemoryRecall"],
+  sandy:       ["calendar", "email", "userProfile", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
+  claire:      ["calendar", "email", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat", "orgMemoryRecall"],
+  "daily-intel": ["calendar", "email", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
 
   // ── Content & Comms ──────────────────────────────────────────────────
-  sunday:      ["calendar", "knowledge", "email", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  archy:       ["calendar", "knowledge", "email", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  venny:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1", "postizPublish", "postizAnalytics", "slackChat"],
-  victor:      ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate", "postizPublish", "postizAnalytics", "slackChat"],
-  reynolds:    ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "hackerNews", "slackChat"],
+  sunday:      ["calendar", "knowledge", "email", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "xSearch", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "localVision", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
+  archy:       ["calendar", "knowledge", "email", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "hackerNews", "arxiv", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
+  venny:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "youtubeSearch", "youtubeUpload", "flux1", "postizPublish", "postizAnalytics", "slackChat", "orgMemoryRecall"],
+  victor:      ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "youtubeSearch", "videoCompose", "videoGenerate", "postizPublish", "postizAnalytics", "slackChat", "orgMemoryRecall"],
+  reynolds:    ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "hackerNews", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
 
   // ── Social Publishers ────────────────────────────────────────────────
-  kelly:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  fran:        ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  dwight:      ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  timmy:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  terry:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  cornwall:    ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  link:        ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "discord", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  emma:        ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  donna:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "redditSearch", "browser", "hackerNews", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
-  penny:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "browser", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat"],
+  kelly:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "xPost", "xSearch", "webSearch", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
+  fran:        ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "orgMemoryRecall"],
+  dwight:      ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "orgMemoryRecall"],
+  timmy:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "orgMemoryRecall"],
+  terry:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "orgMemoryRecall"],
+  cornwall:    ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "orgMemoryRecall"],
+  link:        ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "discord", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "orgMemoryRecall"],
+  emma:        ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "browser", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "orgMemoryRecall"],
+  donna:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "redditSearch", "browser", "hackerNews", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
+  penny:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "browser", "composio", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "orgMemoryRecall"],
 
   // ── Engineering ────────────────────────────────────────────────────
   "claude-code": ["knowledge", "crm", "ops", "tickets", "assets", "integrations", "memory", "delegate", "webSearch", "fetchUrl", "deepResearch", "slackChat"],
@@ -1375,6 +1389,8 @@ export type ToolNeeds = {
   postizBroadcast: boolean;
   slackChat:       boolean;
   meetings:        boolean;
+  orgMemoryRecall: boolean;
+  orgMemoryStore:  boolean;
   query:          string;
 };
 
@@ -1418,6 +1434,8 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     browser:        can("browser")        && BROWSER_PATTERNS.some(p => p.test(q)),
     localVision:    can("localVision")    && LOCAL_VISION_PATTERNS.some(p => p.test(q)),
     meetings:       can("meetings")       && MEETING_PATTERNS.some(p => p.test(q)),
+    orgMemoryRecall: can("orgMemoryRecall") && ORG_MEMORY_RECALL_PATTERNS.some(p => p.test(q)),
+    orgMemoryStore:  can("orgMemoryStore")  && ORG_MEMORY_STORE_PATTERNS.some(p => p.test(q)),
     // Modular tools — delegated to tool registry
     ...detectModularNeeds(q, allowed),
     query:          q,
@@ -1547,6 +1565,76 @@ function localVisionToolInfo(agentId: string): ToolResult {
   };
 }
 
+// ── Org Memory Tools ─────────────────────────────────────────────────────────
+
+async function recallOrgMemoryTool(tenantId: string, query: string): Promise<ToolResult> {
+  try {
+    const { recallOrgMemory } = await import("./orgMemory.js");
+    const result = await recallOrgMemory({ tenantId, query: query.slice(0, 300) });
+
+    if (!result.memories.length) {
+      return {
+        tool: "recall_org_memory",
+        data: "No organizational memories found for this topic.",
+        usedAt: new Date().toISOString(),
+      };
+    }
+
+    return {
+      tool: "recall_org_memory",
+      data: `Organizational Memory (${result.memories.length} relevant memories):\n\n${result.text}`,
+      usedAt: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    return {
+      tool: "recall_org_memory",
+      data: `[error recalling org memory: ${err?.message}]`,
+      usedAt: new Date().toISOString(),
+    };
+  }
+}
+
+async function storeOrgMemoryTool(tenantId: string, agentId: string, query: string): Promise<ToolResult> {
+  try {
+    const { storeOrgMemory, classifyMemoryCategory } = await import("./orgMemory.js");
+
+    const memMatch = query.match(
+      /(?:remember|store memory|save insight|note that|learn that|org memory)\s*[:\-–]\s*(.+)/is
+    );
+    const content = memMatch ? memMatch[1].trim() : query.trim();
+
+    if (content.length < 10) {
+      return {
+        tool: "store_org_memory",
+        data: "Memory too short. Provide a meaningful insight to store.",
+        usedAt: new Date().toISOString(),
+      };
+    }
+
+    const category = classifyMemoryCategory(content);
+    const result = await storeOrgMemory({
+      tenantId,
+      category,
+      content: content.slice(0, 2000),
+      source: `agent:${agentId}`,
+      tags: [agentId],
+    });
+
+    const verb = result.isDuplicate ? "Updated existing" : "Stored new";
+    return {
+      tool: "store_org_memory",
+      data: `${verb} organizational memory (${category}): "${content.slice(0, 200)}${content.length > 200 ? "..." : ""}"`,
+      usedAt: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    return {
+      tool: "store_org_memory",
+      data: `[error storing org memory: ${err?.message}]`,
+      usedAt: new Date().toISOString(),
+    };
+  }
+}
+
 // ── resolveAgentTools ─────────────────────────────────────────────────────────
 
 /**
@@ -1615,6 +1703,8 @@ export async function resolveAgentTools(
     needs.browser        ? Promise.resolve(browserToolInfo(aid))                    : Promise.resolve(null),
     needs.localVision    ? Promise.resolve(localVisionToolInfo(aid))                : Promise.resolve(null),
     needs.meetings       ? readMeetings(tenantId)                                    : Promise.resolve(null),
+    needs.orgMemoryRecall ? recallOrgMemoryTool(tenantId, needs.query)               : Promise.resolve(null),
+    needs.orgMemoryStore  ? storeOrgMemoryTool(tenantId, aid, needs.query)           : Promise.resolve(null),
     approvedToolsPromise,
   ];
 
