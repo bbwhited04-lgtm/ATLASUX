@@ -3,7 +3,7 @@ import type { BlogFrontmatter, BlogPost } from "./types";
 const API_BASE =
   typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_BASE_URL
     ? (import.meta as any).env.VITE_API_BASE_URL
-    : "https://atlas-ux.onrender.com";
+    : "https://api.atlasux.cloud";
 
 function estimateReadingMinutesFromText(text: string): number {
   const words = text.replace(/`[\s\S]*?`/g, " ").replace(/[^\w\s]/g, " ").split(/\s+/).filter(Boolean).length;

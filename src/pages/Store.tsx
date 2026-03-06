@@ -793,7 +793,7 @@ function PlanCard({
 
     setLoading(true);
     try {
-      const apiBase = (import.meta as any).env?.VITE_API_BASE_URL ?? "https://atlas-ux.onrender.com";
+      const apiBase = (import.meta as any).env?.VITE_API_BASE_URL ?? "https://api.atlasux.cloud";
       const res = await fetch(`${apiBase}/v1/stripe/checkout-session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
