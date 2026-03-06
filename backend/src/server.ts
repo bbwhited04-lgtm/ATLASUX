@@ -76,6 +76,7 @@ import { localAgentRoutes } from "./routes/localAgentRoutes.js";
 import { zoomRoutes } from "./routes/zoomRoutes.js";
 import { twilioRoutes } from "./routes/twilioRoutes.js";
 import { orgMemoryRoutes } from "./routes/orgMemoryRoutes.js";
+import { calibrationRoutes } from "./routes/calibrationRoutes.js";
 
 const app = Fastify({ logger: true });
 app.addHook("onSend", async (_req, reply, payload) => {
@@ -352,6 +353,9 @@ await app.register(twilioRoutes, { prefix: "/v1/twilio" });
 
 // Org Memory — the Organizational Brain persistent memory layer
 await app.register(orgMemoryRoutes, { prefix: "/v1/org-memory" });
+
+// Agent Calibration — confidence adjustment from outcome data
+await app.register(calibrationRoutes, { prefix: "/v1/calibration" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

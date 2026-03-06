@@ -20,6 +20,7 @@ import {
   Activity,
   Send,
   Newspaper,
+  Brain,
 } from 'lucide-react';
 
 import { API_BASE } from "../lib/api";
@@ -199,6 +200,7 @@ function RootLayoutInner() {
     { path: "/app/business-manager", icon: Briefcase, label: "Business Manager", badge: pendingDecisionsCount },
     { path: "/app/kb", icon: BookOpen, label: "Knowledge Base" },
     { path: "/app/messaging", icon: Send, label: "Messaging" },
+    { path: "/app/org-memory", icon: Brain, label: "Org Memory" },
     ];
 
   // (Kept for future “setup wizard” flows; currently the modal is opened via context.)

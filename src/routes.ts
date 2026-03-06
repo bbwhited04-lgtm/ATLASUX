@@ -43,6 +43,8 @@ const MessagingHub = lazyRetry(() => import("./components/MessagingHub").then(m 
 const AgentWatcher = lazyRetry(() => import("./components/AgentWatcher").then(m => ({ default: m.AgentWatcher })));
 const BrandAnalytics = lazyRetry(() => import("./components/BrandAnalytics").then(m => ({ default: m.BrandAnalytics })));
 const CalendarScheduling = lazyRetry(() => import("./components/premium/CalendarScheduling").then(m => ({ default: m.CalendarScheduling })));
+const OrgMemory = lazyRetry(() => import("./components/OrgMemory").then(m => ({ default: m.OrgMemory })));
+const AgentCalibration = lazyRetry(() => import("./components/AgentCalibration").then(m => ({ default: m.AgentCalibration })));
 
 // Lazy-loaded public pages
 const Privacy = lazyRetry(() => import("./pages/Privacy"));
@@ -137,6 +139,8 @@ export const router = createHashRouter([
       { path: "budgets", Component: () => React.createElement(Navigate, { to: "/app/business-manager?tab=budgets", replace: true }) },
       { path: "brand", Component: () => React.createElement(S, null, React.createElement(BrandAnalytics)) },
       { path: "watcher", Component: () => React.createElement(S, null, React.createElement(AgentWatcher)) },
+      { path: "org-memory", Component: () => React.createElement(S, null, React.createElement(OrgMemory)) },
+      { path: "calibration", Component: () => React.createElement(S, null, React.createElement(AgentCalibration)) },
       ],
   },
 
