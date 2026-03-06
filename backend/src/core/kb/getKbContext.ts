@@ -1,4 +1,6 @@
 import { prisma } from "../../prisma.js";
+import { queryPinecone } from "../../lib/pinecone.js";
+import { recallOrgMemory } from "../agent/orgMemory.js";
 
 export type KbContextSource = "governance" | "agent" | "relevant";
 
@@ -88,22 +90,74 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
     select: { id: true, slug: true, title: true, body: true, updatedAt: true },
   });
 
-  // 3) Relevant pack (optional)
+  // 3) Relevant pack — vector-first with SQL fallback
   let relevant: typeof governance = [];
+  let orgMemoryBlock = "";
   if (query && query.length >= 3) {
-    relevant = await prisma.kbDocument.findMany({
-      where: {
+    try {
+      // Vector search: KB docs + org memories in one Pinecone call
+      const hits = await queryPinecone({
         tenantId,
-        OR: [
-          { title: { contains: query, mode: "insensitive" } },
-          { slug: { contains: query, mode: "insensitive" } },
-          { body: { contains: query, mode: "insensitive" } },
-        ],
-      },
-      orderBy: [{ updatedAt: "desc" }],
-      take: relevantLimit,
-      select: { id: true, slug: true, title: true, body: true, updatedAt: true },
-    });
+        query,
+        topK: relevantLimit + 5, // over-fetch to account for org-mem hits
+        minScore: 0.3,
+      });
+
+      if (hits.length > 0) {
+        // Split: KB doc hits vs org memory hits
+        const kbDocIds = [...new Set(
+          hits
+            .filter(h => !h.chunkId.startsWith("org-mem-"))
+            .map(h => h.documentId)
+            .filter(Boolean),
+        )].slice(0, relevantLimit);
+
+        const orgHits = hits.filter(h => h.chunkId.startsWith("org-mem-"));
+        if (orgHits.length > 0) {
+          orgMemoryBlock = "[ORGANIZATIONAL MEMORY]\n" +
+            orgHits.map(h => `- ${h.content}`).join("\n");
+        }
+
+        // Fetch full docs for KB hits
+        if (kbDocIds.length > 0) {
+          relevant = await prisma.kbDocument.findMany({
+            where: { tenantId, id: { in: kbDocIds } },
+            select: { id: true, slug: true, title: true, body: true, updatedAt: true },
+          });
+        }
+      }
+    } catch {
+      // Pinecone unavailable — fall back to SQL ILIKE
+    }
+
+    // SQL fallback if vector search returned nothing
+    if (relevant.length === 0) {
+      relevant = await prisma.kbDocument.findMany({
+        where: {
+          tenantId,
+          OR: [
+            { title: { contains: query, mode: "insensitive" } },
+            { slug: { contains: query, mode: "insensitive" } },
+            { body: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        orderBy: [{ updatedAt: "desc" }],
+        take: relevantLimit,
+        select: { id: true, slug: true, title: true, body: true, updatedAt: true },
+      });
+    }
+
+    // Also fetch org memory if vector search didn't return any
+    if (!orgMemoryBlock) {
+      try {
+        const orgResult = await recallOrgMemory({
+          tenantId, query, topK: 5, minScore: 0.35,
+        });
+        if (orgResult.memories.length > 0) {
+          orgMemoryBlock = `[ORGANIZATIONAL MEMORY]\n${orgResult.text}`;
+        }
+      } catch { /* non-fatal */ }
+    }
   }
 
   // De-dupe by doc id, and enforce priority: governance -> agent -> relevant
@@ -227,6 +281,14 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
       charCount: Math.min(content.length, maxDocChars),
       chunkIds,
     });
+  }
+
+  // Append org memory block if present (fits within budget)
+  if (orgMemoryBlock && used < budgetChars) {
+    const remaining = budgetChars - used;
+    const trimmed = orgMemoryBlock.slice(0, remaining);
+    parts.push("\n\n" + trimmed);
+    used += trimmed.length + 2;
   }
 
   const text = parts.join("");

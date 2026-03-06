@@ -49,6 +49,18 @@ const HOT_CACHE_PATTERNS: RegExp[] = [
   /\b(source verification|freshness|how (old|recent) (is|are))\b/i,
 ];
 
+// Patterns that need organizational memory — always route to FULL_RAG
+const ORG_MEMORY_PATTERNS: RegExp[] = [
+  /\b(what (do|does|did) (we|the company|the org|atlas) (know|prefer|like|want|think|learn))\b/i,
+  /\b(past (experience|decision|outcome|result)|lessons?\s+learned)\b/i,
+  /\b(what worked|what didn.t work|what failed|how did .+ (go|turn out))\b/i,
+  /\b(company (preference|culture|pattern|history))\b/i,
+  /\b(org(anizational)?\s+(memory|knowledge|intelligence|insight))\b/i,
+  /\b(tribal knowledge|institutional (memory|knowledge))\b/i,
+  /\b(recurring (issue|problem|theme|pattern))\b/i,
+  /\b(decision (outcome|result|history)|outcome of)\b/i,
+];
+
 // Patterns that indicate a direct task — no KB needed
 const DIRECT_PATTERNS: RegExp[] = [
   /^(summarize|translate|proofread|fix|edit|rewrite|format|clean up|improve)\b/i,
@@ -67,6 +79,13 @@ export function classifyQuery(query: string): ClassifyResult {
   for (const pattern of DIRECT_PATTERNS) {
     if (pattern.test(q)) {
       return { tier: "DIRECT", reason: `matched direct pattern: ${pattern.source.slice(0, 40)}` };
+    }
+  }
+
+  // Org memory queries — need vector search (FULL_RAG)
+  for (const pattern of ORG_MEMORY_PATTERNS) {
+    if (pattern.test(q)) {
+      return { tier: "FULL_RAG", reason: `matched org-memory pattern: ${pattern.source.slice(0, 40)}` };
     }
   }
 
