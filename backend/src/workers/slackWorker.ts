@@ -43,12 +43,17 @@ import { PDFParse } from "pdf-parse";
 const POLL_MS = Math.max(1000, Number(process.env.SLACK_POLL_MS ?? 5000));
 const CONTEXT_MESSAGES = Math.max(1, Math.min(50, Number(process.env.SLACK_CONTEXT_MESSAGES ?? 10)));
 const TENANT_ID = process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
-const CHANNEL_NAMES = ["atlas-ux", "intel", "water-cooler", "atlas-ux-execs", "all-shortypro", "social"];
+const CHANNEL_NAMES = ["atlas-ux", "intel", "restroom", "water-cooler", "atlas-ux-execs", "all-shortypro", "social"];
+// How many channels to poll per tick (rotates through all channels across ticks)
+const CHANNELS_PER_TICK = Math.max(1, Number(process.env.SLACK_CHANNELS_PER_TICK ?? 2));
+// Delay between API calls within a tick to avoid rate limits (ms)
+const API_DELAY_MS = 1200;
 
 // ── State (per channel) ───────────────────────────────────────────────────────
 
 const lastSeenByChannel = new Map<string, string | null>();
 const cachedChannels = new Map<string, SlackChannel>();
+let channelRotationIdx = 0; // Rotates through CHANNEL_NAMES across ticks
 
 // DM state
 const lastSeenByDM = new Map<string, string | null>();
@@ -281,14 +286,22 @@ async function tick() {
     } catch { /* non-fatal */ }
   }
 
-  // Poll channels
-  for (const channelName of CHANNEL_NAMES) {
-    await tickChannel(channelName);
+  // Poll a rotating subset of channels per tick to stay under Slack rate limits
+  // With 7 channels and 2 per tick, each channel gets checked every ~17.5s
+  const channelsThisTick: string[] = [];
+  for (let i = 0; i < CHANNELS_PER_TICK; i++) {
+    channelsThisTick.push(CHANNEL_NAMES[channelRotationIdx % CHANNEL_NAMES.length]);
+    channelRotationIdx++;
   }
 
-  // Poll DMs every 3rd tick (~15s) to avoid rate limits
+  for (const channelName of channelsThisTick) {
+    await tickChannel(channelName);
+    await sleep(API_DELAY_MS); // Pace API calls
+  }
+
+  // Poll DMs every 5th tick (~25s) to avoid rate limits
   dmTickCounter++;
-  if (dmTickCounter % 3 === 0) {
+  if (dmTickCounter % 5 === 0) {
     await tickDMs();
   }
 }
@@ -359,6 +372,7 @@ async function tickChannel(channelName: string) {
   if (!messagesToProcess.length) return;
 
   // Fetch context window for conversation history (separate from new-message detection)
+  await sleep(API_DELAY_MS); // Pace API calls
   let contextMessages: SlackMessage[] = [];
   try {
     contextMessages = await readHistory(channelId, CONTEXT_MESSAGES);
