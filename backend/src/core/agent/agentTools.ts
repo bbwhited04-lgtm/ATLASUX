@@ -42,7 +42,7 @@
  *   google_sheets            — Google Sheets read/write via Google OAuth
  *   discord                  — Discord Bot send/read messages
  *   telegram_full            — Telegram read history (extends existing send)
- *   excel_parse              — Parse .xlsx files via SheetJS
+ *   excel_parse              — Parse .xlsx files via ExcelJS
  *   dropbox_files            — Dropbox file list/search via Dropbox OAuth
  *   x_analytics              — X/Twitter tweet metrics and analytics
  *   postiz_publish           — Publish to any of 31 social platforms via Postiz (all social agents)

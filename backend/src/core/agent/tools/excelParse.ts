@@ -1,12 +1,13 @@
 /**
- * Excel Parse — parse .xlsx/.xls files using the xlsx (SheetJS) library.
+ * Excel Parse — parse .xlsx files using ExcelJS.
  *
  * Reads file from a path provided in the query or from a job attachment.
- * Requires: `xlsx` npm package.
+ * Requires: `exceljs` npm package.
  */
 
 import type { ToolDefinition } from "./_types.js";
 import { makeResult, makeError } from "./_types.js";
+import { readFile } from "fs/promises";
 
 export const excelParseTool: ToolDefinition = {
   key:  "excel",
@@ -21,11 +22,11 @@ export const excelParseTool: ToolDefinition = {
   async execute(ctx) {
     try {
       // Dynamic import so the module is only loaded when needed
-      let XLSX: any;
+      let ExcelJS: any;
       try {
-        XLSX = await import("xlsx");
+        ExcelJS = await import("exceljs");
       } catch {
-        return makeResult("excel_parse", "Excel parsing not available — xlsx package not installed. Run: npm install xlsx");
+        return makeResult("excel_parse", "Excel parsing not available — exceljs package not installed. Run: npm install exceljs");
       }
 
       // Extract file path from query
@@ -35,14 +36,25 @@ export const excelParseTool: ToolDefinition = {
       }
 
       const filePath = pathMatch[0];
-      const workbook = XLSX.readFile(filePath);
-      const sheetNames = workbook.SheetNames;
+      const buffer = await readFile(filePath);
+
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      const sheetNames = workbook.worksheets.map((ws: any) => ws.name);
 
       if (!sheetNames.length) return makeResult("excel_parse", "Workbook has no sheets.");
 
-      // Read first sheet
-      const firstSheet = workbook.Sheets[sheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as string[][];
+      // Read first sheet as array-of-arrays (like xlsx { header: 1 })
+      const firstSheet = workbook.worksheets[0];
+      const rows: string[][] = [];
+      firstSheet.eachRow((row: any) => {
+        const vals: string[] = [];
+        row.eachCell({ includeEmpty: true }, (cell: any) => {
+          vals.push(String(cell.value ?? ""));
+        });
+        rows.push(vals);
+      });
 
       if (!rows.length) return makeResult("excel_parse", `Sheet "${sheetNames[0]}" is empty.`);
 
