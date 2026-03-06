@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { engineTick } from "../core/engine/engine.js";
 import { getSystemState, setSystemState } from "../services/systemState.js";
+import { prisma } from "../db/prisma.js";
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -75,6 +76,18 @@ async function main() {
       await sleep(offlineMs);
       continue;
     }
+
+    // Recover stuck intents (RUNNING > 15 minutes → FAILED)
+    try {
+      const cutoff = new Date(Date.now() - 15 * 60 * 1000);
+      const recovered = await prisma.intent.updateMany({
+        where: { status: "RUNNING", createdAt: { lt: cutoff } },
+        data: { status: "FAILED" },
+      });
+      if (recovered.count > 0) {
+        process.stdout.write(`[engineLoop] recovered ${recovered.count} stuck intent(s)\n`);
+      }
+    } catch { /* non-fatal */ }
 
     // Drain a batch of intents quickly, then pause.
     let didWork = false;

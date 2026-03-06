@@ -473,6 +473,36 @@ function buildJobs(): ScheduledJob[] {
       hourly: true,
     },
 
+    // ── Daily: VC Investor Outreach (4x per day, 1 prospect each) ────────────
+    {
+      id: "vc-outreach-1",
+      label: "VC Outreach Batch 1 (WF-400)",
+      agentId: "binky", workflowId: "WF-400",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 14, minuteUTC: 0, // 8am CT
+    },
+    {
+      id: "vc-outreach-2",
+      label: "VC Outreach Batch 2 (WF-400)",
+      agentId: "binky", workflowId: "WF-400",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 16, minuteUTC: 0, // 10am CT
+    },
+    {
+      id: "vc-outreach-3",
+      label: "VC Outreach Batch 3 (WF-400)",
+      agentId: "binky", workflowId: "WF-400",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 19, minuteUTC: 0, // 1pm CT
+    },
+    {
+      id: "vc-outreach-4",
+      label: "VC Outreach Batch 4 (WF-400)",
+      agentId: "binky", workflowId: "WF-400",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 21, minuteUTC: 0, // 3pm CT
+    },
+
     // ── Weekly (Monday): Strategy & Planning ─────────────────────────────────
     {
       id: "mercer-acquisition",

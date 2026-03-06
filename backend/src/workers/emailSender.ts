@@ -23,6 +23,7 @@ type EmailInput = {
   html?: string | null;
   fromAgent?: string | null;
   traceId?: string | null;
+  replyTo?: string | null;
 };
 
 async function getMsAccessToken(): Promise<string> {
@@ -52,24 +53,26 @@ async function sendViaMicrosoft(args: {
   subject: string;
   text: string;
   html?: string | null;
+  replyTo?: string | null;
 }) {
   const token = await getMsAccessToken();
+  const message: Record<string, any> = {
+    subject: args.subject,
+    body: {
+      contentType: args.html ? "HTML" : "Text",
+      content: args.html ?? args.text,
+    },
+    toRecipients: [{ emailAddress: { address: args.to } }],
+  };
+  if (args.replyTo) {
+    message.replyTo = [{ emailAddress: { address: args.replyTo } }];
+  }
   const res = await fetch(
     `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(args.senderUpn)}/sendMail`,
     {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: {
-          subject: args.subject,
-          body: {
-            contentType: args.html ? "HTML" : "Text",
-            content: args.html ?? args.text,
-          },
-          toRecipients: [{ emailAddress: { address: args.to } }],
-        },
-        saveToSentItems: true,
-      }),
+      body: JSON.stringify({ message, saveToSentItems: true }),
     }
   );
   if (res.status === 202) return { ok: true };
@@ -187,6 +190,7 @@ async function main() {
       const subject = String(input.subject ?? "").trim();
       const text = String(input.text ?? "").trim();
       const html = input.html ? String(input.html) : null;
+      const replyTo = input.replyTo ? String(input.replyTo).trim() : null;
 
       try {
         if (!to || !subject || !text) throw new Error("email job missing to/subject/text");
@@ -197,7 +201,7 @@ async function main() {
         } else if (provider === "microsoft") {
           const senderUpn = String(process.env.MS_SENDER_UPN ?? "").trim();
           if (!senderUpn) throw new Error("MS_SENDER_UPN missing");
-          output = await sendViaMicrosoft({ senderUpn, to, subject, text, html });
+          output = await sendViaMicrosoft({ senderUpn, to, subject, text, html, replyTo });
         } else if (provider === "resend") {
           if (!from) throw new Error("OUTBOUND_EMAIL_FROM missing");
           output = await sendViaResend({ from, to, subject, text, html });

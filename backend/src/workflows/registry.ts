@@ -119,7 +119,7 @@ export async function writeStepAudit(ctx: WorkflowContext, step: string, message
 
 export async function queueEmail(
   ctx: WorkflowContext,
-  email: { to: string; subject: string; text: string; fromAgent?: string },
+  email: { to: string; subject: string; text: string; fromAgent?: string; replyTo?: string },
 ) {
   const job = await prisma.job.create({
     data: {
@@ -135,6 +135,7 @@ export async function queueEmail(
         traceId: ctx.traceId ?? null,
         workflowId: ctx.workflowId,
         intentId: ctx.intentId,
+        replyTo: email.replyTo ?? null,
       },
     },
   });
@@ -3621,6 +3622,10 @@ handlers["WF-300"] = async (ctx) => {
       "- No hashtags or emojis in the text.",
       "- Don't start with 'Hey team' or 'Hi everyone' — jump in naturally.",
       "- Don't mention you're an AI. Sound like a real coworker.",
+      "- NEVER claim you created, built, shipped, or produced anything. You are chatting, not working.",
+      "- NEVER reference canvases, documents, reports, or deliverables you 'just finished' — those don't exist.",
+      "- If you mention work, keep it vague: 'been thinking about X' not 'just shipped X'.",
+      "- You have no tools in this channel. You cannot create or produce anything from here.",
       replyTarget
         ? `\nYou are REPLYING to ${replyTarget.username} who said: "${replyTarget.text}"\nRespond naturally to what they said.`
         : "",
@@ -3657,6 +3662,155 @@ handlers["WF-300"] = async (ctx) => {
     ok: true,
     message: `Water cooler: ${pick.id} posted${replyTarget ? " (reply)" : ""}`,
     output: { agentId: pick.id, isReply: !!replyTarget, preview: cleanText.slice(0, 100) },
+  };
+};
+
+// ── WF-400 — VC Investor Outreach ─────────────────────────────────────────────
+// Automated outreach to VC prospects from CRM. Fires 4x daily (scheduled).
+// Picks next un-contacted prospect, generates personalized email via LLM,
+// queues via Binky (CRO) with reply-to billy@deadapp.info.
+// Auto-stops when all prospects contacted.
+
+handlers["WF-400"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-400.start", "VC outreach cycle starting");
+
+  const REPLY_TO = "billy@deadapp.info";
+
+  // 1. Load VC prospects from CRM (tagged "vc" or source "vc_outreach")
+  let prospects: Array<{ id: string; firstName: string | null; lastName: string | null; email: string | null; company: string | null; notes: string | null }> = [];
+  try {
+    prospects = await prisma.crmContact.findMany({
+      where: {
+        tenantId: ctx.tenantId,
+        OR: [
+          { tags: { has: "vc" } },
+          { tags: { has: "investor" } },
+          { source: "vc_outreach" },
+        ],
+        email: { not: null },
+      },
+      select: { id: true, firstName: true, lastName: true, email: true, company: true, notes: true },
+      orderBy: { createdAt: "asc" },
+    });
+  } catch (err: any) {
+    await writeStepAudit(ctx, "WF-400.error", `Failed to load CRM prospects: ${err?.message}`);
+    return { ok: false, message: "Failed to load VC prospects from CRM" };
+  }
+
+  if (!prospects.length) {
+    await writeStepAudit(ctx, "WF-400.skip", "No VC prospects found in CRM (tag with 'vc' or 'investor')");
+    return { ok: true, message: "No VC prospects in CRM" };
+  }
+
+  // 2. Find already-contacted prospect IDs (via ContactActivity type=vc_outreach)
+  let contactedIds: Set<string> = new Set();
+  try {
+    const activities = await prisma.contactActivity.findMany({
+      where: {
+        tenantId: ctx.tenantId,
+        type: "vc_outreach",
+      },
+      select: { contactId: true },
+      distinct: ["contactId"],
+    });
+    contactedIds = new Set(activities.map(a => a.contactId));
+  } catch { /* non-fatal — treat all as un-contacted */ }
+
+  // 3. Pick next un-contacted prospect
+  const remaining = prospects.filter(p => !contactedIds.has(p.id));
+  if (!remaining.length) {
+    await writeStepAudit(ctx, "WF-400.complete", `All ${prospects.length} VC prospects have been contacted`);
+    return { ok: true, message: `Outreach complete — all ${prospects.length} prospects contacted` };
+  }
+
+  const prospect = remaining[0];
+  const prospectName = [prospect.firstName, prospect.lastName].filter(Boolean).join(" ") || "Investor";
+  const prospectEmail = prospect.email!;
+  const firmName = prospect.company || "your firm";
+
+  await writeStepAudit(ctx, "WF-400.prospect", `Selected: ${prospectName} at ${firmName} (${prospectEmail})`, {
+    contactId: prospect.id, remaining: remaining.length,
+  });
+
+  // 4. Generate personalized outreach email via LLM
+  const emailText = await safeLLM(ctx, {
+    agent: "BINKY",
+    purpose: "vc_outreach",
+    route: "DRAFT_GENERATION_FAST",
+    system: [
+      "You are writing a cold outreach email from Billy Whited, founder of Atlas UX (atlasux.com), to a venture capital investor.",
+      "",
+      "Atlas UX is a full-stack AI employee platform. Instead of hiring people for roles like CFO, CRO, receptionist,",
+      "legal counsel, and social media — Atlas UX deploys autonomous AI agents that actually do the work.",
+      "Each agent has its own email, Slack presence, calendar access, and M365 tools.",
+      "The platform includes governance guardrails, approval workflows, audit trails, and a multi-agent hierarchy.",
+      "",
+      "Key facts:",
+      "- 20+ named AI agents (Atlas=CEO, Binky=CRO, Tina=CFO, etc.)",
+      "- Live in production on atlasux.cloud + Electron desktop app",
+      "- Built-in safety: SGL governance language, spending limits, human approval gates",
+      "- Microsoft 365 + Slack + social media integrations",
+      "- Multi-tenant, Stripe billing, PostgreSQL backend",
+      "",
+      "TONE: Founder-to-investor. Direct, confident, not salesy. 4-6 sentences max.",
+      "Don't use buzzwords or hype. Be specific about what makes Atlas UX different.",
+      "The email should feel personal and specific to the investor, not templated.",
+      prospect.notes ? `\nContext about this investor: ${prospect.notes}` : "",
+    ].filter(Boolean).join("\n"),
+    user: [
+      `Write a brief outreach email to ${prospectName} at ${firmName}.`,
+      `Sign it as: Billy Whited, Founder — Atlas UX`,
+      `Do NOT include a subject line — just the email body.`,
+    ].join("\n"),
+  });
+
+  const cleanEmail = emailText.replace(/^["']|["']$/g, "").trim();
+  if (!cleanEmail || cleanEmail.startsWith("[LLM unavailable")) {
+    await writeStepAudit(ctx, "WF-400.skip", "LLM unavailable for email generation");
+    return { ok: true, message: "VC outreach skipped — LLM unavailable" };
+  }
+
+  // 5. Generate subject line
+  const subjectText = await safeLLM(ctx, {
+    agent: "BINKY",
+    purpose: "vc_outreach_subject",
+    route: "CLASSIFY_EXTRACT_VALIDATE",
+    system: "Generate a brief, personalized email subject line for a founder-to-VC cold outreach email. Max 8 words. No quotes. No emojis.",
+    user: `Investor: ${prospectName} at ${firmName}. Company: Atlas UX (AI employee platform). Write just the subject line.`,
+  });
+  const cleanSubject = subjectText.replace(/^["']|["']$/g, "").replace(/^Subject:\s*/i, "").trim() || `Atlas UX — AI Employees for ${firmName}`;
+
+  // 6. Queue email via Binky (CRO) with reply-to billy@deadapp.info
+  await queueEmail(ctx, {
+    to: prospectEmail,
+    fromAgent: "binky",
+    subject: cleanSubject,
+    text: cleanEmail,
+    replyTo: REPLY_TO,
+  });
+
+  // 7. Record ContactActivity for tracking
+  try {
+    await prisma.contactActivity.create({
+      data: {
+        tenantId: ctx.tenantId,
+        contactId: prospect.id,
+        type: "vc_outreach",
+        subject: cleanSubject,
+        body: cleanEmail,
+        meta: { replyTo: REPLY_TO, fromAgent: "binky", remaining: remaining.length - 1 },
+      },
+    });
+  } catch { /* non-fatal */ }
+
+  await writeStepAudit(ctx, "WF-400.sent", `VC outreach email queued to ${prospectName} (${prospectEmail})`, {
+    contactId: prospect.id, firm: firmName, remaining: remaining.length - 1,
+  });
+
+  return {
+    ok: true,
+    message: `VC outreach: emailed ${prospectName} at ${firmName} (${remaining.length - 1} remaining)`,
+    output: { contactId: prospect.id, email: prospectEmail, firm: firmName, remaining: remaining.length - 1 },
   };
 };
 
