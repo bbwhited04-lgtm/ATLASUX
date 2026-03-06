@@ -1,6 +1,7 @@
 import { prisma } from "../db/prisma.js";
 import { checkGuardrails } from "./guardrails.js";
 import { deliverBroadcast, type BroadcastChannel } from "../core/agent/tools/broadcastDelivery.js";
+import { getAgentCalibration, applyCalibration } from "../core/orgBrain/calibration.js";
 
 export type CreateDecisionMemoInput = {
   tenantId: string;
@@ -19,7 +20,14 @@ export async function createDecisionMemo(input: CreateDecisionMemoInput) {
   const estimatedCostUsd = Number(input.estimatedCostUsd ?? 0);
   const billingType = (input.billingType ?? "none") as any;
   const riskTier = Number(input.riskTier ?? 0);
-  const confidence = Number(input.confidence ?? 0.5);
+  const rawConfidence = Number(input.confidence ?? 0.5);
+
+  // Apply calibration from outcome history (if available)
+  let confidence = rawConfidence;
+  try {
+    const calibration = await getAgentCalibration(input.agent);
+    confidence = applyCalibration(rawConfidence, calibration);
+  } catch { /* non-fatal — use raw confidence */ }
 
   const requiresApproval = billingType === "recurring" || estimatedCostUsd > Number(process.env.AUTO_SPEND_LIMIT_USD ?? 4) || riskTier >= 2;
   const status = requiresApproval ? "AWAITING_HUMAN" : "PROPOSED";

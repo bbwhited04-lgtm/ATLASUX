@@ -77,6 +77,7 @@ import { prisma } from "../db/prisma.js";
 import { getSystemState, setSystemState } from "../services/systemState.js";
 import { runSlackHook } from "../core/orgBrain/slackHook.js";
 import { runDecisionHook } from "../core/orgBrain/decisionHook.js";
+import { calibrateAllAgents } from "../core/orgBrain/calibration.js";
 
 const POLL_MS = Math.max(15_000, Number(process.env.SCHEDULER_POLL_MS ?? 60_000));
 const TENANT_ID = process.env.TENANT_ID ?? "";
@@ -569,6 +570,14 @@ function buildJobs(): ScheduledJob[] {
       payload: {},
       hourUTC: 21, minuteUTC: 0, dayOfWeek: 5,
       hookFn: () => runDecisionHook({ tenantId: RESOLVED_TENANT_ID }),
+    },
+    {
+      id: "orgbrain-calibration-weekly",
+      label: "Org Brain Agent Calibration (HOOK-402)",
+      agentId: "atlas", workflowId: "HOOK-402",
+      payload: {},
+      hourUTC: 22, minuteUTC: 0, dayOfWeek: 5,
+      hookFn: () => calibrateAllAgents(RESOLVED_TENANT_ID),
     },
   ];
 }
