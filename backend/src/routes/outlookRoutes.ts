@@ -13,6 +13,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
 import { agentEmails } from "../config/agentEmails.js";
+import { sanitizeError } from "../lib/sanitizeError.js";
 
 const tenantId = process.env.MS_TENANT_ID ?? "";
 const clientId = process.env.MS_CLIENT_ID ?? "";
@@ -153,7 +154,7 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
       });
     } catch (err: any) {
       req.log.error({ err }, "Outlook inbox read failed");
-      return reply.code(500).send({ ok: false, error: err.message ?? "Failed to read inbox" });
+      return reply.code(500).send({ ok: false, error: sanitizeError(err) });
     }
   });
 
@@ -219,7 +220,7 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
       });
     } catch (err: any) {
       req.log.error({ err }, "Outlook message read failed");
-      return reply.code(500).send({ ok: false, error: err.message ?? "Failed to read message" });
+      return reply.code(500).send({ ok: false, error: sanitizeError(err) });
     }
   });
 
@@ -231,7 +232,13 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
 
     const { messageId } = req.params as { messageId: string };
     const body = req.body as { email?: string; isRead?: boolean };
-    const email = body.email || defaultMailbox;
+    const _requestedEmail = body.email || defaultMailbox;
+    // Validate mailbox is a known agent email — prevent updating arbitrary M365 mailboxes
+    const _allowedMailboxes = new Set(Object.values(agentEmails));
+    if (!_allowedMailboxes.has(_requestedEmail)) {
+      return reply.code(403).send({ ok: false, error: "MAILBOX_NOT_ALLOWED" });
+    }
+    const email = _requestedEmail;
 
     if (body.isRead === undefined) {
       return reply.code(400).send({ ok: false, error: "isRead field required" });
@@ -261,7 +268,7 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
       return reply.send({ ok: true, messageId, isRead: body.isRead });
     } catch (err: any) {
       req.log.error({ err }, "Outlook message update failed");
-      return reply.code(500).send({ ok: false, error: err.message ?? "Failed to update message" });
+      return reply.code(500).send({ ok: false, error: sanitizeError(err) });
     }
   });
 
@@ -307,7 +314,7 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
       return reply.send({ ok: true, email, folders });
     } catch (err: any) {
       req.log.error({ err }, "Outlook folders read failed");
-      return reply.code(500).send({ ok: false, error: err.message ?? "Failed to read folders" });
+      return reply.code(500).send({ ok: false, error: sanitizeError(err) });
     }
   });
 
@@ -336,7 +343,8 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
         reason: err.error?.message ?? `Graph API ${res.status}`,
       });
     } catch (err: any) {
-      return reply.send({ ok: true, connected: false, reason: err.message });
+      app.log.error({ err }, "Outlook status check failed");
+      return reply.send({ ok: true, connected: false, reason: sanitizeError(err) });
     }
   });
 };

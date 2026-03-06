@@ -264,6 +264,7 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
   // Uses any token from the run to look up the runId, then approves everything.
   // Safe: token is 48 random hex chars; no auth needed beyond possessing the token.
   app.get("/proposals/approve-all/:token", async (req, reply) => {
+    reply.header("Cache-Control", "no-store");
     const { token } = req.params as any;
     const anchor    = await prisma.toolProposal.findUnique({ where: { approvalToken: token } });
 
@@ -336,6 +337,7 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
   // Token-based approval — safe to click directly from email.
   // No auth required (token is the secret). Returns HTML.
   app.get("/proposals/:token/approve", async (req, reply) => {
+    reply.header("Cache-Control", "no-store");
     const { token } = req.params as any;
     const proposal  = await prisma.toolProposal.findUnique({ where: { approvalToken: token } });
 
@@ -395,6 +397,7 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
 
   // ── GET /v1/tools/proposals/:token/deny ─────────────────────────────────────
   app.get("/proposals/:token/deny", async (req, reply) => {
+    reply.header("Cache-Control", "no-store");
     const { token } = req.params as any;
     const proposal  = await prisma.toolProposal.findUnique({ where: { approvalToken: token } });
 
@@ -541,11 +544,18 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
     });
   }
 
+  // ── Helper: escape HTML special characters ─────────────────────────────────
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+  }
+
   // ── Helper: HTML response page ──────────────────────────────────────────────
   function htmlPage(title: string, body: string): string {
+    const safeTitle = escapeHtml(title);
+    const safeBody = escapeHtml(body);
     return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${title} — Atlas UX</title>
+<title>${safeTitle} — Atlas UX</title>
 <style>
   body{font-family:system-ui,sans-serif;background:#04111f;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
   .card{background:#0d1f38;border:1px solid rgba(255,255,255,.12);border-radius:1.5rem;padding:2.5rem;max-width:480px;text-align:center}
@@ -555,8 +565,8 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
 </style>
 </head><body>
 <div class="card">
-  <h1>${title}</h1>
-  <p>${body}</p>
+  <h1>${safeTitle}</h1>
+  <p>${safeBody}</p>
   <div class="logo">Atlas UX · Tool Proposal System · WF-107</div>
 </div>
 </body></html>`;

@@ -102,7 +102,12 @@ export async function tenantsRoutes(app: FastifyInstance) {
     const userId = (req as any).auth?.userId ?? null;
     const adminKey = (process.env.GATE_ADMIN_KEY ?? "").trim();
     const providedAdmin = (req.headers["x-gate-admin-key"] ?? "").toString().trim();
-    const isAdmin = !!(adminKey && providedAdmin === adminKey);
+    let isAdmin = false;
+    if (adminKey && providedAdmin) {
+      const adminBuf = Buffer.from(adminKey);
+      const providedBuf = Buffer.from(providedAdmin);
+      isAdmin = adminBuf.length === providedBuf.length && timingSafeEqual(adminBuf, providedBuf);
+    }
 
     if (!userId && !isAdmin) {
       return reply.code(401).send({ ok: false, error: "AUTHENTICATION_REQUIRED" });

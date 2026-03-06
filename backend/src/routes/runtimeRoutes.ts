@@ -39,11 +39,7 @@ export const runtimeRoutes: FastifyPluginAsync = async (app) => {
               },
             })
           )
-        : await prisma.approvals.count({
-            where: {
-              OR: [{ expires_at: null }, { expires_at: { gt: now } }],
-            },
-          });
+        : 0; // No tenantId — do not count across all tenants
 
       return reply.send({
         ok: true,

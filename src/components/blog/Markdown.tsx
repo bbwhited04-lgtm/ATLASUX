@@ -117,6 +117,11 @@ function parseMarkdown(md: string): Block[] {
   return blocks;
 }
 
+/** Only allow safe URL schemes — block javascript:, data:, vbscript:, etc. */
+function safeUrl(url: string): string {
+  return /^(https?:\/\/|\/|#|mailto:)/i.test(url) ? url : '#';
+}
+
 function renderInline(text: string): React.ReactNode {
   // Inline parser: **bold**, *italic*, `code`, [text](url), ![alt](src)
   const parts: React.ReactNode[] = [];
@@ -212,7 +217,7 @@ function renderInline(text: string): React.ReactNode {
       const closeParen = openParen > -1 ? remaining.indexOf(")", openParen) : -1;
       if (closeBracket > 0 && openParen === closeBracket + 1 && closeParen > openParen) {
         const alt = remaining.slice(2, closeBracket);
-        const src = remaining.slice(openParen + 1, closeParen);
+        const src = safeUrl(remaining.slice(openParen + 1, closeParen));
         parts.push(
           <img key={parts.length} src={src} alt={alt} className="my-4 max-w-full rounded-xl" />
         );
@@ -228,7 +233,7 @@ function renderInline(text: string): React.ReactNode {
       const closeParen = remaining.indexOf(")", openParen);
       if (closeBracket > 0 && openParen === closeBracket + 1 && closeParen > openParen) {
         const label = remaining.slice(1, closeBracket);
-        const url = remaining.slice(openParen + 1, closeParen);
+        const url = safeUrl(remaining.slice(openParen + 1, closeParen));
         const external = url.startsWith("http");
         parts.push(
           <a
@@ -306,7 +311,7 @@ export default function Markdown({ markdown }: { markdown: string }) {
           return (
             <figure key={idx} className="mt-6">
               <img
-                src={b.src}
+                src={safeUrl(b.src)}
                 alt={b.alt}
                 className="max-w-full rounded-xl"
               />

@@ -52,6 +52,28 @@ export const zoomRoutes: FastifyPluginAsync = async (app) => {
       return reply.send({ plainToken, encryptedToken });
     }
 
+    // ── Verify x-zm-signature for all non-validation events ──────────────
+    if (!webhookSecret) {
+      app.log.warn("ZOOM_WEBHOOK_SECRET not configured — rejecting event");
+      return reply.status(401).send({ error: "Webhook secret not configured" });
+    }
+
+    const timestamp = req.headers["x-zm-request-timestamp"] as string | undefined;
+    const signature = req.headers["x-zm-signature"] as string | undefined;
+
+    if (!timestamp || !signature) {
+      app.log.warn("Zoom webhook missing x-zm-request-timestamp or x-zm-signature headers");
+      return reply.status(401).send({ error: "Missing Zoom signature headers" });
+    }
+
+    const message = `v0:${timestamp}:${JSON.stringify(body)}`;
+    const expectedSig = "v0=" + crypto.createHmac("sha256", webhookSecret).update(message).digest("hex");
+
+    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
+      app.log.warn("Zoom webhook signature mismatch — rejecting");
+      return reply.status(401).send({ error: "Invalid Zoom webhook signature" });
+    }
+
     // ── Normal event notifications ───────────────────────────────────────
     const eventType: string = body?.event ?? "unknown";
     const payload = body?.payload?.object;

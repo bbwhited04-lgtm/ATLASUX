@@ -24,6 +24,7 @@
 
 import type { FastifyPluginAsync } from "fastify";
 import { prisma, withTenant } from "../db/prisma.js";
+import { sanitizeError } from "../lib/sanitizeError.js";
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
 
@@ -125,7 +126,8 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
       }));
       return reply.send({ ok: true, teams });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      app.log.error({ err: e }, "Teams list failed");
+      return reply.code(502).send({ ok: false, error: sanitizeError(e) });
     }
   });
 
@@ -146,7 +148,8 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
       }));
       return reply.send({ ok: true, teamId, channels });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      app.log.error({ err: e }, "Teams channels list failed");
+      return reply.code(502).send({ ok: false, error: sanitizeError(e) });
     }
   });
 
@@ -171,7 +174,8 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
       }));
       return reply.send({ ok: true, teamId, channelId, messages });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      app.log.error({ err: e }, "Teams messages fetch failed");
+      return reply.code(502).send({ ok: false, error: sanitizeError(e) });
     }
   });
 
@@ -225,7 +229,8 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
 
       return reply.send({ ok: true });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      app.log.error({ err: e }, "Teams send message failed");
+      return reply.code(502).send({ ok: false, error: sanitizeError(e) });
     }
   });
 
@@ -283,7 +288,8 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
 
       return reply.send({ ok: true, fromAgent, toAgent });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      app.log.error({ err: e }, "Teams cross-agent send failed");
+      return reply.code(502).send({ ok: false, error: sanitizeError(e) });
     }
   });
 
@@ -302,7 +308,8 @@ export const teamsRoutes: FastifyPluginAsync = async (app) => {
       await getMsToken();
       return reply.send({ ok: true, connected: true });
     } catch (e: any) {
-      return reply.send({ ok: true, connected: false, reason: e.message });
+      app.log.error({ err: e }, "Teams status check failed");
+      return reply.send({ ok: true, connected: false, reason: sanitizeError(e) });
     }
   });
 };

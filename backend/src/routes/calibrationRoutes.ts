@@ -15,11 +15,14 @@ type CalibrationScore = {
 };
 
 export const calibrationRoutes: FastifyPluginAsync = async (app) => {
-  // List all agent calibration scores
+  // List agent calibration scores scoped to the authenticated tenant
   app.get("/", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(401).send({ ok: false, error: "tenantId required" });
+
     const rows = await prisma.$queryRaw<
       { key: string; value: any; updated_at: Date | null }[]
-    >`SELECT key, value, updated_at FROM system_state WHERE key LIKE 'org-brain:calibration:%'`;
+    >`SELECT key, value, updated_at FROM system_state WHERE key LIKE 'org-brain:calibration:%' AND tenant_id = ${tenantId}`;
 
     const scores: CalibrationScore[] = rows
       .map((r) => {

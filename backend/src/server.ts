@@ -78,7 +78,12 @@ import { twilioRoutes } from "./routes/twilioRoutes.js";
 import { orgMemoryRoutes } from "./routes/orgMemoryRoutes.js";
 import { calibrationRoutes } from "./routes/calibrationRoutes.js";
 
-const app = Fastify({ logger: true });
+const app = Fastify({
+  logger: {
+    level: process.env.NODE_ENV === "production" ? "info" : "debug",
+    redact: ["req.headers.authorization", "req.headers.cookie"],
+  },
+});
 app.addHook("onSend", async (_req, reply, payload) => {
   // Only touch JSON responses
   const contentType = reply.getHeader("content-type");

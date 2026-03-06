@@ -16,8 +16,25 @@ export const googleRoutes: FastifyPluginAsync = async (app) => {
    * Logs the request, clears stored tokens, and returns a confirmation.
    */
   app.post("/datadeletion", async (req, reply) => {
+    // Shared secret check — reject if INBOUND_WEBHOOK_SECRET is configured and header doesn't match
+    const inboundSecret = (process.env.INBOUND_WEBHOOK_SECRET ?? "").trim();
+    if (inboundSecret) {
+      const provided = String(req.headers["x-webhook-secret"] ?? "").trim();
+      if (!provided || provided !== inboundSecret) {
+        return reply.code(401).send({ error: "Invalid or missing webhook secret" });
+      }
+    }
+
     const body = (req.body ?? {}) as any;
-    const googleUserId = body?.user_id ?? body?.sub ?? "unknown";
+
+    // Basic validation: body must have Google-format fields (user_id or sub)
+    if (!body || typeof body !== "object") {
+      return reply.code(400).send({ error: "Invalid request body" });
+    }
+    const googleUserId = body?.user_id ?? body?.sub ?? null;
+    if (!googleUserId || typeof googleUserId !== "string") {
+      return reply.code(400).send({ error: "Missing required field: user_id or sub" });
+    }
     const confirmationCode = `GDEL-${googleUserId}-${Date.now()}`;
 
     await prisma.auditLog.create({

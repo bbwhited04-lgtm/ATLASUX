@@ -286,7 +286,7 @@ export const twilioRoutes: FastifyPluginAsync = async (app) => {
     const creds = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
 
     // Simple TwiML for outbound — just connect the call
-    const twimlUrl = `http://twimlets.com/holdmusic?Bucket=com.twilio.music.ambient`;
+    const twimlUrl = `https://twimlets.com/holdmusic?Bucket=com.twilio.music.ambient`;
 
     const params = new URLSearchParams({
       To: to,

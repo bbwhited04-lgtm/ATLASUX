@@ -16,6 +16,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma, withTenant } from "../db/prisma.js";
 import { enforceFeatureAccess } from "../lib/seatEnforcement.js";
+import { sanitizeError } from "../lib/sanitizeError.js";
 
 const tenantIdEnv = process.env.MS_TENANT_ID ?? "";
 const clientId = process.env.MS_CLIENT_ID ?? "";
@@ -429,7 +430,7 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
         })
       );
 
-      return reply.code(500).send({ ok: false, error: "Processing failed: " + err.message });
+      return reply.code(500).send({ ok: false, error: "Processing failed: " + sanitizeError(err) });
     }
   });
 

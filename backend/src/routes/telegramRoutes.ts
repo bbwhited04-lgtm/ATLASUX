@@ -20,6 +20,7 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
+import { timingSafeEqual } from "node:crypto";
 import { saveTelegramChatId, sendTelegramDirect } from "../lib/telegramNotify.js";
 import { prisma, withTenant } from "../db/prisma.js";
 import { runChat } from "../ai.js";
@@ -258,7 +259,9 @@ export const telegramRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(503).send({ ok: false, error: "webhook_not_configured" });
     }
     const provided = String(req.headers["x-telegram-bot-api-secret-token"] ?? "");
-    if (provided !== webhookSecret) {
+    const secretBuf = Buffer.from(webhookSecret);
+    const providedBuf = Buffer.from(provided);
+    if (secretBuf.length !== providedBuf.length || !timingSafeEqual(secretBuf, providedBuf)) {
       return reply.code(403).send({ ok: false, error: "invalid_webhook_secret" });
     }
 

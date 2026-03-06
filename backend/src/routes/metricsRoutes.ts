@@ -4,8 +4,8 @@ import { computeMetricsSnapshot, getLatestSnapshot, upsertDailySnapshot } from "
 export const metricsRoutes: FastifyPluginAsync = async (app) => {
   // Create/Upsert a daily metrics snapshot (intended for nightly cron)
   app.post("/snapshot", async (req, reply) => {
-    const tenantId = String((req.body as any)?.tenantId ?? (req.query as any)?.tenantId ?? "");
-    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(401).send({ ok: false, error: "tenantId required (from tenant plugin)" });
 
     const snapshot = await computeMetricsSnapshot({ tenantId });
     const saved = await upsertDailySnapshot({ tenantId, snapshot });
@@ -15,8 +15,8 @@ export const metricsRoutes: FastifyPluginAsync = async (app) => {
 
   // Get latest snapshot
   app.get("/latest", async (req, reply) => {
-    const tenantId = String((req.query as any)?.tenantId ?? "");
-    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(401).send({ ok: false, error: "tenantId required (from tenant plugin)" });
 
     const row = await getLatestSnapshot(tenantId);
     if (!row) return reply.code(404).send({ ok: false, error: "no_snapshot" });

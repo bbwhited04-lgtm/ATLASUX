@@ -34,7 +34,8 @@ export const authPlugin: FastifyPluginAsync = async (app) => {
         return reply.code(401).send({ ok: false, error: "token_revoked" });
       }
     } catch {
-      // Fail-open: if blacklist table doesn't exist yet, allow the request
+      // Fail-closed: if blacklist check fails, reject the request (503)
+      return reply.code(503).send({ ok: false, error: "token_blacklist_unavailable" });
     }
 
     const userId = data.user.id;

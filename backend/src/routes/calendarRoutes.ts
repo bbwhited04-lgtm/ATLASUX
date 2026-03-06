@@ -12,6 +12,8 @@
 
 import type { FastifyPluginAsync } from "fastify";
 import { enforceFeatureAccess } from "../lib/seatEnforcement.js";
+import { agentEmails } from "../config/agentEmails.js";
+import { sanitizeError } from "../lib/sanitizeError.js";
 
 const tenantId = process.env.MS_TENANT_ID ?? "";
 const clientId = process.env.MS_CLIENT_ID ?? "";
@@ -95,7 +97,8 @@ export const calendarRoutes: FastifyPluginAsync = async (app) => {
       await graphGet(`/users/${defaultMailbox}/calendars?$top=1`, token);
       return reply.send({ ok: true, connected: true, email: defaultMailbox });
     } catch (err: any) {
-      return reply.send({ ok: true, connected: false, reason: err.message });
+      app.log.error({ err }, "Calendar status check failed");
+      return reply.send({ ok: true, connected: false, reason: sanitizeError(err) });
     }
   });
 
@@ -103,7 +106,13 @@ export const calendarRoutes: FastifyPluginAsync = async (app) => {
   app.get("/calendars", async (req, reply) => {
     try {
       const token = await getAppToken();
-      const mailbox = (req.query as any).mailbox || defaultMailbox;
+      const _requestedMailbox = (req.query as any).mailbox || defaultMailbox;
+      // Validate mailbox is a known agent email — prevent reading arbitrary M365 calendars
+      const _allowedMailboxes = new Set(Object.values(agentEmails));
+      if (!_allowedMailboxes.has(_requestedMailbox)) {
+        return reply.code(403).send({ ok: false, error: "MAILBOX_NOT_ALLOWED" });
+      }
+      const mailbox = _requestedMailbox;
 
       const data = await graphGet(
         `/users/${mailbox}/calendars?$select=id,name,color,isDefaultCalendar,canEdit,owner`,
@@ -122,7 +131,7 @@ export const calendarRoutes: FastifyPluginAsync = async (app) => {
       return reply.send({ ok: true, calendars });
     } catch (err: any) {
       app.log.error({ err }, "Calendar list failed");
-      return reply.status(500).send({ ok: false, error: err.message });
+      return reply.status(500).send({ ok: false, error: sanitizeError(err) });
     }
   });
 
@@ -131,7 +140,13 @@ export const calendarRoutes: FastifyPluginAsync = async (app) => {
     try {
       const token = await getAppToken();
       const q = req.query as Record<string, string>;
-      const mailbox = q.mailbox || defaultMailbox;
+      const _requestedMailbox = q.mailbox || defaultMailbox;
+      // Validate mailbox is a known agent email — prevent reading arbitrary M365 calendars
+      const _allowedMailboxes = new Set(Object.values(agentEmails));
+      if (!_allowedMailboxes.has(_requestedMailbox)) {
+        return reply.code(403).send({ ok: false, error: "MAILBOX_NOT_ALLOWED" });
+      }
+      const mailbox = _requestedMailbox;
       const top = Math.min(parseInt(q.top ?? "50", 10), 100);
 
       // Default to this week
@@ -191,7 +206,7 @@ export const calendarRoutes: FastifyPluginAsync = async (app) => {
       });
     } catch (err: any) {
       app.log.error({ err }, "Calendar events fetch failed");
-      return reply.status(500).send({ ok: false, error: err.message });
+      return reply.status(500).send({ ok: false, error: sanitizeError(err) });
     }
   });
 
@@ -200,7 +215,13 @@ export const calendarRoutes: FastifyPluginAsync = async (app) => {
     try {
       const token = await getAppToken();
       const { eventId } = req.params as { eventId: string };
-      const mailbox = (req.query as any).mailbox || defaultMailbox;
+      const _requestedMailbox = (req.query as any).mailbox || defaultMailbox;
+      // Validate mailbox is a known agent email — prevent reading arbitrary M365 calendars
+      const _allowedMailboxes = new Set(Object.values(agentEmails));
+      if (!_allowedMailboxes.has(_requestedMailbox)) {
+        return reply.code(403).send({ ok: false, error: "MAILBOX_NOT_ALLOWED" });
+      }
+      const mailbox = _requestedMailbox;
 
       const e = await graphGet(
         `/users/${mailbox}/events/${eventId}` +
@@ -241,7 +262,7 @@ export const calendarRoutes: FastifyPluginAsync = async (app) => {
       });
     } catch (err: any) {
       app.log.error({ err }, "Calendar event detail failed");
-      return reply.status(500).send({ ok: false, error: err.message });
+      return reply.status(500).send({ ok: false, error: sanitizeError(err) });
     }
   });
 };

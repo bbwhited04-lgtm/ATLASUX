@@ -4,6 +4,7 @@ import { prisma, withTenant } from "../db/prisma.js";
 import { makeSupabase } from "../supabase.js";
 import { loadEnv } from "../env.js";
 import { submitComment, submitPost } from "../services/reddit.js";
+import { sanitizeError } from "../lib/sanitizeError.js";
 
 const QueuePostSchema = z.object({
   subreddit: z.string().min(1).max(100).regex(/^[A-Za-z0-9_]+$/, "invalid subreddit name"),
@@ -136,7 +137,8 @@ export const redditRoutes: FastifyPluginAsync = async (app) => {
 
       return reply.send({ ok: true, posted });
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      app.log.error({ err: e }, "Reddit approve/execute failed");
+      return reply.code(502).send({ ok: false, error: sanitizeError(e) });
     }
   });
 

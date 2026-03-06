@@ -115,7 +115,9 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
 
     if (tenantId) {
       try {
-        const msgs: any[] = Array.isArray(body?.messages) ? [...body.messages] : [];
+        const msgs: any[] = Array.isArray(body?.messages)
+          ? [...body.messages].filter((m: any) => m.role !== "system")
+          : [];
         const agentId     = String(body?.agentId || "atlas").toLowerCase();
 
         // ── Agent tier gate — lucy, claire, sandy require pro/enterprise ──

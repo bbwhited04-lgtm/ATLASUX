@@ -98,9 +98,10 @@ export const linkedinRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(401).send({ error: "Invalid webhook signature" });
       }
     } else {
-      app.log.warn(
-        "LINKEDIN_WEBHOOK_SECRET not set — skipping signature verification for LinkedIn webhook",
+      app.log.error(
+        "LINKEDIN_WEBHOOK_SECRET not set — rejecting webhook (fail-closed)",
       );
+      return reply.status(503).send({ error: "Webhook secret not configured" });
     }
 
     // ── Payload structure validation ────────────────────────────────────

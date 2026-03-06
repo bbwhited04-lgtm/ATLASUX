@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
+import { sanitizeError } from "../lib/sanitizeError.js";
 
 const POSTIZ_API = "https://api.postiz.com/public/v1";
 
@@ -44,7 +45,8 @@ export const postizRoutes: FastifyPluginAsync = async (app) => {
     try {
       integrations = (await postizGet("/integrations")) as PostizIntegration[];
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      app.log.error({ err: e }, "Postiz channels fetch failed");
+      return reply.code(502).send({ ok: false, error: sanitizeError(e) });
     }
 
     // Merge follower data from assets if tenant context is available
@@ -99,7 +101,8 @@ export const postizRoutes: FastifyPluginAsync = async (app) => {
     try {
       integrations = (await postizGet("/integrations")) as PostizIntegration[];
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      app.log.error({ err: e }, "Postiz analytics aggregate fetch failed");
+      return reply.code(502).send({ ok: false, error: sanitizeError(e) });
     }
 
     // Collect per-channel metrics
@@ -223,7 +226,8 @@ export const postizRoutes: FastifyPluginAsync = async (app) => {
 
       return { ok: true, posts: normalized };
     } catch (e: any) {
-      return reply.code(502).send({ ok: false, error: e.message });
+      app.log.error({ err: e }, "Postiz posts fetch failed");
+      return reply.code(502).send({ ok: false, error: sanitizeError(e) });
     }
   });
 
@@ -240,7 +244,8 @@ export const postizRoutes: FastifyPluginAsync = async (app) => {
         )) as PostizMetric[];
         return { ok: true, metrics: Array.isArray(stats) ? stats : [] };
       } catch (e: any) {
-        return reply.code(502).send({ ok: false, error: e.message });
+        app.log.error({ err: e }, "Postiz analytics per-integration fetch failed");
+        return reply.code(502).send({ ok: false, error: sanitizeError(e) });
       }
     },
   );

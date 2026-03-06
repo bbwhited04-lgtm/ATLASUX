@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { hasPremiumAccess, type SeatTier } from "../lib/seatLimits.js";
 import { getSystemState, setSystemState } from "../services/systemState.js";
 import { createClient } from "@supabase/supabase-js";
+import { sanitizeError } from "../lib/sanitizeError.js";
 
 /**
  * Local Vision Agent API — endpoints for a locally-running vision agent
@@ -70,7 +71,7 @@ export const localAgentRoutes: FastifyPluginAsync = async (app) => {
   // ── POST /register — Generate tenant-scoped API key ────────────────────
   app.post("/register", async (request, reply) => {
     const tenantId = (request.headers["x-tenant-id"] as string ?? "").trim();
-    const userId = (request as any).userId ?? (request.headers["x-user-id"] as string ?? "").trim();
+    const userId = (request as any).auth?.userId ?? "";
 
     if (!tenantId) return reply.code(400).send({ ok: false, error: "x-tenant-id header required" });
     if (!userId) return reply.code(401).send({ ok: false, error: "Authentication required" });
@@ -277,7 +278,8 @@ export const localAgentRoutes: FastifyPluginAsync = async (app) => {
       .upload(path, buf, { contentType: "image/png", upsert: true });
 
     if (error) {
-      return reply.code(500).send({ ok: false, error: `Upload failed: ${error.message}` });
+      app.log.error({ err: error }, "Local agent screenshot upload failed");
+      return reply.code(500).send({ ok: false, error: `Upload failed: ${sanitizeError(error)}` });
     }
 
     const { data: urlData } = await supabase.storage

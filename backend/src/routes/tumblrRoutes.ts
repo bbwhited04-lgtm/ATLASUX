@@ -23,6 +23,13 @@ export const tumblrRoutes: FastifyPluginAsync = async (app) => {
 
   // ── POST /webhook — inbound event ───────────────────────────────────────
   app.post("/webhook", async (req, reply) => {
+    // Validate shared inbound webhook secret
+    const expectedSecret = process.env.INBOUND_WEBHOOK_SECRET;
+    const providedSecret = req.headers["x-inbound-secret"] as string | undefined;
+    if (!expectedSecret || providedSecret !== expectedSecret) {
+      return reply.status(401).send({ ok: false, error: "Unauthorized: invalid or missing x-inbound-secret header" });
+    }
+
     const body = req.body as any;
     if (!body || typeof body !== "object") {
       return reply.status(400).send({ ok: false, error: "Body must be JSON object" });
