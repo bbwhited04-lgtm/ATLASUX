@@ -187,6 +187,7 @@ await app.register(helmet, {
       fontSrc: ["'self'"],
       connectSrc: [
         "'self'",
+        "https://api.atlasux.cloud",
         "https://atlas-ux.onrender.com",
         "https://*.supabase.co",
         "wss://*.supabase.co",

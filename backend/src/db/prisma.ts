@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 /**
  * Prisma singleton (prevents too many clients in dev/hot reload)
@@ -35,7 +35,7 @@ export async function withTenant<T>(
     throw new Error(`Invalid tenantId format: ${tenantId}`);
   }
   return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw(Prisma.sql`SET LOCAL app.tenant_id = ${tenantId}`);
+    await tx.$executeRawUnsafe(`SET LOCAL app.tenant_id = '${tenantId}'`);
     return fn(tx);
   });
 }
