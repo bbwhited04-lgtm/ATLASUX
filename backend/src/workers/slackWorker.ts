@@ -62,6 +62,18 @@ let dmTickCounter = 0;
 // Thread state — track which threads we've already replied in recently
 const repliedThreads = new Set<string>();
 
+// Channel summary cache — generated every 15 min by cerebras (free), injected into agent prompts
+const channelSummaryCache = new Map<string, string>(); // channelName → summary text
+const channelSummaryLastUpdated = new Map<string, number>(); // channelName → timestamp
+const SUMMARY_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+const SUMMARY_MESSAGE_COUNT = 50; // how many messages to summarize
+
+// Anti-spiral: track when the last agent-to-agent reply happened per channel
+const lastAgentReplyByChannel = new Map<string, number>();
+const AGENT_CHATTER_COOLDOWN_MS = 60_000; // 60s cooldown between agent-to-agent replies per channel
+const MAX_AGENT_CHATTER_PER_TICK = 1; // max 1 agent-to-agent reply per tick across all channels
+let agentChatterThisTick = 0;
+
 // File ingestion state — track which Slack file IDs we've already processed
 const processedFiles = new Set<string>();
 
@@ -139,41 +151,63 @@ function detectAgent(text: string): (typeof agentRegistry)[number] {
 
 // ── System prompt builder ─────────────────────────────────────────────────────
 
-function buildSystemPrompt(agent: (typeof agentRegistry)[number]): string {
-  return [
+function buildSystemPrompt(agent: (typeof agentRegistry)[number], channelName?: string): string {
+  const lines = [
     `You are ${agent.name}, ${agent.title} at Atlas UX.`,
     `Role: ${agent.summary}`,
     "",
-    "You are chatting in the #atlas-ux Slack channel with the team.",
-    "Billy is the human founder and Chairman — always be respectful and helpful to him.",
+    "=== ABOUT THE COMPANY ===",
+    "Atlas UX is an AI operations platform — NOT a chatbot. It runs specialized AI agents inside a controlled orchestration environment. Think: AI operating system + workflow automation engine + agent orchestration layer.",
+    "Core principles: specialized agents (one job each), agents never verify their own work, full audit trail on every action, human-in-the-loop for sensitive actions.",
+    "Architecture: Agent Layer → Workflow Engine → Orchestration Layer (Atlas) → Compliance & Audit Layer.",
+    "Philosophy: 'Own the Stack' — control infrastructure, orchestration, automation. Avoid vendor lock-in.",
+    "Status: Alpha-stage deployment, actively testing and expanding.",
+    "Vision: General AI operations platform capable of running entire businesses through agent workflows. Designed as a resellable automation platform.",
     "",
-    "Your Slack capabilities — use these naturally when relevant:",
-    "- Send messages to any channel: #atlas-ux, #intel, #social, or any other channel",
-    "- DM other agents directly for private conversations (e.g. DM mercer, DM binky)",
-    "- Reply in threads to keep conversations organized",
-    "- Upload and share files with the team (reports, docs, data)",
-    "- Create and edit Canvases for collaborative documents",
-    "- Set channel topics and add reactions",
-    "- Run workflows by saying 'run WF-xxx' (e.g. run WF-035 for signal tripwire)",
+    "=== ABOUT YOUR BOSS ===",
+    "Billy E. Whited (Slack username: Buffaloherde) is the FOUNDER, CHAIRMAN, and creator of Atlas UX and every agent in it — including you. He is the ONLY human in this workspace.",
+    "Billy runs DEAD APP CORP TRUST / DEAD APP CORP. Assets: shortypro.com, viraldead.pro, deadapp.pro, deadapp.info, Magna Hive, Chatterly.",
+    "Communication style: Short, direct, action-oriented. No fluff. Straight shooter, builder energy. Often starts very early mornings.",
+    "His messaging: 'local-first', 'executes real work', 'no slot-machine credits', 'accountability / nothing hidden', 'built to run'.",
     "",
-    "Team members you can interact with:",
-    "Atlas (President), Binky (CRO), Mercer (VP Sales), Sunday (Copy Chief),",
-    "Kelly (X/Twitter), Link (LinkedIn), Rachel (Social Lead), Lucy (Receptionist),",
-    "Cheryl (Support), Daily-Intel (Briefing), Reynolds (Blog/SEO), and 20+ more agents.",
-    "Claude Code is also in the channel — the dev/engineering assistant.",
-    "",
-    "Guidelines:",
-    "- Keep responses conversational and natural — talk like a real coworker.",
-    "- Don't just respond to commands — engage, ask follow-ups, share ideas, banter.",
-    "- If you see something relevant to your role, jump in without being asked.",
-    "- Collaborate with other agents — tag them, DM them, share work with them.",
-    "- For work requests or technical topics, give thorough but focused answers.",
-    "- Stay in character as your role at Atlas UX.",
-    "- Use plain text (no markdown headers or bullet lists unless truly needed).",
+    "=== CRITICAL RULES ===",
+    "- When Billy gives you a direct order, DO IT. Don't ask clarifying questions, don't suggest meetings, don't defer to other agents. Execute.",
+    "- Keep responses SHORT (2-4 sentences max). No essays. No bullet lists unless asked.",
+    "- Do not repeat what other agents already said. Read the conversation context and the channel recap below.",
     "- Do not prefix your messages with your name — Slack already shows who you are.",
-    "- If the question is outside your area, briefly answer but suggest the right agent to ask.",
-    "- Feel free to use emoji reactions and casual language — this is Slack, not email.",
-  ].join("\n");
+    "- Use plain text, be conversational. This is Slack, not a boardroom.",
+    "- If a task is outside your role, say so briefly and tag the right agent.",
+    "- Never bypass workflow orchestration. Always write audit logs. Respect compliance checks.",
+    "",
+    "=== CONTENT PUBLISHING ===",
+    "To publish content to social media, use POSTIZ workflows (WF-200 series). Do NOT use old workflow numbers.",
+    "If no direct OAuth token exists for a platform, Postiz is the fallback — it handles all social posting.",
+    "Available Postiz workflows:",
+    "  WF-200: TikTok (Timmy) | WF-201: X/Twitter (Kelly) | WF-202: Facebook (Fran)",
+    "  WF-203: Reddit (Donna) | WF-204: Threads (Dwight) | WF-205: LinkedIn (Link)",
+    "  WF-207: Tumblr (Terry) | WF-210: Instagram (Archy) | WF-212: Cross-Platform (Sunday)",
+    "To post: say 'run WF-2xx' with the content. Sunday (WF-212) can blast to ALL platforms at once.",
+    "",
+    "Team: Atlas (President/Orchestrator), Binky (CRO), Mercer (VP Sales), Sunday (Copy Chief),",
+    "Kelly (X/Twitter), Link (LinkedIn), Lucy (Reception), Cheryl (Support),",
+    "Reynolds (Blog/SEO), Archy (Research), Tina (CFO), Larry (Secretary),",
+    "Jenny (Counsel), Benny (IP), Petra (PM), and 20+ more agents.",
+    "Claude Code is the dev/engineering assistant.",
+  ];
+
+  // Inject channel summary if available
+  const summary = channelName ? channelSummaryCache.get(channelName) : undefined;
+  if (summary) {
+    lines.push(
+      "",
+      `CHANNEL RECAP (what happened recently in #${channelName}):`,
+      summary,
+      "",
+      "Use this recap as your memory. Do not ask questions that are already answered above.",
+    );
+  }
+
+  return lines.join("\n");
 }
 
 // ── Context builder ───────────────────────────────────────────────────────────
@@ -190,6 +224,65 @@ function formatContext(messages: SlackMessage[]): string {
     });
 
   return "Recent channel context:\n" + lines.join("\n");
+}
+
+// ── Workflow detection & execution ───────────────────────────────────────────
+
+// ── Channel summary cache ────────────────────────────────────────────────────
+
+/**
+ * Generate/refresh a channel summary using the free cerebras model.
+ * Called from tickChannel when the cache is stale (>15 min old).
+ */
+async function refreshChannelSummary(channelId: string, channelName: string): Promise<void> {
+  const lastUpdated = channelSummaryLastUpdated.get(channelName) ?? 0;
+  if (Date.now() - lastUpdated < SUMMARY_INTERVAL_MS) return;
+
+  try {
+    const messages = await readHistory(channelId, SUMMARY_MESSAGE_COUNT);
+    if (!messages.length) return;
+
+    // Build a transcript for the summarizer
+    const transcript = messages
+      .slice()
+      .reverse() // oldest first
+      .map((m) => {
+        const who = m.username ?? (m.bot_id ? "agent" : (userCache.get(m.user) ?? "human"));
+        return `${who}: ${(m.text ?? "").slice(0, 300)}`;
+      })
+      .join("\n");
+
+    const response = await runLLM({
+      runId: `summary-${channelName}-${Date.now()}`,
+      agent: "SYSTEM",
+      purpose: "channel_summary",
+      route: "CLASSIFY_EXTRACT_VALIDATE",
+      // Use cerebras (free) — no need for Anthropic here
+      preferredProvider: "cerebras",
+      preferredModel: "cerebras/llama3.1-8b",
+      temperature: 0.1,
+      maxOutputTokens: 400,
+      messages: [
+        {
+          role: "system",
+          content: "You are a concise summarizer. Summarize the following Slack channel conversation in 150-200 words. Focus on: key decisions made, action items, who said what important, any unresolved questions, and the overall topic. Use present tense. Do not add commentary.",
+        },
+        {
+          role: "user",
+          content: `#${channelName} recent conversation:\n\n${transcript}`,
+        },
+      ],
+    });
+
+    const summary = response.text.trim();
+    if (summary) {
+      channelSummaryCache.set(channelName, summary);
+      channelSummaryLastUpdated.set(channelName, Date.now());
+      console.log(`[slackWorker] Summary refreshed for #${channelName} (${summary.length} chars)`);
+    }
+  } catch (err: any) {
+    console.error(`[slackWorker] Summary refresh failed for #${channelName}: ${err?.message ?? err}`);
+  }
 }
 
 // ── Workflow detection & execution ───────────────────────────────────────────
@@ -270,6 +363,9 @@ async function queueWorkflow(
 // ── Core tick ─────────────────────────────────────────────────────────────────
 
 async function tick() {
+  // Reset per-tick counters
+  agentChatterThisTick = 0;
+
   // Ensure we have a valid bot token
   if (!process.env.SLACK_BOT_TOKEN) {
     // Don't spam logs — just wait for it to be configured
@@ -323,6 +419,10 @@ async function tickChannel(channelName: string) {
   }
 
   const channelId = channel.id;
+
+  // Refresh channel summary cache if stale (runs on free cerebras model)
+  await refreshChannelSummary(channelId, channelName);
+
   const lastSeenTs = lastSeenByChannel.get(channelName) ?? null;
 
   // Fetch recent messages (use oldest param to only get new ones)
@@ -359,19 +459,7 @@ async function tickChannel(channelName: string) {
   // Ingest any file uploads into KB before agents respond
   await processFileUploads(channelId, channelName, newMessages);
 
-  // Human messages always get a response
-  const humanMessages = newMessages.filter((m) => !m.bot_id);
-
-  // Agent messages: 25% chance another agent jumps in (creates natural back-and-forth)
-  const agentMessages = newMessages.filter((m) => !!m.bot_id);
-  const agentChatter = agentMessages.filter(() => Math.random() < 0.25);
-
-  // Combine: all human messages + occasional agent messages to react to
-  const messagesToProcess = [...humanMessages, ...agentChatter];
-
-  if (!messagesToProcess.length) return;
-
-  // Fetch context window for conversation history (separate from new-message detection)
+  // Fetch context window for conversation history (needed for chatter check + LLM context)
   await sleep(API_DELAY_MS); // Pace API calls
   let contextMessages: SlackMessage[] = [];
   try {
@@ -379,6 +467,32 @@ async function tickChannel(channelName: string) {
   } catch {
     // Non-fatal — proceed without context
   }
+
+  // Human messages always get a response
+  const humanMessages = newMessages.filter((m) => !m.bot_id);
+
+  // Agent-to-agent chatter: heavily throttled to prevent death spirals
+  // - Only 10% chance (down from 25%)
+  // - Cooldown per channel (60s between agent replies)
+  // - Global cap of 1 agent-to-agent reply per tick
+  // - Skip entirely if last 5 messages are all bots (conversation is agent-only)
+  const lastAgentReply = lastAgentReplyByChannel.get(channelName) ?? 0;
+  const cooldownOk = Date.now() - lastAgentReply > AGENT_CHATTER_COOLDOWN_MS;
+  const globalCapOk = agentChatterThisTick < MAX_AGENT_CHATTER_PER_TICK;
+  const recentAreBots = contextMessages.length > 0 && contextMessages.slice(0, 5).every((m) => !!m.bot_id);
+
+  let agentChatter: SlackMessage[] = [];
+  if (cooldownOk && globalCapOk && !recentAreBots) {
+    const agentMessages = newMessages.filter((m) => !!m.bot_id);
+    agentChatter = agentMessages.filter(() => Math.random() < 0.10);
+    // Take at most 1
+    agentChatter = agentChatter.slice(0, 1);
+  }
+
+  // Combine: all human messages + occasional agent messages to react to
+  const messagesToProcess = [...humanMessages, ...agentChatter];
+
+  if (!messagesToProcess.length) return;
 
   // Process messages (human messages + occasional agent chatter)
   for (const msg of messagesToProcess) {
@@ -413,7 +527,7 @@ async function tickChannel(channelName: string) {
       agent = detectAgent(msg.text);
     }
 
-    const systemPrompt = buildSystemPrompt(agent);
+    const systemPrompt = buildSystemPrompt(agent, channelName);
     const context = formatContext(contextMessages);
 
     const sender = isAgentMsg ? (msg.username ?? "an agent") : "Billy";
@@ -433,6 +547,8 @@ async function tickChannel(channelName: string) {
         agent: agent.id.toUpperCase(),
         purpose: "slack_chat",
         route: "DRAFT_GENERATION_FAST",
+        preferredProvider: "anthropic",
+        preferredModel: "claude-sonnet-4-20250514",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
@@ -455,6 +571,11 @@ async function tickChannel(channelName: string) {
         console.log(
           `[slackWorker] ${agent.name} replied (${reply.length} chars)${threadTs ? " [thread]" : ""}`,
         );
+        // Track agent-to-agent cooldown
+        if (isAgentMsg) {
+          lastAgentReplyByChannel.set(channelName, Date.now());
+          agentChatterThisTick++;
+        }
       } else {
         console.error(
           `[slackWorker] postAsAgent failed for ${agent.id}: ${result.error}`,
@@ -519,10 +640,83 @@ const INGESTIBLE_MIMETYPES = new Set([
   "application/json",
 ]);
 
+const IMAGE_MIMETYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/gif",
+  "image/webp",
+]);
+
 function isIngestible(mimetype: string, name: string): boolean {
   if (INGESTIBLE_MIMETYPES.has(mimetype)) return true;
+  if (IMAGE_MIMETYPES.has(mimetype)) return true;
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
-  return ["txt", "md", "csv", "json", "html", "pdf"].includes(ext);
+  return ["txt", "md", "csv", "json", "html", "pdf", "png", "jpg", "jpeg", "gif", "webp"].includes(ext);
+}
+
+function isImage(mimetype: string, name: string): boolean {
+  if (IMAGE_MIMETYPES.has(mimetype)) return true;
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  return ["png", "jpg", "jpeg", "gif", "webp"].includes(ext);
+}
+
+/**
+ * Extract text from an image using Claude Sonnet vision.
+ * Sends the image as base64 and asks Claude to extract all text, data, names, emails, etc.
+ */
+async function extractTextFromImage(buf: Buffer, mimetype: string, fileName: string): Promise<string | null> {
+  try {
+    const base64 = buf.toString("base64");
+    // Normalize mimetype for Claude (must be image/jpeg, image/png, image/gif, or image/webp)
+    let mediaType = mimetype;
+    if (mediaType === "image/jpg") mediaType = "image/jpeg";
+
+    const apiKey = (process.env.ANTHROPIC_API_KEY ?? "").trim();
+    if (!apiKey) {
+      console.error("[slackWorker] ANTHROPIC_API_KEY missing — cannot process image");
+      return null;
+    }
+
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4000,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: { type: "base64", media_type: mediaType, data: base64 },
+              },
+              {
+                type: "text",
+                text: `Extract ALL text, data, names, email addresses, phone numbers, company names, investment areas, geographic regions, and any other structured information from this image. Format the output as clean structured text — use one line per record if it's a list or table. Preserve all details exactly as shown. File name: "${fileName}"`,
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    const data = await res.json() as any;
+    if (!res.ok) {
+      console.error(`[slackWorker] Vision API error: ${data?.error?.message ?? res.status}`);
+      return null;
+    }
+
+    return data?.content?.[0]?.text ?? null;
+  } catch (err: any) {
+    console.error(`[slackWorker] Vision extraction failed: ${err?.message ?? err}`);
+    return null;
+  }
 }
 
 /**
@@ -552,7 +746,17 @@ async function processFileUploads(channelId: string, channelName: string, messag
       try {
         let text: string | null = null;
 
-        if (file.mimetype === "application/pdf") {
+        if (isImage(file.mimetype, file.name)) {
+          // Vision: download image and extract text via Claude Sonnet
+          console.log(`[slackWorker] Processing image via vision: ${file.name} (${file.mimetype})`);
+          const buf = await downloadFileBuffer(file.url_private);
+          if (buf) {
+            text = await extractTextFromImage(buf, file.mimetype, file.name);
+            if (text) {
+              console.log(`[slackWorker] Vision extracted ${text.length} chars from ${file.name}`);
+            }
+          }
+        } else if (file.mimetype === "application/pdf") {
           const buf = await downloadFileBuffer(file.url_private);
           if (buf) {
             const parser = new PDFParse({ data: buf });
@@ -621,11 +825,12 @@ async function processFileUploads(channelId: string, channelName: string, messag
 
         const sizeStr = text.length > 1000 ? `${(text.length / 1000).toFixed(1)}k` : `${text.length}`;
         const chunkStr = chunkCount > 0 ? `, ${chunkCount} chunks` : "";
+        const visionTag = isImage(file.mimetype, file.name) ? " (extracted via vision)" : "";
         await postAsAgent(channelId, "atlas",
-          `Ingested "${title}" into the knowledge base (${sizeStr} chars${chunkStr}). All agents can now reference this document.`,
+          `Ingested "${title}" into the knowledge base${visionTag} (${sizeStr} chars${chunkStr}). All agents can now reference this document.`,
         );
 
-        console.log(`[slackWorker] KB ingested: "${title}" (${text.length} chars, ${chunkCount} chunks) from #${channelName}`);
+        console.log(`[slackWorker] KB ingested${visionTag}: "${title}" (${text.length} chars, ${chunkCount} chunks) from #${channelName}`);
       } catch (err: any) {
         console.error(`[slackWorker] File ingestion error for ${file.name}: ${err?.message ?? err}`);
         processedFiles.add(file.id); // Don't retry on error
@@ -682,8 +887,10 @@ async function checkThreadReplies(channelId: string, channelName: string, messag
         agent: agent.id.toUpperCase(),
         purpose: "slack_chat",
         route: "DRAFT_GENERATION_FAST",
+        preferredProvider: "anthropic",
+        preferredModel: "claude-sonnet-4-20250514",
         messages: [
-          { role: "system", content: buildSystemPrompt(agent) },
+          { role: "system", content: buildSystemPrompt(agent, channelName) },
           { role: "user", content: `Thread in #${channelName}:\n${threadContext}\n\nReply to this thread naturally. Keep it short.` },
         ],
       });
@@ -760,6 +967,8 @@ async function tickDMs() {
           agent: agent.id.toUpperCase(),
           purpose: "slack_chat",
           route: "DRAFT_GENERATION_FAST",
+          preferredProvider: "anthropic",
+          preferredModel: "claude-sonnet-4-20250514",
           messages: [
             { role: "system", content: buildSystemPrompt(agent) + "\nYou are responding to a direct message. Be helpful and personal." },
             { role: "user", content: `DM from ${senderName}: ${msg.text}` },

@@ -289,6 +289,38 @@ function buildJobs(): ScheduledJob[] {
       hourUTC: 5, minuteUTC: 45,
     },
 
+    // ── PHASE 1B: Midday Intel Sweep (11:00–11:36 UTC) ──────────────────────
+    { id: "kelly-x-intel-mid",       label: "Kelly X Intel Midday (WF-093)",       agentId: "kelly",    workflowId: "WF-093", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 0  },
+    { id: "fran-facebook-intel-mid", label: "Fran Facebook Intel Midday (WF-094)", agentId: "fran",     workflowId: "WF-094", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 3  },
+    { id: "dwight-threads-intel-mid",label: "Dwight Threads Intel Midday (WF-095)",agentId: "dwight",   workflowId: "WF-095", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 6  },
+    { id: "timmy-tiktok-intel-mid",  label: "Timmy TikTok Intel Midday (WF-096)", agentId: "timmy",    workflowId: "WF-096", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 9  },
+    { id: "terry-tumblr-intel-mid",  label: "Terry Tumblr Intel Midday (WF-097)", agentId: "terry",    workflowId: "WF-097", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 12 },
+    { id: "cornwall-pinterest-intel-mid", label: "Cornwall Pinterest Intel Midday (WF-098)", agentId: "cornwall", workflowId: "WF-098", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 15 },
+    { id: "link-linkedin-intel-mid", label: "Link LinkedIn Intel Midday (WF-099)",agentId: "link",     workflowId: "WF-099", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 18 },
+    { id: "emma-alignable-intel-mid",label: "Emma Alignable Intel Midday (WF-100)",agentId: "emma",    workflowId: "WF-100", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 21 },
+    { id: "donna-reddit-intel-mid",  label: "Donna Reddit Intel Midday (WF-101)", agentId: "donna",    workflowId: "WF-101", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 24 },
+    { id: "reynolds-blog-intel-mid", label: "Reynolds Blog Intel Midday (WF-102)",agentId: "reynolds", workflowId: "WF-102", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 27 },
+    { id: "penny-ads-intel-mid",     label: "Penny Ads Intel Midday (WF-103)",    agentId: "penny",    workflowId: "WF-103", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 30 },
+    { id: "archy-instagram-intel-mid",label: "Archy Instagram Intel Midday (WF-104)",agentId: "archy", workflowId: "WF-104", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 33 },
+    { id: "venny-youtube-intel-mid", label: "Venny YouTube Intel Midday (WF-105)",agentId: "venny",    workflowId: "WF-105", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 11, minuteUTC: 36 },
+    { id: "atlas-aggregation-mid",   label: "Atlas Midday Aggregation (WF-106)",  agentId: "atlas",    workflowId: "WF-106", payload: { triggeredBy: "scheduler", topic: "midday intel aggregation", sweep: "midday" }, hourUTC: 11, minuteUTC: 45 },
+
+    // ── PHASE 1C: Afternoon Intel Sweep (16:00–16:36 UTC) ─────────────────
+    { id: "kelly-x-intel-aft",       label: "Kelly X Intel Afternoon (WF-093)",       agentId: "kelly",    workflowId: "WF-093", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 0  },
+    { id: "fran-facebook-intel-aft", label: "Fran Facebook Intel Afternoon (WF-094)", agentId: "fran",     workflowId: "WF-094", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 3  },
+    { id: "dwight-threads-intel-aft",label: "Dwight Threads Intel Afternoon (WF-095)",agentId: "dwight",   workflowId: "WF-095", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 6  },
+    { id: "timmy-tiktok-intel-aft",  label: "Timmy TikTok Intel Afternoon (WF-096)", agentId: "timmy",    workflowId: "WF-096", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 9  },
+    { id: "terry-tumblr-intel-aft",  label: "Terry Tumblr Intel Afternoon (WF-097)", agentId: "terry",    workflowId: "WF-097", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 12 },
+    { id: "cornwall-pinterest-intel-aft", label: "Cornwall Pinterest Intel Afternoon (WF-098)", agentId: "cornwall", workflowId: "WF-098", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 15 },
+    { id: "link-linkedin-intel-aft", label: "Link LinkedIn Intel Afternoon (WF-099)",agentId: "link",     workflowId: "WF-099", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 18 },
+    { id: "emma-alignable-intel-aft",label: "Emma Alignable Intel Afternoon (WF-100)",agentId: "emma",    workflowId: "WF-100", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 21 },
+    { id: "donna-reddit-intel-aft",  label: "Donna Reddit Intel Afternoon (WF-101)", agentId: "donna",    workflowId: "WF-101", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 24 },
+    { id: "reynolds-blog-intel-aft", label: "Reynolds Blog Intel Afternoon (WF-102)",agentId: "reynolds", workflowId: "WF-102", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 27 },
+    { id: "penny-ads-intel-aft",     label: "Penny Ads Intel Afternoon (WF-103)",    agentId: "penny",    workflowId: "WF-103", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 30 },
+    { id: "archy-instagram-intel-aft",label: "Archy Instagram Intel Afternoon (WF-104)",agentId: "archy", workflowId: "WF-104", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 33 },
+    { id: "venny-youtube-intel-aft", label: "Venny YouTube Intel Afternoon (WF-105)",agentId: "venny",    workflowId: "WF-105", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 36 },
+    { id: "atlas-aggregation-aft",   label: "Atlas Afternoon Aggregation (WF-106)",  agentId: "atlas",    workflowId: "WF-106", payload: { triggeredBy: "scheduler", topic: "afternoon intel aggregation", sweep: "afternoon" }, hourUTC: 16, minuteUTC: 45 },
+
     // ── Daily: Research & Intelligence ───────────────────────────────────────
     {
       id: "binky-research",
@@ -338,56 +370,8 @@ function buildJobs(): ScheduledJob[] {
       minuteUTC: Number(process.env.DAILY_BRIEF_MINUTE_UTC ?? 30),
     },
 
-    // ── Daily: Social Media Publishers ───────────────────────────────────────
-    {
-      id: "timmy-tiktok",
-      label: "Timmy TikTok Content Draft (WF-054)",
-      agentId: "timmy", workflowId: "WF-054",
-      payload: { triggeredBy: "scheduler", topic: "Atlas UX TikTok content for today" },
-      hourUTC: 9, minuteUTC: 0,
-    },
-    {
-      id: "fran-facebook",
-      label: "Fran Facebook Page Publisher (WF-057)",
-      agentId: "fran", workflowId: "WF-057",
-      payload: { triggeredBy: "scheduler", topic: "Atlas UX Facebook page post for today" },
-      hourUTC: 9, minuteUTC: 15,
-    },
-    {
-      id: "dwight-threads",
-      label: "Dwight Threads Post Publisher (WF-055)",
-      agentId: "dwight", workflowId: "WF-055",
-      payload: { triggeredBy: "scheduler", topic: "Atlas UX Threads post for today" },
-      hourUTC: 9, minuteUTC: 30,
-    },
-    {
-      id: "terry-tumblr",
-      label: "Terry Tumblr Post Publisher (WF-049)",
-      agentId: "terry", workflowId: "WF-049",
-      payload: { triggeredBy: "scheduler", topic: "Atlas UX Tumblr post for today" },
-      hourUTC: 10, minuteUTC: 0,
-    },
-    {
-      id: "kelly-x",
-      label: "Kelly X (Twitter) Auto-DM & Post (WF-042)",
-      agentId: "kelly", workflowId: "WF-042",
-      payload: { triggeredBy: "scheduler" },
-      hourUTC: 10, minuteUTC: 30,
-    },
-    {
-      id: "link-linkedin",
-      label: "Link LinkedIn Scheduled Post (WF-045)",
-      agentId: "link", workflowId: "WF-045",
-      payload: { triggeredBy: "scheduler", topic: "Atlas UX LinkedIn content for today" },
-      hourUTC: 11, minuteUTC: 0,
-    },
-    {
-      id: "cornwall-pinterest",
-      label: "Cornwall Pinterest Asset Publisher (WF-048)",
-      agentId: "cornwall", workflowId: "WF-048",
-      payload: { triggeredBy: "scheduler", topic: "Atlas UX Pinterest pins for today" },
-      hourUTC: 11, minuteUTC: 30,
-    },
+    // ── Morning Postiz Publish Round (09:07 UTC — odd interval, post-brief) ──
+    { id: "sunday-crossplatform-am", label: "Sunday Cross-Platform Publish Morning (WF-212)", agentId: "sunday", workflowId: "WF-212", payload: { triggeredBy: "scheduler", sweep: "morning" }, hourUTC: 9, minuteUTC: 7 },
     {
       id: "donna-reddit-monitor",
       label: "Donna Reddit Subreddit Monitor (WF-051)",
@@ -423,6 +407,12 @@ function buildJobs(): ScheduledJob[] {
       payload: { triggeredBy: "scheduler", topic: "Atlas UX daily content run" },
       hourUTC: 17, minuteUTC: 0,
     },
+    // ── Midday Postiz Publish Round (12:17 UTC — odd interval, post-intel) ──
+    { id: "sunday-crossplatform-mid", label: "Sunday Cross-Platform Publish Midday (WF-212)", agentId: "sunday", workflowId: "WF-212", payload: { triggeredBy: "scheduler", sweep: "midday" }, hourUTC: 12, minuteUTC: 17 },
+
+    // ── Afternoon Postiz Publish Round (17:43 UTC — odd interval, post-intel) ──
+    { id: "sunday-crossplatform-aft", label: "Sunday Cross-Platform Publish Afternoon (WF-212)", agentId: "sunday", workflowId: "WF-212", payload: { triggeredBy: "scheduler", sweep: "afternoon" }, hourUTC: 17, minuteUTC: 43 },
+
     {
       id: "sunday-brief",
       label: "Sunday Technical Brief & Comms Writer (WF-058)",
