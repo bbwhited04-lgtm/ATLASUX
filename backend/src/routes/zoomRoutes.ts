@@ -18,6 +18,8 @@ import crypto from "crypto";
 import { prisma } from "../db/prisma.js";
 import { downloadTranscriptFromWebhook, summarizeTranscript } from "../services/zoom.js";
 import { dispatchOrgBrainHook } from "../core/orgBrain/hooks.js";
+import { startMeetingSession, addMeetingTranscript, endMeetingSession } from "../voice/zoomBot.js";
+import { startRTMS, stopRTMS } from "../voice/rtmsClient.js";
 
 const webhookSecret = process.env.ZOOM_WEBHOOK_SECRET ?? "";
 const TENANT_ID = process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
@@ -107,9 +109,108 @@ export const zoomRoutes: FastifyPluginAsync = async (app) => {
       eventType === "recording.transcript_completed"
     ) {
       await handleRecordingCompleted(app, body);
+    } else if (eventType === "meeting.rtms_started") {
+      handleRTMSStarted(app, body);
+    } else if (eventType === "meeting.rtms_stopped" || eventType === "meeting.rtms_interrupted") {
+      handleRTMSStopped(app, body);
     }
 
     return reply.status(200).send({ ok: true });
+  });
+
+  // ── OAuth callback — exchange authorization code for tokens ────────────
+  app.get("/oauth/callback", async (req, reply) => {
+    const { code } = req.query as { code?: string };
+    if (!code) {
+      return reply.status(400).send({ error: "Missing authorization code" });
+    }
+
+    const clientId = process.env.ZOOM_CLIENT_ID ?? "";
+    const clientSecret = process.env.ZOOM_CLIENT_SECRET ?? "";
+    const redirectUri = process.env.ZOOM_REDIRECT_URI ?? "";
+
+    if (!clientId || !clientSecret) {
+      app.log.error("Zoom OAuth: missing ZOOM_CLIENT_ID or ZOOM_CLIENT_SECRET");
+      return reply.status(500).send({ error: "OAuth not configured" });
+    }
+
+    try {
+      const tokenRes = await fetch("https://zoom.us/oauth/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+        },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: redirectUri,
+        }),
+      });
+
+      const tokenData = await tokenRes.json() as any;
+
+      if (!tokenRes.ok) {
+        app.log.error({ status: tokenRes.status, body: tokenData }, "Zoom OAuth token exchange failed");
+        return reply.status(400).send({ error: "Token exchange failed", details: tokenData });
+      }
+
+      // Store tokens in the database for later API calls
+      await prisma.auditLog.create({
+        data: {
+          actorExternalId: "zoom-oauth",
+          actorType: "system",
+          action: "zoom.oauth_authorized",
+          entityType: "zoom_oauth",
+          message: "Zoom OAuth tokens received and stored",
+          meta: {
+            scope: tokenData.scope,
+            token_type: tokenData.token_type,
+            expires_in: tokenData.expires_in,
+          },
+        },
+      });
+
+      // Store tokens in TokenVault
+      await prisma.tokenVault.upsert({
+        where: {
+          orgId_userId_provider: {
+            orgId: TENANT_ID,
+            userId: SYSTEM_ACTOR,
+            provider: "zoom",
+          },
+        },
+        create: {
+          orgId: TENANT_ID,
+          userId: SYSTEM_ACTOR,
+          provider: "zoom",
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token ?? null,
+          expiresAt: tokenData.expires_in
+            ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+            : null,
+          scope: tokenData.scope ?? null,
+        },
+        update: {
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token ?? undefined,
+          expiresAt: tokenData.expires_in
+            ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+            : undefined,
+          scope: tokenData.scope ?? undefined,
+        },
+      });
+
+      app.log.info("Zoom OAuth authorized successfully");
+      return reply.send({
+        ok: true,
+        message: "Zoom OAuth authorized. Tokens stored.",
+        scope: tokenData.scope,
+      });
+    } catch (err: any) {
+      app.log.error({ err }, "Zoom OAuth callback error");
+      return reply.status(500).send({ error: "OAuth callback failed" });
+    }
   });
 };
 
@@ -177,6 +278,11 @@ async function handleMeetingStarted(app: any, payload: any) {
       });
     }
     app.log.info({ meetingId }, "Zoom meeting started");
+
+    // Feed into Lucy's ContextRing for real-time meeting awareness
+    try {
+      startMeetingSession(meetingId, payload.topic ?? "(No topic)");
+    } catch { /* best-effort — don't break webhook */ }
   } catch (err) {
     app.log.error({ err, meetingId }, "Failed to update MeetingNote for meeting.started");
   }
@@ -196,10 +302,44 @@ async function handleMeetingEnded(app: any, payload: any) {
         data: { status: "completed" },
       });
       app.log.info({ meetingId }, "Zoom meeting ended");
+
+      // End Lucy's ContextRing session + trigger post-meeting processing
+      try {
+        endMeetingSession(meetingId);
+      } catch { /* best-effort */ }
     }
   } catch (err) {
     app.log.error({ err, meetingId }, "Failed to update MeetingNote for meeting.ended");
   }
+}
+
+function handleRTMSStarted(app: any, body: any): void {
+  const payload = body?.payload?.object;
+  const meetingUuid = payload?.meeting_uuid ?? payload?.id;
+  const streamId = payload?.rtms_stream_id;
+  const serverUrl = payload?.server_urls ?? payload?.server_url;
+  const topic = payload?.topic;
+
+  if (!meetingUuid || !streamId || !serverUrl) {
+    app.log.warn({ payload }, "RTMS started event missing required fields");
+    return;
+  }
+
+  app.log.info({ meetingUuid, streamId }, "RTMS stream started — connecting");
+  startRTMS(meetingUuid, streamId, serverUrl, topic);
+}
+
+function handleRTMSStopped(app: any, body: any): void {
+  const payload = body?.payload?.object;
+  const streamId = payload?.rtms_stream_id;
+
+  if (!streamId) {
+    app.log.warn("RTMS stopped event missing stream ID");
+    return;
+  }
+
+  app.log.info({ streamId }, "RTMS stream stopped");
+  stopRTMS(streamId);
 }
 
 async function handleRecordingCompleted(app: any, body: any) {
@@ -231,6 +371,19 @@ async function handleRecordingCompleted(app: any, body: any) {
       app.log.warn({ meetingId }, "Failed to download Zoom transcript");
       return;
     }
+
+    // Feed transcript lines into Lucy's ContextRing
+    try {
+      const lines = transcript.split("\n").filter((l: string) => l.includes(":"));
+      for (const line of lines) {
+        const colonIdx = line.indexOf(":");
+        const speaker = line.slice(0, colonIdx).trim();
+        const text = line.slice(colonIdx + 1).trim();
+        if (speaker && text) {
+          addMeetingTranscript(meetingId, speaker, text);
+        }
+      }
+    } catch { /* best-effort — don't break transcript processing */ }
 
     // Summarize with AI
     const { summary, actionItems, keyPoints } = await summarizeTranscript(transcript);
