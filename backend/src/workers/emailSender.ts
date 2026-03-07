@@ -26,6 +26,19 @@ type EmailInput = {
   replyTo?: string | null;
 };
 
+/**
+ * Resolve the sender UPN for a given agent.
+ * Looks up AGENT_EMAIL_{AGENTID} in env, falls back to MS_SENDER_UPN.
+ */
+function resolveAgentUpn(agentId?: string | null): string {
+  if (agentId) {
+    const envKey = `AGENT_EMAIL_${agentId.toUpperCase()}`;
+    const upn = (process.env[envKey] ?? "").trim();
+    if (upn) return upn;
+  }
+  return String(process.env.MS_SENDER_UPN ?? "").trim();
+}
+
 async function getMsAccessToken(): Promise<string> {
   const tenantId = String(process.env.MS_TENANT_ID ?? "").trim();
   const clientId = String(process.env.MS_CLIENT_ID ?? "").trim();
@@ -191,6 +204,7 @@ async function main() {
       const text = String(input.text ?? "").trim();
       const html = input.html ? String(input.html) : null;
       const replyTo = input.replyTo ? String(input.replyTo).trim() : null;
+      const fromAgent = input.fromAgent ? String(input.fromAgent).trim() : null;
 
       try {
         if (!to || !subject || !text) throw new Error("email job missing to/subject/text");
@@ -199,8 +213,8 @@ async function main() {
         if (provider === "none") {
           throw new Error("OUTBOUND_EMAIL_PROVIDER=none (email sending disabled)");
         } else if (provider === "microsoft") {
-          const senderUpn = String(process.env.MS_SENDER_UPN ?? "").trim();
-          if (!senderUpn) throw new Error("MS_SENDER_UPN missing");
+          const senderUpn = resolveAgentUpn(fromAgent);
+          if (!senderUpn) throw new Error("No sender UPN found (check AGENT_EMAIL_* or MS_SENDER_UPN)");
           output = await sendViaMicrosoft({ senderUpn, to, subject, text, html, replyTo });
         } else if (provider === "resend") {
           if (!from) throw new Error("OUTBOUND_EMAIL_FROM missing");
@@ -229,8 +243,8 @@ async function main() {
               action: "EMAIL_SENT",
               entityType: "job",
               entityId: job.id,
-              message: `Email sent to ${to}`,
-              meta: { to, subject, provider },
+              message: `Email sent to ${to} from ${fromAgent ?? "default"}`,
+              meta: { to, subject, provider, fromAgent, senderUpn: resolveAgentUpn(fromAgent) },
               timestamp: new Date(),
             },
           }),

@@ -44,6 +44,7 @@ export type LlmProvider =
   | "vercel_ai_gateway"
   | "google_gemini"
   | "openai"
+  | "anthropic"
   | "deepseek"
   | "openrouter"
   | "cerebras"
@@ -207,6 +208,7 @@ const ALLOWLIST: { providers: Set<LlmProvider>; models: Set<string> } = {
     "vercel_ai_gateway",
     "google_gemini",
     "openai",
+    "anthropic",
     "deepseek",
     "openrouter",
     "cerebras",
@@ -220,6 +222,9 @@ const ALLOWLIST: { providers: Set<LlmProvider>; models: Set<string> } = {
     // Gemini via Vercel or direct
     "google/gemini-2.5-flash",
     "google/gemini-1.5-pro",
+    // Anthropic Claude
+    "claude-sonnet-4-20250514",
+    "claude-haiku-4-5-20251001",
     // OpenAI
     "gpt-4o-mini",
     "gpt-4.1-mini",
@@ -374,6 +379,7 @@ function estimateCostUsd(_provider: LlmProvider, _model: string, _tokensIn: numb
 const ENDPOINTS = {
   vercelOpenAICompat: process.env.VERCEL_AI_GATEWAY_BASE_URL || "https://ai-gateway.vercel.sh/v1/chat/completions",
   openai: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1/chat/completions",
+  anthropic: "https://api.anthropic.com/v1/messages",
   deepseek: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com/v1/chat/completions",
   openrouter: process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1/chat/completions",
   cerebras: process.env.CEREBRAS_BASE_URL || "https://api.cerebras.ai/v1/chat/completions",
@@ -659,6 +665,8 @@ async function callProvider(args: {
       return callOpenAICompat("vercel", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
     case "openai":
       return callOpenAICompat("openai", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+    case "anthropic":
+      return callAnthropic(args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
     case "deepseek": {
       // GDPR: PII redaction before cross-border transfer to China
       const { redactMessages } = await import("../../lib/piiRedact.js");
@@ -726,6 +734,54 @@ async function callOpenAICompat(
     raw,
     tokensIn: usage.prompt_tokens,
     tokensOut: usage.completion_tokens,
+  };
+}
+
+/**
+ * Anthropic Messages API.
+ * Converts our internal message format to Anthropic's format (system is separate).
+ */
+async function callAnthropic(
+  model: string,
+  messages: LlmMessage[],
+  temperature: number,
+  maxOutputTokens: number,
+  timeoutMs: number,
+): Promise<ProviderCallResult> {
+  const apiKey = getEnvOrThrow("ANTHROPIC_API_KEY");
+
+  // Anthropic requires system as a top-level param, not in messages array
+  const systemMsgs = messages.filter((m) => m.role === "system");
+  const nonSystemMsgs = messages.filter((m) => m.role !== "system");
+  const systemText = systemMsgs.map((m) => m.content).join("\n\n") || undefined;
+
+  const body: Record<string, any> = {
+    model,
+    max_tokens: maxOutputTokens,
+    temperature,
+    messages: nonSystemMsgs.map((m) => ({ role: m.role, content: m.content })),
+  };
+  if (systemText) body.system = systemText;
+
+  const raw = await fetchJson(ENDPOINTS.anthropic, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify(body),
+    timeoutMs,
+  });
+
+  // Anthropic returns { content: [{ type: "text", text: "..." }], usage: { input_tokens, output_tokens } }
+  const text = raw?.content?.[0]?.text ?? "";
+  const usage = raw?.usage || {};
+  return {
+    text,
+    raw,
+    tokensIn: usage.input_tokens,
+    tokensOut: usage.output_tokens,
   };
 }
 

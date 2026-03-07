@@ -117,3 +117,4 @@ schemas/
 coverage/
 reports/
 tmp/
+.vercel
