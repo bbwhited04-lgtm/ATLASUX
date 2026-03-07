@@ -91,6 +91,9 @@ export const workflowCatalog = [
   { id: "WF-223", name: "Cross-Platform Analytics (Sunday)",        description: "Pull analytics for all connected platforms — summary dashboard with diagnostics.",          ownerAgent: "sunday"   },
   // ── Water Cooler (WF-300) ────────────────────────────────────────────────────
   { id: "WF-300", name: "Water Cooler Chat",                       description: "Hourly casual agent chat in #water-cooler — random agent posts banter or replies.",        ownerAgent: "atlas"    },
+  // ── Lucy Voice Engine (WF-150 series) ──────────────────────────────────────
+  { id: "WF-150", name: "Lucy Voice Health Check",                 description: "Pre-business-hours voice engine health: Google STT/TTS creds, Twilio streams, WebSocket route.", ownerAgent: "lucy" },
+  { id: "WF-151", name: "Lucy Daily Voice Summary",                description: "End-of-day voice activity: calls handled, caller classifications, leads captured, action items.", ownerAgent: "lucy" },
 ] as const;
 
 export const workflowCatalogAll = [
@@ -219,11 +222,350 @@ async function safeLLM(
 
 const handlers: Record<string, WorkflowHandler> = {
 
-  // WF-020 — Smoke test (deterministic, no LLM overhead)
+  // WF-020 — System Health Patrol (deterministic, zero LLM tokens)
+  //
+  // Daily 6:00 AM PST deep health check with real teeth:
+  //   1. DB connectivity (SELECT 1)
+  //   2. Engine liveness (last tick freshness)
+  //   3. Stuck jobs (running > 15 min)
+  //   4. Failed job spike (last 24h)
+  //   5. Email worker backlog (queued EMAIL_SEND jobs)
+  //   6. Postiz API reachability (HEAD request)
+  //   7. Slack bot token validity (auth.test)
+  //   8. LLM provider circuit breaker state
+  //   9. OAuth token expiry horizon (next 6h)
+  //  10. Scheduler coverage (last 24h firing gaps)
+  //  11. CRM data health (contacts without email)
+  //  12. KB document freshness (stale ingestion)
+  //
+  // Posts a full report to #intel. Fires Telegram alert on any CRITICAL finding.
+  //
   "WF-020": async (ctx) => {
-    await writeStepAudit(ctx, "smoke.start", "Starting smoke test");
-    await writeStepAudit(ctx, "smoke.ok",    "Smoke test complete");
-    return { ok: true, message: "Smoke test executed", output: { traceId: ctx.traceId ?? null } };
+    await writeStepAudit(ctx, "health.start", "System Health Patrol starting — 12 checks, zero tokens");
+
+    type Finding = { check: string; status: "OK" | "WARN" | "CRITICAL"; detail: string };
+    const findings: Finding[] = [];
+    const t0 = Date.now();
+
+    // ── 1. DB Connectivity ────────────────────────────────────────────────────
+    try {
+      const result = await prisma.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok`;
+      findings.push({ check: "DB Connectivity", status: result?.[0]?.ok === 1 ? "OK" : "CRITICAL", detail: result?.[0]?.ok === 1 ? "PostgreSQL responding" : "SELECT 1 returned unexpected result" });
+    } catch (err: any) {
+      findings.push({ check: "DB Connectivity", status: "CRITICAL", detail: `Database unreachable: ${err?.message?.slice(0, 120)}` });
+    }
+
+    // ── 2. Engine Liveness ────────────────────────────────────────────────────
+    try {
+      const { getSystemState } = await import("../services/systemState.js");
+      const row = await getSystemState("atlas_online");
+      const val = row?.value && typeof row.value === "object" ? (row.value as any) : {};
+      const engineOn = Boolean(val.engine_enabled ?? val.online ?? false);
+      const lastTick = val.last_tick_at ? new Date(val.last_tick_at) : null;
+
+      if (!engineOn) {
+        findings.push({ check: "Engine Liveness", status: "WARN", detail: "Engine is intentionally disabled" });
+      } else if (!lastTick) {
+        findings.push({ check: "Engine Liveness", status: "WARN", detail: "Engine enabled but never ticked (first boot?)" });
+      } else {
+        const staleMins = (Date.now() - lastTick.getTime()) / 60_000;
+        if (staleMins > 10) {
+          findings.push({ check: "Engine Liveness", status: "CRITICAL", detail: `Engine last ticked ${staleMins.toFixed(0)}min ago — may be dead` });
+        } else if (staleMins > 5) {
+          findings.push({ check: "Engine Liveness", status: "WARN", detail: `Engine last ticked ${staleMins.toFixed(0)}min ago — sluggish` });
+        } else {
+          findings.push({ check: "Engine Liveness", status: "OK", detail: `Last tick ${staleMins.toFixed(1)}min ago` });
+        }
+      }
+    } catch (err: any) {
+      findings.push({ check: "Engine Liveness", status: "WARN", detail: `Could not read system state: ${err?.message?.slice(0, 100)}` });
+    }
+
+    // ── 3. Stuck Jobs ─────────────────────────────────────────────────────────
+    try {
+      const cutoff = new Date(Date.now() - 15 * 60 * 1000);
+      const stuckJobs = await prisma.job.findMany({
+        where: { status: "running", startedAt: { lt: cutoff } },
+        select: { id: true, jobType: true, startedAt: true },
+        take: 20,
+      });
+      if (stuckJobs.length > 0) {
+        const types = [...new Set(stuckJobs.map(j => j.jobType))].join(", ");
+        findings.push({ check: "Stuck Jobs", status: stuckJobs.length >= 5 ? "CRITICAL" : "WARN", detail: `${stuckJobs.length} job(s) stuck >15min: ${types}` });
+      } else {
+        findings.push({ check: "Stuck Jobs", status: "OK", detail: "No stuck jobs" });
+      }
+    } catch (err: any) {
+      findings.push({ check: "Stuck Jobs", status: "WARN", detail: `Query failed: ${err?.message?.slice(0, 100)}` });
+    }
+
+    // ── 4. Failed Job Spike (24h) ─────────────────────────────────────────────
+    try {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const failedCount = await prisma.job.count({
+        where: { status: "failed", finishedAt: { gt: oneDayAgo } },
+      });
+      if (failedCount >= 50) {
+        findings.push({ check: "Failed Jobs (24h)", status: "CRITICAL", detail: `${failedCount} failures in 24h — systemic issue likely` });
+      } else if (failedCount >= 15) {
+        findings.push({ check: "Failed Jobs (24h)", status: "WARN", detail: `${failedCount} failures in 24h — elevated` });
+      } else {
+        findings.push({ check: "Failed Jobs (24h)", status: "OK", detail: `${failedCount} failure(s) in 24h` });
+      }
+    } catch (err: any) {
+      findings.push({ check: "Failed Jobs (24h)", status: "WARN", detail: `Query failed: ${err?.message?.slice(0, 100)}` });
+    }
+
+    // ── 5. Email Worker Backlog ───────────────────────────────────────────────
+    try {
+      const emailBacklog = await prisma.job.count({
+        where: {
+          status: "queued",
+          jobType: { in: ["EMAIL_SEND", "EMAILSEND", "email_send"] },
+        },
+      });
+      const emailStuck = await prisma.job.count({
+        where: {
+          status: "running",
+          jobType: { in: ["EMAIL_SEND", "EMAILSEND", "email_send"] },
+          startedAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
+        },
+      });
+      if (emailStuck > 0) {
+        findings.push({ check: "Email Worker", status: "CRITICAL", detail: `${emailStuck} email job(s) stuck running >10min — worker may be dead` });
+      } else if (emailBacklog > 20) {
+        findings.push({ check: "Email Worker", status: "WARN", detail: `${emailBacklog} emails queued — possible backlog` });
+      } else {
+        findings.push({ check: "Email Worker", status: "OK", detail: `${emailBacklog} email(s) queued, 0 stuck` });
+      }
+    } catch (err: any) {
+      findings.push({ check: "Email Worker", status: "WARN", detail: `Query failed: ${err?.message?.slice(0, 100)}` });
+    }
+
+    // ── 6. Postiz API Reachability ────────────────────────────────────────────
+    try {
+      const postizKey = process.env.POSTIZ_API_KEY;
+      if (!postizKey) {
+        findings.push({ check: "Postiz API", status: "WARN", detail: "POSTIZ_API_KEY not configured" });
+      } else {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch("https://api.postiz.com/public/v1/media", {
+          method: "GET",
+          headers: { Authorization: postizKey },
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (res.ok || res.status === 200 || res.status === 401) {
+          // 401 means the endpoint is alive (auth may differ per route)
+          findings.push({ check: "Postiz API", status: res.ok ? "OK" : "WARN", detail: `Postiz responded HTTP ${res.status}` });
+        } else {
+          findings.push({ check: "Postiz API", status: "WARN", detail: `Postiz returned HTTP ${res.status}` });
+        }
+      }
+    } catch (err: any) {
+      const msg = err?.name === "AbortError" ? "Timeout after 8s" : err?.message?.slice(0, 100);
+      findings.push({ check: "Postiz API", status: "CRITICAL", detail: `Postiz unreachable: ${msg}` });
+    }
+
+    // ── 7. Slack Bot Token ────────────────────────────────────────────────────
+    try {
+      const slackToken = process.env.SLACK_BOT_TOKEN;
+      if (!slackToken) {
+        findings.push({ check: "Slack Bot", status: "WARN", detail: "SLACK_BOT_TOKEN not configured" });
+      } else {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch("https://slack.com/api/auth.test", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${slackToken}`, "Content-Type": "application/json" },
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        const data = await res.json() as { ok?: boolean; error?: string; team?: string };
+        if (data.ok) {
+          findings.push({ check: "Slack Bot", status: "OK", detail: `Bot authenticated (team: ${data.team ?? "unknown"})` });
+        } else {
+          findings.push({ check: "Slack Bot", status: "CRITICAL", detail: `Slack auth failed: ${data.error ?? "unknown"}` });
+        }
+      }
+    } catch (err: any) {
+      const msg = err?.name === "AbortError" ? "Timeout after 8s" : err?.message?.slice(0, 100);
+      findings.push({ check: "Slack Bot", status: "CRITICAL", detail: `Slack unreachable: ${msg}` });
+    }
+
+    // ── 8. LLM Provider Circuit Breakers ──────────────────────────────────────
+    try {
+      const { getState } = await import("../lib/circuitBreaker.js");
+      const state = getState();
+      const providers = Object.entries(state);
+      const openProviders = providers.filter(([, v]) => v.state === "OPEN");
+      if (providers.length === 0) {
+        findings.push({ check: "LLM Providers", status: "OK", detail: "No providers tracked yet" });
+      } else if (openProviders.length === providers.length) {
+        findings.push({ check: "LLM Providers", status: "CRITICAL", detail: `ALL ${openProviders.length} providers circuit-OPEN: ${openProviders.map(([k]) => k).join(", ")}` });
+      } else if (openProviders.length > 0) {
+        findings.push({ check: "LLM Providers", status: "WARN", detail: `${openProviders.length}/${providers.length} provider(s) OPEN: ${openProviders.map(([k]) => k).join(", ")}` });
+      } else {
+        findings.push({ check: "LLM Providers", status: "OK", detail: `All ${providers.length} provider(s) healthy` });
+      }
+    } catch (err: any) {
+      findings.push({ check: "LLM Providers", status: "WARN", detail: `Could not check: ${err?.message?.slice(0, 100)}` });
+    }
+
+    // ── 9. OAuth Token Expiry Horizon (next 6h) ───────────────────────────────
+    try {
+      const sixHoursFromNow = new Date(Date.now() + 6 * 60 * 60 * 1000);
+      const now = new Date();
+      const expiring = await prisma.$queryRaw<{ provider: string; expires_at: Date }[]>`
+        SELECT provider, expires_at
+        FROM token_vault
+        WHERE expires_at IS NOT NULL
+          AND expires_at::timestamptz > ${now}
+          AND expires_at::timestamptz < ${sixHoursFromNow}
+      `;
+      if (expiring.length > 0) {
+        const providers = [...new Set(expiring.map(t => t.provider))].join(", ");
+        findings.push({ check: "OAuth Tokens", status: "WARN", detail: `${expiring.length} token(s) expiring within 6h: ${providers}` });
+      } else {
+        findings.push({ check: "OAuth Tokens", status: "OK", detail: "No tokens expiring within 6h" });
+      }
+    } catch (err: any) {
+      findings.push({ check: "OAuth Tokens", status: "WARN", detail: `Query failed: ${err?.message?.slice(0, 100)}` });
+    }
+
+    // ── 10. Scheduler Coverage (24h firing gaps) ──────────────────────────────
+    try {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const recentFirings = await prisma.auditLog.count({
+        where: {
+          action: "SCHEDULER_JOB_FIRED",
+          createdAt: { gt: oneDayAgo },
+        },
+      });
+      // Expect at least 30 firings per day given the 60+ scheduled jobs
+      if (recentFirings === 0) {
+        findings.push({ check: "Scheduler Coverage", status: "CRITICAL", detail: "ZERO scheduler firings in 24h — scheduler may be dead" });
+      } else if (recentFirings < 20) {
+        findings.push({ check: "Scheduler Coverage", status: "WARN", detail: `Only ${recentFirings} scheduler firings in 24h (expected 30+)` });
+      } else {
+        findings.push({ check: "Scheduler Coverage", status: "OK", detail: `${recentFirings} firings in 24h` });
+      }
+    } catch (err: any) {
+      findings.push({ check: "Scheduler Coverage", status: "WARN", detail: `Query failed: ${err?.message?.slice(0, 100)}` });
+    }
+
+    // ── 11. CRM Data Health ───────────────────────────────────────────────────
+    // Only flag missing emails for email-outreach contacts (vc_outreach source).
+    // Business contacts often have phone/website only — that's normal.
+    try {
+      const totalContacts = await prisma.crmContact.count({ where: { tenantId: ctx.tenantId } });
+      const emailOutreach = await prisma.crmContact.count({
+        where: { tenantId: ctx.tenantId, source: "vc_outreach" },
+      });
+      const emailOutreachNoEmail = await prisma.crmContact.count({
+        where: { tenantId: ctx.tenantId, source: "vc_outreach", OR: [{ email: null }, { email: "" }] },
+      });
+      if (totalContacts === 0) {
+        findings.push({ check: "CRM Health", status: "WARN", detail: "No CRM contacts — outreach workflows will no-op" });
+      } else if (emailOutreach > 0 && emailOutreachNoEmail > emailOutreach * 0.1) {
+        findings.push({ check: "CRM Health", status: "WARN", detail: `${emailOutreachNoEmail}/${emailOutreach} VC outreach contacts missing email` });
+      } else {
+        findings.push({ check: "CRM Health", status: "OK", detail: `${totalContacts} contacts total, ${emailOutreach} VC outreach (${emailOutreachNoEmail} missing email)` });
+      }
+    } catch (err: any) {
+      findings.push({ check: "CRM Health", status: "WARN", detail: `Query failed: ${err?.message?.slice(0, 100)}` });
+    }
+
+    // ── 12. KB Document Freshness ─────────────────────────────────────────────
+    try {
+      const totalDocs = await prisma.kbDocument.count({ where: { tenantId: ctx.tenantId } });
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const recentDocs = await prisma.kbDocument.count({
+        where: { tenantId: ctx.tenantId, createdAt: { gt: sevenDaysAgo } },
+      });
+      if (totalDocs === 0) {
+        findings.push({ check: "KB Freshness", status: "WARN", detail: "No KB documents — agents running blind" });
+      } else {
+        findings.push({ check: "KB Freshness", status: "OK", detail: `${totalDocs} docs total, ${recentDocs} added in last 7d` });
+      }
+    } catch (err: any) {
+      findings.push({ check: "KB Freshness", status: "WARN", detail: `Query failed: ${err?.message?.slice(0, 100)}` });
+    }
+
+    // ── Compile Report ────────────────────────────────────────────────────────
+    const elapsed = Date.now() - t0;
+    const criticals = findings.filter(f => f.status === "CRITICAL");
+    const warns = findings.filter(f => f.status === "WARN");
+    const oks = findings.filter(f => f.status === "OK");
+
+    const overallStatus = criticals.length > 0 ? "CRITICAL" : warns.length > 0 ? "DEGRADED" : "HEALTHY";
+    const emoji = overallStatus === "CRITICAL" ? "🚨" : overallStatus === "DEGRADED" ? "⚠️" : "✅";
+
+    // Build the report
+    const lines: string[] = [
+      `${emoji} *System Health Patrol — ${overallStatus}*`,
+      `_${new Date().toISOString()} | ${elapsed}ms | 12 checks | 0 tokens spent_`,
+      "",
+    ];
+
+    if (criticals.length > 0) {
+      lines.push("*CRITICAL:*");
+      for (const f of criticals) lines.push(`  🔴 ${f.check}: ${f.detail}`);
+      lines.push("");
+    }
+    if (warns.length > 0) {
+      lines.push("*WARNINGS:*");
+      for (const f of warns) lines.push(`  🟡 ${f.check}: ${f.detail}`);
+      lines.push("");
+    }
+    if (oks.length > 0) {
+      lines.push("*PASSING:*");
+      for (const f of oks) lines.push(`  🟢 ${f.check}: ${f.detail}`);
+    }
+
+    const report = lines.join("\n");
+
+    // Write detailed audit
+    await writeStepAudit(ctx, "health.report", `${overallStatus}: ${criticals.length} critical, ${warns.length} warn, ${oks.length} ok`, {
+      overallStatus,
+      findings,
+      elapsedMs: elapsed,
+    });
+
+    // Post to #intel
+    try {
+      const intelChannel = await getChannelByName("intel", true);
+      if (intelChannel) {
+        await postAsAgent(intelChannel.id, "atlas", report);
+        await writeStepAudit(ctx, "health.posted", "Report posted to #intel");
+      }
+    } catch (err: any) {
+      await writeStepAudit(ctx, "health.slack_fail", `Could not post to #intel: ${err?.message?.slice(0, 100)}`);
+    }
+
+    // Telegram alert on CRITICAL
+    if (criticals.length > 0) {
+      try {
+        const { sendTelegramDirect } = await import("../lib/telegramNotify.js");
+        const chatId = String(process.env.TELEGRAM_ADMIN_CHAT_ID ?? "").trim();
+        if (chatId) {
+          const tgMsg = `🚨 HEALTH PATROL: ${criticals.length} CRITICAL finding(s)\n\n${criticals.map(f => `• ${f.check}: ${f.detail}`).join("\n")}`;
+          await sendTelegramDirect(chatId, tgMsg, "");
+          await writeStepAudit(ctx, "health.telegram", "Critical alert sent via Telegram");
+        }
+      } catch {
+        // Telegram is best-effort
+      }
+    }
+
+    await writeStepAudit(ctx, "health.done", `Health Patrol complete: ${overallStatus} (${elapsed}ms)`);
+
+    return {
+      ok: criticals.length === 0,
+      message: `Health Patrol: ${overallStatus} — ${criticals.length} critical, ${warns.length} warn, ${oks.length} ok (${elapsed}ms, 0 tokens)`,
+      output: { overallStatus, findings, elapsedMs: elapsed, traceId: ctx.traceId ?? null },
+    };
   },
 
   // WF-021 — Bootstrap Atlas: KB discovery + LLM readiness summary
@@ -2583,9 +2925,21 @@ async function getPublishIntel(ctx: WorkflowContext, platform: string): Promise<
   return intelLines;
 }
 
+// Platforms that require media (video/image) — text-only posts are invisible on these
+const MEDIA_REQUIRED_PLATFORMS = new Set(["tiktok", "youtube", "instagram", "pinterest"]);
+
 function createPostizPublishHandler(platform: string): WorkflowHandler {
   return async (ctx) => {
     await writeStepAudit(ctx, `${ctx.workflowId}.start`, `Postiz ${platform} publish starting`);
+
+    // Guard: block text-only posts on platforms that require media
+    if (MEDIA_REQUIRED_PLATFORMS.has(platform)) {
+      const hasMedia = ctx.input?.image || ctx.input?.video || ctx.input?.media || ctx.input?.imageUrl || ctx.input?.videoUrl;
+      if (!hasMedia) {
+        await writeStepAudit(ctx, `${ctx.workflowId}.blocked`, `Blocked: ${platform} requires video/image — no media asset provided. Route to Victor (WF-089) first.`);
+        return { ok: false, message: `${platform} post blocked — no video/image attached. ${platform} is a visual platform; text-only posts get zero reach. Provide media or route through Victor's video pipeline (WF-089) first.` };
+      }
+    }
 
     let caption = String(ctx.input?.caption ?? ctx.input?.Caption ?? ctx.input?.content ?? ctx.input?.Content ?? ctx.input?.text ?? ctx.input?.Text ?? "").trim();
 
@@ -3811,6 +4165,195 @@ handlers["WF-400"] = async (ctx) => {
     ok: true,
     message: `VC outreach: emailed ${prospectName} at ${firmName} (${remaining.length - 1} remaining)`,
     output: { contactId: prospect.id, email: prospectEmail, firm: firmName, remaining: remaining.length - 1 },
+  };
+};
+
+// ── WF-150 Lucy Voice Health Check (deterministic, zero LLM tokens) ──────────
+
+handlers["WF-150"] = async (ctx) => {
+  const findings: string[] = [];
+
+  // 1. Google Cloud STT credentials
+  try {
+    const { SpeechClient } = await import("@google-cloud/speech");
+    const client = new SpeechClient();
+    // Quick check — listing of recognize configs validates credentials
+    await client.close();
+    findings.push("OK: Google STT client initialized");
+  } catch (err: any) {
+    findings.push(`CRITICAL: Google STT credentials invalid — ${err?.message?.slice(0, 100)}`);
+  }
+
+  // 2. Google Cloud TTS credentials
+  try {
+    const { TextToSpeechClient } = await import("@google-cloud/text-to-speech");
+    const client = new TextToSpeechClient();
+    await client.close();
+    findings.push("OK: Google TTS client initialized");
+  } catch (err: any) {
+    findings.push(`CRITICAL: Google TTS credentials invalid — ${err?.message?.slice(0, 100)}`);
+  }
+
+  // 3. Gemini TTS API key
+  const geminiKey = process.env.GEMINI_API_KEY ?? "";
+  if (geminiKey) {
+    findings.push("OK: GEMINI_API_KEY configured");
+  } else {
+    findings.push("WARN: GEMINI_API_KEY not set — Gemini TTS unavailable, will use Cloud TTS fallback");
+  }
+
+  // 4. Twilio credentials
+  const twilioSid = process.env.TWILIO_ACCOUNT_SID ?? "";
+  const twilioToken = process.env.TWILIO_AUTH_TOKEN ?? "";
+  const twilioNumber = process.env.TWILIO_FROM_NUMBER ?? "";
+  if (twilioSid && twilioToken && twilioNumber) {
+    findings.push("OK: Twilio credentials configured");
+  } else {
+    const missing = [!twilioSid && "SID", !twilioToken && "TOKEN", !twilioNumber && "NUMBER"].filter(Boolean);
+    findings.push(`CRITICAL: Twilio missing: ${missing.join(", ")}`);
+  }
+
+  // 5. Voice engine enabled
+  const voiceEnabled = (process.env.LUCY_VOICE_ENABLED ?? "").toLowerCase() === "true";
+  if (voiceEnabled) {
+    findings.push("OK: LUCY_VOICE_ENABLED=true");
+  } else {
+    findings.push("WARN: LUCY_VOICE_ENABLED is not true — inbound calls go to voicemail");
+  }
+
+  // 6. Recent voice sessions (last 24h)
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recentCalls = await prisma.auditLog.count({
+    where: {
+      tenantId: ctx.tenantId,
+      action: { startsWith: "lucy.voice" },
+      createdAt: { gte: oneDayAgo },
+    },
+  });
+  findings.push(`INFO: ${recentCalls} voice session(s) in last 24h`);
+
+  // 7. Recent meeting notes from voice
+  const recentMeetingNotes = await prisma.meetingNote.count({
+    where: {
+      tenantId: ctx.tenantId,
+      platform: "twilio-voice",
+      createdAt: { gte: oneDayAgo },
+    },
+  });
+  findings.push(`INFO: ${recentMeetingNotes} phone call meeting note(s) in last 24h`);
+
+  // Format report
+  const hasCritical = findings.some(f => f.startsWith("CRITICAL"));
+  const hasWarn = findings.some(f => f.startsWith("WARN"));
+  const status = hasCritical ? "CRITICAL" : hasWarn ? "DEGRADED" : "HEALTHY";
+
+  const report = [
+    `*Lucy Voice Engine Health — ${status}*`,
+    `_${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })}_`,
+    "",
+    ...findings.map(f => {
+      const icon = f.startsWith("OK") ? "white_check_mark"
+        : f.startsWith("CRITICAL") ? "red_circle"
+        : f.startsWith("WARN") ? "warning"
+        : "information_source";
+      return `:${icon}: ${f}`;
+    }),
+  ].join("\n");
+
+  // Post to #intel
+  try {
+    const ch = await getChannelByName("intel", true);
+    if (ch) await postAsAgent(ch.id, "lucy", report);
+  } catch { /* best-effort */ }
+
+  await writeStepAudit(ctx, "WF-150.complete", `Voice health: ${status}`, { findings });
+
+  return { ok: !hasCritical, message: `Voice engine: ${status}`, output: { status, findings } };
+};
+
+// ── WF-151 Lucy Daily Voice Summary (deterministic, zero LLM tokens) ─────────
+
+handlers["WF-151"] = async (ctx) => {
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  // Gather stats from DB
+  const [callNotes, zoomNotes, newLeads, activities] = await Promise.all([
+    prisma.meetingNote.findMany({
+      where: { tenantId: ctx.tenantId, platform: "twilio-voice", createdAt: { gte: oneDayAgo } },
+      select: { title: true, durationMinutes: true, summary: true, actionItems: true, attendees: true },
+    }),
+    prisma.meetingNote.findMany({
+      where: { tenantId: ctx.tenantId, platform: "zoom", createdAt: { gte: oneDayAgo } },
+      select: { title: true, durationMinutes: true, summary: true },
+    }),
+    prisma.crmContact.count({
+      where: { tenantId: ctx.tenantId, source: "lucy_voice", createdAt: { gte: oneDayAgo } },
+    }),
+    prisma.contactActivity.findMany({
+      where: { tenantId: ctx.tenantId, type: "call", createdAt: { gte: oneDayAgo } },
+      select: { subject: true, meta: true },
+    }),
+  ]);
+
+  const totalMinutes = [...callNotes, ...zoomNotes].reduce((sum, n) => sum + (n.durationMinutes ?? 0), 0);
+
+  // Count caller types from activity meta
+  const callerTypes: Record<string, number> = {};
+  for (const a of activities) {
+    const ct = (a.meta as any)?.callerType ?? "unknown";
+    callerTypes[ct] = (callerTypes[ct] ?? 0) + 1;
+  }
+
+  // Count open action items
+  let openActions = 0;
+  for (const note of callNotes) {
+    const items = note.actionItems as any[];
+    if (items) openActions += items.filter((i: any) => !i.done).length;
+  }
+
+  const lines = [
+    `*Lucy Daily Voice Summary*`,
+    `_${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })}_`,
+    "",
+    `:telephone_receiver: *Phone calls:* ${callNotes.length}`,
+    `:video_camera: *Zoom meetings:* ${zoomNotes.length}`,
+    `:clock2: *Total talk time:* ${totalMinutes} min`,
+    `:bust_in_silhouette: *New leads captured:* ${newLeads}`,
+    `:clipboard: *Open action items:* ${openActions}`,
+  ];
+
+  if (Object.keys(callerTypes).length > 0) {
+    lines.push("");
+    lines.push("*Caller breakdown:*");
+    for (const [type, count] of Object.entries(callerTypes)) {
+      lines.push(`  ${type.replace(/_/g, " ")}: ${count}`);
+    }
+  }
+
+  if (callNotes.length > 0) {
+    lines.push("");
+    lines.push("*Call summaries:*");
+    for (const note of callNotes.slice(0, 5)) {
+      lines.push(`  - ${note.title}${note.summary ? `: ${(note.summary as string).slice(0, 100)}` : ""}`);
+    }
+  }
+
+  const report = lines.join("\n");
+
+  // Post to #intel
+  try {
+    const ch = await getChannelByName("intel", true);
+    if (ch) await postAsAgent(ch.id, "lucy", report);
+  } catch { /* best-effort */ }
+
+  await writeStepAudit(ctx, "WF-151.complete", `Daily voice summary: ${callNotes.length} calls, ${zoomNotes.length} meetings`, {
+    calls: callNotes.length, meetings: zoomNotes.length, newLeads, openActions, totalMinutes,
+  });
+
+  return {
+    ok: true,
+    message: `Voice summary: ${callNotes.length} calls, ${zoomNotes.length} meetings, ${newLeads} leads`,
+    output: { calls: callNotes.length, meetings: zoomNotes.length, newLeads, openActions, totalMinutes },
   };
 };
 

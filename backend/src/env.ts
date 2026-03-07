@@ -93,6 +93,14 @@ const EnvSchema = z.object({
   TWILIO_API_KEY_SID:    z.string().optional(),
   TWILIO_API_KEY_SECRET: z.string().optional(),
 
+  // Voice Engine (Lucy)
+  GOOGLE_CLOUD_PROJECT_ID:        z.string().optional(),
+  GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
+  LUCY_VOICE_ENABLED:             z.string().optional(),
+  LUCY_VOICE_NAME:                z.string().optional(),
+  LUCY_VOICE_SPEAKING_RATE:       z.string().optional(),
+  LUCY_MAX_CONCURRENT_SESSIONS:   z.string().optional(),
+
   // Stripe
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),

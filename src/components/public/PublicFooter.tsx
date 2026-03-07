@@ -288,6 +288,13 @@ export default function PublicFooter() {
               >
                 Terms
               </Link>
+              <span className="text-white/30">·</span>
+              <a
+                href="tel:+15737422028"
+                className="text-sm text-white/80 hover:text-white hover:underline"
+              >
+                Call Lucy: 573.742.2028
+              </a>
             </div>
           </div>
 

@@ -30,7 +30,6 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
       const requestId = String(req.headers["x-request-id"] ?? req.id ?? "");
       const now = new Date();
       const tenantId = (req as any).tenantId ?? null;
-      const actorUserId = (req as any).auth?.userId ?? null;
       const action = `${req.method} ${req.url}`;
 
       // Compute hash chain fields (SOC 2 CC7.2, NIST AU-10)
@@ -41,7 +40,7 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
           action,
           entityId: null,
           timestamp: now,
-          actorUserId,
+          actorUserId: null,
         });
       } catch {
         // Non-fatal — hash chain columns may not exist yet
@@ -49,7 +48,6 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
 
       const base = {
         actorType: "system",
-        actorUserId,
         actorExternalId: null,
         level: level as any,
         action,

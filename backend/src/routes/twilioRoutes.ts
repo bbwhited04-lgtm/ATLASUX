@@ -16,6 +16,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { createHmac } from "crypto";
 import { prisma } from "../db/prisma.js";
+import { handleTwilioMediaStream } from "../voice/twilioStream.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -197,6 +198,24 @@ export const twilioRoutes: FastifyPluginAsync = async (app) => {
       }
 
       reply.header("Content-Type", "text/xml");
+
+      // Route to Lucy Voice Engine if enabled, otherwise voicemail
+      const voiceEnabled = (process.env.LUCY_VOICE_ENABLED ?? "").toLowerCase() === "true";
+      if (voiceEnabled) {
+        // Build WebSocket URL for Twilio <Connect><Stream>
+        const proto = (req.headers["x-forwarded-proto"] as string) ?? "https";
+        const host = req.headers.host ?? "localhost:8787";
+        const wsProto = proto === "https" ? "wss" : "ws";
+        const streamUrl = `${wsProto}://${host}/v1/twilio/voice/stream`;
+
+        return twiml(
+          `<Connect><Stream url="${streamUrl}">` +
+          `<Parameter name="from" value="${from}" />` +
+          `</Stream></Connect>`,
+        );
+      }
+
+      // Fallback: voicemail
       return twiml(
         `<Say voice="Polly.Joanna">Thank you for calling Atlas UX. Please leave a message after the beep and we'll get back to you shortly.</Say>` +
         `<Record maxLength="120" action="/v1/twilio/voice/recording" transcribe="false" />` +
@@ -268,6 +287,11 @@ export const twilioRoutes: FastifyPluginAsync = async (app) => {
         `<Say voice="Polly.Joanna">Thank you. Goodbye.</Say><Hangup/>`,
       );
     });
+  });
+
+  // ── WebSocket: Lucy Voice Stream ──────────────────────────────────────────
+  app.get("/voice/stream", { websocket: true }, (socket) => {
+    handleTwilioMediaStream(socket);
   });
 
   // ── API endpoints (JSON, auth required) ──────────────────────────────────

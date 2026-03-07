@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
+import websocket from "@fastify/websocket";
 import "dotenv/config";
 import { prisma } from "./db/prisma.js";
 
@@ -211,6 +212,7 @@ await app.register(helmet, {
 });
 
 await app.register(rateLimit, { max: 60, timeWindow: "1 minute" });
+await app.register(websocket);
 
 // Gate routes — registered before auth (public validate + admin key-based)
 await app.register(gateRoutes, { prefix: "/v1/gate" });

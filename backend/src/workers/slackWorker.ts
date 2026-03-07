@@ -7,7 +7,9 @@
  *   - Thread reply detection — agents respond to new thread activity
  *   - DM polling — Atlas responds to direct messages (every 3rd tick)
  *   - Workspace directory — caches user info for display names
- *   - Agent-to-agent chatter — 25% chance agents react to each other
+ *   - Agent-to-agent chatter — 25% chance agents react to each other (30s cooldown in casual channels, 60s elsewhere)
+ *   - Spontaneous agent thoughts — 15% chance per tick during business hours (8am-6pm CT)
+ *   - Emoji reactions — 30% chance another agent reacts to a responded message
  *   - Workflow detection — "run WF-xxx" triggers engine intents
  *
  * Env:
@@ -28,6 +30,7 @@ import {
   listWorkspaceUsers,
   downloadFile,
   downloadFileBuffer,
+  addReaction,
   type SlackMessage,
   type SlackChannel,
   type SlackUser,
@@ -70,8 +73,18 @@ const SUMMARY_MESSAGE_COUNT = 50; // how many messages to summarize
 
 // Anti-spiral: track when the last agent-to-agent reply happened per channel
 const lastAgentReplyByChannel = new Map<string, number>();
-const AGENT_CHATTER_COOLDOWN_MS = 60_000; // 60s cooldown between agent-to-agent replies per channel
-const MAX_AGENT_CHATTER_PER_TICK = 1; // max 1 agent-to-agent reply per tick across all channels
+const AGENT_CHATTER_COOLDOWN_MS = 60_000; // 60s default cooldown between agent-to-agent replies per channel
+const CASUAL_CHATTER_COOLDOWN_MS = 30_000; // 30s cooldown for casual channels (#water-cooler, #restroom)
+const CASUAL_CHANNELS = new Set(["water-cooler", "restroom"]);
+const MAX_AGENT_CHATTER_PER_TICK = 2; // max 2 agent-to-agent replies per tick across all channels
+
+// Emoji reactions — 30% chance another agent reacts after a response
+const REACTION_EMOJIS = ["thumbsup", "fire", "100", "eyes", "brain", "rocket", "bulb", "raised_hands"];
+const REACTION_CHANCE = 0.30;
+
+// Spontaneous agent thoughts — 15% chance per tick during business hours
+const SPONTANEOUS_THOUGHT_CHANCE = 0.15;
+const SPONTANEOUS_CHANNELS = ["water-cooler", "intel"];
 let agentChatterThisTick = 0;
 
 // File ingestion state — track which Slack file IDs we've already processed
@@ -360,6 +373,80 @@ async function queueWorkflow(
   );
 }
 
+// ── Spontaneous agent thoughts ────────────────────────────────────────────
+
+/**
+ * Check if it's currently business hours (8am-6pm Central Time).
+ * CT is UTC-6 (CST) or UTC-5 (CDT). We approximate with UTC-6.
+ * So business hours = 14:00-00:00 UTC.
+ */
+function isBusinessHours(): boolean {
+  const utcHour = new Date().getUTCHours();
+  return utcHour >= 14 || utcHour === 0; // 14:00 UTC = 8am CT, 00:00 UTC = 6pm CT
+}
+
+/**
+ * Fire a spontaneous agent thought in a casual channel.
+ * Called once per tick during business hours with a 15% chance.
+ * A random agent shares a brief thought related to their role.
+ */
+async function maybeSpontaneousThought(): Promise<void> {
+  if (!isBusinessHours()) return;
+  if (Math.random() >= SPONTANEOUS_THOUGHT_CHANCE) return;
+
+  // Pick a random casual channel
+  const targetChannelName = SPONTANEOUS_CHANNELS[Math.floor(Math.random() * SPONTANEOUS_CHANNELS.length)];
+
+  // Resolve the channel
+  let channel = cachedChannels.get(targetChannelName);
+  if (!channel) {
+    try {
+      const found = await getChannelByName(targetChannelName, true);
+      if (!found) return;
+      channel = found;
+      cachedChannels.set(targetChannelName, channel);
+    } catch {
+      return;
+    }
+  }
+
+  // Pick a random agent (exclude chairman)
+  const candidates = agentRegistry.filter((a) => a.id !== "chairman");
+  const agent = candidates[Math.floor(Math.random() * candidates.length)];
+  if (!agent) return;
+
+  try {
+    const response = await runLLM({
+      runId: `spontaneous-${agent.id}-${Date.now()}`,
+      agent: agent.id.toUpperCase(),
+      purpose: "spontaneous_thought",
+      route: "DRAFT_GENERATION_FAST",
+      preferredProvider: "anthropic",
+      preferredModel: "claude-sonnet-4-20250514",
+      messages: [
+        {
+          role: "system",
+          content: buildSystemPrompt(agent, targetChannelName),
+        },
+        {
+          role: "user",
+          content: `Share a brief thought, observation, or interesting find related to your role as ${agent.name} (${agent.title}). 1-2 sentences max. Be casual and conversational — this is the #${targetChannelName} channel. Don't start with "Hey" or greetings. Just share something you're thinking about, working on, or noticed.`,
+        },
+      ],
+    });
+
+    const thought = response.text.trim();
+    if (!thought) return;
+
+    const result = await postAsAgent(channel.id, agent.id, thought);
+    if (result.ok) {
+      console.log(`[slackWorker] Spontaneous thought from ${agent.name} in #${targetChannelName} (${thought.length} chars)`);
+    }
+  } catch (err: any) {
+    console.error(`[slackWorker] Spontaneous thought error: ${err?.message ?? err}`);
+  }
+}
+
 // ── Core tick ─────────────────────────────────────────────────────────────────
 
 async function tick() {
@@ -400,6 +487,9 @@ async function tick() {
   if (dmTickCounter % 5 === 0) {
     await tickDMs();
   }
+
+  // Spontaneous agent thoughts — fires during business hours with 15% chance per tick
+  await maybeSpontaneousThought();
 }
 
 async function tickChannel(channelName: string) {
@@ -471,21 +561,22 @@ async function tickChannel(channelName: string) {
   // Human messages always get a response
   const humanMessages = newMessages.filter((m) => !m.bot_id);
 
-  // Agent-to-agent chatter: heavily throttled to prevent death spirals
-  // - Only 10% chance (down from 25%)
-  // - Cooldown per channel (60s between agent replies)
-  // - Global cap of 1 agent-to-agent reply per tick
+  // Agent-to-agent chatter: throttled to prevent death spirals
+  // - 25% chance per agent message
+  // - Cooldown per channel (30s for casual channels, 60s for others)
+  // - Global cap of 2 agent-to-agent replies per tick
   // - Skip entirely if last 5 messages are all bots (conversation is agent-only)
   const lastAgentReply = lastAgentReplyByChannel.get(channelName) ?? 0;
-  const cooldownOk = Date.now() - lastAgentReply > AGENT_CHATTER_COOLDOWN_MS;
+  const channelCooldown = CASUAL_CHANNELS.has(channelName) ? CASUAL_CHATTER_COOLDOWN_MS : AGENT_CHATTER_COOLDOWN_MS;
+  const cooldownOk = Date.now() - lastAgentReply > channelCooldown;
   const globalCapOk = agentChatterThisTick < MAX_AGENT_CHATTER_PER_TICK;
   const recentAreBots = contextMessages.length > 0 && contextMessages.slice(0, 5).every((m) => !!m.bot_id);
 
   let agentChatter: SlackMessage[] = [];
   if (cooldownOk && globalCapOk && !recentAreBots) {
     const agentMessages = newMessages.filter((m) => !!m.bot_id);
-    agentChatter = agentMessages.filter(() => Math.random() < 0.10);
-    // Take at most 1
+    agentChatter = agentMessages.filter(() => Math.random() < 0.25);
+    // Take at most 1 per channel per tick
     agentChatter = agentChatter.slice(0, 1);
   }
 
@@ -575,6 +666,20 @@ async function tickChannel(channelName: string) {
         if (isAgentMsg) {
           lastAgentReplyByChannel.set(channelName, Date.now());
           agentChatterThisTick++;
+        }
+
+        // Emoji reaction: 30% chance another random agent reacts to the original message
+        if (Math.random() < REACTION_CHANCE) {
+          const emoji = REACTION_EMOJIS[Math.floor(Math.random() * REACTION_EMOJIS.length)];
+          try {
+            const reacted = await addReaction(channelId, msg.ts, emoji);
+            if (reacted) {
+              console.log(`[slackWorker] Added :${emoji}: reaction to message`);
+            }
+          } catch (reactErr: any) {
+            // Non-fatal — already_reacted or other errors are fine to swallow
+            console.debug(`[slackWorker] Reaction failed: ${reactErr?.message ?? reactErr}`);
+          }
         }
       } else {
         console.error(

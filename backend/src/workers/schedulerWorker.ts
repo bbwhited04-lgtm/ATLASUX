@@ -599,6 +599,33 @@ function buildJobs(): ScheduledJob[] {
       hourUTC: 22, minuteUTC: 0, dayOfWeek: 5,
       hookFn: () => calibrateAllAgents(RESOLVED_TENANT_ID),
     },
+
+    // ── DAILY: System Health Patrol (06:00 AM PST = 14:00 UTC) ────────────────
+    {
+      id: "atlas-health-patrol",
+      label: "Atlas System Health Patrol (WF-020)",
+      agentId: "atlas", workflowId: "WF-020",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 14, minuteUTC: 0,
+    },
+
+    // ── DAILY: Lucy Voice Health Check (05:45 AM PST = 13:45 UTC) ────────────
+    {
+      id: "lucy-voice-health",
+      label: "Lucy Voice Engine Health Check (WF-150)",
+      agentId: "lucy", workflowId: "WF-150",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 13, minuteUTC: 45,
+    },
+
+    // ── DAILY: Lucy Voice Summary (05:00 PM PST = 01:00 UTC next day) ────────
+    {
+      id: "lucy-voice-summary",
+      label: "Lucy Daily Voice Summary (WF-151)",
+      agentId: "lucy", workflowId: "WF-151",
+      payload: { triggeredBy: "scheduler" },
+      hourUTC: 1, minuteUTC: 0,
+    },
   ];
 }
 
