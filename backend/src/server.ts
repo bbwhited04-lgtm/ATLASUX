@@ -4,7 +4,17 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import websocket from "@fastify/websocket";
 import "dotenv/config";
+import { writeFileSync, existsSync } from "fs";
 import { prisma } from "./db/prisma.js";
+
+// Bootstrap Google credentials from base64 env var (for Render/cloud deploys)
+if (process.env.GOOGLE_CREDENTIALS_BASE64 && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  const credPath = "/tmp/gcloud-credentials.json";
+  if (!existsSync(credPath)) {
+    writeFileSync(credPath, Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, "base64"));
+  }
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = credPath;
+}
 
 // Plugins
 import auditPlugin from "./plugins/auditPlugin.js";

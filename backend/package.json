@@ -26,7 +26,8 @@
     "kb:seed-docs": "npx tsx src/scripts/seedKbFromDocs.ts",
     "kb:seed-ai": "npx tsx src/scripts/seedAiKb.ts",
     "seed:agents": "npx tsx src/scripts/seedAgents.ts",
-    "kb:import-vc": "tsx src/scripts/importVcContacts.ts"
+    "kb:import-vc": "tsx src/scripts/importVcContacts.ts",
+    "lucy:dev": "bash scripts/lucy-dev.sh"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

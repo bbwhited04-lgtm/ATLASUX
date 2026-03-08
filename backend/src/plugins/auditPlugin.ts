@@ -64,26 +64,12 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
         userAgent: (req.headers["user-agent"] as string) || null,
       };
 
-      // Attempt 1: schema with status/ip/userAgent/metadata as top-level columns
-      try {
-        await prisma.auditLog.create({
-          data: {
-            ...base,
-            status: reply.statusCode >= 400 ? "FAILED" : "SUCCESS",
-            ipAddress: sharedMeta.ipAddress,
-            userAgent: sharedMeta.userAgent,
-            metadata: sharedMeta,
-          } as any,
-        });
-      } catch (_e1) {
-        // Attempt 2: schema where everything is stored in a single JSON field (meta)
-        await prisma.auditLog.create({
-          data: {
-            ...base,
-            meta: sharedMeta,
-          } as any,
-        });
-      }
+      await prisma.auditLog.create({
+        data: {
+          ...base,
+          meta: sharedMeta,
+        } as any,
+      });
 
     } catch (err) {
       // Never fail the request because audit logging failed.
