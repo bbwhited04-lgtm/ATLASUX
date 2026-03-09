@@ -12,8 +12,15 @@ let ttsClient: TextToSpeechClient | null = null;
 
 function getClient(): TextToSpeechClient {
   if (!ttsClient) {
+    const inlineJson = process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT || "";
     const keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
-    if (keyFile) {
+    if (inlineJson) {
+      const creds = JSON.parse(inlineJson);
+      ttsClient = new TextToSpeechClient({
+        projectId: creds.project_id,
+        credentials: { client_email: creds.client_email, private_key: creds.private_key },
+      });
+    } else if (keyFile) {
       const creds = JSON.parse(readFileSync(keyFile, "utf8"));
       ttsClient = new TextToSpeechClient({
         projectId: creds.project_id,

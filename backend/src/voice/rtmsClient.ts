@@ -52,15 +52,19 @@ const activeSessions = new Map<string, RTMSSession>();
 let sttClient: SpeechClient | null = null;
 function getSTTClient(): SpeechClient {
   if (!sttClient) {
+    const inlineJson = process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT || "";
     const keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
-    if (keyFile) {
+    if (inlineJson) {
+      const creds = JSON.parse(inlineJson);
+      sttClient = new SpeechClient({
+        projectId: creds.project_id,
+        credentials: { client_email: creds.client_email, private_key: creds.private_key },
+      });
+    } else if (keyFile) {
       const creds = JSON.parse(readFileSync(keyFile, "utf8"));
       sttClient = new SpeechClient({
         projectId: creds.project_id,
-        credentials: {
-          client_email: creds.client_email,
-          private_key: creds.private_key,
-        },
+        credentials: { client_email: creds.client_email, private_key: creds.private_key },
       });
     } else {
       sttClient = new SpeechClient();

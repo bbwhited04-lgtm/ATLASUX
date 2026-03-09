@@ -32,9 +32,22 @@ import { processEndedSession } from "./postCallProcessor.js";
 let sttClient: SpeechClient | null = null;
 function getSTTClient(): SpeechClient {
   if (!sttClient) {
+    // Try inline JSON first (for Render/cloud), then file path (local dev)
+    const inlineJson = process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT || "";
     const keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
-    console.log(`[lucy-phone] STT init with keyFile: ${keyFile}`);
-    if (keyFile) {
+
+    if (inlineJson) {
+      console.log("[lucy-phone] STT init with inline service account JSON");
+      const creds = JSON.parse(inlineJson);
+      sttClient = new SpeechClient({
+        projectId: creds.project_id,
+        credentials: {
+          client_email: creds.client_email,
+          private_key: creds.private_key,
+        },
+      });
+    } else if (keyFile) {
+      console.log(`[lucy-phone] STT init with keyFile: ${keyFile}`);
       const creds = JSON.parse(readFileSync(keyFile, "utf8"));
       sttClient = new SpeechClient({
         projectId: creds.project_id,
@@ -44,6 +57,7 @@ function getSTTClient(): SpeechClient {
         },
       });
     } else {
+      console.log("[lucy-phone] STT init with default credentials");
       sttClient = new SpeechClient();
     }
   }

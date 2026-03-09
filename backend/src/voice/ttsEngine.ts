@@ -20,15 +20,19 @@ const GEMINI_TTS_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/mo
 let cloudTtsClient: TextToSpeechClient | null = null;
 function getCloudTtsClient(): TextToSpeechClient {
   if (!cloudTtsClient) {
+    const inlineJson = process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT || "";
     const keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
-    if (keyFile) {
+    if (inlineJson) {
+      const creds = JSON.parse(inlineJson);
+      cloudTtsClient = new TextToSpeechClient({
+        projectId: creds.project_id,
+        credentials: { client_email: creds.client_email, private_key: creds.private_key },
+      });
+    } else if (keyFile) {
       const creds = JSON.parse(readFileSync(keyFile, "utf8"));
       cloudTtsClient = new TextToSpeechClient({
         projectId: creds.project_id,
-        credentials: {
-          client_email: creds.client_email,
-          private_key: creds.private_key,
-        },
+        credentials: { client_email: creds.client_email, private_key: creds.private_key },
       });
     } else {
       cloudTtsClient = new TextToSpeechClient();
