@@ -17,6 +17,8 @@ import type { FastifyPluginAsync } from "fastify";
 import { createHmac } from "crypto";
 import { prisma } from "../db/prisma.js";
 import { handleTwilioMediaStream } from "../voice/twilioStream.js";
+import { handleMercerMediaStream } from "../voice/mercerStream.js";
+import { startDialingSession, dialSingle, getDialerStatus, stopDialingSession } from "../voice/outboundDialer.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -294,7 +296,49 @@ export const twilioRoutes: FastifyPluginAsync = async (app) => {
     handleTwilioMediaStream(socket);
   });
 
+  // ── WebSocket: Mercer Outbound Voice Stream ────────────────────────────────
+  app.get("/voice/mercer-stream", { websocket: true }, (socket, req) => {
+    // Contact info is passed via Twilio Stream parameters
+    const params = (req.query as any) ?? {};
+    const contactInfo = {
+      phone: String(params.contactPhone ?? "unknown"),
+      name: String(params.contactName ?? "Unknown"),
+      contactId: params.contactId ? String(params.contactId) : undefined,
+    };
+    handleMercerMediaStream(socket, contactInfo);
+  });
+
   // ── API endpoints (JSON, auth required) ──────────────────────────────────
+
+  // ── Mercer Outbound Dialer ──────────────────────────────────────────────
+
+  // POST /outbound/start — start a batch dialing session
+  app.post("/outbound/start", async (req) => {
+    const body = req.body as any;
+    return startDialingSession({
+      tags: body?.tags,
+      limit: body?.limit,
+      source: body?.source,
+    });
+  });
+
+  // POST /outbound/single — dial a single CRM contact
+  app.post("/outbound/single", async (req) => {
+    const body = req.body as any;
+    const contactId = String(body?.contactId ?? "").trim();
+    if (!contactId) return { ok: false, error: "contactId is required" };
+    return dialSingle(contactId);
+  });
+
+  // GET /outbound/status — check dialer status
+  app.get("/outbound/status", async () => {
+    return getDialerStatus();
+  });
+
+  // POST /outbound/stop — stop current dialing session
+  app.post("/outbound/stop", async () => {
+    return stopDialingSession();
+  });
 
   // POST /call — place outbound call
   app.post("/call", async (req) => {

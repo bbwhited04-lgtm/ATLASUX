@@ -78,6 +78,7 @@ import { getSystemState, setSystemState } from "../services/systemState.js";
 import { runSlackHook } from "../core/orgBrain/slackHook.js";
 import { runDecisionHook } from "../core/orgBrain/decisionHook.js";
 import { calibrateAllAgents } from "../core/orgBrain/calibration.js";
+import { startDialingSession } from "../voice/outboundDialer.js";
 
 const POLL_MS = Math.max(15_000, Number(process.env.SCHEDULER_POLL_MS ?? 60_000));
 const TENANT_ID = process.env.TENANT_ID ?? "";
@@ -491,6 +492,90 @@ function buildJobs(): ScheduledJob[] {
       agentId: "binky", workflowId: "WF-400",
       payload: { triggeredBy: "scheduler" },
       hourUTC: 21, minuteUTC: 0, // 3pm CT
+    },
+
+    // ── Daily: Mercer Outbound Cold Calling (Mon-Fri, business hours CST) ────
+    // 9 AM CST = 15:00 UTC — Morning batch (20 companies)
+    {
+      id: "mercer-outbound-morning",
+      label: "Mercer Outbound Cold Call Morning Batch (WF-121)",
+      agentId: "mercer", workflowId: "WF-121",
+      payload: {},
+      hourUTC: 15, minuteUTC: 0, dayOfWeek: 1, // Monday
+      hookFn: () => startDialingSession({ target: "companies", limit: 20 }),
+    },
+    {
+      id: "mercer-outbound-morning-tue",
+      label: "Mercer Outbound Cold Call Morning Batch (WF-121)",
+      agentId: "mercer", workflowId: "WF-121",
+      payload: {},
+      hourUTC: 15, minuteUTC: 0, dayOfWeek: 2, // Tuesday
+      hookFn: () => startDialingSession({ target: "companies", limit: 20 }),
+    },
+    {
+      id: "mercer-outbound-morning-wed",
+      label: "Mercer Outbound Cold Call Morning Batch (WF-121)",
+      agentId: "mercer", workflowId: "WF-121",
+      payload: {},
+      hourUTC: 15, minuteUTC: 0, dayOfWeek: 3, // Wednesday
+      hookFn: () => startDialingSession({ target: "companies", limit: 20 }),
+    },
+    {
+      id: "mercer-outbound-morning-thu",
+      label: "Mercer Outbound Cold Call Morning Batch (WF-121)",
+      agentId: "mercer", workflowId: "WF-121",
+      payload: {},
+      hourUTC: 15, minuteUTC: 0, dayOfWeek: 4, // Thursday
+      hookFn: () => startDialingSession({ target: "companies", limit: 20 }),
+    },
+    {
+      id: "mercer-outbound-morning-fri",
+      label: "Mercer Outbound Cold Call Morning Batch (WF-121)",
+      agentId: "mercer", workflowId: "WF-121",
+      payload: {},
+      hourUTC: 15, minuteUTC: 0, dayOfWeek: 5, // Friday
+      hookFn: () => startDialingSession({ target: "companies", limit: 20 }),
+    },
+    // 1 PM CST = 19:00 UTC — Afternoon batch (20 companies)
+    {
+      id: "mercer-outbound-afternoon",
+      label: "Mercer Outbound Cold Call Afternoon Batch (WF-122)",
+      agentId: "mercer", workflowId: "WF-122",
+      payload: {},
+      hourUTC: 19, minuteUTC: 30, dayOfWeek: 1,
+      hookFn: () => startDialingSession({ target: "companies", limit: 20 }),
+    },
+    {
+      id: "mercer-outbound-afternoon-tue",
+      label: "Mercer Outbound Cold Call Afternoon Batch (WF-122)",
+      agentId: "mercer", workflowId: "WF-122",
+      payload: {},
+      hourUTC: 19, minuteUTC: 30, dayOfWeek: 2,
+      hookFn: () => startDialingSession({ target: "companies", limit: 20 }),
+    },
+    {
+      id: "mercer-outbound-afternoon-wed",
+      label: "Mercer Outbound Cold Call Afternoon Batch (WF-122)",
+      agentId: "mercer", workflowId: "WF-122",
+      payload: {},
+      hourUTC: 19, minuteUTC: 30, dayOfWeek: 3,
+      hookFn: () => startDialingSession({ target: "companies", limit: 20 }),
+    },
+    {
+      id: "mercer-outbound-afternoon-thu",
+      label: "Mercer Outbound Cold Call Afternoon Batch (WF-122)",
+      agentId: "mercer", workflowId: "WF-122",
+      payload: {},
+      hourUTC: 19, minuteUTC: 30, dayOfWeek: 4,
+      hookFn: () => startDialingSession({ target: "companies", limit: 20 }),
+    },
+    {
+      id: "mercer-outbound-afternoon-fri",
+      label: "Mercer Outbound Cold Call Afternoon Batch (WF-122)",
+      agentId: "mercer", workflowId: "WF-122",
+      payload: {},
+      hourUTC: 19, minuteUTC: 30, dayOfWeek: 5,
+      hookFn: () => startDialingSession({ target: "companies", limit: 20 }),
     },
 
     // ── Weekly (Monday): Strategy & Planning ─────────────────────────────────
