@@ -14,6 +14,7 @@ import { loadEnv } from "../../../env.js";
 import { getProviderToken } from "../../../lib/tokenStore.js";
 import { postTweet } from "../../../services/x.js";
 import { publishVideo } from "../../../services/tiktok.js";
+import { generateSocialImage } from "../../../services/socialImage.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -165,6 +166,7 @@ async function tryTier1(
 async function tryTier2(
   channel: BroadcastChannel,
   content: string,
+  imageUrls: string[] = [],
 ): Promise<TierAttempt> {
   if (!process.env.POSTIZ_API_KEY) {
     return { tier: 2, success: false, faultCode: FAULT.TIER2_NO_KEY };
@@ -181,7 +183,7 @@ async function tryTier2(
       tags: [],
       posts: [{
         integration: { id: channel.id },
-        value: [{ content, image: [] }],
+        value: [{ content, image: imageUrls }],
         settings,
       }],
     };
@@ -237,6 +239,7 @@ async function deliverToChannel(
   tenantId: string,
   channel: BroadcastChannel,
   content: string,
+  imageUrls: string[] = [],
 ): Promise<DeliveryResult> {
   const platform = (channel.identifier ?? channel.platform ?? "").toLowerCase();
   const attempts: TierAttempt[] = [];
@@ -249,7 +252,7 @@ async function deliverToChannel(
   }
 
   // Tier 2: Postiz API
-  const t2 = await tryTier2(channel, content);
+  const t2 = await tryTier2(channel, content, imageUrls);
   attempts.push(t2);
   if (t2.success) {
     return { channel: channel.name, platform, tier: 2, success: true, attempts };
@@ -288,10 +291,13 @@ export async function deliverBroadcast(ctx: BroadcastContext): Promise<Broadcast
     return { results: [], summary: "No text-compatible channels found." };
   }
 
+  // Generate image once for all channels (best-effort)
+  const imageUrls = await generateSocialImage(ctx.content);
+
   const results: DeliveryResult[] = [];
 
   for (const channel of textChannels) {
-    const result = await deliverToChannel(ctx.tenantId, channel, ctx.content);
+    const result = await deliverToChannel(ctx.tenantId, channel, ctx.content, imageUrls);
     results.push(result);
 
     // Rate limit between channels

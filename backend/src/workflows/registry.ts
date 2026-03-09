@@ -10,6 +10,7 @@ import { executeBrowserSession, resumeBrowserSession } from "../tools/browser/br
 import { validateSessionConfig, createBrowserSessionMemo } from "../tools/browser/browserGovernance.js";
 import { calculateSessionRiskTier, type BrowserSessionConfig, type BrowserActionStep } from "../tools/browser/browserActions.js";
 import { postAsAgent, getChannelByName, readHistory } from "../services/slack.js";
+import { generateSocialImage } from "../services/socialImage.js";
 
 export type WorkflowContext = {
   tenantId: string;
@@ -3018,6 +3019,9 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
       Object.assign(settings, ctx.input.settings);
     }
 
+    // Generate image for the post (best-effort)
+    const imageUrls = ctx.input?.skipImage ? [] : await generateSocialImage(caption);
+
     const postBody = {
       type: "now",
       date: new Date().toISOString(),
@@ -3025,7 +3029,7 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
       tags: [],
       posts: [{
         integration: { id: integration.id },
-        value: [{ content: caption, image: [] }],
+        value: [{ content: caption, image: imageUrls }],
         settings,
       }],
     };
@@ -3034,7 +3038,7 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
     const postId = result?.[0]?.postId ?? "unknown";
 
     await writeStepAudit(ctx, `${ctx.workflowId}.published`, `Published to ${platform} via Postiz (post ${postId})`, {
-      postId, platform, integration: integration.name, captionPreview: caption.slice(0, 100),
+      postId, platform, integration: integration.name, captionPreview: caption.slice(0, 100), hasImage: imageUrls.length > 0,
     });
 
     // Notify Atlas

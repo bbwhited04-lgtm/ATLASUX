@@ -10,6 +10,7 @@
 
 import type { ToolDefinition } from "./_types.js";
 import { makeResult, makeError } from "./_types.js";
+import { generateSocialImage } from "../../../services/socialImage.js";
 
 const POSTIZ_API = "https://api.postiz.com/public/v1";
 
@@ -185,6 +186,9 @@ export const postizPublishTool: ToolDefinition = {
         ].join("\n"));
       }
 
+      // Generate image for the post (best-effort)
+      const imageUrls = await generateSocialImage(caption);
+
       // Build post body with platform-specific settings
       const settings = PLATFORM_SETTINGS[platform] ?? { __type: platform };
       const postBody = {
@@ -194,7 +198,7 @@ export const postizPublishTool: ToolDefinition = {
         tags: [],
         posts: [{
           integration: { id: integration.id },
-          value: [{ content: caption, image: [] }],
+          value: [{ content: caption, image: imageUrls }],
           settings,
         }],
       };
