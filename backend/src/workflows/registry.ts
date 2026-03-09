@@ -4074,6 +4074,7 @@ handlers["WF-400"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-400.start", "VC outreach cycle starting");
 
   const REPLY_TO = "billy@deadapp.info";
+  const PITCH_DECK_URL = "https://docs.google.com/presentation/d/1sHs_zg2ZxOjCHtkXpEz0tm26DLgvfEgv/edit?usp=drive_link&ouid=114957306251559789194&rtpof=true&sd=true";
 
   // 1. Load VC prospects from CRM (tagged "vc" or source "vc_outreach")
   let prospects: Array<{ id: string; firstName: string | null; lastName: string | null; email: string | null; company: string | null; notes: string | null }> = [];
@@ -4154,6 +4155,7 @@ handlers["WF-400"] = async (ctx) => {
       "TONE: Founder-to-investor. Direct, confident, not salesy. 4-6 sentences max.",
       "Don't use buzzwords or hype. Be specific about what makes Atlas UX different.",
       "The email should feel personal and specific to the investor, not templated.",
+      "End with a mention that you've attached the pitch deck for reference — don't include the link, it will be appended automatically.",
       prospect.notes ? `\nContext about this investor: ${prospect.notes}` : "",
     ].filter(Boolean).join("\n"),
     user: [
@@ -4168,6 +4170,9 @@ handlers["WF-400"] = async (ctx) => {
     await writeStepAudit(ctx, "WF-400.skip", "LLM unavailable for email generation");
     return { ok: true, message: "VC outreach skipped — LLM unavailable" };
   }
+
+  // Append pitch deck link
+  const emailWithDeck = `${cleanEmail}\n\nPitch Deck: ${PITCH_DECK_URL}`;
 
   // 5. Generate subject line
   const subjectText = await safeLLM(ctx, {
@@ -4184,7 +4189,7 @@ handlers["WF-400"] = async (ctx) => {
     to: prospectEmail,
     fromAgent: "binky",
     subject: cleanSubject,
-    text: cleanEmail,
+    text: emailWithDeck,
     replyTo: REPLY_TO,
   });
 
@@ -4196,7 +4201,7 @@ handlers["WF-400"] = async (ctx) => {
         contactId: prospect.id,
         type: "vc_outreach",
         subject: cleanSubject,
-        body: cleanEmail,
+        body: emailWithDeck,
         meta: { replyTo: REPLY_TO, fromAgent: "binky", remaining: remaining.length - 1 },
       },
     });
