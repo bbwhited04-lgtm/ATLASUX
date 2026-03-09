@@ -95,6 +95,8 @@ export const workflowCatalog = [
   // ── Lucy Voice Engine (WF-150 series) ──────────────────────────────────────
   { id: "WF-150", name: "Lucy Voice Health Check",                 description: "Pre-business-hours voice engine health: Google STT/TTS creds, Twilio streams, WebSocket route.", ownerAgent: "lucy" },
   { id: "WF-151", name: "Lucy Daily Voice Summary",                description: "End-of-day voice activity: calls handled, caller classifications, leads captured, action items.", ownerAgent: "lucy" },
+  // ── VC Investor Outreach (WF-400) ─────────────────────────────────────────────
+  { id: "WF-400", name: "VC Investor Outreach (Binky)",          description: "Cycle through VC/investor CRM contacts — personalized cold outreach email via Binky.",                ownerAgent: "binky"  },
 ] as const;
 
 export const workflowCatalogAll = [

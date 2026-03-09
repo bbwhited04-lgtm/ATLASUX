@@ -142,6 +142,18 @@ export async function engineTick() {
           where: { id: intent.id },
           data: { status: "FAILED" },
         });
+
+        await writeAudit({
+          tenantId: intent.tenantId,
+          requestedBy,
+          level: "error",
+          action: "WORKFLOW_NOT_FOUND",
+          entityType: "intent",
+          entityId: intent.id,
+          message: `Workflow ${workflowId || "(empty)"} not in catalog or DB — intent failed silently`,
+          meta: { workflowId },
+        });
+
         return { ran: true, result: { ok: false, error: "WORKFLOW_NOT_FOUND", workflowId } };
       }
 
