@@ -35,6 +35,8 @@ function categorize(slug: string): string {
   if (slug.startsWith("law-")) return "law";
   if (slug.startsWith("edu-")) return "education";
   if (slug.startsWith("adv-")) return "advanced";
+  if (slug.startsWith("tina-")) return "financial-intelligence";
+  if (slug.startsWith("benny-")) return "trademark-ip";
   // HLE benchmark domain knowledge docs
   if (slug.startsWith("mathematics")) return "hle-mathematics";
   if (slug.startsWith("physics")) return "hle-physics";

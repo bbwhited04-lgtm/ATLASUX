@@ -3112,21 +3112,54 @@ handlers["WF-212"] = async (ctx) => {
     return { ok: false, message: "Could not generate cross-platform content — LLM unavailable and no manual caption provided." };
   }
 
+  // ── Generate image via Flux1 (if available) ───────────────────────────
+  let imageUrls: string[] = [];
+  const skipImage = ctx.input?.skipImage === true;
+  if (!skipImage) {
+    try {
+      const { generateImage, isAvailable } = await import("../services/flux1.js");
+      if (await isAvailable()) {
+        const imagePrompt = await safeLLM(ctx, {
+          agent: "SUNDAY",
+          purpose: "social_image_prompt",
+          route: "CLASSIFY_EXTRACT_VALIDATE",
+          system: "Generate a short DALL-E/Flux image prompt (under 80 words) for a social media post. The image should be professional, modern, tech-themed. Output ONLY the prompt.",
+          user: `Post content: ${caption.slice(0, 200)}`,
+        });
+        if (imagePrompt && !imagePrompt.startsWith("[LLM unavailable")) {
+          const imgResult = await generateImage({ prompt: imagePrompt.trim(), width: 1024, height: 1024 });
+          if (imgResult.ok && imgResult.imageUrl) {
+            imageUrls = [imgResult.imageUrl];
+            await writeStepAudit(ctx, "WF-212.image", `Generated image for social post`, { imageUrl: imgResult.imageUrl });
+          }
+        }
+      }
+    } catch { /* image generation is best-effort */ }
+  }
+
+  // ── Pre-flight: fetch integrations + validate all platforms at once ────
   const targetPlatforms: string[] = Array.isArray(ctx.input?.platforms)
     ? ctx.input.platforms.map((p: unknown) => String(p).toLowerCase())
-    : Object.values(POSTIZ_AGENT_PLATFORM).filter((v, i, a) => a.indexOf(v) === i); // all unique platforms
+    : Object.values(POSTIZ_AGENT_PLATFORM).filter((v, i, a) => a.indexOf(v) === i);
 
   const integrations = (await postizFetch("/integrations")) as PostizIntegration[];
-  const results: Array<{ platform: string; ok: boolean; postId?: string; error?: string }> = [];
 
+  // Map platforms to their integrations upfront (single pass)
+  const platformMap = new Map<string, PostizIntegration>();
+  const noIntegration: Array<{ platform: string; ok: boolean; error: string }> = [];
   for (const platform of targetPlatforms) {
     const integration = integrations.find(
       (i) => i.providerIdentifier === platform || i.identifier === platform || (i.name ?? "").toLowerCase().includes(platform),
     );
-    if (!integration) {
-      results.push({ platform, ok: false, error: "No integration found" });
-      continue;
+    if (integration) {
+      platformMap.set(platform, integration);
+    } else {
+      noIntegration.push({ platform, ok: false, error: "No integration found" });
     }
+  }
+
+  // ── Parallel fan-out: post to all valid platforms concurrently ─────────
+  const postPromises = Array.from(platformMap.entries()).map(async ([platform, integration]) => {
     try {
       const settings = POSTIZ_PLATFORM_SETTINGS[platform] ?? { __type: platform };
       const postBody = {
@@ -3136,22 +3169,27 @@ handlers["WF-212"] = async (ctx) => {
         tags: [],
         posts: [{
           integration: { id: integration.id },
-          value: [{ content: caption, image: [] }],
+          value: [{ content: caption, image: imageUrls }],
           settings,
         }],
       };
       const result = (await postizFetch("/posts", "POST", postBody)) as Array<{ postId?: string }>;
-      results.push({ platform, ok: true, postId: result?.[0]?.postId ?? "unknown" });
+      return { platform, ok: true as const, postId: result?.[0]?.postId ?? "unknown" };
     } catch (err: unknown) {
-      results.push({ platform, ok: false, error: err instanceof Error ? err.message : String(err) });
+      return { platform, ok: false as const, error: err instanceof Error ? err.message : String(err) };
     }
-    await new Promise((r) => setTimeout(r, 300)); // rate limit courtesy
-  }
+  });
+
+  const postResults = await Promise.allSettled(postPromises);
+  const results: Array<{ platform: string; ok: boolean; postId?: string; error?: string }> = [
+    ...noIntegration,
+    ...postResults.map((r) => r.status === "fulfilled" ? r.value : { platform: "unknown", ok: false, error: "Promise rejected" }),
+  ];
 
   const succeeded = results.filter((r) => r.ok).length;
   const failed = results.filter((r) => !r.ok).length;
 
-  await writeStepAudit(ctx, "WF-212.complete", `Cross-posted to ${succeeded}/${results.length} platforms`, { results });
+  await writeStepAudit(ctx, "WF-212.complete", `Cross-posted to ${succeeded}/${results.length} platforms`, { results, hasImage: imageUrls.length > 0 });
 
   const { to } = getReportRecipients("sunday");
   await queueEmail(ctx, {
@@ -3161,6 +3199,7 @@ handlers["WF-212"] = async (ctx) => {
     text: [
       `CROSS-PLATFORM PUBLISH COMPLETE`,
       `Succeeded: ${succeeded} | Failed: ${failed}`,
+      imageUrls.length ? `Image: ${imageUrls[0]}` : `Image: none (Flux1 unavailable or skipped)`,
       `\nResults:`,
       ...results.map((r) => `  ${r.platform}: ${r.ok ? `OK (${r.postId})` : `FAILED (${r.error})`}`),
       `\nContent:\n${caption.slice(0, 300)}`,
@@ -3170,8 +3209,8 @@ handlers["WF-212"] = async (ctx) => {
 
   return {
     ok: true,
-    message: `Cross-posted to ${succeeded}/${results.length} platforms`,
-    output: { results, succeeded, failed },
+    message: `Cross-posted to ${succeeded}/${results.length} platforms${imageUrls.length ? " with image" : ""}`,
+    output: { results, succeeded, failed, hasImage: imageUrls.length > 0 },
   };
 };
 
