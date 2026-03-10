@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { prisma, withTenant } from "../db/prisma.js";
+import { prisma } from "../db/prisma.js";
 
 // Use `any` so missing model names (auditLog vs audit_log) won't break TypeScript compile.
 const prismaAny: any = prisma as any;
@@ -17,7 +17,8 @@ async function safeFindMany(args: any, client?: any) {
   try {
     const items = await model.findMany(args);
     return { ok: true, items };
-  } catch (err) {
+  } catch (err: any) {
+    console.error("[audit] findMany failed:", err?.message ?? err);
     return { ok: false, reason: "QUERY_FAILED", err };
   }
 }
@@ -128,12 +129,8 @@ if (q.level) where.level = q.level;
       return result;
     };
 
-    let result: any;
-    if (tid) {
-      result = await withTenant(tid, async (tx) => doQuery(tx)).catch(() => ({ ok: false, reason: "QUERY_FAILED" }));
-    } else {
-      result = await doQuery();
-    }
+    // Query directly — tenantId is already in the where clause, no need for RLS transaction
+    let result: any = await doQuery();
 
     if (!result.ok) {
       // If Prisma isn't ready, return a safe stub instead of breaking UI
@@ -142,6 +139,7 @@ if (q.level) where.level = q.level;
         items: [],
         page: { limit, nextCursor: null },
         warning: "AUDIT_STORAGE_NOT_READY",
+        reason: result.reason ?? "unknown",
       });
     }
 
@@ -164,12 +162,9 @@ if (q.level) where.level = q.level;
     const { id } = req.params as any;
     const reqTenantId = (req as any).tenantId as string | undefined;
 
-    let result: any;
-    if (reqTenantId) {
-      result = await withTenant(reqTenantId, async (tx) => safeFindUnique({ where: { id } }, tx)).catch(() => ({ ok: false, reason: "QUERY_FAILED" }));
-    } else {
-      result = await safeFindUnique({ where: { id } });
-    }
+    const where: any = { id };
+    if (reqTenantId) where.tenantId = reqTenantId;
+    let result: any = await safeFindUnique({ where });
     if (!result.ok) {
       return reply.code(404).send({ ok: false, error: "NOT_FOUND_OR_STORAGE_NOT_READY" });
     }
@@ -206,12 +201,7 @@ if (q.level) where.level = q.level;
       // do NOT force createdAt/timestamp here; let DB defaults handle it
     };
 
-    let result: any;
-    if (data.tenantId) {
-      result = await withTenant(data.tenantId, async (tx) => safeCreate({ data }, tx)).catch(() => ({ ok: false, reason: "CREATE_FAILED" }));
-    } else {
-      result = await safeCreate({ data });
-    }
+    let result: any = await safeCreate({ data });
 
     if (!result.ok) {
       // Don’t brick the UI while DB/schema is being wired
