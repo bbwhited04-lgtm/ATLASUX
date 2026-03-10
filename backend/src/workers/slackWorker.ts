@@ -986,6 +986,9 @@ async function processFileUploads(channelId: string, channelName: string, messag
           text = await downloadFile(file.url_private);
         }
 
+        // Strip null bytes — Postgres UTF-8 rejects 0x00
+        if (text) text = text.replace(/\0/g, "");
+
         if (!text || text.trim().length < 20) {
           console.log(`[slackWorker] File empty or too short: ${file.name}`);
           processedFiles.add(file.id);
