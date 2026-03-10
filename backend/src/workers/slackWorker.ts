@@ -1174,11 +1174,12 @@ async function tickDMs() {
         userCache.set(dm.userId, senderName);
       }
 
-      // Atlas handles all DMs
-      const agent = agentRegistry.find((a) => a.id === "atlas") ?? agentRegistry[0];
+      // Route DMs to the addressed agent (falls back to Atlas if no agent mentioned)
+      // This prevents Atlas from hijacking DMs meant for other agents
 
       for (const msg of newMessages.slice(0, 2)) { // Cap at 2 DM responses per tick
-        console.log(`[slackWorker] DM from ${senderName}: "${(msg.text ?? "").slice(0, 80)}"`);
+        const agent = detectAgent(msg.text);
+        console.log(`[slackWorker] DM from ${senderName}: "${(msg.text ?? "").slice(0, 80)}" → ${agent.name} (${agent.id})`);
 
         const response = await runLLM({
           runId: `slack-dm-${agent.id}-${Date.now()}`,
