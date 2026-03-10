@@ -650,6 +650,12 @@ async function tickChannel(channelName: string) {
   for (const msg of messagesToProcess) {
     const isAgentMsg = !!msg.bot_id;
 
+    // Skip file-only uploads with no meaningful text (Slack sometimes sends these as separate events)
+    if (!isAgentMsg && (!msg.text || !msg.text.trim() || msg.text.trim() === "")) {
+      console.log(`[slackWorker] Skipping empty/file-only message ts=${msg.ts}`);
+      continue;
+    }
+
     // Check for workflow trigger before LLM response (human messages only)
     if (!isAgentMsg) {
       const workflow = detectWorkflow(msg.text);
@@ -677,6 +683,7 @@ async function tickChannel(channelName: string) {
       agent = candidates[Math.floor(Math.random() * candidates.length)] ?? agentRegistry.find((a) => a.id === "atlas")!;
     } else {
       agent = detectAgent(msg.text);
+      console.log(`[slackWorker] detectAgent("${msg.text.slice(0, 80)}") → ${agent.name} (${agent.id})`);
     }
 
     const systemPrompt = buildSystemPrompt(agent, channelName);
