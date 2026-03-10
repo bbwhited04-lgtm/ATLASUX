@@ -43,6 +43,9 @@ import { PDFParse } from "pdf-parse";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
+// Bot's own Slack user ID — resolved at startup via auth.test
+let SLACK_BOT_USER_ID = "";
+
 const POLL_MS = Math.max(1000, Number(process.env.SLACK_POLL_MS ?? 5000));
 const CONTEXT_MESSAGES = Math.max(1, Math.min(50, Number(process.env.SLACK_CONTEXT_MESSAGES ?? 10)));
 const TENANT_ID = process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
@@ -132,12 +135,27 @@ async function persistMessages(
 
 // ── Agent detection ───────────────────────────────────────────────────────────
 
-/** Build a lookup of lowercase agent names/ids to registry entries. */
+/** Build a lookup of lowercase agent names/ids/titles to registry entries. */
 const agentLookup = new Map<string, (typeof agentRegistry)[number]>();
 for (const agent of agentRegistry) {
   agentLookup.set(agent.id.toLowerCase(), agent);
   agentLookup.set(agent.name.toLowerCase(), agent);
+  // Add title keywords (e.g., "cfo" → tina, "cto" → benny)
+  if (agent.title) {
+    const titleWords = agent.title.toLowerCase().split(/[\s·,/]+/).filter(Boolean);
+    for (const w of titleWords) {
+      // Only map short role keywords, not generic words like "chief"
+      if (w.length >= 3 && !["the", "and", "for", "chief"].includes(w)) {
+        if (!agentLookup.has(w)) agentLookup.set(w, agent);
+      }
+    }
+  }
 }
+// Explicit role shortcuts
+agentLookup.set("cfo", agentLookup.get("tina")!);
+agentLookup.set("cto", agentLookup.get("benny")!);
+agentLookup.set("clo", agentLookup.get("jenny")!);
+agentLookup.set("cro", agentLookup.get("binky")!);
 
 /**
  * Detect which agent the human is addressing.
@@ -148,15 +166,34 @@ for (const agent of agentRegistry) {
  *   3. Default to Atlas
  */
 function detectAgent(text: string): (typeof agentRegistry)[number] {
-  const lower = text.toLowerCase();
+  // Check if the message mentions our bot via Slack's <@USERID> format
+  // Slack eats the display name typed by the user (e.g., "@Tina Cfo" → "<@UBOTID>")
+  // so we need to scan remaining words for agent names/titles
+  const hasBotMention = SLACK_BOT_USER_ID && text.includes(`<@${SLACK_BOT_USER_ID}>`);
 
-  // 1. Check for @mention pattern (Slack encodes as <@USERID|display_name> or plain @Name)
-  const atMentionMatch = text.match(/@(\w[\w-]*)/g);
+  // Strip all Slack user mentions <@USERID> so they don't interfere with text matching
+  const stripped = text.replace(/<@[A-Z0-9]+>/g, " ").trim();
+  const lower = stripped.toLowerCase();
+
+  // 1. Check for plain @mention pattern (e.g., @Tina — only works if Slack didn't encode it)
+  const atMentionMatch = stripped.match(/@(\w[\w-]*)/g);
   if (atMentionMatch) {
     for (const mention of atMentionMatch) {
       const name = mention.slice(1).toLowerCase(); // strip leading @
       const agent = agentLookup.get(name);
       if (agent) return agent;
+    }
+  }
+
+  // 1b. If our bot was @mentioned, scan every word for an agent name/title match
+  // This catches cases where Slack ate "@Tina" but left "cfo" or "tina" elsewhere
+  if (hasBotMention) {
+    const words = lower.split(/\s+/);
+    for (const word of words) {
+      const clean = word.replace(/[^a-z0-9-]/g, "");
+      if (clean.length < 2) continue;
+      const agent = agentLookup.get(clean);
+      if (agent && agent.id !== "atlas") return agent; // Don't match atlas — that's the default
     }
   }
 
@@ -1173,6 +1210,18 @@ async function main() {
 
   if (!process.env.SLACK_BOT_TOKEN) {
     console.warn("[slackWorker] SLACK_BOT_TOKEN not set — worker will idle until configured");
+  } else {
+    // Resolve bot's own user ID so we can detect <@BOT_ID> mentions
+    try {
+      const authRes = await fetch("https://slack.com/api/auth.test", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`, "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const authData = await authRes.json() as any;
+      SLACK_BOT_USER_ID = authData.user_id ?? "";
+      console.log(`[slackWorker] Bot user ID: ${SLACK_BOT_USER_ID}`);
+    } catch { /* non-fatal */ }
   }
 
   let stopping = false;
