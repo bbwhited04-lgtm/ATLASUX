@@ -224,6 +224,13 @@ const EnvSchema = z.object({
   NEWSDATA_API_KEY:   z.string().optional(), // NewsData.io
   NYT_API_KEY:        z.string().optional(), // New York Times Article Search + Top Stories
   MEDIASTACK_API_KEY: z.string().optional(), // MediaStack global news
+
+  // QuickBooks OAuth2
+  QUICKBOOKS_CLIENT_ID:          z.string().optional(), // sandbox
+  QUICKBOOKS_CLIENT_SECRET:      z.string().optional(), // sandbox
+  QUICKBOOKS_PROD_CLIENT_ID:     z.string().optional(), // production
+  QUICKBOOKS_PROD_CLIENT_SECRET: z.string().optional(), // production
+  QUICKBOOKS_ENVIRONMENT:        z.string().optional(), // "sandbox" | "production"
 });
 
 export type Env = z.infer<typeof EnvSchema>;

@@ -69,6 +69,8 @@ const repliedThreads = new Set<string>();
 const channelSummaryCache = new Map<string, string>(); // channelName → summary text
 const channelSummaryLastUpdated = new Map<string, number>(); // channelName → timestamp
 const SUMMARY_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+// Stagger initial summaries so they don't all fire on first tick (prevents 429s at startup)
+let summaryStaggerIdx = 0;
 const SUMMARY_MESSAGE_COUNT = 50; // how many messages to summarize
 
 // Anti-spiral: track when the last agent-to-agent reply happened per channel
@@ -94,6 +96,39 @@ const processedFiles = new Set<string>();
 let workspaceUsers: SlackUser[] = [];
 let usersLastFetched = 0;
 const userCache = new Map<string, string>(); // userId → display name
+
+// ── Write-through: persist Slack messages to Postgres ─────────────────────────
+
+async function persistMessages(
+  channelId: string,
+  channelName: string,
+  messages: SlackMessage[],
+): Promise<void> {
+  if (!messages.length) return;
+
+  const records = messages.map((m) => ({
+    tenantId: TENANT_ID,
+    slackTs: m.ts,
+    channelId,
+    channelName,
+    userId: m.user ?? null,
+    botId: m.bot_id ?? null,
+    username: m.username ?? null,
+    text: m.text ?? "",
+    threadTs: m.thread_ts ?? null,
+    isAgent: !!m.bot_id,
+  }));
+
+  try {
+    await prisma.slackMessage.createMany({
+      data: records,
+      skipDuplicates: true,
+    });
+  } catch (err: any) {
+    // Non-fatal — don't break the tick if DB write fails
+    console.error(`[slackWorker] persistMessages failed: ${err?.message ?? err}`);
+  }
+}
 
 // ── Agent detection ───────────────────────────────────────────────────────────
 
@@ -249,18 +284,30 @@ function formatContext(messages: SlackMessage[]): string {
  */
 async function refreshChannelSummary(channelId: string, channelName: string): Promise<void> {
   const lastUpdated = channelSummaryLastUpdated.get(channelName) ?? 0;
-  if (Date.now() - lastUpdated < SUMMARY_INTERVAL_MS) return;
+  if (lastUpdated === 0) {
+    // First run: stagger each channel by 2 minutes to avoid 429 burst at startup
+    const staggerMs = summaryStaggerIdx * 2 * 60 * 1000;
+    summaryStaggerIdx++;
+    channelSummaryLastUpdated.set(channelName, Date.now() - SUMMARY_INTERVAL_MS + staggerMs);
+    if (staggerMs > 0) return; // Only the first channel refreshes immediately
+  }
+  if (Date.now() - (channelSummaryLastUpdated.get(channelName) ?? 0) < SUMMARY_INTERVAL_MS) return;
 
   try {
-    const messages = await readHistory(channelId, SUMMARY_MESSAGE_COUNT);
-    if (!messages.length) return;
+    // Read from Postgres (write-through) instead of Slack API — avoids 429s
+    const dbMessages = await prisma.slackMessage.findMany({
+      where: { tenantId: TENANT_ID, channelName },
+      orderBy: { createdAt: "desc" },
+      take: SUMMARY_MESSAGE_COUNT,
+      select: { username: true, botId: true, userId: true, text: true },
+    });
+    if (!dbMessages.length) return;
 
     // Build a transcript for the summarizer
-    const transcript = messages
-      .slice()
-      .reverse() // oldest first
+    const transcript = dbMessages
+      .reverse() // oldest first (query returned newest first)
       .map((m) => {
-        const who = m.username ?? (m.bot_id ? "agent" : (userCache.get(m.user) ?? "human"));
+        const who = m.username ?? (m.botId ? "agent" : (userCache.get(m.userId ?? "") ?? "human"));
         return `${who}: ${(m.text ?? "").slice(0, 300)}`;
       })
       .join("\n");
@@ -546,14 +593,28 @@ async function tickChannel(channelName: string) {
   const newestTs = newMessages[newMessages.length - 1].ts;
   lastSeenByChannel.set(channelName, newestTs);
 
+  // Write-through: persist new messages to Postgres immediately
+  await persistMessages(channelId, channelName, newMessages);
+
   // Ingest any file uploads into KB before agents respond
   await processFileUploads(channelId, channelName, newMessages);
 
-  // Fetch context window for conversation history (needed for chatter check + LLM context)
-  await sleep(API_DELAY_MS); // Pace API calls
+  // Load context window from Postgres (write-through) — no extra Slack API call
   let contextMessages: SlackMessage[] = [];
   try {
-    contextMessages = await readHistory(channelId, CONTEXT_MESSAGES);
+    const dbCtx = await prisma.slackMessage.findMany({
+      where: { tenantId: TENANT_ID, channelName },
+      orderBy: { createdAt: "desc" },
+      take: CONTEXT_MESSAGES,
+    });
+    contextMessages = dbCtx.reverse().map((m) => ({
+      ts: m.slackTs,
+      user: m.userId ?? "",
+      text: m.text,
+      thread_ts: m.threadTs ?? undefined,
+      bot_id: m.botId ?? undefined,
+      username: m.username ?? undefined,
+    }));
   } catch {
     // Non-fatal — proceed without context
   }

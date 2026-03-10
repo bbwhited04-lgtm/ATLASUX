@@ -195,32 +195,39 @@ export default function Landing() {
           <div className="max-w-7xl mx-auto px-6 py-24 w-full">
             <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
               <div>
-                <span className="inline-flex items-center gap-2 rounded-full border border-[#3d5474]/40 bg-[#0e1626]/80 px-4 py-1.5 text-xs font-medium tracking-wider text-[#69b2cd] uppercase">
-                  STANDALONE &middot; MULTI-PLATFORM &middot; LOCAL-FIRST
+                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-4 py-1.5 text-xs font-medium tracking-wider text-emerald-400 uppercase">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 pulse-dot" />
+                  31 AI Employees Live in Slack Right Now
                 </span>
 
                 <h1 className="mt-8 text-5xl font-bold tracking-tight leading-[1.1] sm:text-6xl lg:text-7xl">
-                  <span className="gradient-text text-glow">Atlas UX</span><br />
-                  Your AI Employee<br />
-                  Works Where<br />
-                  You Work.
+                  <span className="gradient-text text-glow">Talk to Them.</span><br />
+                  Try to Break Them.
                 </h1>
 
                 <p className="mt-6 max-w-lg text-xl font-semibold text-white">
-                  Atlas UX is an AI-powered business automation platform that deploys 30+ autonomous agents to run your CRM, marketing, finance, and operations.
+                  31 AI employees live in Slack &mdash; and they talk back via email, Zoom, phone, Teams, and voice. Not chatbots. Employees.
                 </p>
                 <p className="mt-3 max-w-lg text-base text-[#bab2b5]">
-                  1 Orchestrator. 29 Specialized Agents. Wired to Twilio, Microsoft Office,
-                  Telegram &amp; SMS. Every action logged, every decision traceable.
+                  Everyone has agents. We put ours where your team already works &mdash; Slack channels, email threads, Zoom calls, phone lines &mdash; and let you interact with them like real coworkers.
                 </p>
 
+                {/* Channel pills */}
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {["Slack", "Email", "Zoom", "Phone", "Teams", "Voice"].map((ch) => (
+                    <span key={ch} className="rounded-full border border-[#3d5474]/40 bg-[#0e1626]/70 px-3 py-1 text-xs font-medium text-[#69b2cd]">
+                      {ch}
+                    </span>
+                  ))}
+                </div>
+
                 {/* Stat cards */}
-                <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[
-                    ["30", "AI Agents"],
-                    ["550", "Doc Knowledge Base"],
-                    ["100%", "Audit Logged"],
-                    ["0", "Cloud Dependencies"],
+                    ["31", "AI Employees"],
+                    ["6", "Channels"],
+                    ["24/7", "Always On"],
+                    ["100%", "Auditable"],
                   ].map(([val, label]) => (
                     <div key={label} className="rounded-xl border border-[#3d5474]/30 bg-[#0e1626]/60 p-3 text-center">
                       <div className="text-2xl font-bold text-white">{val}</div>
@@ -229,26 +236,15 @@ export default function Landing() {
                   ))}
                 </div>
 
-                {/* CTAs */}
-                <div className="mt-8 flex flex-wrap gap-4">
+                {/* CTA */}
+                <div className="mt-8 flex flex-wrap items-center gap-4">
                   <a
                     href="#/app"
-                    className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-sm font-semibold !text-black shadow-lg hover:opacity-90 transition"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#3e70a5] to-[#69b2cd] px-10 py-4 text-base font-bold text-white shadow-lg glow-blue hover:opacity-90 transition"
                   >
-                    Enter App
+                    Get in Our Slack
                   </a>
-                  <button
-                    onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#3e70a5] to-[#69b2cd] px-8 py-3.5 text-sm font-semibold text-white shadow-lg glow-blue hover:opacity-90 transition"
-                  >
-                    Request Early Access
-                  </button>
-                  <button
-                    onClick={() => document.getElementById("platform")?.scrollIntoView({ behavior: "smooth" })}
-                    className="inline-flex items-center gap-2 rounded-xl border border-[#3d5474]/50 px-8 py-3.5 text-sm font-semibold text-[#bab2b5] hover:border-[#69b2cd]/50 hover:text-white transition"
-                  >
-                    Explore Platform →
-                  </button>
+                  <span className="text-sm text-[#bab2b5]">$18/mo &middot; No credit card required</span>
                 </div>
               </div>
 
@@ -628,7 +624,7 @@ export default function Landing() {
         <section id="updates" className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold">Dev updates</h2>
-            <span className="text-sm text-white/60">Last updated: Mar 7, 2026</span>
+            <span className="text-sm text-white/60">Last updated: Mar 10, 2026</span>
           </div>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-white/75">
             <li>Started construction of an idea with Figma, for clean user friendly standalone ai employee</li>

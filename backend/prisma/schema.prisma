@@ -61,6 +61,7 @@ model Tenant {
   meetingNotes                             MeetingNote[]
   browserSessions                          BrowserSession[]
   orgMemories                              OrgMemory[]
+  slackMessages                            SlackMessage[]
 
   @@map("tenants")
 }
@@ -1387,6 +1388,27 @@ model OrgMemory {
   @@index([tenantId, createdAt(sort: Desc)])
   @@index([tenantId, accessCount(sort: Desc)])
   @@map("org_memories")
+}
+
+model SlackMessage {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  slackTs     String   @map("slack_ts")
+  channelId   String   @map("channel_id")
+  channelName String   @map("channel_name")
+  userId      String?  @map("user_id")
+  botId       String?  @map("bot_id")
+  username    String?
+  text        String
+  threadTs    String?  @map("thread_ts")
+  isAgent     Boolean  @default(false) @map("is_agent")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, channelId, slackTs])
+  @@index([tenantId, channelName, createdAt(sort: Desc)])
+  @@map("slack_messages")
 }
 
 model RevokedToken {

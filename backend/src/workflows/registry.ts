@@ -2879,19 +2879,51 @@ const PLATFORM_INTEL_WF: Record<string, string> = {
 };
 
 /** Platform-specific content rules for the LLM. */
+// ── Hook strategies that STOP the scroll ──────────────────────────────────────
+const HOOK_STRATEGY = `
+ENGAGEMENT RULES — every post MUST use one of these hook types:
+
+1. CONTRARIAN HOOK: Challenge a popular belief. "Everyone says you need a marketing team. Here's why that's dead wrong."
+2. DATA-DRIVEN HOOK: Lead with a specific number. "We ran 847 automated workflows last week. Here's what broke."
+3. TRANSFORMATION TEASE: Show before/after. "6 months ago we had 0 AI agents. Today we have 31 running our entire business."
+4. STORYTELLING HOOK: Start mid-action. "At 3am our AI caught a $12K billing error. No human was awake."
+5. COMMUNITY HOOK: Make them feel seen. "Small business owners — stop doing bookkeeping at midnight. There's a better way."
+6. OPINION HOOK: Take a strong stance. "90% of AI tools are glorified chatbots. We built actual employees."
+7. CURIOSITY GAP: Incomplete info that demands a click. "We replaced our entire marketing department. The cost? Less than one intern."
+8. QUESTION HOOK: Ask something they MUST answer. "How many hours did you waste on manual tasks this week? Be honest."
+9. DESIRE HOOK: Paint the life they want. "Imagine waking up and your AI already sent 21 investor emails, posted to 6 platforms, and balanced the books. That was my Tuesday."
+10. FEAR OF MISSING OUT: Make inaction painful. "Your competitor just automated their entire sales pipeline. You're still copy-pasting into spreadsheets."
+11. IDENTITY HOOK: Make them see themselves. "This is for the founder who's still doing their own bookkeeping at 11pm. You don't have a time problem. You have a delegation problem."
+12. PAIN POINT HOOK: Name their exact frustration. "Hiring your first employee costs $45K+ with benefits. My first AI employee cost $0 and works 24/7."
+13. DREAM OUTCOME HOOK: Describe the end state they fantasize about. "What if you could run a 7-figure business with zero employees? No payroll, no HR, no Slack messages at 2am. Just you and 31 AI agents who never call in sick."
+14. LIFESTYLE HOOK: Sell the freedom, not the product. "I took a 3-hour lunch yesterday. My AI CFO reconciled the books, my AI CRO sent 21 cold emails, and my AI receptionist booked 3 meetings. Nobody noticed I was gone."
+15. BEFORE/AFTER HOOK: Show the gap. "Before: 14-hour days, drowning in admin. After: 31 AI employees handle operations while I focus on strategy. Same revenue. Half the stress. Zero payroll."
+16. RELATABLE HOOK: Say the thing everyone thinks but nobody says. "Be honest — you've Googled 'can AI do my job' at least once this year. Here's the twist: AI shouldn't do YOUR job. It should do the 47 jobs you're doing that AREN'T your job."
+17. SIMPLE STEPS HOOK: Break the impossible into 3 steps. "How to replace a $60K/year bookkeeper in 3 steps: 1) Connect QuickBooks 2) Tell Tina (our AI CFO) your chart of accounts 3) Go to sleep. She reconciles while you dream."
+18. MYTH-BUSTING HOOK: Kill a common misconception. "AI will replace all jobs. Wrong. AI replaced 31 roles at my company and created 0 unemployment. Because those 31 roles didn't exist before — nobody was doing them."
+
+ABSOLUTE RULES:
+- NEVER start with "Exciting news!" or "We're thrilled" or "Check out" — that's corporate garbage nobody reads
+- NEVER write like a press release. Write like a human who gives a damn.
+- First line = the hook. If the first 10 words don't stop the scroll, the post is dead.
+- End with something that DEMANDS a response: a question, a hot take, or "comment X if you agree"
+- Be specific. "AI automation" = boring. "31 AI agents that sent 847 emails while I slept" = interesting.
+- Controversy > politeness. Strong opinions get engagement. Boring gets scrolled past.
+`;
+
 const PLATFORM_CONTENT_RULES: Record<string, string> = {
-  tiktok:    "Write a TikTok caption (under 150 chars). Use trending hooks, 3-5 hashtags including #fyp. Be punchy and Gen-Z friendly.",
-  x:         "Write a tweet (under 280 chars). Concise, opinionated, include 2-3 relevant hashtags. No fluff.",
-  facebook:  "Write a Facebook post (2-3 sentences). Conversational, ask a question to drive comments. Include 1-2 hashtags.",
-  reddit:    "Write a Reddit post title + body. Be authentic, not salesy. Frame as sharing something useful. No hashtags.",
-  threads:   "Write a Threads post (under 500 chars). Conversational, casual, like talking to a friend. 1-2 hashtags max.",
-  linkedin:  "Write a LinkedIn post (3-4 sentences). Professional but human. Lead with insight, end with question. 3 hashtags.",
-  pinterest: "Write a Pinterest pin description (under 500 chars). SEO-friendly, include keywords, be aspirational.",
-  tumblr:    "Write a Tumblr post. Creative, personality-forward, can be longer. Use tags liberally.",
-  youtube:   "Write a YouTube Shorts caption (under 100 chars) and title. Hook-first, trending style.",
-  mastodon:  "Write a Mastodon toot (under 500 chars). Thoughtful, community-minded, no corporate tone. Use hashtags.",
-  instagram: "Write an Instagram caption (2-3 sentences). Visual storytelling angle, emoji-friendly, 5-10 hashtags at the end.",
-  medium:    "Write a Medium article title, subtitle, and opening paragraph. Thought-leadership style, keyword-rich.",
+  tiktok:    "Write a TikTok caption (under 150 chars). Open with a pattern-interrupt hook. Use 3-5 hashtags including #fyp #smallbusiness. Write like you're texting your friend about something wild that just happened.",
+  x:         "Write a tweet (under 280 chars). Lead with a contrarian take or a specific number. No corporate voice. End with a question or hot take that forces quote-tweets. 2-3 hashtags max.",
+  facebook:  "Write a Facebook post (3-4 sentences). Start with a storytelling hook — something that happened TODAY. Ask a polarizing question at the end that makes people pick a side in the comments.",
+  reddit:    "Write a Reddit post title + body. Title must be a specific claim or question. Body tells a real story with real numbers. NO selling. Frame as 'here's what I learned' or 'here's what went wrong'. No hashtags.",
+  threads:   "Write a Threads post (under 500 chars). Hot take format — state an opinion most people disagree with, then back it up in 2 sentences. End with 'agree or disagree?' 1-2 hashtags max.",
+  linkedin:  "Write a LinkedIn post (4-5 sentences). Lead with a transformation hook (before vs after). Share ONE specific insight with real numbers. End with a question that invites industry debate. 3 hashtags.",
+  pinterest: "Write a Pinterest pin description (under 500 chars). Focus on the transformation — what their business looks like AFTER. Use aspirational keywords. Include a clear call-to-action.",
+  tumblr:    "Write a Tumblr post. Personality-forward, slightly unhinged energy. Tell a story about AI agents doing something unexpectedly human. Tags are hashtags — use 5-10 relevant ones.",
+  youtube:   "Write a YouTube Shorts caption (under 100 chars) and title. Title = curiosity gap. Caption = one-line hook that makes them watch.",
+  mastodon:  "Write a Mastodon toot (under 500 chars). Community-minded, share a genuine insight or frustration about small business automation. No corporate tone. Ask for others' experiences.",
+  instagram: "Write an Instagram caption (3-4 sentences). Open with a transformation story or a specific number. Use line breaks for readability. End with a CTA question. 5-10 hashtags at the end.",
+  medium:    "Write a Medium article title, subtitle, and opening paragraph. Title = contrarian or data-driven hook. Subtitle = the promise. Opening = a specific story that proves the point.",
 };
 
 /**
@@ -2980,17 +3012,25 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
         purpose: `${platform}_content_generation`,
         route: "DRAFT_GENERATION_FAST",
         system: [
-          `You are ${agentName}, the ${platform} content agent for Atlas UX — an AI employee platform with 30+ autonomous agents.`,
-          `Your job: write ONE ready-to-publish ${platform} post based on today's intelligence.`,
-          `\n${contentRules}`,
-          `\nATLAS UX POSITIONING: AI employees that actually work. 30+ agents automating business operations. Currently in beta.`,
-          `Website: atlasux.cloud`,
+          `You are ${agentName}, the ${platform} content agent for Atlas UX — an AI employee platform with 31 autonomous agents that actually run a business.`,
+          `Your job: write ONE scroll-stopping ${platform} post that gets engagement (replies, shares, comments) — not just views.`,
+          HOOK_STRATEGY,
+          `\nPLATFORM-SPECIFIC RULES:\n${contentRules}`,
+          `\nATLAS UX FACTS (use specific numbers, not vague claims):`,
+          `- 31 AI agents running live in production`,
+          `- Full governance layer: audit trail on every action, spending limits, human-in-the-loop for high-risk decisions`,
+          `- Agents have personalities, Slack workspace, email accounts — they're employees, not chatbots`,
+          `- Built by one founder. No VC money (yet). Running live for 10+ days zero incidents.`,
+          `- Website: atlasux.cloud`,
           intel ? `\nTODAY'S PLATFORM INTEL:\n${intel}` : "",
           webTrends ? `\nLIVE TRENDS:\n${webTrends}` : "",
           kb.text ? `\nKB CONTEXT:\n${kb.text.slice(0, 800)}` : "",
-          `\nIMPORTANT: Output ONLY the post content — no preamble, no "Here's a post:", no quotes. Just the raw text ready to publish.`,
+          `\nOUTPUT RULES:`,
+          `- Output ONLY the post content — no preamble, no "Here's a post:", no quotes.`,
+          `- The FIRST LINE must be the hook. If you start with anything boring, you've failed.`,
+          `- Every post must end with something that invites a response.`,
         ].filter(Boolean).join("\n"),
-        user: `Write a ${platform} post for today (${new Date().toISOString().slice(0, 10)}). Use the intel and trends above to make it timely and relevant.`,
+        user: `Write a ${platform} post for today (${new Date().toISOString().slice(0, 10)}). Pick ONE hook type from the strategy above. Make it specific to Atlas UX — use real numbers, real stories, real opinions. No generic AI hype.`,
       });
 
       // Clean LLM output — strip any quotes or preamble
@@ -3023,6 +3063,8 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
 
     // Generate image for the post (best-effort)
     const imageUrls = ctx.input?.skipImage ? [] : await generateSocialImage(caption);
+    console.log(`[postiz] ${platform} image generation: ${imageUrls.length ? imageUrls[0] : "NONE (Flux1 returned empty)"}`);
+    await writeStepAudit(ctx, `${ctx.workflowId}.image`, imageUrls.length ? `Image generated: ${imageUrls[0]}` : "No image generated — Flux1 returned empty", { imageUrls });
 
     const postBody = {
       type: "now",
@@ -3031,7 +3073,8 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
       tags: [],
       posts: [{
         integration: { id: integration.id },
-        value: [{ content: caption, image: imageUrls }],
+        value: [{ content: caption }],
+        ...(imageUrls.length ? { mediaUrls: imageUrls } : {}),
         settings,
       }],
     };
@@ -3175,7 +3218,8 @@ handlers["WF-212"] = async (ctx) => {
         tags: [],
         posts: [{
           integration: { id: integration.id },
-          value: [{ content: caption, image: imageUrls }],
+          value: [{ content: caption }],
+        ...(imageUrls.length ? { mediaUrls: imageUrls } : {}),
           settings,
         }],
       };
@@ -4123,10 +4167,40 @@ handlers["WF-400"] = async (ctx) => {
     return { ok: true, message: `Outreach complete — all ${prospects.length} prospects contacted` };
   }
 
-  const prospect = remaining[0];
-  const prospectName = [prospect.firstName, prospect.lastName].filter(Boolean).join(" ") || "Investor";
-  const prospectEmail = prospect.email!;
-  const firmName = prospect.company || "your firm";
+  // Race-condition guard: try up to 5 prospects in case simultaneous intents grabbed the same one
+  let prospect = remaining[0];
+  let prospectName = "";
+  let prospectEmail = "";
+  let firmName = "";
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+  const maxRetries = Math.min(5, remaining.length);
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    prospect = remaining[attempt];
+    prospectName = [prospect.firstName, prospect.lastName].filter(Boolean).join(" ") || "Investor";
+    prospectEmail = prospect.email!;
+    firmName = prospect.company || "your firm";
+
+    // Just-in-time dedup check: verify no activity was recorded in the last 5 minutes
+    try {
+      const recentActivity = await prisma.contactActivity.findFirst({
+        where: {
+          tenantId: ctx.tenantId,
+          contactId: prospect.id,
+          type: "vc_outreach",
+          createdAt: { gte: fiveMinAgo },
+        },
+      });
+      if (recentActivity) {
+        await writeStepAudit(ctx, "WF-400.race-skip", `Skipping ${prospectName} — already contacted by concurrent intent`, {
+          contactId: prospect.id, attempt,
+        });
+        continue; // try next prospect
+      }
+    } catch { /* non-fatal — proceed with this prospect */ }
+
+    break; // no recent activity found, use this prospect
+  }
 
   await writeStepAudit(ctx, "WF-400.prospect", `Selected: ${prospectName} at ${firmName} (${prospectEmail})`, {
     contactId: prospect.id, remaining: remaining.length,

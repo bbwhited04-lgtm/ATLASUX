@@ -89,6 +89,7 @@ import { twilioRoutes } from "./routes/twilioRoutes.js";
 import { orgMemoryRoutes } from "./routes/orgMemoryRoutes.js";
 import { calibrationRoutes } from "./routes/calibrationRoutes.js";
 import { diagnosticsRoutes } from "./routes/diagnosticsRoutes.js";
+import { quickbooksRoutes } from "./routes/quickbooksRoutes.js";
 
 const app = Fastify({
   logger: {
@@ -376,6 +377,9 @@ await app.register(orgMemoryRoutes, { prefix: "/v1/org-memory" });
 // Agent Calibration — confidence adjustment from outcome data
 await app.register(calibrationRoutes, { prefix: "/v1/calibration" });
 await app.register(diagnosticsRoutes, { prefix: "/v1/diagnostics" });
+
+// QuickBooks — OAuth2 connection, webhook, status
+await app.register(quickbooksRoutes, { prefix: "/v1/quickbooks" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

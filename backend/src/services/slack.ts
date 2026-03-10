@@ -173,24 +173,40 @@ function getBotToken(): string {
 }
 
 async function slackApi<T = any>(method: string, body: Record<string, any>): Promise<T> {
-  const res = await fetch(`${SLACK_API}/${method}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${getBotToken()}`,
-      "Content-Type": "application/json; charset=utf-8",
-    },
-    body: JSON.stringify(body),
-  });
+  const MAX_RETRIES = 3;
 
-  if (!res.ok) {
-    throw new Error(`Slack API ${method} HTTP ${res.status}`);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const res = await fetch(`${SLACK_API}/${method}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${getBotToken()}`,
+        "Content-Type": "application/json; charset=utf-8",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (res.status === 429) {
+      const retryAfter = Number(res.headers.get("Retry-After") || "5");
+      const waitMs = Math.min(retryAfter * 1000, 30_000);
+      if (attempt < MAX_RETRIES) {
+        console.warn(`[slack] 429 on ${method}, retrying in ${retryAfter}s (attempt ${attempt + 1}/${MAX_RETRIES})`);
+        await new Promise((r) => setTimeout(r, waitMs));
+        continue;
+      }
+    }
+
+    if (!res.ok) {
+      throw new Error(`Slack API ${method} HTTP ${res.status}`);
+    }
+
+    const data = await res.json() as any;
+    if (!data.ok) {
+      throw new Error(`Slack API ${method}: ${data.error ?? "unknown error"}`);
+    }
+    return data as T;
   }
 
-  const data = await res.json() as any;
-  if (!data.ok) {
-    throw new Error(`Slack API ${method}: ${data.error ?? "unknown error"}`);
-  }
-  return data as T;
+  throw new Error(`Slack API ${method}: exhausted retries after 429s`);
 }
 
 // ── Public API ──────────────────────────────────────────────────────────────
@@ -271,8 +287,17 @@ export async function readHistory(
 
 /**
  * List channels the bot can see. Paginates automatically to get all channels.
+ * Results are cached for 5 minutes to avoid hammering conversations.list on startup.
  */
+let _channelListCache: SlackChannel[] = [];
+let _channelListCachedAt = 0;
+const CHANNEL_LIST_TTL_MS = 5 * 60 * 1000;
+
 export async function listChannels(limit = 200): Promise<SlackChannel[]> {
+  if (_channelListCache.length && Date.now() - _channelListCachedAt < CHANNEL_LIST_TTL_MS) {
+    return _channelListCache;
+  }
+
   const all: SlackChannel[] = [];
   let cursor: string | undefined;
 
@@ -299,6 +324,8 @@ export async function listChannels(limit = 200): Promise<SlackChannel[]> {
     cursor = data.response_metadata?.next_cursor || undefined;
   } while (cursor);
 
+  _channelListCache = all;
+  _channelListCachedAt = Date.now();
   return all;
 }
 
