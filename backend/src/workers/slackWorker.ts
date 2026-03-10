@@ -659,11 +659,19 @@ async function tickChannel(channelName: string) {
   // Human messages always get a response
   const humanMessages = newMessages.filter((m) => !m.bot_id);
 
+  // Check if any human message targets a specific agent (not Atlas default)
+  // If so, suppress agent-to-agent chatter this tick — only the targeted agent should respond
+  const hasTargetedMessage = humanMessages.some((m) => {
+    const agent = detectAgent(m.text);
+    return agent.id !== "atlas";
+  });
+
   // Agent-to-agent chatter: throttled to prevent death spirals
   // - 25% chance per agent message
   // - Cooldown per channel (30s for casual channels, 60s for others)
   // - Global cap of 2 agent-to-agent replies per tick
   // - Skip entirely if last 5 messages are all bots (conversation is agent-only)
+  // - Skip entirely if a human message targets a specific agent (let them respond alone)
   const lastAgentReply = lastAgentReplyByChannel.get(channelName) ?? 0;
   const channelCooldown = CASUAL_CHANNELS.has(channelName) ? CASUAL_CHATTER_COOLDOWN_MS : AGENT_CHATTER_COOLDOWN_MS;
   const cooldownOk = Date.now() - lastAgentReply > channelCooldown;
@@ -671,7 +679,7 @@ async function tickChannel(channelName: string) {
   const recentAreBots = contextMessages.length > 0 && contextMessages.slice(0, 5).every((m) => !!m.bot_id);
 
   let agentChatter: SlackMessage[] = [];
-  if (cooldownOk && globalCapOk && !recentAreBots) {
+  if (cooldownOk && globalCapOk && !recentAreBots && !hasTargetedMessage) {
     const agentMessages = newMessages.filter((m) => !!m.bot_id);
     agentChatter = agentMessages.filter(() => Math.random() < 0.25);
     // Take at most 1 per channel per tick
