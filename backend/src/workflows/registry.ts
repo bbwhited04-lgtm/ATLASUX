@@ -3196,6 +3196,12 @@ handlers["WF-212"] = async (ctx) => {
 
   const integrations = (await postizFetch(ctx.tenantId, "/integrations")) as PostizIntegration[];
 
+  // Debug: log raw integration data so we can fix platform matching
+  await writeStepAudit(ctx, "WF-212.integrations_debug", `Postiz returned ${integrations.length} integrations`, {
+    targetPlatforms,
+    integrations: integrations.map((i) => ({ ...i })),
+  });
+
   // Map platforms to their integrations upfront (single pass)
   const platformMap = new Map<string, PostizIntegration>();
   const noIntegration: Array<{ platform: string; ok: boolean; error: string }> = [];
