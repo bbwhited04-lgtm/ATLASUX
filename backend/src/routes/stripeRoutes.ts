@@ -10,6 +10,47 @@ import {
 } from "../integrations/stripe.client.js";
 import { LedgerCategory, LedgerEntryType } from "@prisma/client";
 import { loadEnv } from "../env.js";
+import { upgradeTenantTier } from "../services/tierUpgrade.js";
+
+// Map Stripe price IDs to seat tiers.
+// TODO: Move to env vars or config once Stripe products are finalized.
+const STRIPE_PRICE_TO_TIER: Record<string, string> = {
+  // Populated at startup from env vars (see below)
+};
+
+/** Populate price-to-tier map from env vars at import time. */
+function initPriceToTierMap() {
+  const env = process.env;
+  if (env.STRIPE_PRICE_STARTER_MONTHLY) STRIPE_PRICE_TO_TIER[env.STRIPE_PRICE_STARTER_MONTHLY] = "starter";
+  if (env.STRIPE_PRICE_STARTER_ANNUAL) STRIPE_PRICE_TO_TIER[env.STRIPE_PRICE_STARTER_ANNUAL] = "starter";
+  if (env.STRIPE_PRICE_BUSINESS_PRO_MONTHLY) STRIPE_PRICE_TO_TIER[env.STRIPE_PRICE_BUSINESS_PRO_MONTHLY] = "pro";
+  if (env.STRIPE_PRICE_BUSINESS_PRO_ANNUAL) STRIPE_PRICE_TO_TIER[env.STRIPE_PRICE_BUSINESS_PRO_ANNUAL] = "pro";
+}
+initPriceToTierMap();
+
+/**
+ * Resolve the seat tier from a Stripe subscription object.
+ * Checks metadata, then price ID lookup, then product name heuristic.
+ */
+function tierFromSubscription(subscription: any): string | null {
+  // Try metadata first
+  const tierMeta = subscription.metadata?.tier;
+  if (tierMeta) return tierMeta;
+
+  // Try price ID lookup
+  const priceId = subscription.items?.data?.[0]?.price?.id;
+  if (priceId && STRIPE_PRICE_TO_TIER[priceId]) {
+    return STRIPE_PRICE_TO_TIER[priceId];
+  }
+
+  // Try product name matching
+  const productName = subscription.items?.data?.[0]?.price?.product?.name?.toLowerCase() ?? "";
+  if (productName.includes("enterprise")) return "enterprise";
+  if (productName.includes("pro")) return "pro";
+  if (productName.includes("starter")) return "starter";
+
+  return null;
+}
 
 const CreateProductSchema = z.object({
   fromAgent: z.string().min(1),
@@ -386,13 +427,44 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
       }
 
       req.log.info({ subscriptionId, revoked: seats.length }, "Cloud seats revoked on subscription deletion");
+
+      // Downgrade tenant tier to free_beta
+      const customerId = sub.customer as string;
+      const subRecord = await prisma.subscription.findFirst({
+        where: { stripeCustomerId: customerId },
+      });
+
+      if (subRecord) {
+        const oldTier = subRecord.seatType;
+        if (oldTier !== "free_beta") {
+          await upgradeTenantTier(subRecord.tenantId, "free_beta");
+          req.log.info(
+            { tenantId: subRecord.tenantId, oldTier, newTier: "free_beta" },
+            "Tenant tier downgraded to free_beta on subscription cancellation",
+          );
+        }
+
+        // Update subscription record
+        await prisma.subscription.update({
+          where: { id: subRecord.id },
+          data: {
+            seatType: "free_beta",
+            status: "canceled",
+            canceledAt: new Date(),
+          },
+        });
+      } else {
+        req.log.warn({ customerId, subscriptionId }, "No subscription record found for Stripe customer — cannot downgrade tier");
+      }
+
       return reply.send({ ok: true, event: type, revoked: seats.length });
     }
 
-    // ── customer.subscription.updated — handle status changes ────────────
+    // ── customer.subscription.updated — handle status + tier changes ─────
     if (type === "customer.subscription.updated") {
       const sub = event.data.object;
       const subscriptionId = sub.id;
+      const customerId = sub.customer as string;
       const status = sub.status; // active | past_due | canceled | unpaid
 
       if (status === "past_due" || status === "unpaid") {
@@ -421,6 +493,38 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
           }
         }
         req.log.info({ subscriptionId }, "Cloud seats reactivated");
+
+        // ── Tier upgrade/change detection ──────────────────────────────
+        const newTier = tierFromSubscription(sub);
+        if (newTier) {
+          // Look up the tenant via the Subscription table (stripeCustomerId)
+          const subRecord = await prisma.subscription.findFirst({
+            where: { stripeCustomerId: customerId },
+          });
+
+          if (subRecord) {
+            const oldTier = subRecord.seatType;
+            if (oldTier !== newTier) {
+              const result = await upgradeTenantTier(subRecord.tenantId, newTier);
+              req.log.info(
+                { tenantId: subRecord.tenantId, oldTier, newTier, addedAgents: result.addedAgents, addedWorkflows: result.addedWorkflows },
+                "Tenant tier upgraded via Stripe subscription change",
+              );
+
+              // Update the subscription record to reflect the new tier
+              await prisma.subscription.update({
+                where: { id: subRecord.id },
+                data: {
+                  seatType: newTier as any,
+                  stripeSubscriptionId: subscriptionId,
+                  status,
+                },
+              });
+            }
+          } else {
+            req.log.warn({ customerId, subscriptionId }, "No subscription record found for Stripe customer — cannot upgrade tier");
+          }
+        }
       }
 
       return reply.send({ ok: true, event: type });

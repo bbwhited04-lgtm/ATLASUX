@@ -22,6 +22,7 @@ import type { ToolDefinition } from "./_types.js";
 import { makeResult, makeError } from "./_types.js";
 import { deliverBroadcast, type BroadcastChannel } from "./broadcastDelivery.js";
 import { createDecisionMemo } from "../../../services/decisionMemos.js";
+import { resolveCredential } from "../../../services/credentialResolver.js";
 import OpenAI from "openai";
 
 const POSTIZ_API = "https://api.postiz.com/public/v1";
@@ -35,9 +36,9 @@ const MEDIA_ONLY_PLATFORMS = new Set([
 
 // ── Postiz API helpers ───────────────────────────────────────────────────────
 
-async function postizGet(endpoint: string): Promise<unknown> {
-  const key = process.env.POSTIZ_API_KEY;
-  if (!key) throw new Error("POSTIZ_API_KEY not configured");
+async function postizGet(endpoint: string, tenantId: string): Promise<unknown> {
+  const key = await resolveCredential(tenantId, "postiz");
+  if (!key) throw new Error("Postiz API key not configured. Add your Postiz API key in Settings > Integrations.");
   const res = await fetch(`${POSTIZ_API}${endpoint}`, {
     headers: { Authorization: key, "Content-Type": "application/json" },
   });
@@ -54,9 +55,9 @@ type PostizIntegration = {
 
 // ── AI content generation ────────────────────────────────────────────────────
 
-export async function generatePostContent(topic: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
+export async function generatePostContent(topic: string, tenantId: string): Promise<string> {
+  const apiKey = await resolveCredential(tenantId, "openai");
+  if (!apiKey) throw new Error("OpenAI API key not configured. Add your OpenAI API key in Settings > Integrations.");
 
   const openai = new OpenAI({ apiKey });
 
@@ -118,8 +119,8 @@ export function extractTopic(query: string): string {
 
 // ── Fetch channels helper ────────────────────────────────────────────────────
 
-async function fetchTextChannels(): Promise<BroadcastChannel[]> {
-  const integrations = (await postizGet("/integrations")) as PostizIntegration[];
+async function fetchTextChannels(tenantId: string): Promise<BroadcastChannel[]> {
+  const integrations = (await postizGet("/integrations", tenantId)) as PostizIntegration[];
   return integrations
     .filter(i => !MEDIA_ONLY_PLATFORMS.has((i.identifier ?? "").toLowerCase()))
     .map(i => ({
@@ -179,14 +180,14 @@ export const postizBroadcastTool: ToolDefinition = {
       // 2. Generate content via AI
       let content: string;
       try {
-        content = await generatePostContent(topic);
+        content = await generatePostContent(topic, ctx.tenantId);
       } catch (err: any) {
         return makeResult("postiz_broadcast",
           `Failed to generate post content: ${err?.message ?? String(err)}`);
       }
 
       // 3. Fetch all text-compatible channels
-      const channels = await fetchTextChannels();
+      const channels = await fetchTextChannels(ctx.tenantId);
       if (!channels.length) {
         return makeResult("postiz_broadcast", "No text-compatible channels found.");
       }

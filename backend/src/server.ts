@@ -90,6 +90,7 @@ import { orgMemoryRoutes } from "./routes/orgMemoryRoutes.js";
 import { calibrationRoutes } from "./routes/calibrationRoutes.js";
 import { diagnosticsRoutes } from "./routes/diagnosticsRoutes.js";
 import { quickbooksRoutes } from "./routes/quickbooksRoutes.js";
+import { credentialRoutes } from "./routes/credentialRoutes.js";
 
 const app = Fastify({
   logger: {
@@ -380,6 +381,9 @@ await app.register(diagnosticsRoutes, { prefix: "/v1/diagnostics" });
 
 // QuickBooks — OAuth2 connection, webhook, status
 await app.register(quickbooksRoutes, { prefix: "/v1/quickbooks" });
+
+// Per-tenant credential management (API keys for third-party providers)
+await app.register(credentialRoutes, { prefix: "/v1/credentials" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

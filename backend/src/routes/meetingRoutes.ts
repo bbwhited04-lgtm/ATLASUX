@@ -17,11 +17,13 @@ import { z } from "zod";
 import { prisma, withTenant } from "../db/prisma.js";
 import { enforceFeatureAccess } from "../lib/seatEnforcement.js";
 import { sanitizeError } from "../lib/sanitizeError.js";
+import { resolveCredential } from "../services/credentialResolver.js";
+import { resolveAgentEmail } from "../services/agentEmailResolver.js";
 
 const tenantIdEnv = process.env.MS_TENANT_ID ?? "";
 const clientId = process.env.MS_CLIENT_ID ?? "";
 const clientSecret = process.env.MS_CLIENT_SECRET ?? "";
-const defaultMailbox = (process.env.AGENT_EMAIL_ATLAS ?? "atlas.ceo@deadapp.info").trim();
+const defaultMailboxFallback = "atlas.ceo@deadapp.info";
 
 // ── M365 token cache (same pattern as calendarRoutes) ─────────────────────────
 
@@ -88,15 +90,15 @@ const CreateMeetingBody = z.object({
 
 // ── AI summarization ─────────────────────────────────────────────────────────
 
-async function summarizeTranscript(transcript: string): Promise<{
+async function summarizeTranscript(tenantId: string, transcript: string): Promise<{
   summary: string;
   actionItems: Array<{ text: string; assignee?: string; done: boolean }>;
   keyPoints: string[];
 }> {
-  const openaiKey = process.env.OPENAI_API_KEY;
+  const openaiKey = await resolveCredential(tenantId, "openai");
   if (!openaiKey) {
     return {
-      summary: "AI summarization unavailable — OPENAI_API_KEY not configured.",
+      summary: "AI summarization unavailable — no OpenAI credential configured for this tenant.",
       actionItems: [],
       keyPoints: [],
     };
@@ -158,7 +160,7 @@ ${transcript.slice(0, 30_000)}`;
 
 // ── Transcript fetching ──────────────────────────────────────────────────────
 
-async function fetchTeamsTranscript(meetingUrl: string): Promise<string | null> {
+async function fetchTeamsTranscript(meetingUrl: string, mailbox: string): Promise<string | null> {
   if (!tenantIdEnv || !clientId || !clientSecret) return null;
   if (!meetingUrl.includes("teams") && !meetingUrl.includes("microsoft")) return null;
 
@@ -167,7 +169,7 @@ async function fetchTeamsTranscript(meetingUrl: string): Promise<string | null> 
 
     // Try to find the online meeting by join URL
     const meetings = await graphGet(
-      `/users/${defaultMailbox}/onlineMeetings?$filter=joinWebUrl eq '${encodeURIComponent(meetingUrl)}'`,
+      `/users/${mailbox}/onlineMeetings?$filter=joinWebUrl eq '${encodeURIComponent(meetingUrl)}'`,
       token,
     );
 
@@ -176,7 +178,7 @@ async function fetchTeamsTranscript(meetingUrl: string): Promise<string | null> 
 
     // Fetch transcripts for this meeting
     const transcripts = await graphGet(
-      `/users/${defaultMailbox}/onlineMeetings/${meeting.id}/transcripts`,
+      `/users/${mailbox}/onlineMeetings/${meeting.id}/transcripts`,
       token,
     );
 
@@ -184,7 +186,7 @@ async function fetchTeamsTranscript(meetingUrl: string): Promise<string | null> 
     if (!transcriptEntry?.id) return null;
 
     // Fetch the actual transcript content
-    const transcriptUrl = `/users/${defaultMailbox}/onlineMeetings/${meeting.id}/transcripts/${transcriptEntry.id}/content?$format=text/vtt`;
+    const transcriptUrl = `/users/${mailbox}/onlineMeetings/${meeting.id}/transcripts/${transcriptEntry.id}/content?$format=text/vtt`;
     const contentRes = await fetch(
       `https://graph.microsoft.com/v1.0${transcriptUrl}`,
       { headers: { Authorization: `Bearer ${token}` } },
@@ -206,7 +208,7 @@ async function fetchTeamsTranscript(meetingUrl: string): Promise<string | null> 
   }
 }
 
-async function fetchCalendarMeetings(tenantId: string): Promise<any[]> {
+async function fetchCalendarMeetings(tenantId: string, mailbox: string): Promise<any[]> {
   if (!tenantIdEnv || !clientId || !clientSecret) return [];
 
   try {
@@ -217,7 +219,7 @@ async function fetchCalendarMeetings(tenantId: string): Promise<any[]> {
     futureEnd.setDate(now.getDate() + 14); // next 2 weeks
 
     const data = await graphGet(
-      `/users/${defaultMailbox}/calendarView` +
+      `/users/${mailbox}/calendarView` +
         `?startDateTime=${now.toISOString()}` +
         `&endDateTime=${futureEnd.toISOString()}` +
         `&$top=50` +
@@ -293,8 +295,9 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     // Merge calendar events with manually created meeting notes
+    const mailbox = await resolveAgentEmail(tenantId, "atlas") ?? defaultMailboxFallback;
     const [calendarMeetings, manualMeetings] = await Promise.all([
-      fetchCalendarMeetings(tenantId),
+      fetchCalendarMeetings(tenantId, mailbox),
       withTenant(tenantId, async (tx) =>
         tx.meetingNote.findMany({
           where: {
@@ -383,7 +386,8 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
     // Step 1: Try to fetch transcript from Teams (if applicable)
     let transcript = meeting.transcript;
     if (!transcript && meeting.meetingUrl) {
-      transcript = await fetchTeamsTranscript(meeting.meetingUrl);
+      const mailbox = await resolveAgentEmail(tenantId, "atlas") ?? defaultMailboxFallback;
+      transcript = await fetchTeamsTranscript(meeting.meetingUrl, mailbox);
     }
 
     if (!transcript) {
@@ -403,7 +407,7 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
 
     // Step 2: Summarize with AI
     try {
-      const { summary, actionItems, keyPoints } = await summarizeTranscript(transcript);
+      const { summary, actionItems, keyPoints } = await summarizeTranscript(tenantId, transcript);
 
       const updated = await withTenant(tenantId, async (tx) =>
         tx.meetingNote.update({

@@ -19,6 +19,7 @@
 
 import { prisma } from "../db/prisma.js";
 import { postAsAgent, getChannelByName } from "../services/slack.js";
+import { resolveCredential } from "../services/credentialResolver.js";
 
 const TENANT_ID = process.env.TENANT_ID?.trim() || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
 const CALL_COOLDOWN_MS = 30_000;  // 30s between calls
@@ -318,12 +319,13 @@ async function placeOutboundCall(
   to: string,
   contact: QueuedContact,
 ): Promise<{ ok: boolean; callSid?: string; error?: string }> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID ?? "";
-  const authToken = process.env.TWILIO_AUTH_TOKEN ?? "";
-  const fromNumber = process.env.MERCER_FROM_NUMBER ?? process.env.TWILIO_FROM_NUMBER ?? "";
+  const accountSid = await resolveCredential(TENANT_ID, "twilio_sid") ?? "";
+  const authToken = await resolveCredential(TENANT_ID, "twilio_token") ?? "";
+  const fromNumber = process.env.MERCER_FROM_NUMBER
+    || (await resolveCredential(TENANT_ID, "twilio_from") ?? "");
 
   if (!accountSid || !authToken || !fromNumber) {
-    return { ok: false, error: "Twilio not configured" };
+    return { ok: false, error: "Twilio not configured for this tenant" };
   }
 
   // Determine the public URL for TwiML and WebSocket

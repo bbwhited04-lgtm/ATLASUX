@@ -386,7 +386,7 @@ async function handleRecordingCompleted(app: any, body: any) {
     } catch { /* best-effort — don't break transcript processing */ }
 
     // Summarize with AI
-    const { summary, actionItems, keyPoints } = await summarizeTranscript(transcript);
+    const { summary, actionItems, keyPoints } = await summarizeTranscript(TENANT_ID, transcript);
 
     // Upsert MeetingNote with transcript + summary
     const existing = await prisma.meetingNote.findFirst({

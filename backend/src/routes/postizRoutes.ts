@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
 import { sanitizeError } from "../lib/sanitizeError.js";
+import { resolveCredential } from "../services/credentialResolver.js";
 
 const POSTIZ_API = "https://api.postiz.com/public/v1";
 
@@ -16,9 +17,9 @@ type PostizMetric = {
   data?: Array<{ total: string; date: string }>;
 };
 
-async function postizGet(endpoint: string): Promise<unknown> {
-  const key = process.env.POSTIZ_API_KEY;
-  if (!key) throw new Error("POSTIZ_API_KEY not configured");
+async function postizGet(tenantId: string, endpoint: string): Promise<unknown> {
+  const key = await resolveCredential(tenantId, "postiz");
+  if (!key) throw new Error("No Postiz credential configured. Add your Postiz API key in Settings > Integrations.");
   const res = await fetch(`${POSTIZ_API}${endpoint}`, {
     headers: { Authorization: key },
   });
@@ -40,10 +41,11 @@ export const postizRoutes: FastifyPluginAsync = async (app) => {
    */
   app.get("/channels", async (req, reply) => {
     const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
 
     let integrations: PostizIntegration[];
     try {
-      integrations = (await postizGet("/integrations")) as PostizIntegration[];
+      integrations = (await postizGet(tenantId, "/integrations")) as PostizIntegration[];
     } catch (e: any) {
       app.log.error({ err: e }, "Postiz channels fetch failed");
       return reply.code(502).send({ ok: false, error: sanitizeError(e) });
@@ -94,12 +96,15 @@ export const postizRoutes: FastifyPluginAsync = async (app) => {
    * Returns metrics for a single integration.
    */
   app.get("/analytics/aggregate", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
+
     const q = req.query as any;
     const date = String(q.date ?? "7");
 
     let integrations: PostizIntegration[];
     try {
-      integrations = (await postizGet("/integrations")) as PostizIntegration[];
+      integrations = (await postizGet(tenantId, "/integrations")) as PostizIntegration[];
     } catch (e: any) {
       app.log.error({ err: e }, "Postiz analytics aggregate fetch failed");
       return reply.code(502).send({ ok: false, error: sanitizeError(e) });
@@ -113,7 +118,7 @@ export const postizRoutes: FastifyPluginAsync = async (app) => {
 
     for (const integ of integrations) {
       try {
-        const stats = (await postizGet(
+        const stats = (await postizGet(tenantId,
           `/analytics/${integ.id}?date=${date}`,
         )) as PostizMetric[];
         if (Array.isArray(stats)) {
@@ -191,13 +196,16 @@ export const postizRoutes: FastifyPluginAsync = async (app) => {
    * Returns scheduled/published posts with content, images, and channel info.
    */
   app.get("/posts", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
+
     const q = req.query as any;
     const endDate = q.endDate ?? new Date().toISOString();
     const startDate =
       q.startDate ?? new Date(Date.now() - 30 * 86_400_000).toISOString();
 
     try {
-      const data = (await postizGet(
+      const data = (await postizGet(tenantId,
         `/posts?startDate=${startDate}&endDate=${endDate}`,
       )) as any;
 
@@ -234,12 +242,15 @@ export const postizRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: { integrationId: string } }>(
     "/analytics/:integrationId",
     async (req, reply) => {
+      const tenantId = (req as any).tenantId as string | undefined;
+      if (!tenantId) return reply.code(400).send({ ok: false, error: "TENANT_REQUIRED" });
+
       const { integrationId } = req.params;
       const q = req.query as any;
       const date = String(q.date ?? "7");
 
       try {
-        const stats = (await postizGet(
+        const stats = (await postizGet(tenantId,
           `/analytics/${integrationId}?date=${date}`,
         )) as PostizMetric[];
         return { ok: true, metrics: Array.isArray(stats) ? stats : [] };

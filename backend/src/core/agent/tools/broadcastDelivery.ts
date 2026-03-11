@@ -15,6 +15,7 @@ import { getProviderToken } from "../../../lib/tokenStore.js";
 import { postTweet } from "../../../services/x.js";
 import { publishVideo } from "../../../services/tiktok.js";
 import { generateSocialImage } from "../../../services/socialImage.js";
+import { resolveCredential } from "../../../services/credentialResolver.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,9 +72,9 @@ const FAULT = {
 
 const POSTIZ_API = "https://api.postiz.com/public/v1";
 
-async function postizPost(endpoint: string, body: unknown): Promise<unknown> {
-  const key = process.env.POSTIZ_API_KEY;
-  if (!key) throw new Error("POSTIZ_API_KEY not configured");
+async function postizPost(endpoint: string, body: unknown, tenantId: string): Promise<unknown> {
+  const key = await resolveCredential(tenantId, "postiz");
+  if (!key) throw new Error("Postiz API key not configured. Add your Postiz API key in Settings > Integrations.");
   const res = await fetch(`${POSTIZ_API}${endpoint}`, {
     method: "POST",
     headers: { Authorization: key, "Content-Type": "application/json" },
@@ -164,11 +165,13 @@ async function tryTier1(
 // ── Tier 2: Postiz API ──────────────────────────────────────────────────────
 
 async function tryTier2(
+  tenantId: string,
   channel: BroadcastChannel,
   content: string,
   imageUrls: string[] = [],
 ): Promise<TierAttempt> {
-  if (!process.env.POSTIZ_API_KEY) {
+  const postizKey = await resolveCredential(tenantId, "postiz");
+  if (!postizKey) {
     return { tier: 2, success: false, faultCode: FAULT.TIER2_NO_KEY };
   }
 
@@ -188,7 +191,7 @@ async function tryTier2(
       }],
     };
 
-    await postizPost("/posts", postBody);
+    await postizPost("/posts", postBody, tenantId);
     return { tier: 2, success: true };
   } catch (err: any) {
     return { tier: 2, success: false, error: err?.message, faultCode: FAULT.TIER2_API_ERROR };
@@ -252,7 +255,7 @@ async function deliverToChannel(
   }
 
   // Tier 2: Postiz API
-  const t2 = await tryTier2(channel, content, imageUrls);
+  const t2 = await tryTier2(tenantId, channel, content, imageUrls);
   attempts.push(t2);
   if (t2.success) {
     return { channel: channel.name, platform, tier: 2, success: true, attempts };
@@ -292,7 +295,7 @@ export async function deliverBroadcast(ctx: BroadcastContext): Promise<Broadcast
   }
 
   // Generate image once for all channels (best-effort)
-  const imageUrls = await generateSocialImage(ctx.content);
+  const imageUrls = await generateSocialImage(ctx.tenantId, ctx.content);
 
   const results: DeliveryResult[] = [];
 

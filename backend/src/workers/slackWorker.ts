@@ -39,45 +39,169 @@ import { agentRegistry } from "../agents/registry.js";
 import { runLLM } from "../core/engine/brainllm.js";
 import { workflowCatalog } from "../workflows/registry.js";
 import { prisma } from "../db/prisma.js";
+import { resolveCredential } from "../services/credentialResolver.js";
 import { PDFParse } from "pdf-parse";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-// Bot's own Slack user ID — resolved at startup via auth.test
+// Bot's own Slack user ID — resolved per-tenant at startup via auth.test
 let SLACK_BOT_USER_ID = "";
 
 const POLL_MS = Math.max(1000, Number(process.env.SLACK_POLL_MS ?? 5000));
 const CONTEXT_MESSAGES = Math.max(1, Math.min(50, Number(process.env.SLACK_CONTEXT_MESSAGES ?? 10)));
-const TENANT_ID = process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
+const OWNER_TENANT_ID = process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
+/** Mutable — swapped per-tenant each tick iteration. All inner functions read this. */
+let CURRENT_TENANT_ID = OWNER_TENANT_ID;
 const CHANNEL_NAMES = ["atlas-ux", "intel", "restroom", "water-cooler", "atlas-ux-execs", "all-shortypro", "social"];
 // How many channels to poll per tick (rotates through all channels across ticks)
 const CHANNELS_PER_TICK = Math.max(1, Number(process.env.SLACK_CHANNELS_PER_TICK ?? 2));
 // Delay between API calls within a tick to avoid rate limits (ms)
 const API_DELAY_MS = 1200;
 
-// ── State (per channel) ───────────────────────────────────────────────────────
+// ── Hallucination detector ────────────────────────────────────────────────────
+// Catches fabricated metrics/stats before they get posted to Slack.
+const HALLUCINATION_PATTERNS = [
+  /\d+(\.\d+)?x\s+(more|faster|better|higher|greater|increase)/i,   // "4x more views"
+  /\d+%\s+(more|faster|better|higher|increase|boost|jump|drop|engagement)/i, // "40% more engagement"
+  /seeing\s+\d+%/i,                                                   // "seeing 40%"
+  /\b(algorithm|algo)\s+(is|are)\s+(pushing|boosting|surfacing|favoring|prioritizing)/i,
+  /\b(getting|seeing|driving)\s+\d+(\.\d+)?x/i,                      // "getting 2.3x"
+  /\b\d+%\s+(faster|slower|cheaper|better|improvement|reduction)/i,   // "60% faster"
+  /\bprocessing\s+\d+(\.\d+)?x\s+more/i,                             // "processing 2.3x more"
+];
 
-const lastSeenByChannel = new Map<string, string | null>();
-const cachedChannels = new Map<string, SlackChannel>();
-let channelRotationIdx = 0; // Rotates through CHANNEL_NAMES across ticks
+function containsHallucinatedMetrics(text: string): boolean {
+  return HALLUCINATION_PATTERNS.some((pattern) => pattern.test(text));
+}
 
-// DM state
-const lastSeenByDM = new Map<string, string | null>();
+// ── Per-tenant state (Phase 6.2) ─────────────────────────────────────────────
+
+interface TenantSlackState {
+  lastSeenByChannel: Map<string, string | null>;
+  cachedChannels: Map<string, SlackChannel>;
+  channelRotationIdx: number;
+  lastSeenByDM: Map<string, string | null>;
+  dmTickCounter: number;
+  repliedThreads: Set<string>;
+  channelSummaryCache: Map<string, string>;
+  channelSummaryLastUpdated: Map<string, number>;
+  summaryStaggerIdx: number;
+  lastAgentReplyByChannel: Map<string, number>;
+  processedFiles: Set<string>;
+  workspaceUsers: SlackUser[];
+  usersLastFetched: number;
+  userCache: Map<string, string>;
+  botUserId: string;
+}
+
+const tenantStates = new Map<string, TenantSlackState>();
+
+function getTenantState(tenantId: string): TenantSlackState {
+  let state = tenantStates.get(tenantId);
+  if (!state) {
+    state = {
+      lastSeenByChannel: new Map(),
+      cachedChannels: new Map(),
+      channelRotationIdx: 0,
+      lastSeenByDM: new Map(),
+      dmTickCounter: 0,
+      repliedThreads: new Set(),
+      channelSummaryCache: new Map(),
+      channelSummaryLastUpdated: new Map(),
+      summaryStaggerIdx: 0,
+      lastAgentReplyByChannel: new Map(),
+      processedFiles: new Set(),
+      workspaceUsers: [],
+      usersLastFetched: 0,
+      userCache: new Map(),
+      botUserId: "",
+    };
+    tenantStates.set(tenantId, state);
+  }
+  return state;
+}
+
+/**
+ * Query all tenants that have active Slack credentials.
+ * Always includes the owner tenant (uses env fallback via resolveCredential).
+ */
+async function getSlackTenants(): Promise<string[]> {
+  try {
+    const rows = await prisma.tenantCredential.findMany({
+      where: { provider: "slack", isActive: true },
+      select: { tenantId: true },
+    });
+    const tenantIds = rows.map((r) => r.tenantId);
+    // Always include the owner tenant (uses env fallback)
+    if (!tenantIds.includes(OWNER_TENANT_ID)) tenantIds.unshift(OWNER_TENANT_ID);
+    return tenantIds;
+  } catch {
+    // Fallback to just owner
+    return [OWNER_TENANT_ID];
+  }
+}
+
+// ── Active-tenant globals (swapped per tenant each tick iteration) ───────────
+// Inner functions (tickChannel, tickDMs, etc.) read these module-level
+// variables. Before processing each tenant we swap them in from TenantSlackState
+// and after processing we swap them back out.
+
+let lastSeenByChannel = new Map<string, string | null>();
+let cachedChannels = new Map<string, SlackChannel>();
+let channelRotationIdx = 0;
+let lastSeenByDM = new Map<string, string | null>();
 let dmTickCounter = 0;
-
-// Thread state — track which threads we've already replied in recently
-const repliedThreads = new Set<string>();
-
-// Channel summary cache — generated every 15 min by cerebras (free), injected into agent prompts
-const channelSummaryCache = new Map<string, string>(); // channelName → summary text
-const channelSummaryLastUpdated = new Map<string, number>(); // channelName → timestamp
-const SUMMARY_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
-// Stagger initial summaries so they don't all fire on first tick (prevents 429s at startup)
+let repliedThreads = new Set<string>();
+let channelSummaryCache = new Map<string, string>();
+let channelSummaryLastUpdated = new Map<string, number>();
 let summaryStaggerIdx = 0;
+let lastAgentReplyByChannel = new Map<string, number>();
+let processedFiles = new Set<string>();
+let workspaceUsers: SlackUser[] = [];
+let usersLastFetched = 0;
+let userCache = new Map<string, string>();
+
+/** Copy per-tenant state INTO the module-level globals. */
+function swapStateIn(s: TenantSlackState): void {
+  lastSeenByChannel = s.lastSeenByChannel;
+  cachedChannels = s.cachedChannels;
+  channelRotationIdx = s.channelRotationIdx;
+  lastSeenByDM = s.lastSeenByDM;
+  dmTickCounter = s.dmTickCounter;
+  repliedThreads = s.repliedThreads;
+  channelSummaryCache = s.channelSummaryCache;
+  channelSummaryLastUpdated = s.channelSummaryLastUpdated;
+  summaryStaggerIdx = s.summaryStaggerIdx;
+  lastAgentReplyByChannel = s.lastAgentReplyByChannel;
+  processedFiles = s.processedFiles;
+  workspaceUsers = s.workspaceUsers;
+  usersLastFetched = s.usersLastFetched;
+  userCache = s.userCache;
+  SLACK_BOT_USER_ID = s.botUserId;
+}
+
+/** Copy module-level globals back OUT into per-tenant state (captures mutations). */
+function swapStateOut(s: TenantSlackState): void {
+  s.lastSeenByChannel = lastSeenByChannel;
+  s.cachedChannels = cachedChannels;
+  s.channelRotationIdx = channelRotationIdx;
+  s.lastSeenByDM = lastSeenByDM;
+  s.dmTickCounter = dmTickCounter;
+  s.repliedThreads = repliedThreads;
+  s.channelSummaryCache = channelSummaryCache;
+  s.channelSummaryLastUpdated = channelSummaryLastUpdated;
+  s.summaryStaggerIdx = summaryStaggerIdx;
+  s.lastAgentReplyByChannel = lastAgentReplyByChannel;
+  s.processedFiles = processedFiles;
+  s.workspaceUsers = workspaceUsers;
+  s.usersLastFetched = usersLastFetched;
+  s.userCache = userCache;
+  s.botUserId = SLACK_BOT_USER_ID;
+}
+
+const SUMMARY_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const SUMMARY_MESSAGE_COUNT = 50; // how many messages to summarize
 
-// Anti-spiral: track when the last agent-to-agent reply happened per channel
-const lastAgentReplyByChannel = new Map<string, number>();
 const AGENT_CHATTER_COOLDOWN_MS = 60_000; // 60s default cooldown between agent-to-agent replies per channel
 const CASUAL_CHATTER_COOLDOWN_MS = 30_000; // 30s cooldown for casual channels (#water-cooler, #restroom)
 const CASUAL_CHANNELS = new Set(["water-cooler", "restroom"]);
@@ -92,14 +216,6 @@ const SPONTANEOUS_THOUGHT_CHANCE = 0.15;
 const SPONTANEOUS_CHANNELS = ["water-cooler", "intel"];
 let agentChatterThisTick = 0;
 
-// File ingestion state — track which Slack file IDs we've already processed
-const processedFiles = new Set<string>();
-
-// Directory cache
-let workspaceUsers: SlackUser[] = [];
-let usersLastFetched = 0;
-const userCache = new Map<string, string>(); // userId → display name
-
 // ── Write-through: persist Slack messages to Postgres ─────────────────────────
 
 async function persistMessages(
@@ -110,7 +226,7 @@ async function persistMessages(
   if (!messages.length) return;
 
   const records = messages.map((m) => ({
-    tenantId: TENANT_ID,
+    tenantId: CURRENT_TENANT_ID,
     slackTs: m.ts,
     channelId,
     channelName,
@@ -264,6 +380,13 @@ function buildSystemPrompt(agent: (typeof agentRegistry)[number], channelName?: 
     "- If a task is outside your role, say so briefly and tag the right agent.",
     "- Never bypass workflow orchestration. Always write audit logs. Respect compliance checks.",
     "",
+    "=== NO HALLUCINATED METRICS ===",
+    "- NEVER fabricate numbers, percentages, metrics, or statistics. No '4x more views', no '40% engagement increase', no '2.3x handoffs'.",
+    "- If you have no real data from an API, tool, or the channel context above, DO NOT invent numbers.",
+    "- Only cite metrics if they came from a real source: Postiz analytics, audit logs, a URL you fetched, or data explicitly shared in conversation.",
+    "- Opinions and observations are fine. Made-up data is not. Say 'I think' or 'it seems like' instead of fabricating stats.",
+    "- Do NOT claim any platform algorithm is favoring, boosting, or surfacing our content unless you have actual analytics data proving it.",
+    "",
     "=== CONTENT PUBLISHING ===",
     "To publish content to social media, use POSTIZ workflows (WF-200 series). Do NOT use old workflow numbers.",
     "If no direct OAuth token exists for a platform, Postiz is the fallback — it handles all social posting.",
@@ -333,7 +456,7 @@ async function refreshChannelSummary(channelId: string, channelName: string): Pr
   try {
     // Read from Postgres (write-through) instead of Slack API — avoids 429s
     const dbMessages = await prisma.slackMessage.findMany({
-      where: { tenantId: TENANT_ID, channelName },
+      where: { tenantId: CURRENT_TENANT_ID, channelName },
       orderBy: { createdAt: "desc" },
       take: SUMMARY_MESSAGE_COUNT,
       select: { username: true, botId: true, userId: true, text: true },
@@ -431,10 +554,11 @@ async function queueWorkflow(
   wf: (typeof workflowCatalog)[number],
   channelId: string,
   input?: any,
+  token?: string,
 ): Promise<void> {
   const intent = await prisma.intent.create({
     data: {
-      tenantId: TENANT_ID,
+      tenantId: CURRENT_TENANT_ID,
       agentId: null,
       intentType: "ENGINE_RUN",
       payload: {
@@ -454,6 +578,7 @@ async function queueWorkflow(
 
   await postAsAgent(channelId, wf.ownerAgent,
     `Workflow queued: *${wf.name}* (${wf.id})\nAssigned to: ${wf.ownerAgent}\nIntent ID: ${intent.id}\nThe engine will pick this up on the next tick.`,
+    undefined, token,
   );
 }
 
@@ -474,7 +599,7 @@ function isBusinessHours(): boolean {
  * Called once per tick during business hours with a 15% chance.
  * A random agent shares a brief thought related to their role.
  */
-async function maybeSpontaneousThought(): Promise<void> {
+async function maybeSpontaneousThought(slackToken?: string): Promise<void> {
   if (!isBusinessHours()) return;
   if (Math.random() >= SPONTANEOUS_THOUGHT_CHANCE) return;
 
@@ -485,7 +610,7 @@ async function maybeSpontaneousThought(): Promise<void> {
   let channel = cachedChannels.get(targetChannelName);
   if (!channel) {
     try {
-      const found = await getChannelByName(targetChannelName, true);
+      const found = await getChannelByName(targetChannelName, true, slackToken);
       if (!found) return;
       channel = found;
       cachedChannels.set(targetChannelName, channel);
@@ -514,7 +639,7 @@ async function maybeSpontaneousThought(): Promise<void> {
         },
         {
           role: "user",
-          content: `Share a brief thought, observation, or interesting find related to your role as ${agent.name} (${agent.title}). 1-2 sentences max. Be casual and conversational — this is the #${targetChannelName} channel. Don't start with "Hey" or greetings. Just share something you're thinking about, working on, or noticed.`,
+          content: `Share a brief thought, observation, or interesting find related to your role as ${agent.name} (${agent.title}). 1-2 sentences max. Be casual and conversational — this is the #${targetChannelName} channel. Don't start with "Hey" or greetings. Just share something you're thinking about, working on, or noticed. IMPORTANT: Do NOT make up any numbers, metrics, percentages, or claim any algorithm is boosting our content. Opinions only — no fabricated data.`,
         },
       ],
     });
@@ -522,7 +647,13 @@ async function maybeSpontaneousThought(): Promise<void> {
     const thought = response.text.trim();
     if (!thought) return;
 
-    const result = await postAsAgent(channel.id, agent.id, thought);
+    // Block hallucinated metrics before posting
+    if (containsHallucinatedMetrics(thought)) {
+      console.warn(`[slackWorker] BLOCKED hallucinated spontaneous thought from ${agent.name}: "${thought.slice(0, 120)}..."`);
+      return;
+    }
+
+    const result = await postAsAgent(channel.id, agent.id, thought, undefined, slackToken);
     if (result.ok) {
       console.log(`[slackWorker] Spontaneous thought from ${agent.name} in #${targetChannelName} (${thought.length} chars)`);
     }
@@ -534,22 +665,61 @@ async function maybeSpontaneousThought(): Promise<void> {
 // ── Core tick ─────────────────────────────────────────────────────────────────
 
 async function tick() {
-  // Reset per-tick counters
-  agentChatterThisTick = 0;
+  // Phase 6.2 — iterate over ALL tenants with Slack credentials
+  const tenants = await getSlackTenants();
 
-  // Ensure we have a valid bot token
-  if (!process.env.SLACK_BOT_TOKEN) {
-    // Don't spam logs — just wait for it to be configured
-    return;
+  for (const tenantId of tenants) {
+    // Resolve Slack token for this tenant (owner falls back to process.env)
+    const slackToken = await resolveCredential(tenantId, "slack");
+    if (!slackToken) {
+      // Only warn once per tenant per ~5 minutes (avoid log spam)
+      continue;
+    }
+
+    // Swap in this tenant's isolated state
+    const state = getTenantState(tenantId);
+    swapStateIn(state);
+    CURRENT_TENANT_ID = tenantId;
+
+    // Reset per-tick counters for this tenant
+    agentChatterThisTick = 0;
+
+    try {
+      await tickForCurrentTenant(slackToken);
+    } catch (e: any) {
+      console.error(`[slack-worker] Error for tenant ${tenantId}: ${e?.message ?? e}`);
+    }
+
+    // Save state back
+    swapStateOut(state);
   }
+}
 
+/** Run one tick cycle for whichever tenant is currently swapped into the globals. */
+async function tickForCurrentTenant(slackToken: string) {
   // Refresh workspace directory every 5 minutes
   if (Date.now() - usersLastFetched > 5 * 60 * 1000) {
     try {
-      workspaceUsers = await listWorkspaceUsers();
+      workspaceUsers = await listWorkspaceUsers(200, slackToken);
       for (const u of workspaceUsers) userCache.set(u.id, u.realName || u.name);
       usersLastFetched = Date.now();
-      if (workspaceUsers.length) console.log(`[slackWorker] Directory refreshed: ${workspaceUsers.length} users`);
+      if (workspaceUsers.length) console.log(`[slackWorker] [${CURRENT_TENANT_ID.slice(0, 8)}] Directory refreshed: ${workspaceUsers.length} users`);
+    } catch { /* non-fatal */ }
+  }
+
+  // Resolve bot user ID if not yet known for this tenant
+  if (!SLACK_BOT_USER_ID) {
+    try {
+      const authRes = await fetch("https://slack.com/api/auth.test", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${slackToken}`, "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const authData = await authRes.json() as any;
+      SLACK_BOT_USER_ID = authData.user_id ?? "";
+      if (SLACK_BOT_USER_ID) {
+        console.log(`[slackWorker] [${CURRENT_TENANT_ID.slice(0, 8)}] Bot user ID: ${SLACK_BOT_USER_ID}`);
+      }
     } catch { /* non-fatal */ }
   }
 
@@ -562,26 +732,26 @@ async function tick() {
   }
 
   for (const channelName of channelsThisTick) {
-    await tickChannel(channelName);
+    await tickChannel(channelName, slackToken);
     await sleep(API_DELAY_MS); // Pace API calls
   }
 
   // Poll DMs every 5th tick (~25s) to avoid rate limits
   dmTickCounter++;
   if (dmTickCounter % 5 === 0) {
-    await tickDMs();
+    await tickDMs(slackToken);
   }
 
   // Spontaneous agent thoughts — fires during business hours with 15% chance per tick
-  await maybeSpontaneousThought();
+  await maybeSpontaneousThought(slackToken);
 }
 
-async function tickChannel(channelName: string) {
+async function tickChannel(channelName: string, slackToken?: string) {
   // Resolve the channel (cache it)
   let channel = cachedChannels.get(channelName);
   if (!channel) {
     try {
-      const found = await getChannelByName(channelName, true);
+      const found = await getChannelByName(channelName, true, slackToken);
       if (!found) return; // Channel not found — skip silently
       channel = found;
       cachedChannels.set(channelName, channel);
@@ -604,7 +774,7 @@ async function tickChannel(channelName: string) {
   try {
     messages = await readHistory(channelId, CONTEXT_MESSAGES, {
       oldest: lastSeenTs ?? undefined,
-    });
+    }, slackToken);
   } catch (err: any) {
     console.error(`[slackWorker] readHistory #${channelName} failed: ${err?.message ?? err}`);
     return;
@@ -634,13 +804,13 @@ async function tickChannel(channelName: string) {
   await persistMessages(channelId, channelName, newMessages);
 
   // Ingest any file uploads into KB before agents respond
-  await processFileUploads(channelId, channelName, newMessages);
+  await processFileUploads(channelId, channelName, newMessages, slackToken);
 
   // Load context window from Postgres (write-through) — no extra Slack API call
   let contextMessages: SlackMessage[] = [];
   try {
     const dbCtx = await prisma.slackMessage.findMany({
-      where: { tenantId: TENANT_ID, channelName },
+      where: { tenantId: CURRENT_TENANT_ID, channelName },
       orderBy: { createdAt: "desc" },
       take: CONTEXT_MESSAGES,
     });
@@ -709,11 +879,12 @@ async function tickChannel(channelName: string) {
           `[slackWorker] Workflow command detected → ${workflow.id} (${workflow.name}): "${msg.text.slice(0, 80)}"`,
         );
         try {
-          await queueWorkflow(workflow, channelId);
+          await queueWorkflow(workflow, channelId, undefined, slackToken);
         } catch (err: any) {
           console.error(`[slackWorker] Failed to queue workflow: ${err?.message ?? err}`);
           await postAsAgent(channelId, "atlas",
             `Failed to queue workflow ${workflow.id}: ${err?.message ?? "unknown error"}`,
+            undefined, slackToken,
           );
         }
         continue; // Skip LLM response — workflow is the action
@@ -765,11 +936,17 @@ async function tickChannel(channelName: string) {
         continue;
       }
 
+      // Block hallucinated metrics before posting
+      if (containsHallucinatedMetrics(reply)) {
+        console.warn(`[slackWorker] BLOCKED hallucinated metrics from ${agent.name}: "${reply.slice(0, 120)}..."`);
+        continue;
+      }
+
       // Reply in-thread if the human posted in a thread, otherwise top-level
       const threadTs = msg.thread_ts ?? undefined;
       const result = await postAsAgent(channelId, agent.id, reply, {
         threadTs,
-      });
+      }, slackToken);
 
       if (result.ok) {
         console.log(
@@ -785,7 +962,7 @@ async function tickChannel(channelName: string) {
         if (Math.random() < REACTION_CHANCE) {
           const emoji = REACTION_EMOJIS[Math.floor(Math.random() * REACTION_EMOJIS.length)];
           try {
-            const reacted = await addReaction(channelId, msg.ts, emoji);
+            const reacted = await addReaction(channelId, msg.ts, emoji, slackToken);
             if (reacted) {
               console.log(`[slackWorker] Added :${emoji}: reaction to message`);
             }
@@ -807,7 +984,7 @@ async function tickChannel(channelName: string) {
   }
 
   // Check for new thread replies (pass old lastSeen so we detect new activity correctly)
-  await checkThreadReplies(channelId, channelName, contextMessages, lastSeenTs);
+  await checkThreadReplies(channelId, channelName, contextMessages, lastSeenTs, slackToken);
 }
 
 // ── File upload → KB ingestion ───────────────────────────────────────────────
@@ -890,9 +1067,9 @@ async function extractTextFromImage(buf: Buffer, mimetype: string, fileName: str
     let mediaType = mimetype;
     if (mediaType === "image/jpg") mediaType = "image/jpeg";
 
-    const apiKey = (process.env.ANTHROPIC_API_KEY ?? "").trim();
+    const apiKey = (await resolveCredential(CURRENT_TENANT_ID, "anthropic") ?? "").trim();
     if (!apiKey) {
-      console.error("[slackWorker] ANTHROPIC_API_KEY missing — cannot process image");
+      console.error("[slackWorker] Anthropic credential missing for tenant — cannot process image");
       return null;
     }
 
@@ -941,7 +1118,7 @@ async function extractTextFromImage(buf: Buffer, mimetype: string, fileName: str
  * Detect file uploads in messages and ingest them into the KB.
  * Called from tickChannel before message processing so agents can reference new docs.
  */
-async function processFileUploads(channelId: string, channelName: string, messages: SlackMessage[]) {
+async function processFileUploads(channelId: string, channelName: string, messages: SlackMessage[], slackToken?: string) {
   for (const msg of messages) {
     if (!msg.files?.length) continue;
 
@@ -967,7 +1144,7 @@ async function processFileUploads(channelId: string, channelName: string, messag
         if (isImage(file.mimetype, file.name)) {
           // Vision: download image and extract text via Claude Sonnet
           console.log(`[slackWorker] Processing image via vision: ${file.name} (${file.mimetype})`);
-          const buf = await downloadFileBuffer(file.url_private);
+          const buf = await downloadFileBuffer(file.url_private, slackToken);
           if (buf) {
             text = await extractTextFromImage(buf, file.mimetype, file.name);
             if (text) {
@@ -975,7 +1152,7 @@ async function processFileUploads(channelId: string, channelName: string, messag
             }
           }
         } else if (file.mimetype === "application/pdf") {
-          const buf = await downloadFileBuffer(file.url_private);
+          const buf = await downloadFileBuffer(file.url_private, slackToken);
           if (buf) {
             const parser = new PDFParse({ data: buf });
             const result = await parser.getText();
@@ -983,7 +1160,7 @@ async function processFileUploads(channelId: string, channelName: string, messag
             await parser.destroy();
           }
         } else {
-          text = await downloadFile(file.url_private);
+          text = await downloadFile(file.url_private, slackToken);
         }
 
         // Strip null bytes — Postgres UTF-8 rejects 0x00
@@ -1001,9 +1178,9 @@ async function processFileUploads(channelId: string, channelName: string, messag
         // Upsert KB document (avoid duplicates by slug)
         const SYSTEM_ACTOR = "00000000-0000-0000-0000-000000000001";
         const doc = await prisma.kbDocument.upsert({
-          where: { tenantId_slug: { tenantId: TENANT_ID, slug } },
+          where: { tenantId_slug: { tenantId: CURRENT_TENANT_ID, slug } },
           create: {
-            tenantId: TENANT_ID,
+            tenantId: CURRENT_TENANT_ID,
             title,
             slug,
             body: text,
@@ -1028,7 +1205,7 @@ async function processFileUploads(channelId: string, channelName: string, messag
             if (chunks.length > 0) {
               await tx.kbChunk.createMany({
                 data: chunks.map((c) => ({
-                  tenantId: TENANT_ID,
+                  tenantId: CURRENT_TENANT_ID,
                   documentId: doc.id,
                   idx: c.idx,
                   charStart: c.charStart,
@@ -1049,6 +1226,7 @@ async function processFileUploads(channelId: string, channelName: string, messag
         const visionTag = isImage(file.mimetype, file.name) ? " (extracted via vision)" : "";
         await postAsAgent(channelId, "atlas",
           `Ingested "${title}" into the knowledge base${visionTag} (${sizeStr} chars${chunkStr}). All agents can now reference this document.`,
+          undefined, slackToken,
         );
 
         console.log(`[slackWorker] KB ingested${visionTag}: "${title}" (${text.length} chars, ${chunkCount} chunks) from #${channelName}`);
@@ -1072,7 +1250,7 @@ async function processFileUploads(channelId: string, channelName: string, messag
  * Check for new thread replies in recent channel messages.
  * Called from tickChannel after processing top-level messages.
  */
-async function checkThreadReplies(channelId: string, channelName: string, messages: SlackMessage[], prevLastSeen: string | null) {
+async function checkThreadReplies(channelId: string, channelName: string, messages: SlackMessage[], prevLastSeen: string | null, slackToken?: string) {
   const lastSeen = prevLastSeen;
 
   // Find parent messages with thread replies newer than our last check
@@ -1084,7 +1262,7 @@ async function checkThreadReplies(channelId: string, channelName: string, messag
 
   for (const parent of threadParents.slice(0, 3)) { // Cap at 3 threads per tick
     try {
-      const replies = await readHistory(channelId, 5, { threadTs: parent.ts });
+      const replies = await readHistory(channelId, 5, { threadTs: parent.ts }, slackToken);
       // Get only human replies (not our own agent replies)
       const humanReplies = replies.filter(
         (r) => !r.bot_id && r.ts !== parent.ts &&
@@ -1117,8 +1295,8 @@ async function checkThreadReplies(channelId: string, channelName: string, messag
       });
 
       const reply = response.text.trim();
-      if (reply) {
-        await postAsAgent(channelId, agent.id, reply, { threadTs: parent.ts });
+      if (reply && !containsHallucinatedMetrics(reply)) {
+        await postAsAgent(channelId, agent.id, reply, { threadTs: parent.ts }, slackToken);
         repliedThreads.add(parent.ts);
         console.log(`[slackWorker] ${agent.name} replied in thread (${reply.length} chars) #${channelName}`);
       }
@@ -1136,10 +1314,10 @@ async function checkThreadReplies(channelId: string, channelName: string, messag
 
 // ── DM polling ───────────────────────────────────────────────────────────────
 
-async function tickDMs() {
+async function tickDMs(slackToken?: string) {
   let dms: { id: string; userId: string }[];
   try {
-    dms = await listDMs();
+    dms = await listDMs(100, slackToken);
   } catch {
     return; // Slack API error — skip silently
   }
@@ -1149,7 +1327,7 @@ async function tickDMs() {
       const lastSeen = lastSeenByDM.get(dm.id) ?? null;
       const messages = await readHistory(dm.id, 5, {
         oldest: lastSeen ?? undefined,
-      });
+      }, slackToken);
 
       if (!messages.length) continue;
 
@@ -1172,7 +1350,7 @@ async function tickDMs() {
       // Resolve who's DMing us
       let senderName = userCache.get(dm.userId);
       if (!senderName) {
-        const info = await getUserInfo(dm.userId);
+        const info = await getUserInfo(dm.userId, slackToken);
         senderName = info?.realName ?? info?.name ?? "someone";
         userCache.set(dm.userId, senderName);
       }
@@ -1199,7 +1377,7 @@ async function tickDMs() {
 
         const reply = response.text.trim();
         if (reply) {
-          await postAsAgent(dm.id, agent.id, reply);
+          await postAsAgent(dm.id, agent.id, reply, undefined, slackToken);
           console.log(`[slackWorker] Atlas replied to DM (${reply.length} chars)`);
         }
       }
@@ -1216,24 +1394,34 @@ function sleep(ms: number) {
 }
 
 async function main() {
+  // Phase 6.2: multi-tenant Slack worker
+  const initialTenants = await getSlackTenants();
   console.log(
-    `[slackWorker] Starting — polling ${CHANNEL_NAMES.map(c => "#" + c).join(", ")} every ${POLL_MS / 1000}s, context window: ${CONTEXT_MESSAGES} messages`,
+    `[slackWorker] Starting — ${initialTenants.length} tenant(s), polling ${CHANNEL_NAMES.map(c => "#" + c).join(", ")} every ${POLL_MS / 1000}s, context window: ${CONTEXT_MESSAGES} messages`,
   );
 
-  if (!process.env.SLACK_BOT_TOKEN) {
-    console.warn("[slackWorker] SLACK_BOT_TOKEN not set — worker will idle until configured");
-  } else {
-    // Resolve bot's own user ID so we can detect <@BOT_ID> mentions
+  // Pre-resolve bot user IDs for all tenants that have tokens at startup
+  for (const tid of initialTenants) {
+    const token = await resolveCredential(tid, "slack");
+    if (!token) continue;
     try {
       const authRes = await fetch("https://slack.com/api/auth.test", {
         method: "POST",
-        headers: { Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: "{}",
       });
       const authData = await authRes.json() as any;
-      SLACK_BOT_USER_ID = authData.user_id ?? "";
-      console.log(`[slackWorker] Bot user ID: ${SLACK_BOT_USER_ID}`);
+      const botId = authData.user_id ?? "";
+      if (botId) {
+        const state = getTenantState(tid);
+        state.botUserId = botId;
+        console.log(`[slackWorker] [${tid.slice(0, 8)}] Bot user ID: ${botId}`);
+      }
     } catch { /* non-fatal */ }
+  }
+
+  if (!initialTenants.length) {
+    console.warn("[slackWorker] No Slack tenants found — worker will idle until credentials are configured");
   }
 
   let stopping = false;

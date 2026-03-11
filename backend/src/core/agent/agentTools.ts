@@ -962,9 +962,9 @@ async function videoGenerateInfo(): Promise<ToolResult> {
 
 // ── Flux1 Image Generation ────────────────────────────────────────────────────
 
-async function flux1GenerateInfo(): Promise<ToolResult> {
+async function flux1GenerateInfo(tenantId?: string): Promise<ToolResult> {
   const { isAvailable } = await import("../../services/flux1.js");
-  const available = await isAvailable();
+  const available = tenantId ? await isAvailable(tenantId) : false;
   const statusMsg = available
     ? "Flux1 image generation is configured and ready."
     : "Flux1 API key not configured (FLUX1_API_KEY).";
@@ -978,7 +978,7 @@ async function flux1GenerateInfo(): Promise<ToolResult> {
 
 // ── Tool: web_search ─────────────────────────────────────────────────────────
 
-async function webSearchTool(query: string): Promise<ToolResult> {
+async function webSearchTool(query: string, tenantId?: string): Promise<ToolResult> {
   try {
     // Extract search terms from the query
     const searchMatch = query.match(/(?:search|find|look up|research|google|sweep|what's the latest)\s+(?:the web\s+)?(?:for\s+)?(.+)/is);
@@ -988,7 +988,7 @@ async function webSearchTool(query: string): Promise<ToolResult> {
       return { tool: "web_search", data: "No search terms provided. Try: 'search the web for AI agents'", usedAt: new Date().toISOString() };
     }
 
-    const result = await searchWeb(searchTerms);
+    const result = await searchWeb(searchTerms, 8, tenantId);
     if (!result.ok) {
       return { tool: "web_search", data: `Web search failed: ${result.error}`, usedAt: new Date().toISOString() };
     }
@@ -1689,7 +1689,7 @@ export async function resolveAgentTools(
     needs.telegram     ? sendTelegramMessage(tenantId, needs.query)            : Promise.resolve(null),
     needs.memory       ? searchMyMemories(tenantId, aid, needs.query)          : Promise.resolve(null),
     needs.delegate     ? delegateTask(tenantId, aid, needs.query)              : Promise.resolve(null),
-    needs.webSearch      ? webSearchTool(needs.query)                              : Promise.resolve(null),
+    needs.webSearch      ? webSearchTool(needs.query, tenantId)                     : Promise.resolve(null),
     needs.fetchUrl       ? fetchUrlTool(needs.query)                              : Promise.resolve(null),
     needs.redditSearch   ? redditSearchTool(needs.query)                          : Promise.resolve(null),
     needs.xPost          ? postToX(tenantId, aid, needs.query)                   : Promise.resolve(null),
@@ -1698,7 +1698,7 @@ export async function resolveAgentTools(
     needs.youtubeUpload  ? youtubeUploadInfo(tenantId)                           : Promise.resolve(null),
     needs.videoCompose   ? videoComposeInfo()                                     : Promise.resolve(null),
     needs.videoGenerate  ? videoGenerateInfo()                                    : Promise.resolve(null),
-    needs.flux1          ? flux1GenerateInfo()                                    : Promise.resolve(null),
+    needs.flux1          ? flux1GenerateInfo(tenantId)                             : Promise.resolve(null),
     needs.deepResearch   ? deepResearchTool(tenantId, aid, needs.query)           : Promise.resolve(null),
     needs.browser        ? Promise.resolve(browserToolInfo(aid))                    : Promise.resolve(null),
     needs.localVision    ? Promise.resolve(localVisionToolInfo(aid))                : Promise.resolve(null),

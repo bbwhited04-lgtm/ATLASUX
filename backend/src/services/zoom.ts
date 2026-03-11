@@ -7,6 +7,7 @@
 import type { Env } from "../env.js";
 import { readTokenVault } from "../lib/tokenStore.js";
 import { refreshTokenIfNeeded } from "../lib/tokenLifecycle.js";
+import { resolveCredential } from "./credentialResolver.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -156,15 +157,15 @@ export async function listUpcomingMeetings(token: string): Promise<ZoomMeeting[]
  * Summarize a meeting transcript using OpenAI GPT-4o-mini.
  * Same logic as meetingRoutes.ts summarizeTranscript() but exported for reuse.
  */
-export async function summarizeTranscript(transcript: string): Promise<{
+export async function summarizeTranscript(tenantId: string, transcript: string): Promise<{
   summary: string;
   actionItems: Array<{ text: string; assignee?: string; done: boolean }>;
   keyPoints: string[];
 }> {
-  const openaiKey = process.env.OPENAI_API_KEY;
+  const openaiKey = await resolveCredential(tenantId, "openai");
   if (!openaiKey) {
     return {
-      summary: "AI summarization unavailable — OPENAI_API_KEY not configured.",
+      summary: "AI summarization unavailable — no OpenAI credential configured for this tenant.",
       actionItems: [],
       keyPoints: [],
     };

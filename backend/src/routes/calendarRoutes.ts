@@ -14,11 +14,12 @@ import type { FastifyPluginAsync } from "fastify";
 import { enforceFeatureAccess } from "../lib/seatEnforcement.js";
 import { agentEmails } from "../config/agentEmails.js";
 import { sanitizeError } from "../lib/sanitizeError.js";
+import { resolveAgentEmail } from "../services/agentEmailResolver.js";
 
 const tenantId = process.env.MS_TENANT_ID ?? "";
 const clientId = process.env.MS_CLIENT_ID ?? "";
 const clientSecret = process.env.MS_CLIENT_SECRET ?? "";
-const defaultMailbox = (process.env.AGENT_EMAIL_ATLAS ?? "atlas.ceo@deadapp.info").trim();
+const defaultMailboxFallback = "atlas.ceo@deadapp.info";
 
 // ── Token cache (shared pattern with outlookRoutes) ──────────────────────────
 
@@ -87,15 +88,17 @@ export const calendarRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ── GET /status ──────────────────────────────────────────────────────────
-  app.get("/status", async (_req, reply) => {
+  app.get("/status", async (req, reply) => {
     if (!tenantId || !clientId || !clientSecret) {
       return reply.send({ ok: true, connected: false, reason: "M365 credentials not configured" });
     }
     try {
+      const reqTenantId = (req as any).tenantId as string | undefined;
+      const mailbox = (reqTenantId ? await resolveAgentEmail(reqTenantId, "atlas") : null) ?? defaultMailboxFallback;
       const token = await getAppToken();
       // Test calendar access
-      await graphGet(`/users/${defaultMailbox}/calendars?$top=1`, token);
-      return reply.send({ ok: true, connected: true, email: defaultMailbox });
+      await graphGet(`/users/${mailbox}/calendars?$top=1`, token);
+      return reply.send({ ok: true, connected: true, email: mailbox });
     } catch (err: any) {
       app.log.error({ err }, "Calendar status check failed");
       return reply.send({ ok: true, connected: false, reason: sanitizeError(err) });
@@ -106,6 +109,8 @@ export const calendarRoutes: FastifyPluginAsync = async (app) => {
   app.get("/calendars", async (req, reply) => {
     try {
       const token = await getAppToken();
+      const reqTenantId = (req as any).tenantId as string | undefined;
+      const defaultMailbox = (reqTenantId ? await resolveAgentEmail(reqTenantId, "atlas") : null) ?? defaultMailboxFallback;
       const _requestedMailbox = (req.query as any).mailbox || defaultMailbox;
       // Validate mailbox is a known agent email — prevent reading arbitrary M365 calendars
       const _allowedMailboxes = new Set(Object.values(agentEmails));
@@ -140,6 +145,8 @@ export const calendarRoutes: FastifyPluginAsync = async (app) => {
     try {
       const token = await getAppToken();
       const q = req.query as Record<string, string>;
+      const reqTenantId = (req as any).tenantId as string | undefined;
+      const defaultMailbox = (reqTenantId ? await resolveAgentEmail(reqTenantId, "atlas") : null) ?? defaultMailboxFallback;
       const _requestedMailbox = q.mailbox || defaultMailbox;
       // Validate mailbox is a known agent email — prevent reading arbitrary M365 calendars
       const _allowedMailboxes = new Set(Object.values(agentEmails));
@@ -215,6 +222,8 @@ export const calendarRoutes: FastifyPluginAsync = async (app) => {
     try {
       const token = await getAppToken();
       const { eventId } = req.params as { eventId: string };
+      const reqTenantId = (req as any).tenantId as string | undefined;
+      const defaultMailbox = (reqTenantId ? await resolveAgentEmail(reqTenantId, "atlas") : null) ?? defaultMailboxFallback;
       const _requestedMailbox = (req.query as any).mailbox || defaultMailbox;
       // Validate mailbox is a known agent email — prevent reading arbitrary M365 calendars
       const _allowedMailboxes = new Set(Object.values(agentEmails));

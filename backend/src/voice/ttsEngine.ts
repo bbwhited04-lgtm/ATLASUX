@@ -12,8 +12,9 @@
 import { readFileSync } from "fs";
 import { TextToSpeechClient } from "@google-cloud/text-to-speech";
 import { VOICE_CONFIG } from "./lucyBrain.js";
+import { resolveCredential } from "../services/credentialResolver.js";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const OWNER_TENANT_ID = process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
 const GEMINI_TTS_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent";
 
 // Fallback Google Cloud TTS client
@@ -46,6 +47,7 @@ function getCloudTtsClient(): TextToSpeechClient {
 export async function synthesizeSpeech(
   text: string,
   agent: "lucy" | "atlas" = "lucy",
+  tenantId?: string,
 ): Promise<Buffer | null> {
   if (!text?.trim()) return null;
 
@@ -58,7 +60,9 @@ export async function synthesizeSpeech(
   return cloudTTS(text, agent);
 }
 
-async function geminiTTS(text: string, voiceName: string): Promise<Buffer | null> {
+async function geminiTTS(text: string, voiceName: string, tenantId?: string): Promise<Buffer | null> {
+  const geminiKey = await resolveCredential(tenantId || OWNER_TENANT_ID, "gemini");
+  if (!geminiKey) throw new Error("GEMINI_API_KEY not configured");
   const body = {
     contents: [
       {
@@ -80,7 +84,7 @@ async function geminiTTS(text: string, voiceName: string): Promise<Buffer | null
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
-  const res = await fetch(`${GEMINI_TTS_ENDPOINT}?key=${GEMINI_API_KEY}`, {
+  const res = await fetch(`${GEMINI_TTS_ENDPOINT}?key=${geminiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

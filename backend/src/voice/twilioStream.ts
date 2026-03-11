@@ -179,7 +179,7 @@ async function handleCallerUtterance(state: StreamState, transcript: string): Pr
     );
 
     // Synthesize speech via Gemini TTS
-    const audioContent = await synthesizeSpeech(response.spokenText, "lucy");
+    const audioContent = await synthesizeSpeech(response.spokenText, "lucy", TENANT_ID);
 
     // Send audio back to Twilio
     if (audioContent && state.ws.readyState === 1) {
@@ -280,7 +280,7 @@ export async function handleTwilioMediaStream(ws: WebSocket): Promise<void> {
           ? `Good ${getTimeOfDay()}, ${crmProfile.name}! This is Lucy at Atlas UX. Great to hear from you again. How can I help you today?`
           : `Good ${getTimeOfDay()}, thank you for calling Atlas UX. This is Lucy. How can I help you today?`;
 
-        const greetingAudio = await synthesizeSpeech(greeting, "lucy");
+        const greetingAudio = await synthesizeSpeech(greeting, "lucy", TENANT_ID);
         if (greetingAudio && ws.readyState === 1) {
           const mulaw = googleTTSToTwilio(greetingAudio);
           const chunkSize = 640;

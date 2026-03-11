@@ -166,20 +166,20 @@ export type SlackWorkflowStep = {
 
 // ── Core API helper ─────────────────────────────────────────────────────────
 
-function getBotToken(): string {
-  const token = process.env.SLACK_BOT_TOKEN;
+function getBotToken(tokenOverride?: string): string {
+  const token = tokenOverride || process.env.SLACK_BOT_TOKEN;
   if (!token) throw new Error("SLACK_BOT_TOKEN not configured");
   return token;
 }
 
-async function slackApi<T = any>(method: string, body: Record<string, any>): Promise<T> {
+async function slackApi<T = any>(method: string, body: Record<string, any>, token?: string): Promise<T> {
   const MAX_RETRIES = 3;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const res = await fetch(`${SLACK_API}/${method}`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${getBotToken()}`,
+        Authorization: `Bearer ${getBotToken(token)}`,
         "Content-Type": "application/json; charset=utf-8",
       },
       body: JSON.stringify(body),
@@ -220,6 +220,7 @@ export async function postAsAgent(
   agentId: string,
   text: string,
   options?: { threadTs?: string },
+  token?: string,
 ): Promise<SlackPostResult> {
   try {
     const emoji = AGENT_EMOJI[agentId] ?? ":robot_face:";
@@ -237,7 +238,7 @@ export async function postAsAgent(
       body.thread_ts = options.threadTs;
     }
 
-    const data = await slackApi("chat.postMessage", body);
+    const data = await slackApi("chat.postMessage", body, token);
     return { ok: true, ts: data.ts, channel: data.channel };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
@@ -251,6 +252,7 @@ export async function readHistory(
   channelId: string,
   limit = 20,
   options?: { oldest?: string; threadTs?: string },
+  token?: string,
 ): Promise<SlackMessage[]> {
   const method = options?.threadTs ? "conversations.replies" : "conversations.history";
   const body: Record<string, any> = {
@@ -261,7 +263,7 @@ export async function readHistory(
   if (options?.threadTs) body.ts = options.threadTs;
   if (options?.oldest) body.oldest = options.oldest;
 
-  const data = await slackApi(method, body);
+  const data = await slackApi(method, body, token);
   return (data.messages ?? []).map((m: any) => ({
     ts: m.ts,
     user: m.user,
@@ -293,7 +295,7 @@ let _channelListCache: SlackChannel[] = [];
 let _channelListCachedAt = 0;
 const CHANNEL_LIST_TTL_MS = 5 * 60 * 1000;
 
-export async function listChannels(limit = 200): Promise<SlackChannel[]> {
+export async function listChannels(limit = 200, token?: string): Promise<SlackChannel[]> {
   if (_channelListCache.length && Date.now() - _channelListCachedAt < CHANNEL_LIST_TTL_MS) {
     return _channelListCache;
   }
@@ -309,7 +311,7 @@ export async function listChannels(limit = 200): Promise<SlackChannel[]> {
     };
     if (cursor) body.cursor = cursor;
 
-    const data = await slackApi("conversations.list", body);
+    const data = await slackApi("conversations.list", body, token);
 
     const page = (data.channels ?? []).map((c: any) => ({
       id: c.id,
@@ -332,9 +334,9 @@ export async function listChannels(limit = 200): Promise<SlackChannel[]> {
 /**
  * Join a channel by ID.
  */
-export async function joinChannel(channelId: string): Promise<boolean> {
+export async function joinChannel(channelId: string, token?: string): Promise<boolean> {
   try {
-    await slackApi("conversations.join", { channel: channelId });
+    await slackApi("conversations.join", { channel: channelId }, token);
     return true;
   } catch {
     return false;
@@ -344,13 +346,13 @@ export async function joinChannel(channelId: string): Promise<boolean> {
 /**
  * Find a channel by name and optionally join it.
  */
-export async function getChannelByName(name: string, autoJoin = true): Promise<SlackChannel | null> {
-  const channels = await listChannels(200);
+export async function getChannelByName(name: string, autoJoin = true, token?: string): Promise<SlackChannel | null> {
+  const channels = await listChannels(200, token);
   const cleaned = name.replace(/^#/, "").toLowerCase();
   const found = channels.find(c => c.name.toLowerCase() === cleaned);
 
   if (found && autoJoin && !found.is_member) {
-    await joinChannel(found.id);
+    await joinChannel(found.id, token);
     found.is_member = true;
   }
 
@@ -400,12 +402,12 @@ export async function getAgentChannels(): Promise<{
 /**
  * List direct message (IM) conversations the bot is part of.
  */
-export async function listDMs(limit = 100): Promise<{ id: string; userId: string }[]> {
+export async function listDMs(limit = 100, token?: string): Promise<{ id: string; userId: string }[]> {
   const data = await slackApi("conversations.list", {
     types: "im",
     limit,
     exclude_archived: true,
-  });
+  }, token);
   return (data.channels ?? []).map((c: any) => ({
     id: c.id,
     userId: c.user,
@@ -417,9 +419,9 @@ export async function listDMs(limit = 100): Promise<{ id: string; userId: string
 /**
  * Get info for a single Slack user by ID.
  */
-export async function getUserInfo(userId: string): Promise<SlackUser | null> {
+export async function getUserInfo(userId: string, token?: string): Promise<SlackUser | null> {
   try {
-    const data = await slackApi("users.info", { user: userId });
+    const data = await slackApi("users.info", { user: userId }, token);
     return {
       id: data.user?.id ?? userId,
       name: data.user?.name ?? userId,
@@ -434,8 +436,8 @@ export async function getUserInfo(userId: string): Promise<SlackUser | null> {
 /**
  * List all workspace users (directory).
  */
-export async function listWorkspaceUsers(limit = 200): Promise<SlackUser[]> {
-  const data = await slackApi("users.list", { limit });
+export async function listWorkspaceUsers(limit = 200, token?: string): Promise<SlackUser[]> {
+  const data = await slackApi("users.list", { limit }, token);
   return (data.members ?? [])
     .filter((u: any) => !u.deleted)
     .map((u: any) => ({
@@ -642,10 +644,10 @@ export async function getFileInfo(fileId: string): Promise<SlackFile | null> {
 /**
  * Download a file's content (text-based files only).
  */
-export async function downloadFile(fileUrl: string): Promise<string | null> {
+export async function downloadFile(fileUrl: string, token?: string): Promise<string | null> {
   try {
     const res = await fetch(fileUrl, {
-      headers: { Authorization: `Bearer ${getBotToken()}` },
+      headers: { Authorization: `Bearer ${getBotToken(token)}` },
     });
     if (!res.ok) return null;
     return await res.text();
@@ -657,10 +659,10 @@ export async function downloadFile(fileUrl: string): Promise<string | null> {
 /**
  * Download a file as a binary Buffer (for PDFs and other binary formats).
  */
-export async function downloadFileBuffer(fileUrl: string): Promise<Buffer | null> {
+export async function downloadFileBuffer(fileUrl: string, token?: string): Promise<Buffer | null> {
   try {
     const res = await fetch(fileUrl, {
-      headers: { Authorization: `Bearer ${getBotToken()}` },
+      headers: { Authorization: `Bearer ${getBotToken(token)}` },
     });
     if (!res.ok) return null;
     return Buffer.from(await res.arrayBuffer());
@@ -723,13 +725,13 @@ export async function setTopic(channelId: string, topic: string): Promise<boolea
 /**
  * Add a reaction to a message.
  */
-export async function addReaction(channelId: string, ts: string, emoji: string): Promise<boolean> {
+export async function addReaction(channelId: string, ts: string, emoji: string, token?: string): Promise<boolean> {
   try {
     await slackApi("reactions.add", {
       channel: channelId,
       timestamp: ts,
       name: emoji.replace(/^:|:$/g, ""),
-    });
+    }, token);
     return true;
   } catch {
     return false;

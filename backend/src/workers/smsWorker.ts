@@ -1,20 +1,21 @@
 import "dotenv/config";
 /**
  * SMS Worker — processes SMS_SEND jobs using Twilio.
- * Reads TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER from env.
+ * Resolves Twilio credentials per-tenant via credentialResolver.
  */
 import { prisma } from "../db/prisma.js";
 import { handleJobFailure } from "../lib/jobFailureHandler.js";
+import { resolveCredential } from "../services/credentialResolver.js";
 
 const POLL_MS = Number(process.env.SMS_WORKER_INTERVAL_MS ?? 10_000);
 
-async function sendViaTwilio(to: string, message: string): Promise<{ sid: string }> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken  = process.env.TWILIO_AUTH_TOKEN;
-  const fromNumber = process.env.TWILIO_FROM_NUMBER;
+async function sendViaTwilio(tenantId: string, to: string, message: string): Promise<{ sid: string }> {
+  const accountSid = await resolveCredential(tenantId, "twilio_sid");
+  const authToken  = await resolveCredential(tenantId, "twilio_token");
+  const fromNumber = await resolveCredential(tenantId, "twilio_from");
 
   if (!accountSid || !authToken || !fromNumber) {
-    throw new Error("Twilio not configured: set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER");
+    throw new Error("Twilio not configured for this tenant. Add Twilio credentials in Settings > Integrations.");
   }
 
   const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
@@ -64,7 +65,7 @@ async function processSmsJobs() {
     try {
       if (!to || !message) throw new Error("Missing to or message in job input");
 
-      const result = await sendViaTwilio(to, message);
+      const result = await sendViaTwilio(job.tenantId, to, message);
 
       await prisma.job.update({
         where: { id: job.id },

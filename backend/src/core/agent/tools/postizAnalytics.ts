@@ -15,6 +15,7 @@
 
 import type { ToolDefinition } from "./_types.js";
 import { makeResult, makeError } from "./_types.js";
+import { resolveCredential } from "../../../services/credentialResolver.js";
 
 const POSTIZ_API = "https://api.postiz.com/public/v1";
 
@@ -35,9 +36,9 @@ const AGENT_PLATFORM: Record<string, string> = {
   archy:    "medium",
 };
 
-async function postizGet(endpoint: string): Promise<unknown> {
-  const key = process.env.POSTIZ_API_KEY;
-  if (!key) throw new Error("POSTIZ_API_KEY not configured");
+async function postizGet(endpoint: string, tenantId: string): Promise<unknown> {
+  const key = await resolveCredential(tenantId, "postiz");
+  if (!key) throw new Error("Postiz API key not configured. Add your Postiz API key in Settings > Integrations.");
   const res = await fetch(`${POSTIZ_API}${endpoint}`, {
     headers: { Authorization: key },
   });
@@ -50,8 +51,8 @@ type PostizPost = { id: string; content?: string; publishDate?: string; integrat
 type PostizMetric = { label: string; data?: Array<{ total: string; date: string }> };
 
 /** Find integration by platform identifier. */
-async function findIntegration(platform: string): Promise<PostizIntegration | null> {
-  const integrations = (await postizGet("/integrations")) as PostizIntegration[];
+async function findIntegration(platform: string, tenantId: string): Promise<PostizIntegration | null> {
+  const integrations = (await postizGet("/integrations", tenantId)) as PostizIntegration[];
   return integrations.find(
     (i) => i.providerIdentifier === platform || i.identifier === platform || (i.name ?? "").toLowerCase().includes(platform),
   ) ?? null;
@@ -83,8 +84,9 @@ export const postizAnalyticsTool: ToolDefinition = {
 
   async execute(ctx) {
     try {
-      if (!process.env.POSTIZ_API_KEY) {
-        return makeResult("postiz_analytics", "POSTIZ_API_KEY is not configured. Set it in backend/.env to enable social analytics via Postiz.");
+      const postizKey = await resolveCredential(ctx.tenantId, "postiz");
+      if (!postizKey) {
+        return makeResult("postiz_analytics", "Postiz API key is not configured. Add your Postiz API key in Settings > Integrations.");
       }
 
       // Determine target platform
@@ -92,11 +94,11 @@ export const postizAnalyticsTool: ToolDefinition = {
 
       if (!platform) {
         // Show analytics across all integrations
-        const integrations = (await postizGet("/integrations")) as PostizIntegration[];
+        const integrations = (await postizGet("/integrations", ctx.tenantId)) as PostizIntegration[];
         const summaries: string[] = [];
         for (const int of integrations.slice(0, 8)) {
           try {
-            const stats = (await postizGet(`/analytics/${int.id}?date=7`)) as PostizMetric[];
+            const stats = (await postizGet(`/analytics/${int.id}?date=7`, ctx.tenantId)) as PostizMetric[];
             if (Array.isArray(stats) && stats.length > 0) {
               const line = stats.map((m) => {
                 const latest = m.data?.[m.data.length - 1];
@@ -112,7 +114,7 @@ export const postizAnalyticsTool: ToolDefinition = {
           : "No analytics data available. Ensure integrations are connected in Postiz.");
       }
 
-      const integration = await findIntegration(platform);
+      const integration = await findIntegration(platform, ctx.tenantId);
       if (!integration) {
         return makeResult("postiz_analytics", `No ${platform} integration found in Postiz.`);
       }
@@ -120,7 +122,7 @@ export const postizAnalyticsTool: ToolDefinition = {
       // ── 1. Platform-level stats ────────────────────────────────────
       let platformSection = "";
       try {
-        const platformStats = (await postizGet(`/analytics/${integration.id}?date=30`)) as PostizMetric[];
+        const platformStats = (await postizGet(`/analytics/${integration.id}?date=30`, ctx.tenantId)) as PostizMetric[];
         if (Array.isArray(platformStats) && platformStats.length > 0) {
           const lines = platformStats.map((m) => {
             const latest = m.data?.[m.data.length - 1];
@@ -144,7 +146,7 @@ export const postizAnalyticsTool: ToolDefinition = {
 
       try {
         const postsData = (await postizGet(
-          `/posts?startDate=${start.toISOString()}&endDate=${now.toISOString()}`,
+          `/posts?startDate=${start.toISOString()}&endDate=${now.toISOString()}`, ctx.tenantId,
         )) as { posts?: PostizPost[] };
 
         const platformPosts = (postsData.posts ?? []).filter(
@@ -159,7 +161,7 @@ export const postizAnalyticsTool: ToolDefinition = {
 
           for (const post of platformPosts.slice(0, 10)) {
             try {
-              const analytics = (await postizGet(`/analytics/post/${post.id}?date=7`)) as PostizMetric[];
+              const analytics = (await postizGet(`/analytics/post/${post.id}?date=7`, ctx.tenantId)) as PostizMetric[];
               const metrics: Record<string, number> = {};
               if (Array.isArray(analytics)) {
                 for (const m of analytics) {

@@ -11,6 +11,7 @@
 import type { ToolDefinition } from "./_types.js";
 import { makeResult, makeError } from "./_types.js";
 import { generateSocialImage } from "../../../services/socialImage.js";
+import { resolveCredential } from "../../../services/credentialResolver.js";
 
 const POSTIZ_API = "https://api.postiz.com/public/v1";
 
@@ -67,9 +68,9 @@ const PLATFORM_SETTINGS: Record<string, Record<string, unknown>> = {
 
 // ── Postiz API helpers ───────────────────────────────────────────────────────
 
-async function postizGet(endpoint: string): Promise<unknown> {
-  const key = process.env.POSTIZ_API_KEY;
-  if (!key) throw new Error("POSTIZ_API_KEY not configured");
+async function postizGet(endpoint: string, tenantId: string): Promise<unknown> {
+  const key = await resolveCredential(tenantId, "postiz");
+  if (!key) throw new Error("Postiz API key not configured. Add your Postiz API key in Settings > Integrations.");
   const res = await fetch(`${POSTIZ_API}${endpoint}`, {
     headers: { Authorization: key, "Content-Type": "application/json" },
   });
@@ -77,9 +78,9 @@ async function postizGet(endpoint: string): Promise<unknown> {
   return res.json();
 }
 
-async function postizPost(endpoint: string, body: unknown): Promise<unknown> {
-  const key = process.env.POSTIZ_API_KEY;
-  if (!key) throw new Error("POSTIZ_API_KEY not configured");
+async function postizPost(endpoint: string, body: unknown, tenantId: string): Promise<unknown> {
+  const key = await resolveCredential(tenantId, "postiz");
+  if (!key) throw new Error("Postiz API key not configured. Add your Postiz API key in Settings > Integrations.");
   const res = await fetch(`${POSTIZ_API}${endpoint}`, {
     method: "POST",
     headers: { Authorization: key, "Content-Type": "application/json" },
@@ -98,18 +99,18 @@ type PostizIntegration = {
 let _integrationsCache: { ts: number; list: PostizIntegration[] } | null = null;
 const CACHE_TTL = 5 * 60 * 1000;
 
-async function getIntegrations(): Promise<PostizIntegration[]> {
+async function getIntegrations(tenantId: string): Promise<PostizIntegration[]> {
   if (_integrationsCache && Date.now() - _integrationsCache.ts < CACHE_TTL) {
     return _integrationsCache.list;
   }
-  const list = (await postizGet("/integrations")) as PostizIntegration[];
+  const list = (await postizGet("/integrations", tenantId)) as PostizIntegration[];
   _integrationsCache = { ts: Date.now(), list };
   return list;
 }
 
 /** Find the Postiz integration for a given platform identifier. */
-async function findIntegration(platform: string): Promise<PostizIntegration | null> {
-  const integrations = await getIntegrations();
+async function findIntegration(platform: string, tenantId: string): Promise<PostizIntegration | null> {
+  const integrations = await getIntegrations(tenantId);
   return integrations.find(
     (i) =>
       i.providerIdentifier === platform ||
@@ -136,15 +137,16 @@ export const postizPublishTool: ToolDefinition = {
 
   async execute(ctx) {
     try {
-      if (!process.env.POSTIZ_API_KEY) {
-        return makeResult("postiz_publish", "POSTIZ_API_KEY is not configured. Set it in backend/.env to enable social publishing via Postiz.");
+      const postizKey = await resolveCredential(ctx.tenantId, "postiz");
+      if (!postizKey) {
+        return makeResult("postiz_publish", "Postiz API key is not configured. Add your Postiz API key in Settings > Integrations.");
       }
 
       // Determine target platform from agent ID or query
       const platform = AGENT_PLATFORM[ctx.agentId] ?? detectPlatformFromQuery(ctx.query);
       if (!platform) {
         // List all available integrations
-        const integrations = await getIntegrations();
+        const integrations = await getIntegrations(ctx.tenantId);
         const available = integrations.map((i) => `  - ${i.name} (${i.providerIdentifier ?? i.identifier ?? "?"})`);
         return makeResult("postiz_publish", [
           `Postiz publishing is ready. Connected integrations:`,
@@ -154,7 +156,7 @@ export const postizPublishTool: ToolDefinition = {
         ].join("\n"));
       }
 
-      const integration = await findIntegration(platform);
+      const integration = await findIntegration(platform, ctx.tenantId);
       if (!integration) {
         return makeResult("postiz_publish", `No ${platform} integration found in Postiz. Connect it at https://app.postiz.com first.`);
       }
@@ -187,7 +189,7 @@ export const postizPublishTool: ToolDefinition = {
       }
 
       // Generate image for the post (best-effort)
-      const imageUrls = await generateSocialImage(caption);
+      const imageUrls = await generateSocialImage(ctx.tenantId, caption);
 
       // Build post body with platform-specific settings
       const settings = PLATFORM_SETTINGS[platform] ?? { __type: platform };
@@ -203,7 +205,7 @@ export const postizPublishTool: ToolDefinition = {
         }],
       };
 
-      const result = (await postizPost("/posts", postBody)) as Array<{ postId?: string }>;
+      const result = (await postizPost("/posts", postBody, ctx.tenantId)) as Array<{ postId?: string }>;
       const postId = result?.[0]?.postId ?? "unknown";
 
       const draftNote = platform === "tiktok"

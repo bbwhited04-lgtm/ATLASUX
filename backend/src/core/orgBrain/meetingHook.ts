@@ -8,8 +8,7 @@
 import { prisma } from "../../db/prisma.js";
 import { storeOrgMemory } from "../agent/orgMemory.js";
 import type { OrgMemoryCategory } from "../agent/orgMemory.js";
-
-const OPENAI_KEY = process.env.OPENAI_API_KEY ?? "";
+import { resolveCredential } from "../../services/credentialResolver.js";
 
 export async function runMeetingHook(params: {
   tenantId: string;
@@ -40,7 +39,8 @@ export async function runMeetingHook(params: {
     context.push(`Key Points: ${keyPoints.join("; ")}`);
   }
 
-  if (!OPENAI_KEY) {
+  const openaiKey = await resolveCredential(tenantId, "openai");
+  if (!openaiKey) {
     console.log("[org-brain:meeting] No OPENAI_API_KEY — skipping insight extraction");
     return { stored: 0 };
   }
@@ -59,7 +59,7 @@ ${context.join("\n")}`;
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENAI_KEY}`,
+        Authorization: `Bearer ${openaiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

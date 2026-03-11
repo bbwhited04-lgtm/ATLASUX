@@ -26,13 +26,14 @@ import {
   MAX_ACTIONS_PER_SESSION,
   MAX_SCREENSHOT_SIZE,
 } from "../tools/browser/localVisionGovernance.js";
+import { resolveCredential } from "../services/credentialResolver.js";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 
 const API_URL = (process.env.ATLAS_API_URL ?? "http://localhost:8787").replace(/\/+$/, "");
 const TENANT_ID = process.env.ATLAS_TENANT_ID ?? "";
 const AGENT_KEY = process.env.ATLAS_LOCAL_AGENT_KEY ?? "";
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY ?? "";
+let ANTHROPIC_KEY = "";
 const CDP_ENDPOINT = process.env.CDP_ENDPOINT ?? "http://localhost:9222";
 const POLL_MS = Math.max(1000, Number(process.env.POLL_INTERVAL_MS ?? 5000));
 const HEARTBEAT_MS = Math.max(5000, Number(process.env.HEARTBEAT_INTERVAL_MS ?? 30000));
@@ -356,7 +357,10 @@ async function main() {
   // Validate config
   if (!TENANT_ID) throw new Error("ATLAS_TENANT_ID is required");
   if (!AGENT_KEY) throw new Error("ATLAS_LOCAL_AGENT_KEY is required");
-  if (!ANTHROPIC_KEY) throw new Error("ANTHROPIC_API_KEY is required");
+
+  // Resolve Anthropic key per-tenant
+  ANTHROPIC_KEY = (await resolveCredential(TENANT_ID, "anthropic")) ?? "";
+  if (!ANTHROPIC_KEY) throw new Error("ANTHROPIC_API_KEY is required (no credential found for tenant)");
 
   log(`Starting local vision agent`);
   log(`  API: ${API_URL}`);

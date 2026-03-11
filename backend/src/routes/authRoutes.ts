@@ -6,6 +6,37 @@
 
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
+import { TIER_AGENTS, TIER_WORKFLOWS } from "../lib/tierConfig.js";
+
+/** Seed default agent and workflow configs for a new tenant based on seat tier. */
+async function seedTenantDefaults(tenantId: string, seatTier: string) {
+  const agents = TIER_AGENTS[seatTier] ?? TIER_AGENTS.free_beta;
+  const workflows = TIER_WORKFLOWS[seatTier] ?? TIER_WORKFLOWS.free_beta;
+
+  // Seed agent configs
+  if (agents.length > 0) {
+    await prisma.tenantAgentConfig.createMany({
+      data: agents.map(agentId => ({
+        tenantId,
+        agentId,
+        enabled: true,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  // Seed workflow configs
+  if (workflows.length > 0) {
+    await prisma.tenantWorkflowConfig.createMany({
+      data: workflows.map(workflowId => ({
+        tenantId,
+        workflowId,
+        enabled: true,
+      })),
+      skipDuplicates: true,
+    });
+  }
+}
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
   /**
@@ -63,6 +94,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         seatType: "free_beta",
       },
     });
+
+    // Seed default agent and workflow configs for the new tenant
+    await seedTenantDefaults(tenant.id, "free_beta");
 
     // Audit log
     prisma.auditLog

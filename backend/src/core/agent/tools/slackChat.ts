@@ -13,6 +13,7 @@
 
 import type { ToolDefinition } from "./_types.js";
 import { makeResult, makeError } from "./_types.js";
+import { resolveCredential } from "../../../services/credentialResolver.js";
 import {
   postAsAgent,
   readHistory,
@@ -51,8 +52,8 @@ export const slackChatTool: ToolDefinition = {
   ],
   async execute(ctx) {
     try {
-      const token = process.env.SLACK_BOT_TOKEN;
-      if (!token) return makeResult("slackChat", "Slack not configured — SLACK_BOT_TOKEN not set.");
+      const token = await resolveCredential(ctx.tenantId, "slack");
+      if (!token) return makeResult("slackChat", "Slack bot token is not configured. Add your Slack bot token in Settings > Integrations.");
 
       const query = ctx.query;
       const agentId = ctx.agentId;

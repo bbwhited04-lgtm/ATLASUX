@@ -9,6 +9,10 @@
  *   searchReddit()    — Reddit public JSON API (no auth needed)
  */
 
+import { resolveCredential } from "../services/credentialResolver.js";
+
+const OWNER_TENANT_ID = process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type WebSearchResult = {
@@ -119,15 +123,24 @@ async function searchSerpApi(
 export async function searchWeb(
   query: string,
   maxResults = 8,
+  tenantId?: string,
 ): Promise<SearchResponse> {
+  // Resolve keys per-tenant when tenantId is provided, otherwise fall back to env
+  const [youKey, tavilyKey, serpKey] =
+    await Promise.all([
+        resolveCredential(tenantId || OWNER_TENANT_ID, "you_com"),
+        resolveCredential(tenantId || OWNER_TENANT_ID, "tavily"),
+        resolveCredential(tenantId || OWNER_TENANT_ID, "serp"),
+      ]);
+
   const providers: Array<{
     name:   string;
     key:    string | undefined;
     search: (q: string, n: number, k: string) => Promise<WebSearchResult[]>;
   }> = [
-    { name: "you.com",  key: process.env.YOU_COM_API_KEY?.trim(),  search: searchYouCom  },
-    { name: "tavily",   key: process.env.TAVILY_API_KEY?.trim(),   search: searchTavily  },
-    { name: "serpapi",   key: process.env.SERP_API_KEY?.trim(),     search: searchSerpApi },
+    { name: "you.com",  key: youKey ?? undefined,    search: searchYouCom  },
+    { name: "tavily",   key: tavilyKey ?? undefined,  search: searchTavily  },
+    { name: "serpapi",   key: serpKey ?? undefined,    search: searchSerpApi },
   ];
 
   const errors: string[] = [];
@@ -230,8 +243,9 @@ export async function searchNewsData(
     removeDuplicates?: boolean;
     priorityDomain?: "top" | "medium" | "low";
   } = {},
+  tenantId?: string,
 ): Promise<NewsDataResponse> {
-  const apiKey = process.env.NEWSDATA_API_KEY?.trim();
+  const apiKey = await resolveCredential(tenantId || OWNER_TENANT_ID, "newsdata");
   if (!apiKey) return { ok: false, articles: [], error: "NEWSDATA_API_KEY not configured" };
 
   try {
@@ -352,8 +366,9 @@ export async function searchNYT(
     section?: string;   // e.g. "Technology", "Business"
     page?: number;
   } = {},
+  tenantId?: string,
 ): Promise<NYTSearchResponse> {
-  const apiKey = process.env.NYT_API_KEY?.trim();
+  const apiKey = await resolveCredential(tenantId || OWNER_TENANT_ID, "nyt");
   if (!apiKey) return { ok: false, articles: [], total: 0, error: "NYT_API_KEY not configured" };
 
   try {
@@ -410,8 +425,9 @@ export async function searchNYT(
  */
 export async function fetchNYTTopStories(
   section = "technology",
+  tenantId?: string,
 ): Promise<{ ok: boolean; articles: Array<{ title: string; abstract: string; url: string; section: string; byline: string; publishedDate: string }>; error?: string }> {
-  const apiKey = process.env.NYT_API_KEY?.trim();
+  const apiKey = await resolveCredential(tenantId || OWNER_TENANT_ID, "nyt");
   if (!apiKey) return { ok: false, articles: [], error: "NYT_API_KEY not configured" };
 
   try {
@@ -474,8 +490,9 @@ export async function searchMediaStack(
     sort?: "published_desc" | "published_asc" | "popularity";
     limit?: number;
   } = {},
+  tenantId?: string,
 ): Promise<MediaStackResponse> {
-  const apiKey = process.env.MEDIASTACK_API_KEY?.trim();
+  const apiKey = await resolveCredential(tenantId || OWNER_TENANT_ID, "mediastack");
   if (!apiKey) return { ok: false, articles: [], total: 0, error: "MEDIASTACK_API_KEY not configured" };
 
   try {

@@ -19,15 +19,16 @@ import { prisma } from "../db/prisma.js";
 import { handleTwilioMediaStream } from "../voice/twilioStream.js";
 import { handleMercerMediaStream } from "../voice/mercerStream.js";
 import { startDialingSession, dialSingle, getDialerStatus, stopDialingSession } from "../voice/outboundDialer.js";
+import { resolveCredential } from "../services/credentialResolver.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const TENANT_ID = "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
 
-function twilioConfig() {
-  const accountSid  = process.env.TWILIO_ACCOUNT_SID ?? "";
-  const authToken   = process.env.TWILIO_AUTH_TOKEN ?? "";
-  const fromNumber  = process.env.TWILIO_FROM_NUMBER ?? "";
+async function twilioConfig(tenantId: string) {
+  const accountSid  = await resolveCredential(tenantId, "twilio_sid") ?? "";
+  const authToken   = await resolveCredential(tenantId, "twilio_token") ?? "";
+  const fromNumber  = await resolveCredential(tenantId, "twilio_from") ?? "";
   return { accountSid, authToken, fromNumber };
 }
 
@@ -79,7 +80,6 @@ function validateTwilioSignature(
 // ── Route plugin ─────────────────────────────────────────────────────────────
 
 export const twilioRoutes: FastifyPluginAsync = async (app) => {
-  const { accountSid, authToken, fromNumber } = twilioConfig();
 
   // ── Scoped form-urlencoded parser for webhook sub-plugin ────────────────
   app.register(async (webhooks) => {
@@ -97,8 +97,10 @@ export const twilioRoutes: FastifyPluginAsync = async (app) => {
 
     // Twilio signature check as preHandler on all webhook routes
     webhooks.addHook("preHandler", async (req, reply) => {
+      const tenantId = (req as any).tenantId ?? TENANT_ID;
+      const authToken = await resolveCredential(tenantId, "twilio_token") ?? "";
       if (!authToken) {
-        app.log.warn("TWILIO_AUTH_TOKEN not configured — rejecting webhook");
+        app.log.warn("Twilio auth token not configured for tenant — rejecting webhook");
         return reply.code(503).send("");
       }
       const sig = (req.headers as any)["x-twilio-signature"] as string | undefined;
@@ -342,8 +344,10 @@ export const twilioRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /call — place outbound call
   app.post("/call", async (req) => {
+    const tenantId = (req as any).tenantId ?? TENANT_ID;
+    const { accountSid, authToken, fromNumber } = await twilioConfig(tenantId);
     if (!accountSid || !authToken || !fromNumber) {
-      return { ok: false, error: "Twilio not configured" };
+      return { ok: false, error: "Twilio not configured for this tenant" };
     }
 
     const body = req.body as any;

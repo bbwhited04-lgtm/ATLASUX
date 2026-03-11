@@ -32,6 +32,7 @@
  */
 
 import * as circuitBreaker from "../../lib/circuitBreaker.js";
+import { resolveCredential } from "../../services/credentialResolver.js";
 
 export type LlmRoute =
   | "ORCHESTRATION_REASONING"
@@ -65,6 +66,7 @@ export interface LlmRequest {
   agent: string;              // ATLAS / BINKY / etc
   purpose: string;            // e.g. "route_decision", "draft_caption"
   route: LlmRoute;
+  tenantId?: string;          // tenant for per-tenant credential resolution
 
   // Prefer messages; prompt is convenience.
   messages?: LlmMessage[];
@@ -84,6 +86,9 @@ export interface LlmRequest {
 
   // Arbitrary metadata included in audits
   meta?: Record<string, any>;
+
+  // Seat tier of the requesting user — used to restrict paid providers
+  seatTier?: string;
 }
 
 export interface LlmUsage {
@@ -508,8 +513,15 @@ export async function runLLM(req: LlmRequest, auditHook: AuditHook = auditDefaul
   const messages = normalizeMessages(req);
   const tokensInEst = estimateTokensRough(messages, req.prompt);
 
-  const plan = pickPlan(req);
+  let plan = pickPlan(req);
   if (!plan.length) deny(`No route plan configured for ${req.route}`);
+
+  // Restrict free_beta users to free providers only (no Anthropic, OpenRouter, OpenAI, DeepSeek)
+  const PAID_PROVIDERS: Set<string> = new Set(["anthropic", "openai", "openrouter", "deepseek"]);
+  if (req.seatTier === "free_beta") {
+    plan = plan.filter((item) => !PAID_PROVIDERS.has(item.provider));
+    if (!plan.length) deny("No free providers available for this route (free_beta tier)");
+  }
 
   let lastErr: any = null;
 
@@ -555,6 +567,7 @@ export async function runLLM(req: LlmRequest, auditHook: AuditHook = auditDefaul
         temperature: temp,
         maxOutputTokens: maxOut,
         timeoutMs: ROUTE_CAPS[req.route]?.timeoutMs ?? guard.timeoutMs,
+        tenantId: req.tenantId || "",
       });
       const latencyMs = Date.now() - started;
 
@@ -655,6 +668,7 @@ async function callProvider(args: {
   temperature: number;
   maxOutputTokens: number;
   timeoutMs: number;
+  tenantId: string;
 }): Promise<ProviderCallResult> {
   switch (args.provider) {
     case "google_gemini":
@@ -664,21 +678,21 @@ async function callProvider(args: {
     case "vercel_ai_gateway":
       return callOpenAICompat("vercel", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
     case "openai":
-      return callOpenAICompat("openai", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+      return callOpenAICompat("openai", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs, args.tenantId);
     case "anthropic":
-      return callAnthropic(args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+      return callAnthropic(args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs, args.tenantId);
     case "deepseek": {
       // GDPR: PII redaction before cross-border transfer to China
       const { redactMessages } = await import("../../lib/piiRedact.js");
       const safeMessages = redactMessages(args.messages);
-      return callOpenAICompat("deepseek", args.model, safeMessages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+      return callOpenAICompat("deepseek", args.model, safeMessages, args.temperature, args.maxOutputTokens, args.timeoutMs, args.tenantId);
     }
     case "openrouter":
-      return callOpenAICompat("openrouter", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+      return callOpenAICompat("openrouter", args.model, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs, args.tenantId);
     case "cerebras": {
       // Strip "cerebras/" prefix — API expects bare model IDs like "llama-4-scout-17b-16e-instruct"
       const cerebrasModel = args.model.startsWith("cerebras/") ? args.model.replace("cerebras/", "") : args.model;
-      return callOpenAICompat("cerebras", cerebrasModel, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs);
+      return callOpenAICompat("cerebras", cerebrasModel, args.messages, args.temperature, args.maxOutputTokens, args.timeoutMs, args.tenantId);
     }
     case "groq": {
       const groqModel = args.model.startsWith("groq/") ? args.model.replace("groq/", "") : args.model;
@@ -705,9 +719,10 @@ async function callOpenAICompat(
   messages: LlmMessage[],
   temperature: number,
   maxOutputTokens: number,
-  timeoutMs: number
+  timeoutMs: number,
+  tenantId?: string,
 ): Promise<ProviderCallResult> {
-  const { url, headers } = buildOpenAICompat(which);
+  const { url, headers } = await buildOpenAICompat(which, tenantId);
 
   const body = {
     model,
@@ -747,8 +762,16 @@ async function callAnthropic(
   temperature: number,
   maxOutputTokens: number,
   timeoutMs: number,
+  tenantId?: string,
 ): Promise<ProviderCallResult> {
-  const apiKey = getEnvOrThrow("ANTHROPIC_API_KEY");
+  let apiKey: string;
+  if (tenantId) {
+    const resolved = await resolveCredential(tenantId, "anthropic");
+    if (!resolved) throw new Error("No anthropic credential available for tenant");
+    apiKey = resolved;
+  } else {
+    apiKey = getEnvOrThrow("ANTHROPIC_API_KEY");
+  }
 
   // Anthropic requires system as a top-level param, not in messages array
   const systemMsgs = messages.filter((m) => m.role === "system");
@@ -785,7 +808,17 @@ async function callAnthropic(
   };
 }
 
-function buildOpenAICompat(which: "vercel" | "openai" | "deepseek" | "openrouter" | "cerebras" | "groq" | "nvidia"): { url: string; headers: Record<string, string> } {
+async function buildOpenAICompat(which: "vercel" | "openai" | "deepseek" | "openrouter" | "cerebras" | "groq" | "nvidia", tenantId?: string): Promise<{ url: string; headers: Record<string, string> }> {
+  /** Resolve a credential via tenant resolver if tenantId is provided, otherwise fall back to env. */
+  async function resolveKey(provider: string, envKey: string): Promise<string> {
+    if (tenantId) {
+      const resolved = await resolveCredential(tenantId, provider);
+      if (!resolved) throw new Error(`No ${provider} credential available for tenant`);
+      return resolved;
+    }
+    return getEnvOrThrow(envKey);
+  }
+
   if (which === "vercel") {
     const apiKey = getEnvOrThrow("VERCEL_AI_API_KEY");
     return {
@@ -795,17 +828,17 @@ function buildOpenAICompat(which: "vercel" | "openai" | "deepseek" | "openrouter
   }
 
   if (which === "openai") {
-    const apiKey = getEnvOrThrow("OPENAI_API_KEY");
+    const apiKey = await resolveKey("openai", "OPENAI_API_KEY");
     return { url: ENDPOINTS.openai, headers: { Authorization: `Bearer ${apiKey}` } };
   }
 
   if (which === "deepseek") {
-    const apiKey = getEnvOrThrow("DEEPSEEK_API_KEY");
+    const apiKey = await resolveKey("deepseek", "DEEPSEEK_API_KEY");
     return { url: ENDPOINTS.deepseek, headers: { Authorization: `Bearer ${apiKey}` } };
   }
 
   if (which === "openrouter") {
-    const apiKey = getEnvOrThrow("OPENROUTER_API_KEY");
+    const apiKey = await resolveKey("openrouter", "OPENROUTER_API_KEY");
     // OpenRouter recommends optional headers; safe to include if you want.
     const extra: Record<string, string> = {};
     if (process.env.OPENROUTER_SITE_URL) extra["HTTP-Referer"] = process.env.OPENROUTER_SITE_URL;
@@ -825,7 +858,7 @@ function buildOpenAICompat(which: "vercel" | "openai" | "deepseek" | "openrouter
   }
 
   // cerebras
-  const apiKey = getEnvOrThrow("CEREBRAS_API_KEY");
+  const apiKey = await resolveKey("cerebras", "CEREBRAS_API_KEY");
   return { url: ENDPOINTS.cerebras, headers: { Authorization: `Bearer ${apiKey}` } };
 }
 

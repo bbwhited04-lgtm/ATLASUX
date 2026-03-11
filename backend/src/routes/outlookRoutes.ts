@@ -14,11 +14,12 @@ import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
 import { agentEmails } from "../config/agentEmails.js";
 import { sanitizeError } from "../lib/sanitizeError.js";
+import { resolveAgentEmail } from "../services/agentEmailResolver.js";
 
 const tenantId = process.env.MS_TENANT_ID ?? "";
 const clientId = process.env.MS_CLIENT_ID ?? "";
 const clientSecret = process.env.MS_CLIENT_SECRET ?? "";
-const defaultMailbox = (process.env.AGENT_EMAIL_ATLAS ?? "atlas.ceo@deadapp.info").trim();
+const defaultMailboxFallback = "atlas.ceo@deadapp.info";
 
 // ── Token cache (app-only tokens last ~60 min) ──────────────────────────────
 
@@ -78,6 +79,7 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
       filter?: string;
       skip?: string;
     };
+    const defaultMailbox = (tenantCheck ? await resolveAgentEmail(tenantCheck, "atlas") : null) ?? defaultMailboxFallback;
     const _requestedEmail = qs.email || defaultMailbox;
     // Validate mailbox is a known agent email — prevent reading arbitrary M365 mailboxes
     const _allowedMailboxes = new Set(Object.values(agentEmails));
@@ -166,6 +168,7 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
 
     const { messageId } = req.params as { messageId: string };
     const qs = req.query as { email?: string };
+    const defaultMailbox = await resolveAgentEmail(tenantCheck, "atlas") ?? defaultMailboxFallback;
     const _requestedEmail = qs.email || defaultMailbox;
     // Validate mailbox is a known agent email — prevent reading arbitrary M365 mailboxes
     const _allowedMailboxes = new Set(Object.values(agentEmails));
@@ -232,6 +235,7 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
 
     const { messageId } = req.params as { messageId: string };
     const body = req.body as { email?: string; isRead?: boolean };
+    const defaultMailbox = await resolveAgentEmail(tenantCheck, "atlas") ?? defaultMailboxFallback;
     const _requestedEmail = body.email || defaultMailbox;
     // Validate mailbox is a known agent email — prevent updating arbitrary M365 mailboxes
     const _allowedMailboxes = new Set(Object.values(agentEmails));
@@ -279,6 +283,7 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantCheck) return reply.code(401).send({ ok: false, error: "unauthorized" });
 
     const qs = req.query as { email?: string };
+    const defaultMailbox = await resolveAgentEmail(tenantCheck, "atlas") ?? defaultMailboxFallback;
     const _requestedEmail = qs.email || defaultMailbox;
     // Validate mailbox is a known agent email — prevent reading arbitrary M365 mailboxes
     const _allowedMailboxes = new Set(Object.values(agentEmails));
@@ -326,6 +331,8 @@ export const outlookRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
+      const reqTenantId = (req as any).tenantId as string | undefined;
+      const defaultMailbox = (reqTenantId ? await resolveAgentEmail(reqTenantId, "atlas") : null) ?? defaultMailboxFallback;
       const token = await getAppToken();
       // Quick check: try to read inbox folder metadata
       const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(defaultMailbox)}/mailFolders/inbox?$select=totalItemCount`;

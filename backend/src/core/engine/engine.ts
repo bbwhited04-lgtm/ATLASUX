@@ -4,6 +4,7 @@ import { prisma } from "../../prisma.js";
 import { atlasExecuteGate } from "../exec/atlasGate.js";
 import { getWorkflowHandler, workflowCatalogAll } from "../../workflows/registry.js";
 import { dispatchOrgBrainHook } from "../orgBrain/hooks.js";
+import { isAgentEnabled } from "../../services/agentConfigResolver.js";
 
 // Build a fast lookup set of all canonical workflow keys (WF-001 … WF-106+)
 const CANONICAL_WORKFLOW_KEYS = new Set<string>(workflowCatalogAll.map((w) => w.id));
@@ -184,6 +185,54 @@ export async function engineTick() {
         data: { status: "VALIDATING" },
       });
 
+      // Look up seat tier for the requesting user/tenant
+      let seatTier: string | undefined;
+      try {
+        const member = await prisma.tenantMember.findFirst({
+          where: { tenantId: intent.tenantId },
+          select: { seatType: true },
+          orderBy: { createdAt: "asc" }, // owner is first member
+        });
+        seatTier = member?.seatType ?? undefined;
+      } catch { /* non-fatal */ }
+
+      // Check agent is enabled for this tenant
+      const agentAllowed = await isAgentEnabled(intent.tenantId, agentId);
+      if (!agentAllowed) {
+        await prisma.intent.update({ where: { id: intent.id }, data: { status: "FAILED" } });
+        await writeAudit({
+          tenantId: intent.tenantId, requestedBy, level: "warn",
+          action: "AGENT_NOT_ENABLED", entityType: "intent", entityId: intent.id,
+          message: `Agent "${agentId}" is not enabled for this tenant`,
+          meta: { agentId, workflowId, seatTier },
+        });
+        return { ran: true, result: { ok: false, error: "AGENT_NOT_ENABLED", message: `Agent "${agentId}" is not available on your plan.` } };
+      }
+
+      // Check workflow is enabled for this tenant
+      let workflowAllowed = true;
+      if (intent.tenantId !== (process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391")) {
+        try {
+          const wfConfig = await prisma.tenantWorkflowConfig.findUnique({
+            where: { tenantId_workflowId: { tenantId: intent.tenantId, workflowId } },
+            select: { enabled: true },
+          });
+          workflowAllowed = wfConfig?.enabled ?? false; // No row = not allowed
+        } catch {
+          workflowAllowed = false;
+        }
+      }
+      if (!workflowAllowed) {
+        await prisma.intent.update({ where: { id: intent.id }, data: { status: "FAILED" } });
+        await writeAudit({
+          tenantId: intent.tenantId, requestedBy, level: "warn",
+          action: "WORKFLOW_NOT_ENABLED", entityType: "intent", entityId: intent.id,
+          message: `Workflow "${workflowId}" is not enabled for this tenant`,
+          meta: { agentId, workflowId, seatTier },
+        });
+        return { ran: true, result: { ok: false, error: "WORKFLOW_NOT_ENABLED", message: `Workflow "${workflowId}" is not available on your plan.` } };
+      }
+
       const res = await handler({
         tenantId: intent.tenantId,
         requestedBy,
@@ -192,6 +241,7 @@ export async function engineTick() {
         input: (payload.input as any) ?? {},
         traceId: (payload.traceId as any) ?? null,
         intentId: intent.id,
+        seatTier,
       });
 
       execOutput = res;

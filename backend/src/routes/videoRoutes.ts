@@ -21,10 +21,11 @@ export const videoRoutes: FastifyPluginAsync = async (app) => {
   // ── Capabilities check ──────────────────────────────────────────────────────
 
   app.get("/capabilities", async (req, reply) => {
+    const tenantId = (req as any).tenantId ?? "";
     const [ffmpeg, comfyAvailable, flux1] = await Promise.all([
       isFfmpegAvailable(),
       comfyui.isAvailable(),
-      isFlux1Available(),
+      isFlux1Available(tenantId),
     ]);
 
     let installedModels = { cogvideox: false, hunyuan: false };

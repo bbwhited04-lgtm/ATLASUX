@@ -2,6 +2,7 @@ import "dotenv/config";
 import { prisma } from "../db/prisma.js";
 import { getSystemState } from "../services/systemState.js";
 import { handleJobFailure } from "../lib/jobFailureHandler.js";
+import { resolveCredential } from "../services/credentialResolver.js";
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -99,9 +100,13 @@ async function sendViaResend(args: {
   subject: string;
   text: string;
   html?: string | null;
+  tenantId: string;
 }) {
-  const apiKey = String(process.env.RESEND_API_KEY ?? "").trim();
-  if (!apiKey || apiKey === "re_YOUR_API_KEY_HERE") throw new Error("RESEND_API_KEY not configured");
+  const apiKey = await resolveCredential(args.tenantId, "resend");
+  if (!apiKey || apiKey === "re_YOUR_API_KEY_HERE") {
+    process.stderr.write(`[emailSender] No Resend API key for tenant ${args.tenantId} — skipping email to ${args.to}\n`);
+    throw new Error(`No Resend API key configured for tenant ${args.tenantId}`);
+  }
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -218,7 +223,7 @@ async function main() {
           output = await sendViaMicrosoft({ senderUpn, to, subject, text, html, replyTo });
         } else if (provider === "resend") {
           if (!from) throw new Error("OUTBOUND_EMAIL_FROM missing");
-          output = await sendViaResend({ from, to, subject, text, html });
+          output = await sendViaResend({ from, to, subject, text, html, tenantId: job.tenantId });
         } else {
           throw new Error(`unknown OUTBOUND_EMAIL_PROVIDER: ${provider}`);
         }

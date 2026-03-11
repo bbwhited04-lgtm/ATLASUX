@@ -28,6 +28,7 @@ import { getSkillBlock, loadAllSkills } from "../core/kb/skillLoader.js";
 import { resolveAgentTools } from "../core/agent/agentTools.js";
 import { agentRegistry } from "../agents/registry.js";
 import { getKbContext } from "../core/kb/getKbContext.js";
+import { resolveCredential } from "../services/credentialResolver.js";
 
 // Ensure SKILL.md files are loaded
 loadAllSkills();
@@ -171,7 +172,8 @@ async function runTelegramChat(
   messages.push({ role: "user", content: userText });
 
   // Pick provider (prefer deepseek for speed, fallback to openai)
-  const provider = process.env.DEEPSEEK_API_KEY ? "deepseek" : "openai";
+  const deepseekKey = await resolveCredential(tenantId, "deepseek");
+  const provider = deepseekKey ? "deepseek" : "openai";
   const model = provider === "deepseek" ? "deepseek-chat" : "gpt-4o-mini";
 
   const result = await runChat({ provider, model, messages, agentId: effectiveAgentId }, process.env as any);

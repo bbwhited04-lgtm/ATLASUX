@@ -26,6 +26,7 @@ import "dotenv/config";
 import { prisma } from "../db/prisma.js";
 import { loadEnv } from "../env.js";
 import { refreshTokenIfNeeded } from "../lib/tokenLifecycle.js";
+import { resolveCredential } from "../services/credentialResolver.js";
 import {
   fetchNewPosts, fetchHotPosts, submitComment, submitPost,
   hasAlreadyCommented, RedditPost,
@@ -68,8 +69,8 @@ function isRelevant(post: RedditPost): boolean {
 }
 
 async function draftReply(post: RedditPost): Promise<string | null> {
-  const openaiKey = process.env.OPENAI_API_KEY;
-  const orKey = process.env.OPENROUTER_API_KEY;
+  const openaiKey = await resolveCredential(DONNA_TENANT_ID, "openai");
+  const orKey = await resolveCredential(DONNA_TENANT_ID, "openrouter");
   const apiKey = openaiKey || orKey;
   if (!apiKey) return null;
 

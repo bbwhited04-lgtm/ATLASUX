@@ -5,6 +5,8 @@
  * Cloud-compatible (no local GPU needed).
  */
 
+import { resolveCredential } from "./credentialResolver.js";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type Flux1GenerateOpts = {
@@ -29,14 +31,10 @@ export type Flux1Result = {
 
 const FLUX_API_BASE = "https://api.bfl.ml";
 
-function getApiKey(): string {
-  return (process.env.FLUX1_API_KEY ?? "").trim();
-}
-
 // ── Generate image ───────────────────────────────────────────────────────────
 
-export async function generateImage(opts: Flux1GenerateOpts): Promise<Flux1Result> {
-  const apiKey = getApiKey();
+export async function generateImage(tenantId: string, opts: Flux1GenerateOpts): Promise<Flux1Result> {
+  const apiKey = await resolveCredential(tenantId, "flux1");
   if (!apiKey) return { ok: false, error: "FLUX1_API_KEY not configured" };
 
   const model = opts.model ?? "flux1-schnell";
@@ -100,8 +98,8 @@ export async function generateImage(opts: Flux1GenerateOpts): Promise<Flux1Resul
 }
 
 /** Check if Flux1 API is configured and reachable */
-export async function isAvailable(): Promise<boolean> {
-  const apiKey = getApiKey();
+export async function isAvailable(tenantId: string): Promise<boolean> {
+  const apiKey = await resolveCredential(tenantId, "flux1");
   if (!apiKey) return false;
   // Just check if we have the key — no health endpoint needed
   return true;
@@ -110,8 +108,8 @@ export async function isAvailable(): Promise<boolean> {
 /**
  * Generate image and return as Buffer for direct use (upload, OneDrive, etc.)
  */
-export async function generateImageBuffer(opts: Flux1GenerateOpts): Promise<{ ok: boolean; buffer?: Buffer; error?: string }> {
-  const result = await generateImage(opts);
+export async function generateImageBuffer(tenantId: string, opts: Flux1GenerateOpts): Promise<{ ok: boolean; buffer?: Buffer; error?: string }> {
+  const result = await generateImage(tenantId, opts);
   if (!result.ok || !result.imageUrl) return { ok: false, error: result.error ?? "No image URL" };
 
   try {

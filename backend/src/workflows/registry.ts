@@ -11,6 +11,8 @@ import { validateSessionConfig, createBrowserSessionMemo } from "../tools/browse
 import { calculateSessionRiskTier, type BrowserSessionConfig, type BrowserActionStep } from "../tools/browser/browserActions.js";
 import { postAsAgent, getChannelByName, readHistory } from "../services/slack.js";
 import { generateSocialImage } from "../services/socialImage.js";
+import { resolveCredential } from "../services/credentialResolver.js";
+import { resolveAgentEmail } from "../services/agentEmailResolver.js";
 
 export type WorkflowContext = {
   tenantId: string;
@@ -20,6 +22,7 @@ export type WorkflowContext = {
   input: any;
   traceId?: string | null;
   intentId: string;
+  seatTier?: string;
 };
 
 export type WorkflowResult = {
@@ -158,10 +161,9 @@ const dbAuditHook: AuditHook = (evt) => {
   console.log(JSON.stringify({ source: "brainllm", ...evt }));
 };
 
-/** Lookup agent email from env (e.g. AGENT_EMAIL_BINKY). */
-function agentEmail(agentId: string): string | null {
-  const key = `AGENT_EMAIL_${agentId.toUpperCase()}`;
-  return process.env[key]?.trim() || null;
+/** Tenant-scoped agent email — check tenant config first, then env fallback for owner. */
+async function tenantAgentEmail(tenantId: string, agentId: string): Promise<string | null> {
+  return resolveAgentEmail(tenantId, agentId);
 }
 
 /**
@@ -169,15 +171,15 @@ function agentEmail(agentId: string): string | null {
  * Reports always go to Atlas (CEO). The agent's direct leader is CC'd
  * if they are not Atlas (so Binky, Sunday, etc. stay in the loop).
  */
-function getReportRecipients(agentId: string): { to: string; cc: string[] } {
-  const atlasAddr = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
+async function getReportRecipients(tenantId: string, agentId: string): Promise<{ to: string; cc: string[] }> {
+  const atlasAddr = await tenantAgentEmail(tenantId, "atlas") ?? "atlas.ceo@deadapp.info";
   const agent = agentRegistry.find((a) => a.id === agentId);
   const leader = agent?.reportsTo;
   const cc: string[] = [];
 
   // CC the direct leader if they aren't atlas or chairman
   if (leader && leader !== "atlas" && leader !== "chairman") {
-    const leaderAddr = agentEmail(leader);
+    const leaderAddr = await tenantAgentEmail(tenantId, leader);
     if (leaderAddr) cc.push(leaderAddr);
   }
 
@@ -209,6 +211,7 @@ async function safeLLM(
           { role: "system", content: opts.system },
           { role: "user",   content: opts.user   },
         ],
+        seatTier: ctx.seatTier,
       },
       dbAuditHook,
     );
@@ -347,9 +350,9 @@ const handlers: Record<string, WorkflowHandler> = {
 
     // ── 6. Postiz API Reachability ────────────────────────────────────────────
     try {
-      const postizKey = process.env.POSTIZ_API_KEY;
+      const postizKey = await resolveCredential(ctx.tenantId, "postiz");
       if (!postizKey) {
-        findings.push({ check: "Postiz API", status: "WARN", detail: "POSTIZ_API_KEY not configured" });
+        findings.push({ check: "Postiz API", status: "WARN", detail: "No Postiz API key configured for your workspace" });
       } else {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
@@ -373,9 +376,9 @@ const handlers: Record<string, WorkflowHandler> = {
 
     // ── 7. Slack Bot Token ────────────────────────────────────────────────────
     try {
-      const slackToken = process.env.SLACK_BOT_TOKEN;
+      const slackToken = await resolveCredential(ctx.tenantId, "slack");
       if (!slackToken) {
-        findings.push({ check: "Slack Bot", status: "WARN", detail: "SLACK_BOT_TOKEN not configured" });
+        findings.push({ check: "Slack Bot", status: "WARN", detail: "No Slack bot token configured for your workspace" });
       } else {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
@@ -729,7 +732,7 @@ const handlers: Record<string, WorkflowHandler> = {
 
     // Internal routing email
     await queueEmail(ctx, {
-      to: agentEmail("atlas") ?? "atlas.ceo@deadapp.info",
+      to: await tenantAgentEmail(ctx.tenantId, "atlas") ?? "atlas.ceo@deadapp.info",
       subject: `[${ctx.traceId ?? ctx.intentId}] Support Intake → ${routeTo.toUpperCase()} [${priority}]`,
       text: [
         `Support intake routed to ${routeTo}.`,
@@ -786,7 +789,7 @@ const handlers: Record<string, WorkflowHandler> = {
 
     await writeStepAudit(ctx, "escalate.drafted", `Memo drafted (${llmText.length} chars)`);
 
-    const toEmail = agentEmail(toRole) ?? agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
+    const toEmail = await tenantAgentEmail(ctx.tenantId, toRole) ?? await tenantAgentEmail(ctx.tenantId, "atlas") ?? "atlas.ceo@deadapp.info";
     await queueEmail(ctx, {
       to: toEmail,
       subject: `[ESCALATION] ${toRole.toUpperCase()} ← ${ctx.agentId.toUpperCase()} (${ctx.traceId ?? ctx.intentId})`,
@@ -841,7 +844,7 @@ const handlers: Record<string, WorkflowHandler> = {
     await writeStepAudit(ctx, "brief.composed", `Brief composed (${llmText.length} chars, ${kb.items.length} KB docs)`);
 
     // Send brief to Atlas (CEO) — Binky reports to Atlas
-    const { to: briefTo } = getReportRecipients("binky");
+    const { to: briefTo } = await getReportRecipients(ctx.tenantId, "binky");
     await queueEmail(ctx, {
       to: briefTo,
       subject: `[DAILY BRIEF] ${new Date().toISOString().slice(0, 10)}`,
@@ -852,7 +855,7 @@ const handlers: Record<string, WorkflowHandler> = {
     await writeStepAudit(ctx, "brief.queued", `Brief queued to ${briefTo}`);
 
     // CC DAILY-INTEL mailbox as central reporting hub
-    const dailyIntelEmail = agentEmail("daily_intel") ?? process.env.AGENT_EMAIL_DAILY_INTEL?.trim();
+    const dailyIntelEmail = await tenantAgentEmail(ctx.tenantId, "daily_intel");
     if (dailyIntelEmail && dailyIntelEmail !== briefTo) {
       await queueEmail(ctx, {
         to: dailyIntelEmail,
@@ -893,6 +896,7 @@ function createPlatformIntelHandler(platformName: string, searchQuery: string): 
       const searchResult = await searchWeb(
         `${searchQuery} trending ${new Date().toISOString().slice(0, 10)}`,
         8,
+        ctx.tenantId,
       );
       if (searchResult.ok) {
         serpData = searchResult.results
@@ -950,7 +954,7 @@ function createPlatformIntelHandler(platformName: string, searchQuery: string): 
     );
 
     // 4. Email report to Atlas (CEO) + CC agent's direct leader
-    const { to: intelTo, cc: intelCc } = getReportRecipients(ctx.agentId);
+    const { to: intelTo, cc: intelCc } = await getReportRecipients(ctx.tenantId, ctx.agentId);
     const intelSubject = `[${platformName.toUpperCase()} INTEL] ${new Date().toISOString().slice(0, 10)} — Hot Topics & Trends`;
     const intelBody = [
       `${platformName} Platform Intelligence Report`,
@@ -977,7 +981,7 @@ function createPlatformIntelHandler(platformName: string, searchQuery: string): 
     }
 
     // 5. CC DAILY-INTEL hub
-    const hubEmail = process.env.AGENT_EMAIL_DAILY_INTEL?.trim();
+    const hubEmail = await tenantAgentEmail(ctx.tenantId, "daily_intel");
     if (hubEmail && hubEmail !== intelTo) {
       await queueEmail(ctx, {
         to: hubEmail,
@@ -1046,7 +1050,7 @@ handlers["WF-106"] = async (ctx) => {
   // 2. Get real-time macro context via multi-provider web search
   let macroIntel = "";
   try {
-    const macroResult = await searchWeb(`AI automation small business trending news ${today}`, 6);
+    const macroResult = await searchWeb(`AI automation small business trending news ${today}`, 6, ctx.tenantId);
     if (macroResult.ok) {
       macroIntel = macroResult.results
         .slice(0, 5)
@@ -1117,7 +1121,7 @@ handlers["WF-106"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-106.orders", `Task orders generated (${taskOrders.length} chars)`);
 
   // 5. Send Atlas's master task order to Billy + Atlas mailbox
-  const atlasEmail = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
+  const atlasEmail = await tenantAgentEmail(ctx.tenantId, "atlas") ?? "atlas.ceo@deadapp.info";
   const billyEmail = process.env.OWNER_EMAIL?.trim() ?? "billy@deadapp.info";
   const masterSubject = `[ATLAS TASK ORDERS] ${today} — Workforce Task Assignment`;
   const masterBody = [
@@ -1161,7 +1165,7 @@ handlers["WF-106"] = async (ctx) => {
 
   let emailsSent = 0;
   for (const [agId, order] of Object.entries(agentTaskMap)) {
-    const agMailbox = agentEmail(agId);
+    const agMailbox = await tenantAgentEmail(ctx.tenantId, agId);
     if (!agMailbox) continue;
     const subject = `[ATLAS TASK ORDER] ${today} — Your directive from Atlas`;
     const body = [
@@ -1178,7 +1182,7 @@ handlers["WF-106"] = async (ctx) => {
   }
 
   // 7. Also CC the DAILY-INTEL hub with the full task log
-  const hubEmail = process.env.AGENT_EMAIL_DAILY_INTEL?.trim();
+  const hubEmail = await tenantAgentEmail(ctx.tenantId, "daily_intel");
   if (hubEmail) {
     await queueEmail(ctx, {
       to: hubEmail, fromAgent: "atlas",
@@ -1245,7 +1249,7 @@ handlers["WF-107"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-107.start", "Atlas Tool Discovery beginning");
 
   const billyEmail  = process.env.OWNER_EMAIL?.trim()  ?? "billy@deadapp.info";
-  const atlasEmail  = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
+  const atlasEmail  = await tenantAgentEmail(ctx.tenantId, "atlas") ?? "atlas.ceo@deadapp.info";
   const backendUrl  = (process.env.BACKEND_URL ?? process.env.RENDER_EXTERNAL_URL ?? "https://atlasux-backend.onrender.com").replace(/\/$/, "");
   const today       = new Date().toISOString().slice(0, 10);
 
@@ -1290,7 +1294,7 @@ handlers["WF-107"] = async (ctx) => {
   const allResults: string[] = [];
   for (const searchTerm of searches) {
     try {
-      const searchResult = await searchWeb(searchTerm, 6);
+      const searchResult = await searchWeb(searchTerm, 6, ctx.tenantId);
       if (searchResult.ok) {
         for (const r of searchResult.results.slice(0, 4)) {
           allResults.push(`- ${r.title}: ${r.snippet}`);
@@ -1542,7 +1546,7 @@ handlers["WF-108"] = async (ctx) => {
     const searchTerm = topicHint
       ? `${topicHint} AI automation blog 2026`
       : `AI automation small business trending blog topics ${today}`;
-    const searchResult = await searchWeb(searchTerm, 8);
+    const searchResult = await searchWeb(searchTerm, 8, ctx.tenantId);
     if (searchResult.ok) {
       serpData = searchResult.results
         .slice(0, 6)
@@ -1645,8 +1649,8 @@ handlers["WF-108"] = async (ctx) => {
 
     await writeStepAudit(ctx, "WF-108.venny-prompt", `Venny image prompt generated (${imagePromptResult.length} chars)`);
 
-    // If OPENAI_API_KEY is present, call DALL-E to generate the actual image
-    const openaiKey = process.env.OPENAI_API_KEY?.trim();
+    // If OpenAI key is available, call DALL-E to generate the actual image
+    const openaiKey = await resolveCredential(ctx.tenantId, "openai");
     if (openaiKey && imagePromptResult.length > 10) {
       const dalleRes = await fetch("https://api.openai.com/v1/images/generations", {
         method: "POST",
@@ -1751,7 +1755,7 @@ handlers["WF-108"] = async (ctx) => {
   const frontendUrl  = process.env.FRONTEND_URL?.trim() ?? "https://atlasux.cloud";
   const blogPostUrl  = `${frontendUrl}/#/app/blog/${publishedSlug}`;
   const billyEmail   = process.env.BILLING_EMAIL?.trim() ?? "billy@deadapp.info";
-  const { to: blogReportTo, cc: blogReportCc } = getReportRecipients("reynolds");
+  const { to: blogReportTo, cc: blogReportCc } = await getReportRecipients(ctx.tenantId, "reynolds");
 
   const emailBody = [
     `Blog Post Published Successfully`,
@@ -1952,7 +1956,7 @@ handlers["WF-110"] = async (ctx) => {
   }
 
   // Send summary email to Atlas
-  const atlasAddr = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
+  const atlasAddr = await tenantAgentEmail(ctx.tenantId, "atlas") ?? "atlas.ceo@deadapp.info";
   await queueEmail(ctx, {
     to: atlasAddr,
     subject: `[YOUTUBE SCRAPE] ${stored} videos ingested into KB`,
@@ -2058,7 +2062,7 @@ handlers["WF-111"] = async (ctx) => {
   }).catch(() => null);
 
   // Email notification
-  const atlasAddr = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
+  const atlasAddr = await tenantAgentEmail(ctx.tenantId, "atlas") ?? "atlas.ceo@deadapp.info";
   await queueEmail(ctx, {
     to: atlasAddr,
     subject: `[YOUTUBE UPLOAD] "${title}" published`,
@@ -2160,7 +2164,7 @@ handlers["WF-120"] = async (ctx) => {
   const webResults: string[] = [];
   for (const term of brandTerms) {
     try {
-      const result = await searchWeb(`"${term}"`, 5);
+      const result = await searchWeb(`"${term}"`, 5, ctx.tenantId);
       if (result.ok) {
         for (const r of result.results) {
           webResults.push(`- [${term}] ${r.title}: ${r.snippet.slice(0, 120)} (${r.url})`);
@@ -2241,8 +2245,8 @@ handlers["WF-120"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-120.report", `Brand report generated (${llmText.length} chars)`);
 
   // 6. Email to Atlas + CC Binky
-  const { to: reportTo } = getReportRecipients("sunday");
-  const binkyEmail = agentEmail("binky");
+  const { to: reportTo } = await getReportRecipients(ctx.tenantId, "sunday");
+  const binkyEmail = await tenantAgentEmail(ctx.tenantId, "binky");
   await queueEmail(ctx, {
     to: reportTo,
     fromAgent: "sunday",
@@ -2305,7 +2309,7 @@ handlers["WF-121"] = async (ctx) => {
   const allResults: string[] = [];
   for (const q of competitorQueries) {
     try {
-      const result = await searchWeb(q, 5);
+      const result = await searchWeb(q, 5, ctx.tenantId);
       if (result.ok) {
         for (const r of result.results) {
           allResults.push(`- [${q}] ${r.title}: ${r.snippet.slice(0, 150)} (${r.url})`);
@@ -2353,8 +2357,8 @@ handlers["WF-121"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-121.report", `Competitor report generated (${llmText.length} chars)`);
 
   // 4. Email to Atlas + CC Binky
-  const { to: reportTo } = getReportRecipients("archy");
-  const binkyEmail = agentEmail("binky");
+  const { to: reportTo } = await getReportRecipients(ctx.tenantId, "archy");
+  const binkyEmail = await tenantAgentEmail(ctx.tenantId, "binky");
   await queueEmail(ctx, {
     to: reportTo,
     fromAgent: "archy",
@@ -2419,7 +2423,7 @@ handlers["WF-122"] = async (ctx) => {
   const rankings: Array<{ keyword: string; position: number | null; foundUrl: string | null; topResults: string[] }> = [];
   for (const keyword of targetKeywords) {
     try {
-      const result = await searchWeb(keyword, 20);
+      const result = await searchWeb(keyword, 20, ctx.tenantId);
       if (result.ok) {
         const atlasIndex = result.results.findIndex(
           (r) => r.url.includes("atlasux") || r.title.toLowerCase().includes("atlas ux"),
@@ -2480,7 +2484,7 @@ handlers["WF-122"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-122.report", `SEO report generated (${llmText.length} chars)`);
 
   // 4. Email to Atlas
-  const { to: reportTo } = getReportRecipients("reynolds");
+  const { to: reportTo } = await getReportRecipients(ctx.tenantId, "reynolds");
   await queueEmail(ctx, {
     to: reportTo,
     fromAgent: "reynolds",
@@ -2562,7 +2566,7 @@ handlers["WF-123"] = async (ctx) => {
 
   for (const q of searchTerms) {
     try {
-      const result = await searchWeb(q, 5);
+      const result = await searchWeb(q, 5, ctx.tenantId);
       if (result.ok) {
         for (const r of result.results) {
           webResults.push(`- ${r.title}: ${r.snippet.slice(0, 200)} (${r.url})`);
@@ -2615,8 +2619,8 @@ handlers["WF-123"] = async (ctx) => {
   }
 
   // 5. Email to Mercer + CC Atlas
-  const mercerEmail = agentEmail("mercer");
-  const { to: reportTo } = getReportRecipients("mercer");
+  const mercerEmail = await tenantAgentEmail(ctx.tenantId, "mercer");
+  const { to: reportTo } = await getReportRecipients(ctx.tenantId, "mercer");
   const emailTarget = mercerEmail ?? reportTo;
 
   await queueEmail(ctx, {
@@ -2714,7 +2718,7 @@ handlers["WF-130"] = async (ctx) => {
   });
 
   // Report email
-  const { to: reportTo } = getReportRecipients(ctx.agentId);
+  const { to: reportTo } = await getReportRecipients(ctx.tenantId, ctx.agentId);
   await queueEmail(ctx, {
     to: reportTo,
     fromAgent: ctx.agentId,
@@ -2856,9 +2860,9 @@ const POSTIZ_PLATFORM_SETTINGS: Record<string, Record<string, unknown>> = {
   medium:    { __type: "medium", title: "", subtitle: "", tags: [] },
 };
 
-async function postizFetch(endpoint: string, method: "GET" | "POST" = "GET", body?: unknown): Promise<unknown> {
-  const key = process.env.POSTIZ_API_KEY;
-  if (!key) throw new Error("POSTIZ_API_KEY not configured");
+async function postizFetch(tenantId: string, endpoint: string, method: "GET" | "POST" = "GET", body?: unknown): Promise<unknown> {
+  const key = await resolveCredential(tenantId, "postiz");
+  if (!key) throw new Error("No Postiz API key configured for your workspace.");
   const opts: RequestInit = {
     method,
     headers: { Authorization: key, "Content-Type": "application/json" },
@@ -2997,7 +3001,7 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
       // 3. Get fresh web trends
       let webTrends = "";
       try {
-        const searchResult = await searchWeb(`${platform} trending topics AI automation small business ${new Date().toISOString().slice(0, 10)}`, 5);
+        const searchResult = await searchWeb(`${platform} trending topics AI automation small business ${new Date().toISOString().slice(0, 10)}`, 5, ctx.tenantId);
         if (searchResult.ok) {
           webTrends = searchResult.results.slice(0, 4).map((r, i) => `${i + 1}. ${r.title} — ${r.snippet}`).join("\n");
         }
@@ -3048,7 +3052,7 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
     }
 
     // Find integration
-    const integrations = (await postizFetch("/integrations")) as PostizIntegration[];
+    const integrations = (await postizFetch(ctx.tenantId, "/integrations")) as PostizIntegration[];
     const integration = integrations.find(
       (i) => i.providerIdentifier === platform || i.identifier === platform || (i.name ?? "").toLowerCase().includes(platform),
     );
@@ -3062,7 +3066,7 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
     }
 
     // Generate image for the post (best-effort)
-    const imageUrls = ctx.input?.skipImage ? [] : await generateSocialImage(caption);
+    const imageUrls = ctx.input?.skipImage ? [] : await generateSocialImage(ctx.tenantId, caption);
     console.log(`[postiz] ${platform} image generation: ${imageUrls.length ? imageUrls[0] : "NONE (Flux1 returned empty)"}`);
     await writeStepAudit(ctx, `${ctx.workflowId}.image`, imageUrls.length ? `Image generated: ${imageUrls[0]}` : "No image generated — Flux1 returned empty", { imageUrls });
 
@@ -3079,7 +3083,7 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
       }],
     };
 
-    const result = (await postizFetch("/posts", "POST", postBody)) as Array<{ postId?: string }>;
+    const result = (await postizFetch(ctx.tenantId, "/posts", "POST", postBody)) as Array<{ postId?: string }>;
     const postId = result?.[0]?.postId ?? "unknown";
 
     await writeStepAudit(ctx, `${ctx.workflowId}.published`, `Published to ${platform} via Postiz (post ${postId})`, {
@@ -3087,7 +3091,7 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
     });
 
     // Notify Atlas
-    const { to, cc } = getReportRecipients(ctx.agentId);
+    const { to, cc } = await getReportRecipients(ctx.tenantId, ctx.agentId);
     await queueEmail(ctx, {
       to,
       fromAgent: ctx.agentId,
@@ -3167,7 +3171,7 @@ handlers["WF-212"] = async (ctx) => {
   if (!skipImage) {
     try {
       const { generateImage, isAvailable } = await import("../services/flux1.js");
-      if (await isAvailable()) {
+      if (await isAvailable(ctx.tenantId)) {
         const imagePrompt = await safeLLM(ctx, {
           agent: "SUNDAY",
           purpose: "social_image_prompt",
@@ -3176,7 +3180,7 @@ handlers["WF-212"] = async (ctx) => {
           user: `Post content: ${caption.slice(0, 200)}`,
         });
         if (imagePrompt && !imagePrompt.startsWith("[LLM unavailable")) {
-          const imgResult = await generateImage({ prompt: imagePrompt.trim(), width: 1024, height: 1024 });
+          const imgResult = await generateImage(ctx.tenantId, { prompt: imagePrompt.trim(), width: 1024, height: 1024 });
           if (imgResult.ok && imgResult.imageUrl) {
             imageUrls = [imgResult.imageUrl];
             await writeStepAudit(ctx, "WF-212.image", `Generated image for social post`, { imageUrl: imgResult.imageUrl });
@@ -3191,7 +3195,7 @@ handlers["WF-212"] = async (ctx) => {
     ? ctx.input.platforms.map((p: unknown) => String(p).toLowerCase())
     : Object.values(POSTIZ_AGENT_PLATFORM).filter((v, i, a) => a.indexOf(v) === i);
 
-  const integrations = (await postizFetch("/integrations")) as PostizIntegration[];
+  const integrations = (await postizFetch(ctx.tenantId, "/integrations")) as PostizIntegration[];
 
   // Map platforms to their integrations upfront (single pass)
   const platformMap = new Map<string, PostizIntegration>();
@@ -3223,7 +3227,7 @@ handlers["WF-212"] = async (ctx) => {
           settings,
         }],
       };
-      const result = (await postizFetch("/posts", "POST", postBody)) as Array<{ postId?: string }>;
+      const result = (await postizFetch(ctx.tenantId, "/posts", "POST", postBody)) as Array<{ postId?: string }>;
       return { platform, ok: true as const, postId: result?.[0]?.postId ?? "unknown" };
     } catch (err: unknown) {
       return { platform, ok: false as const, error: err instanceof Error ? err.message : String(err) };
@@ -3241,7 +3245,7 @@ handlers["WF-212"] = async (ctx) => {
 
   await writeStepAudit(ctx, "WF-212.complete", `Cross-posted to ${succeeded}/${results.length} platforms`, { results, hasImage: imageUrls.length > 0 });
 
-  const { to } = getReportRecipients("sunday");
+  const { to } = await getReportRecipients(ctx.tenantId, "sunday");
   await queueEmail(ctx, {
     to,
     fromAgent: "sunday",
@@ -3281,7 +3285,7 @@ function createPostizAnalyticsHandler(platform: string): WorkflowHandler {
   return async (ctx) => {
     await writeStepAudit(ctx, `${ctx.workflowId}.start`, `Postiz ${platform} analytics starting`);
 
-    const integrations = (await postizFetch("/integrations")) as PostizIntegration[];
+    const integrations = (await postizFetch(ctx.tenantId, "/integrations")) as PostizIntegration[];
     const integration = integrations.find(
       (i) => i.providerIdentifier === platform || i.identifier === platform || (i.name ?? "").toLowerCase().includes(platform),
     );
@@ -3290,7 +3294,7 @@ function createPostizAnalyticsHandler(platform: string): WorkflowHandler {
     // Platform-level stats (30 days)
     let platformSection = "";
     try {
-      const stats = (await postizFetch(`/analytics/${integration.id}?date=30`)) as PostizMetric[];
+      const stats = (await postizFetch(ctx.tenantId, `/analytics/${integration.id}?date=30`)) as PostizMetric[];
       if (Array.isArray(stats) && stats.length > 0) {
         const lines = stats.map((m) => {
           const latest = m.data?.[m.data.length - 1];
@@ -3309,7 +3313,7 @@ function createPostizAnalyticsHandler(platform: string): WorkflowHandler {
     let diagnosticSection = "";
 
     try {
-      const postsData = (await postizFetch(`/posts?startDate=${start.toISOString()}&endDate=${now.toISOString()}`)) as { posts?: PostizPost[] };
+      const postsData = (await postizFetch(ctx.tenantId, `/posts?startDate=${start.toISOString()}&endDate=${now.toISOString()}`)) as { posts?: PostizPost[] };
       const platformPosts = (postsData.posts ?? []).filter(
         (p) => p.integration?.providerIdentifier === platform || (p.integration?.name ?? "").toLowerCase().includes(platform),
       );
@@ -3319,7 +3323,7 @@ function createPostizAnalyticsHandler(platform: string): WorkflowHandler {
 
         for (const post of platformPosts.slice(0, 10)) {
           try {
-            const analytics = (await postizFetch(`/analytics/post/${post.id}?date=7`)) as PostizMetric[];
+            const analytics = (await postizFetch(ctx.tenantId, `/analytics/post/${post.id}?date=7`)) as PostizMetric[];
             const metrics: Record<string, number> = {};
             if (Array.isArray(analytics)) {
               for (const m of analytics) {
@@ -3352,7 +3356,7 @@ function createPostizAnalyticsHandler(platform: string): WorkflowHandler {
 
     await writeStepAudit(ctx, `${ctx.workflowId}.complete`, `${platform} analytics report generated`);
 
-    const { to } = getReportRecipients(ctx.agentId);
+    const { to } = await getReportRecipients(ctx.tenantId, ctx.agentId);
     await queueEmail(ctx, {
       to,
       fromAgent: ctx.agentId,
@@ -3372,12 +3376,12 @@ handlers["WF-222"] = createPostizAnalyticsHandler("facebook");
 handlers["WF-223"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-223.start", "Cross-platform analytics starting");
 
-  const integrations = (await postizFetch("/integrations")) as PostizIntegration[];
+  const integrations = (await postizFetch(ctx.tenantId, "/integrations")) as PostizIntegration[];
   const summaries: string[] = [];
 
   for (const int of integrations.slice(0, 15)) {
     try {
-      const stats = (await postizFetch(`/analytics/${int.id}?date=7`)) as PostizMetric[];
+      const stats = (await postizFetch(ctx.tenantId, `/analytics/${int.id}?date=7`)) as PostizMetric[];
       if (Array.isArray(stats) && stats.length > 0) {
         const line = stats.map((m) => {
           const latest = m.data?.[m.data.length - 1];
@@ -3395,7 +3399,7 @@ handlers["WF-223"] = async (ctx) => {
 
   await writeStepAudit(ctx, "WF-223.complete", `Cross-platform report: ${summaries.length} platforms`);
 
-  const { to } = getReportRecipients("sunday");
+  const { to } = await getReportRecipients(ctx.tenantId, "sunday");
   await queueEmail(ctx, {
     to,
     fromAgent: "sunday",
@@ -3435,7 +3439,7 @@ handlers["WF-035"] = async (ctx) => {
         size: 10,
         priorityDomain: "top",
         removeDuplicates: true,
-      });
+      }, ctx.tenantId);
       if (newsResult.ok) {
         for (const a of newsResult.articles) {
           allArticles.push({
@@ -3463,7 +3467,7 @@ handlers["WF-035"] = async (ctx) => {
       beginDate: todayForNYT,
       sort: "newest",
       section: "Technology",
-    });
+    }, ctx.tenantId);
     if (nytSearch.ok && nytSearch.articles.length) {
       sources.push({
         label: "New York Times (Article Search)",
@@ -3479,7 +3483,7 @@ handlers["WF-035"] = async (ctx) => {
   } catch { /* non-fatal */ }
 
   try {
-    const nytTop = await fetchNYTTopStories("technology");
+    const nytTop = await fetchNYTTopStories("technology", ctx.tenantId);
     if (nytTop.ok && nytTop.articles.length) {
       // Only add if we didn't already get results from search
       const topRelevant = nytTop.articles.filter(a =>
@@ -3506,7 +3510,7 @@ handlers["WF-035"] = async (ctx) => {
       categories: "technology",
       countries: "us,gb",
       limit: 10,
-    });
+    }, ctx.tenantId);
     if (msResult.ok && msResult.articles.length) {
       sources.push({
         label: "MediaStack (global news)",
@@ -3568,7 +3572,7 @@ handlers["WF-035"] = async (ctx) => {
 
   // Web search — breaking AI/tech/security news
   try {
-    const webResult = await searchWeb(`AI security jailbreak vulnerability breaking news ${today}`, 6);
+    const webResult = await searchWeb(`AI security jailbreak vulnerability breaking news ${today}`, 6, ctx.tenantId);
     if (webResult.ok) {
       sources.push({
         label: "Web (AI security news)",
@@ -3708,7 +3712,7 @@ handlers["WF-035"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-035.clipped", `${savedClips} clips saved to KB for agent retrieval`);
 
   // 5. ESCALATE — send alert to Atlas + Billy + route to relevant agents
-  const atlasEmail = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
+  const atlasEmail = await tenantAgentEmail(ctx.tenantId, "atlas") ?? "atlas.ceo@deadapp.info";
   const billyEmail = process.env.OWNER_EMAIL?.trim() ?? "billy@deadapp.info";
   const alertSubject = `[BREAKING SIGNAL] ${today} ${String(hour).padStart(2, "0")}:00 UTC — Immediate Attention Required`;
   const alertBody = [
@@ -3749,7 +3753,7 @@ handlers["WF-035"] = async (ctx) => {
     }
 
     for (const agId of routedAgents) {
-      const agMail = agentEmail(agId);
+      const agMail = await tenantAgentEmail(ctx.tenantId, agId);
       if (agMail && agMail !== atlasEmail) {
         await queueEmail(ctx, {
           to: agMail,
@@ -3772,7 +3776,7 @@ handlers["WF-035"] = async (ctx) => {
     }
 
     // CC Daily-Intel hub
-    const hubEmail = process.env.AGENT_EMAIL_DAILY_INTEL?.trim();
+    const hubEmail = await tenantAgentEmail(ctx.tenantId, "daily_intel");
     if (hubEmail && hubEmail !== atlasEmail) {
       await queueEmail(ctx, { to: hubEmail, fromAgent: "daily-intel", subject: `[TRIPWIRE HUB] ${alertSubject}`, text: alertBody });
     }
@@ -3882,7 +3886,7 @@ handlers["WF-033"] = async (ctx) => {
   // 4. Fresh web search for morning context
   let morningNews = "";
   try {
-    const newsResult = await searchWeb(`AI automation security news today ${today}`, 6);
+    const newsResult = await searchWeb(`AI automation security news today ${today}`, 6, ctx.tenantId);
     if (newsResult.ok) {
       morningNews = newsResult.results.map((r, i) => `${i + 1}. ${r.title} — ${r.snippet}`).join("\n");
     }
@@ -3918,8 +3922,8 @@ handlers["WF-033"] = async (ctx) => {
   await writeStepAudit(ctx, "WF-033.brief", `Morning brief generated (${briefText.length} chars)`);
 
   // 6. Email to Binky + Atlas + Billy
-  const { to: binkyEmail } = getReportRecipients("daily-intel");
-  const atlasEmail = agentEmail("atlas") ?? "atlas.ceo@deadapp.info";
+  const { to: binkyEmail } = await getReportRecipients(ctx.tenantId, "daily-intel");
+  const atlasEmail = await tenantAgentEmail(ctx.tenantId, "atlas") ?? "atlas.ceo@deadapp.info";
   const billyEmail = process.env.OWNER_EMAIL?.trim() ?? "billy@deadapp.info";
   const briefSubject = `[DAILY-INTEL] Morning Brief — ${today}`;
   const briefBody = [
@@ -4319,17 +4323,17 @@ handlers["WF-150"] = async (ctx) => {
   }
 
   // 3. Gemini TTS API key
-  const geminiKey = process.env.GEMINI_API_KEY ?? "";
+  const geminiKey = await resolveCredential(ctx.tenantId, "gemini") ?? "";
   if (geminiKey) {
-    findings.push("OK: GEMINI_API_KEY configured");
+    findings.push("OK: Gemini API key configured");
   } else {
-    findings.push("WARN: GEMINI_API_KEY not set — Gemini TTS unavailable, will use Cloud TTS fallback");
+    findings.push("WARN: No Gemini API key configured — Gemini TTS unavailable, will use Cloud TTS fallback");
   }
 
   // 4. Twilio credentials
-  const twilioSid = process.env.TWILIO_ACCOUNT_SID ?? "";
-  const twilioToken = process.env.TWILIO_AUTH_TOKEN ?? "";
-  const twilioNumber = process.env.TWILIO_FROM_NUMBER ?? "";
+  const twilioSid = await resolveCredential(ctx.tenantId, "twilio_sid") ?? "";
+  const twilioToken = await resolveCredential(ctx.tenantId, "twilio_token") ?? "";
+  const twilioNumber = await resolveCredential(ctx.tenantId, "twilio_from") ?? "";
   if (twilioSid && twilioToken && twilioNumber) {
     findings.push("OK: Twilio credentials configured");
   } else {

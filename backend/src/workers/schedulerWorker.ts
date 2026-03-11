@@ -101,6 +101,8 @@ type ScheduledJob = {
   hourly?: boolean;
   /** If set, run this function directly instead of creating an engine intent. */
   hookFn?: () => Promise<any>;
+  /** Override tenant for multi-tenant scheduling (defaults to RESOLVED_TENANT_ID). */
+  tenantId?: string;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -141,16 +143,18 @@ async function markFired(key: string, token: string) {
 }
 
 async function fireJob(job: ScheduledJob) {
+  const tid = job.tenantId ?? RESOLVED_TENANT_ID;
+
   // Hook jobs run directly — no engine intent needed
   if (job.hookFn) {
     const result = await job.hookFn();
-    console.log(`[scheduler] ✓ ${job.label} (hook)`, result ?? "");
+    console.log(`[scheduler] ✓ ${job.label} (hook) [tenant=${tid.slice(0, 8)}]`, result ?? "");
     return;
   }
 
   const intent = await prisma.intent.create({
     data: {
-      tenantId: RESOLVED_TENANT_ID,
+      tenantId: tid,
       agentId: null,
       intentType: "ENGINE_RUN",
       payload: JSON.parse(JSON.stringify({
@@ -158,7 +162,7 @@ async function fireJob(job: ScheduledJob) {
         workflowId: job.workflowId,
         input: job.payload,
         traceId: `scheduler-${job.id}-${todayUTC()}`,
-        requestedBy: RESOLVED_TENANT_ID,
+        requestedBy: tid,
       })),
       status: "DRAFT",
     },
@@ -166,7 +170,7 @@ async function fireJob(job: ScheduledJob) {
 
   await prisma.auditLog.create({
     data: {
-      tenantId: RESOLVED_TENANT_ID,
+      tenantId: tid,
       actorType: "system",
       actorUserId: null,
       actorExternalId: "scheduler",
@@ -175,12 +179,43 @@ async function fireJob(job: ScheduledJob) {
       entityType: "intent",
       entityId: intent.id,
       message: `Scheduler fired ${job.label}`,
-      meta: { jobId: job.id, workflowId: job.workflowId, agentId: job.agentId, intentId: intent.id },
+      meta: { jobId: job.id, workflowId: job.workflowId, agentId: job.agentId, intentId: intent.id, tenantId: tid },
       timestamp: new Date(),
     },
   }).catch(() => null);
 
-  console.log(`[scheduler] ✓ ${job.label} → intent ${intent.id}`);
+  console.log(`[scheduler] ✓ ${job.label} → intent ${intent.id} [tenant=${tid.slice(0, 8)}]`);
+}
+
+// ── Multi-Tenant Helpers ──────────────────────────────────────────────────────
+
+/** Return IDs of all active non-owner tenants (those with at least one member). */
+async function getActiveTenants(): Promise<string[]> {
+  try {
+    const tenants = await prisma.tenant.findMany({
+      where: {
+        id: { not: RESOLVED_TENANT_ID },
+        members: { some: {} }, // has at least one member
+      },
+      select: { id: true },
+    });
+    return tenants.map(t => t.id);
+  } catch {
+    return [];
+  }
+}
+
+/** Check whether a specific workflow is enabled for a non-owner tenant. */
+async function isWorkflowEnabledForTenant(tenantId: string, workflowId: string): Promise<boolean> {
+  try {
+    const config = await prisma.tenantWorkflowConfig.findUnique({
+      where: { tenantId_workflowId: { tenantId, workflowId } },
+      select: { enabled: true },
+    });
+    return config?.enabled ?? false;
+  } catch {
+    return false;
+  }
 }
 
 // ── Full Job Catalog ──────────────────────────────────────────────────────────
@@ -787,6 +822,64 @@ async function tick() {
           timestamp: new Date(),
         },
       }).catch(() => null);
+    }
+  }
+
+  // ── Multi-Tenant: fire due jobs for other active tenants ────────────────────
+  // Owner tenant (above) always runs everything. Other tenants only run workflows
+  // explicitly enabled in their tenant_workflow_config rows.
+  const otherTenants = await getActiveTenants();
+  if (otherTenants.length > 0) {
+    // Collect the jobs that were "due" this tick (non-hook jobs only — hooks are owner-specific)
+    const dueJobs: ScheduledJob[] = [];
+    for (const job of buildJobs()) {
+      if (job.hookFn) continue; // hooks are owner-only
+
+      if (job.hourly) {
+        if (Math.abs(minuteNow - job.minuteUTC) > 1) continue;
+        dueJobs.push(job);
+        continue;
+      }
+      if (job.dayOfWeek !== undefined && dayNow !== job.dayOfWeek) continue;
+      if (hourNow !== job.hourUTC) continue;
+      if (Math.abs(minuteNow - job.minuteUTC) > 1) continue;
+      dueJobs.push(job);
+    }
+
+    for (const tid of otherTenants) {
+      for (const job of dueJobs) {
+        if (!(await isWorkflowEnabledForTenant(tid, job.workflowId))) continue;
+
+        // De-duplicate per tenant: use a tenant-specific key
+        const tKey = `${dedupeKey(job)}:t:${tid}`;
+        const tToken = job.hourly
+          ? `${dateNow}-${String(hourNow).padStart(2, "0")}`
+          : job.dayOfWeek !== undefined ? weekNow : dateNow;
+        const tLast = await getLastFiredToken(tKey);
+        if (tLast === tToken) continue;
+
+        try {
+          await fireJob({ ...job, tenantId: tid });
+          await markFired(tKey, tToken);
+        } catch (err: any) {
+          console.error(`[scheduler] ✗ ${job.label} [tenant=${tid.slice(0, 8)}]: ${err?.message ?? err}`);
+          await prisma.auditLog.create({
+            data: {
+              tenantId: tid,
+              actorType: "system",
+              actorUserId: null,
+              actorExternalId: "scheduler",
+              level: "error",
+              action: "SCHEDULER_FIRE_FAILED",
+              entityType: "workflow",
+              entityId: job.workflowId,
+              message: `Scheduler failed to fire ${job.label} for tenant ${tid}: ${err?.message ?? err}`,
+              meta: { jobId: job.id, workflowId: job.workflowId, agentId: job.agentId, tenantId: tid },
+              timestamp: new Date(),
+            },
+          }).catch(() => null);
+        }
+      }
     }
   }
 }

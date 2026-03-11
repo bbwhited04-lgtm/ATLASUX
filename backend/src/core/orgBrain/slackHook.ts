@@ -8,8 +8,7 @@
 import { prisma } from "../../db/prisma.js";
 import { storeOrgMemory } from "../agent/orgMemory.js";
 import type { OrgMemoryCategory } from "../agent/orgMemory.js";
-
-const OPENAI_KEY = process.env.OPENAI_API_KEY ?? "";
+import { resolveCredential } from "../../services/credentialResolver.js";
 const MIN_MESSAGES = 15; // Don't analyze if fewer than this
 
 export async function runSlackHook(params: {
@@ -17,7 +16,8 @@ export async function runSlackHook(params: {
 }): Promise<{ stored: number }> {
   const { tenantId } = params;
 
-  if (!OPENAI_KEY) {
+  const openaiKey = await resolveCredential(tenantId, "openai");
+  if (!openaiKey) {
     console.log("[org-brain:slack] No OPENAI_API_KEY — skipping");
     return { stored: 0 };
   }
@@ -68,7 +68,7 @@ ${messages.slice(0, 8000)}`;
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENAI_KEY}`,
+        Authorization: `Bearer ${openaiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

@@ -98,7 +98,7 @@ async function executeSearches(
   const webPromises = queries.map(async (q): Promise<ResearchEvidence> => {
     try {
       if (timeout.aborted) return { query: q, results: [] };
-      const res = await searchWeb(q, 6);
+      const res = await searchWeb(q, 6, tenantId);
       return { query: q, results: res.ok ? res.results : [] };
     } catch {
       return { query: q, results: [] };
