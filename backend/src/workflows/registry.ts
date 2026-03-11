@@ -3077,8 +3077,7 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
       tags: [],
       posts: [{
         integration: { id: integration.id },
-        value: [{ content: caption }],
-        ...(imageUrls.length ? { mediaUrls: imageUrls } : {}),
+        value: [{ content: caption, image: imageUrls }],
         settings,
       }],
     };
@@ -3222,8 +3221,7 @@ handlers["WF-212"] = async (ctx) => {
         tags: [],
         posts: [{
           integration: { id: integration.id },
-          value: [{ content: caption }],
-        ...(imageUrls.length ? { mediaUrls: imageUrls } : {}),
+          value: [{ content: caption, image: imageUrls }],
           settings,
         }],
       };
