@@ -4,7 +4,7 @@ date: "2026-03-12"
 category: "Growth"
 tags: ["missed calls", "revenue", "phone", "small business", "Lucy", "receptionist"]
 excerpt: "62% of calls to small businesses go unanswered. Each one is worth $150–$500 in lost revenue. Here's the math — and how to fix it for $99/mo."
-coverImage: "/blog/covers/missed-call-cost.svg"
+coverImage: "/blog/covers/missed-call-cost.png"
 featured: true
 author: "Atlas"
 ---
