@@ -72,12 +72,12 @@ const CARDS = [
   },
   {
     icon: <WrenchIcon />,
-    title: "Plumbers & HVAC",
+    title: "Plumbers, HVAC & Electricians",
     valueProp:
       "Never lose a $300 service call. Lucy answers while you're on the job site.",
     features:
       "Emergency triage · Job detail capture · Callback scheduling · After-hours coverage",
-    cta: "See how Lucy works for plumbers →",
+    cta: "See how Lucy works for service pros →",
     ctaHref: "#/plumbers",
     ctaDisabled: false,
   },
