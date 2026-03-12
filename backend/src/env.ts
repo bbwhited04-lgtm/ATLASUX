@@ -109,6 +109,11 @@ const EnvSchema = z.object({
   STRIPE_PRICE_STARTER_ANNUAL: z.string().optional(),
   STRIPE_PRICE_BUSINESS_PRO_MONTHLY: z.string().optional(),
   STRIPE_PRICE_BUSINESS_PRO_ANNUAL: z.string().optional(),
+  STRIPE_PRICE_STANDARD_MONTHLY: z.string().optional(),
+  STRIPE_PRICE_STANDARD_ANNUAL: z.string().optional(),
+  STRIPE_PRICE_TEAM_MONTHLY: z.string().optional(),
+  STRIPE_PRICE_TEAM_ANNUAL: z.string().optional(),
+  STRIPE_PRICE_ENTERPRISE_MONTHLY: z.string().optional(),
   STRIPE_BETA_PROMO: z.string().optional(),
 
   // Email sending

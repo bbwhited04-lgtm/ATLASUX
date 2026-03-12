@@ -25,6 +25,12 @@ function initPriceToTierMap() {
   if (env.STRIPE_PRICE_STARTER_ANNUAL) STRIPE_PRICE_TO_TIER[env.STRIPE_PRICE_STARTER_ANNUAL] = "starter";
   if (env.STRIPE_PRICE_BUSINESS_PRO_MONTHLY) STRIPE_PRICE_TO_TIER[env.STRIPE_PRICE_BUSINESS_PRO_MONTHLY] = "pro";
   if (env.STRIPE_PRICE_BUSINESS_PRO_ANNUAL) STRIPE_PRICE_TO_TIER[env.STRIPE_PRICE_BUSINESS_PRO_ANNUAL] = "pro";
+  // New tier names (standard → starter, team → pro)
+  if (env.STRIPE_PRICE_STANDARD_MONTHLY) STRIPE_PRICE_TO_TIER[env.STRIPE_PRICE_STANDARD_MONTHLY] = "starter";
+  if (env.STRIPE_PRICE_STANDARD_ANNUAL) STRIPE_PRICE_TO_TIER[env.STRIPE_PRICE_STANDARD_ANNUAL] = "starter";
+  if (env.STRIPE_PRICE_TEAM_MONTHLY) STRIPE_PRICE_TO_TIER[env.STRIPE_PRICE_TEAM_MONTHLY] = "pro";
+  if (env.STRIPE_PRICE_TEAM_ANNUAL) STRIPE_PRICE_TO_TIER[env.STRIPE_PRICE_TEAM_ANNUAL] = "pro";
+  if (env.STRIPE_PRICE_ENTERPRISE_MONTHLY) STRIPE_PRICE_TO_TIER[env.STRIPE_PRICE_ENTERPRISE_MONTHLY] = "enterprise";
 }
 initPriceToTierMap();
 
@@ -46,8 +52,8 @@ function tierFromSubscription(subscription: any): string | null {
   // Try product name matching
   const productName = subscription.items?.data?.[0]?.price?.product?.name?.toLowerCase() ?? "";
   if (productName.includes("enterprise")) return "enterprise";
-  if (productName.includes("pro")) return "pro";
-  if (productName.includes("starter")) return "starter";
+  if (productName.includes("team") || productName.includes("pro")) return "pro";
+  if (productName.includes("standard") || productName.includes("starter")) return "starter";
 
   return null;
 }
@@ -214,7 +220,7 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
    * Public endpoint — no auth required (customer provides email).
    * ─────────────────────────────────────────────────────────────────────────*/
   const CheckoutSchema = z.object({
-    plan: z.enum(["starter", "business-pro"]),
+    plan: z.enum(["starter", "business-pro", "standard", "team", "enterprise"]),
     billing: z.enum(["monthly", "annual"]),
     email: z.string().email(),
   });
@@ -224,10 +230,18 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
     const body = CheckoutSchema.parse(req.body ?? {});
 
     const priceMap: Record<string, string | undefined> = {
+      // Legacy plan names (backwards compat)
       "starter:monthly": env.STRIPE_PRICE_STARTER_MONTHLY,
       "starter:annual": env.STRIPE_PRICE_STARTER_ANNUAL,
       "business-pro:monthly": env.STRIPE_PRICE_BUSINESS_PRO_MONTHLY,
       "business-pro:annual": env.STRIPE_PRICE_BUSINESS_PRO_ANNUAL,
+      // New plan names
+      "standard:monthly": env.STRIPE_PRICE_STANDARD_MONTHLY ?? env.STRIPE_PRICE_STARTER_MONTHLY,
+      "standard:annual": env.STRIPE_PRICE_STANDARD_ANNUAL ?? env.STRIPE_PRICE_STARTER_ANNUAL,
+      "team:monthly": env.STRIPE_PRICE_TEAM_MONTHLY ?? env.STRIPE_PRICE_BUSINESS_PRO_MONTHLY,
+      "team:annual": env.STRIPE_PRICE_TEAM_ANNUAL ?? env.STRIPE_PRICE_BUSINESS_PRO_ANNUAL,
+      "enterprise:monthly": env.STRIPE_PRICE_ENTERPRISE_MONTHLY,
+      "enterprise:annual": env.STRIPE_PRICE_ENTERPRISE_MONTHLY,
     };
 
     const priceId = priceMap[`${body.plan}:${body.billing}`];

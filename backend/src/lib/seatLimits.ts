@@ -3,9 +3,9 @@
  *
  * Pricing:
  *   free_beta  — $0/seat   (alpha testers)
- *   starter    — $19/seat/mo
- *   pro        — $49/seat/mo
- *   enterprise — custom
+ *   starter    — $99/mo  (Standard plan)
+ *   pro        — $149/mo (Team plan)
+ *   enterprise — $40/seat/mo
  */
 
 export type SeatTier = "free_beta" | "starter" | "pro" | "enterprise";
@@ -40,7 +40,7 @@ export const SEAT_LIMITS: Record<SeatTier, SeatLimits> = {
     apiRatePerMinute: 60,
     agentLimit: 15,
     jobsPerDay: 50,
-    priceCentsMonthly: 1900,  // $19
+    priceCentsMonthly: 9900,  // $99
   },
   pro: {
     tokenBudgetPerDay: 1_000_000,
@@ -48,7 +48,7 @@ export const SEAT_LIMITS: Record<SeatTier, SeatLimits> = {
     apiRatePerMinute: 120,
     agentLimit: 999,  // all agents
     jobsPerDay: 200,
-    priceCentsMonthly: 4900,  // $49
+    priceCentsMonthly: 14900,  // $149
   },
   enterprise: {
     tokenBudgetPerDay: Number.MAX_SAFE_INTEGER,

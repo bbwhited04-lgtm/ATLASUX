@@ -273,13 +273,13 @@ export default function Compare() {
             </div>
             <div className="text-2xl text-slate-600">vs</div>
             <div className="text-center">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Atlas UX Starter</div>
-              <div className="mt-1 text-3xl font-bold text-cyan-400">$34.95/mo</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">Atlas UX Standard</div>
+              <div className="mt-1 text-3xl font-bold text-cyan-400">$99/mo</div>
             </div>
           </div>
 
           <div className="mt-3 text-center text-sm text-slate-500">
-            That's <span className="font-semibold text-cyan-300">{Math.round(totalReplication / 34.95)}x cheaper</span> than cobbling it together yourself.
+            That's <span className="font-semibold text-cyan-300">{Math.round(totalReplication / 99)}x cheaper</span> than cobbling it together yourself.
           </div>
         </section>
 
@@ -310,7 +310,7 @@ export default function Compare() {
           <div className="text-center">
             <h2 className="text-2xl font-bold sm:text-3xl">Everything Included in Atlas UX</h2>
             <p className="mt-3 text-slate-400">
-              All of this — for $34.95/mo (Starter) or $149.95/mo (Business Pro).
+              All of this — for $99/mo (Standard) or $149/mo (Team).
             </p>
           </div>
 

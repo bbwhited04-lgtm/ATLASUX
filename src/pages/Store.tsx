@@ -368,7 +368,7 @@ type PlanFeature = {
 };
 
 type PricingPlan = {
-  id: "starter" | "business-pro";
+  id: "standard" | "team" | "enterprise";
   name: string;
   icon: any;
   color: string;
@@ -377,57 +377,79 @@ type PricingPlan = {
   annualTotal: number;
   popular?: boolean;
   badge?: string;
+  perSeat?: boolean;
   description: string;
   features: PlanFeature[];
 };
 
 const pricingPlans: PricingPlan[] = [
   {
-    id: "starter",
-    name: "Starter",
+    id: "standard",
+    name: "Standard",
     icon: Zap,
     color: "from-blue-500 to-cyan-500",
-    monthlyPrice: 34.95,
-    annualMonthlyPrice: 29.95,
-    annualTotal: 359.40,
-    description: "Everything you need to get running — solo operator essentials.",
+    monthlyPrice: 99,
+    annualMonthlyPrice: 82.50,
+    annualTotal: 990,
+    popular: true,
+    badge: "Most Popular",
+    description: "Lucy answers calls 24/7 — everything a solo operator needs.",
     features: [
-      { name: "Full AI agent workforce", included: true },
+      { name: "Lucy answers calls 24/7", included: true },
+      { name: "200 calls/month included", included: true },
+      { name: "Appointment booking", included: true },
+      { name: "SMS confirmations to callers", included: true },
+      { name: "Call summaries via text/email", included: true },
+      { name: "1 business location", included: true },
       { name: "Dashboard & analytics", included: true },
-      { name: "Social media management", included: true },
       { name: "CRM & contact management", included: true },
-      { name: "Email integration", included: true },
       { name: "Knowledge base", included: true },
-      { name: "Mobile companion (coming soon)", included: true },
       { name: "Community support", included: true },
-      { name: "AI receptionist (Lucy)", included: false },
-      { name: "Calendar & scheduling", included: false },
-      { name: "API access", included: false },
       { name: "Priority support", included: false },
+      { name: "API access", included: false },
     ],
   },
   {
-    id: "business-pro",
-    name: "Business Pro",
+    id: "team",
+    name: "Team",
     icon: Crown,
     color: "from-cyan-500 to-blue-500",
-    monthlyPrice: 149.95,
-    annualMonthlyPrice: 119.95,
-    annualTotal: 1439.40,
-    popular: true,
-    badge: "Best Value",
-    description: "Unlimited workforce with receptionist, scheduling, and priority support.",
+    monthlyPrice: 149,
+    annualMonthlyPrice: 124.17,
+    annualTotal: 1490,
+    description: "Everything in Standard plus team seats, advanced analytics, and priority support.",
     features: [
-      { name: "Everything in Starter", included: true },
-      { name: "Unlimited AI workforce", included: true },
-      { name: "AI receptionist (Lucy)", included: true },
-      { name: "Social media manager", included: true },
+      { name: "Everything in Standard", included: true },
+      { name: "5 team member seats", included: true },
+      { name: "Priority support", included: true },
+      { name: "Mercer outbound calling (coming soon)", included: true },
+      { name: "Advanced analytics dashboard", included: true },
+      { name: "Custom greeting scripts", included: true },
+      { name: "Social media management", included: true },
       { name: "Calendar & scheduling", included: true },
       { name: "Deep research engine", included: true },
-      { name: "Priority support", included: true },
       { name: "API access", included: true },
-      { name: "Advanced analytics", included: true },
+    ],
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    icon: Crown,
+    color: "from-indigo-500 to-cyan-500",
+    monthlyPrice: 40,
+    annualMonthlyPrice: 40,
+    annualTotal: 480,
+    perSeat: true,
+    description: "Custom, multi-location, dedicated onboarding, SLA, and full API access.",
+    features: [
+      { name: "Everything in Team", included: true },
+      { name: "Unlimited locations", included: true },
+      { name: "Dedicated onboarding manager", included: true },
+      { name: "Custom SLA", included: true },
+      { name: "White-label option", included: true },
+      { name: "Unlimited AI workforce", included: true },
       { name: "Custom integrations", included: true },
+      { name: "Volume pricing available", included: true },
     ],
   },
 ];
@@ -782,7 +804,7 @@ function PlanCard({
 
   const price = billing === "annual" ? plan.annualMonthlyPrice : plan.monthlyPrice;
   const headline = formatUSD(price);
-  const priceLabel = "/month";
+  const priceLabel = plan.perSeat ? "/seat/mo" : "/month";
 
   async function handleCheckout() {
     if (!showEmail) {
