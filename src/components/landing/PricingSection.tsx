@@ -134,7 +134,7 @@ export default function PricingSection() {
             </ul>
 
             <a
-              href="#/app"
+              href="#early-access"
               className="block text-center bg-gradient-to-r from-[#3e70a5] to-[#69b2cd] text-white font-semibold py-3 rounded-xl transition-opacity hover:opacity-90"
             >
               Start 14-Day Free Trial
@@ -173,7 +173,7 @@ export default function PricingSection() {
             </ul>
 
             <a
-              href="#/app"
+              href="#early-access"
               className="block text-center border border-[#3d5474] text-[#69b2cd] font-semibold py-3 rounded-xl transition-colors hover:border-[#69b2cd]/60 hover:bg-[#69b2cd]/5"
             >
               Start 14-Day Free Trial

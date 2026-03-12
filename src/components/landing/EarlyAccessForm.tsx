@@ -79,7 +79,7 @@ export default function EarlyAccessForm() {
   }
 
   return (
-    <section className="bg-[#080c18] py-20 px-4">
+    <section id="early-access" className="bg-[#080c18] py-20 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-14">

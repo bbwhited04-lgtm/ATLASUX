@@ -44,7 +44,7 @@ export default function Plumbers() {
               Call Lucy Now: (573) 742-2028
             </a>
             <a
-              href="#/app"
+              href="#early-access"
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#3d5474]/50 bg-[#0e1626]/70 px-6 py-4 text-sm font-semibold text-[#69b2cd] hover:border-[#69b2cd]/50 transition"
             >
               Start 14-Day Free Trial

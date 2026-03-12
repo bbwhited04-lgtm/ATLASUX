@@ -90,7 +90,7 @@ export default function HeroSection() {
 
               {/* Secondary: free trial */}
               <a
-                href="#/app"
+                href="#early-access"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#3d5474]/50 bg-[#0e1626]/70 px-6 py-4 text-sm font-semibold text-[#69b2cd] hover:border-[#69b2cd]/50 hover:bg-[#0e1626] transition"
               >
                 Start 14-Day Free Trial — No Credit Card
