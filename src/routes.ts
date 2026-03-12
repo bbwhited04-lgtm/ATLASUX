@@ -46,6 +46,10 @@ const CalendarScheduling = lazyRetry(() => import("./components/premium/Calendar
 const OrgMemory = lazyRetry(() => import("./components/OrgMemory").then(m => ({ default: m.OrgMemory })));
 const AgentCalibration = lazyRetry(() => import("./components/AgentCalibration").then(m => ({ default: m.AgentCalibration })));
 
+// Lazy-loaded vertical landing pages
+const Salons = lazyRetry(() => import("./pages/Salons"));
+const Plumbers = lazyRetry(() => import("./pages/Plumbers"));
+
 // Lazy-loaded public pages
 const Privacy = lazyRetry(() => import("./pages/Privacy"));
 const Terms = lazyRetry(() => import("./pages/Terms"));
@@ -82,6 +86,8 @@ export const router = createHashRouter([
     Component: PublicLayout,
     children: [
       { path: "/", Component: Landing },
+      { path: "/salons", Component: () => React.createElement(S, null, React.createElement(Salons)) },
+      { path: "/plumbers", Component: () => React.createElement(S, null, React.createElement(Plumbers)) },
       { path: "/about", Component: () => React.createElement(S, null, React.createElement(About)) },
       { path: "/privacy", Component: () => React.createElement(S, null, React.createElement(Privacy)) },
       { path: "/terms", Component: () => React.createElement(S, null, React.createElement(Terms)) },
