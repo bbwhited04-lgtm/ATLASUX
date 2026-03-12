@@ -119,10 +119,10 @@ export function extractTopic(query: string): string {
 
 // ── Fetch channels helper ────────────────────────────────────────────────────
 
-async function fetchTextChannels(tenantId: string): Promise<BroadcastChannel[]> {
+async function fetchChannels(tenantId: string, hasMedia: boolean = false): Promise<BroadcastChannel[]> {
   const integrations = (await postizGet("/integrations", tenantId)) as PostizIntegration[];
   return integrations
-    .filter(i => !MEDIA_ONLY_PLATFORMS.has((i.identifier ?? "").toLowerCase()))
+    .filter(i => hasMedia || !MEDIA_ONLY_PLATFORMS.has((i.identifier ?? "").toLowerCase()))
     .map(i => ({
       id: i.id,
       name: i.name,
@@ -186,19 +186,28 @@ export const postizBroadcastTool: ToolDefinition = {
           `Failed to generate post content: ${err?.message ?? String(err)}`);
       }
 
-      // 3. Fetch all text-compatible channels
-      const channels = await fetchTextChannels(ctx.tenantId);
+      // 3. Extract media URLs from query if present
+      const imgMatch = ctx.query.match(/(?:image|img|photo)[\s_-]*(?:url)?[:\s]+["']?(https?:\/\/\S+?)["']?(?:\s|$)/i);
+      const vidMatch = ctx.query.match(/(?:video|vid|clip)[\s_-]*(?:url)?[:\s]+["']?(https?:\/\/\S+?)["']?(?:\s|$)/i);
+      const imageUrl = imgMatch?.[1];
+      const videoUrl = vidMatch?.[1];
+      const hasMedia = !!(imageUrl || videoUrl);
+
+      // 4. Fetch channels — include media-only platforms when media is provided
+      const channels = await fetchChannels(ctx.tenantId, hasMedia);
       if (!channels.length) {
-        return makeResult("postiz_broadcast", "No text-compatible channels found.");
+        return makeResult("postiz_broadcast", "No eligible channels found.");
       }
 
-      // 4. Route based on mode
+      // 5. Route based on mode
       if (isDirectUserCommand(ctx.query)) {
         // ── DIRECT MODE: User said it, user approved it. Deliver now. ──
         const result = await deliverBroadcast({
           tenantId: ctx.tenantId,
           content,
           channels,
+          imageUrl,
+          videoUrl,
         });
 
         const lines = [
@@ -228,6 +237,8 @@ export const postizBroadcastTool: ToolDefinition = {
             topic,
             content,
             channels,
+            imageUrl,
+            videoUrl,
           },
         });
 

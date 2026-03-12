@@ -14,7 +14,7 @@ import { loadEnv } from "../../../env.js";
 import { getProviderToken } from "../../../lib/tokenStore.js";
 import { postTweet } from "../../../services/x.js";
 import { publishVideo } from "../../../services/tiktok.js";
-import { generateSocialImage } from "../../../services/socialImage.js";
+import { resolveMediaUrls } from "../../../services/socialImage.js";
 import { resolveCredential } from "../../../services/credentialResolver.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -48,6 +48,8 @@ export type BroadcastContext = {
   tenantId: string;
   content: string;
   channels: BroadcastChannel[];
+  imageUrl?: string | string[];
+  videoUrl?: string | string[];
 };
 
 export type BroadcastResult = {
@@ -283,23 +285,33 @@ async function deliverToChannel(
 
 /**
  * Deliver content to all channels with 200ms rate limiting between calls.
- * Skips media-only platforms (YouTube, Pinterest, TikTok).
+ * Skips media-only platforms (YouTube, Pinterest, TikTok) UNLESS media URLs are provided.
  */
 export async function deliverBroadcast(ctx: BroadcastContext): Promise<BroadcastResult> {
-  const textChannels = ctx.channels.filter(
-    ch => !MEDIA_ONLY.has((ch.identifier ?? ch.platform ?? "").toLowerCase()),
-  );
+  // Resolve media: explicit URLs from caller take priority over Flux1 generation
+  const media = await resolveMediaUrls(ctx.tenantId, ctx.content, {
+    imageUrl: ctx.imageUrl,
+    videoUrl: ctx.videoUrl,
+  });
 
-  if (!textChannels.length) {
-    return { results: [], summary: "No text-compatible channels found." };
+  const hasMedia = media.imageUrls.length > 0 || media.videoUrls.length > 0;
+
+  // Only skip media-only platforms when no media is available
+  const eligibleChannels = hasMedia
+    ? ctx.channels
+    : ctx.channels.filter(
+        ch => !MEDIA_ONLY.has((ch.identifier ?? ch.platform ?? "").toLowerCase()),
+      );
+
+  if (!eligibleChannels.length) {
+    return { results: [], summary: "No eligible channels found. Media-only platforms require image or video URLs." };
   }
 
-  // Generate image once for all channels (best-effort)
-  const imageUrls = await generateSocialImage(ctx.tenantId, ctx.content);
+  const imageUrls = media.imageUrls;
 
   const results: DeliveryResult[] = [];
 
-  for (const channel of textChannels) {
+  for (const channel of eligibleChannels) {
     const result = await deliverToChannel(ctx.tenantId, channel, ctx.content, imageUrls);
     results.push(result);
 
@@ -313,7 +325,8 @@ export async function deliverBroadcast(ctx: BroadcastContext): Promise<Broadcast
   const vision = results.filter(r => r.faultCode === FAULT.TIER3_VISION_QUEUED);
 
   const lines: string[] = [
-    `DELIVERY: ${ok.length}/${textChannels.length} channels`,
+    `DELIVERY: ${ok.length}/${eligibleChannels.length} channels`,
+    hasMedia ? `Media: ${media.imageUrls.length} image(s), ${media.videoUrls.length} video(s)` : `Media: none`,
   ];
 
   if (ok.length) {

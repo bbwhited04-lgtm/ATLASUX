@@ -10,7 +10,7 @@
 
 import type { ToolDefinition } from "./_types.js";
 import { makeResult, makeError } from "./_types.js";
-import { generateSocialImage } from "../../../services/socialImage.js";
+import { resolveMediaUrls } from "../../../services/socialImage.js";
 import { resolveCredential } from "../../../services/credentialResolver.js";
 
 const POSTIZ_API = "https://api.postiz.com/public/v1";
@@ -188,8 +188,13 @@ export const postizPublishTool: ToolDefinition = {
         ].join("\n"));
       }
 
-      // Generate image for the post (best-effort)
-      const imageUrls = await generateSocialImage(ctx.tenantId, caption);
+      // Resolve media: use explicit URLs from query if present, else generate via Flux1
+      const urlMatch = ctx.query.match(/(?:image|img|photo)[\s_-]*(?:url)?[:\s]+["']?(https?:\/\/\S+?)["']?(?:\s|$)/i);
+      const vidMatch = ctx.query.match(/(?:video|vid|clip)[\s_-]*(?:url)?[:\s]+["']?(https?:\/\/\S+?)["']?(?:\s|$)/i);
+      const media = await resolveMediaUrls(ctx.tenantId, caption, {
+        imageUrl: urlMatch?.[1],
+        videoUrl: vidMatch?.[1],
+      });
 
       // Build post body with platform-specific settings
       const settings = PLATFORM_SETTINGS[platform] ?? { __type: platform };
@@ -200,7 +205,7 @@ export const postizPublishTool: ToolDefinition = {
         tags: [],
         posts: [{
           integration: { id: integration.id },
-          value: [{ content: caption, image: imageUrls }],
+          value: [{ content: caption, image: media.imageUrls }],
           settings,
         }],
       };
