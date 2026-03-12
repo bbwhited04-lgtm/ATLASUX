@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0f1e"/>
+      <stop offset="100%" style="stop-color:#080c18"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3e70a5"/>
+      <stop offset="100%" style="stop-color:#69b2cd"/>
+    </linearGradient>
+    <linearGradient id="redGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#ef4444;stop-opacity:0"/>
+    </linearGradient>
+    <linearGradient id="greenGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#22c55e;stop-opacity:0"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Subtle grid pattern -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#3d5474" stroke-width="0.3" opacity="0.15"/>
+  </pattern>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Left side: Missed call phone (red) -->
+  <g transform="translate(180, 140)" filter="url(#shadow)">
+    <!-- Red glow behind phone -->
+    <ellipse cx="120" cy="180" rx="130" ry="130" fill="url(#redGlow)"/>
+
+    <!-- Phone body -->
+    <rect x="50" y="20" width="140" height="280" rx="20" ry="20" fill="#1a1a2e" stroke="#ef4444" stroke-width="2.5" opacity="0.9"/>
+    <!-- Screen -->
+    <rect x="60" y="50" width="120" height="220" rx="4" fill="#0d0d1a"/>
+
+    <!-- Missed call icon -->
+    <g transform="translate(90, 110)">
+      <!-- Phone icon with X -->
+      <path d="M-20,20 C-20,20 -30,10 -30,-5 C-30,-12 -25,-18 -18,-18 L-10,-18 L-5,-8 L-15,2 C-15,2 -5,15 8,8 L18,-2 L28,3 L28,11 C28,18 22,24 15,24 C-5,24 -20,20 -20,20Z" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- X mark -->
+      <line x1="15" y1="-20" x2="30" y2="-5" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+      <line x1="30" y1="-20" x2="15" y2="-5" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+    </g>
+
+    <!-- "3 Missed Calls" text -->
+    <text x="120" y="185" text-anchor="middle" fill="#ef4444" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700">3 Missed Calls</text>
+
+    <!-- Caller names -->
+    <text x="120" y="210" text-anchor="middle" fill="#bab2b5" font-family="system-ui, sans-serif" font-size="11">Burst pipe - 11:42pm</text>
+    <text x="120" y="228" text-anchor="middle" fill="#bab2b5" font-family="system-ui, sans-serif" font-size="11">AC emergency - 6:15am</text>
+    <text x="120" y="246" text-anchor="middle" fill="#bab2b5" font-family="system-ui, sans-serif" font-size="11">Panel upgrade - 12:30pm</text>
+  </g>
+
+  <!-- Arrow / VS divider -->
+  <g transform="translate(530, 260)">
+    <text x="0" y="0" text-anchor="middle" fill="#3d5474" font-family="system-ui, sans-serif" font-size="28" font-weight="700">vs</text>
+    <!-- Arrow pointing right -->
+    <line x1="30" y1="-8" x2="90" y2="-8" stroke="url(#accent)" stroke-width="2.5" stroke-linecap="round"/>
+    <polyline points="80,-18 92,-8 80,2" fill="none" stroke="#69b2cd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Right side: Lucy answering (green/cyan) -->
+  <g transform="translate(700, 140)" filter="url(#shadow)">
+    <!-- Green/cyan glow behind phone -->
+    <ellipse cx="120" cy="180" rx="130" ry="130" fill="url(#greenGlow)"/>
+
+    <!-- Phone body -->
+    <rect x="50" y="20" width="140" height="280" rx="20" ry="20" fill="#1a1a2e" stroke="#22c55e" stroke-width="2.5" opacity="0.9"/>
+    <!-- Screen -->
+    <rect x="60" y="50" width="120" height="220" rx="4" fill="#0d0d1a"/>
+
+    <!-- Lucy active call icon -->
+    <g transform="translate(95, 100)">
+      <!-- Phone icon (active) -->
+      <path d="M-20,20 C-20,20 -30,10 -30,-5 C-30,-12 -25,-18 -18,-18 L-10,-18 L-5,-8 L-15,2 C-15,2 -5,15 8,8 L18,-2 L28,3 L28,11 C28,18 22,24 15,24 C-5,24 -20,20 -20,20Z" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Signal waves -->
+      <path d="M20,-22 C28,-22 34,-16 34,-8" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+      <path d="M20,-30 C34,-30 44,-20 44,-8" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" opacity="0.35"/>
+    </g>
+
+    <!-- "Lucy Answered" text -->
+    <text x="120" y="175" text-anchor="middle" fill="#22c55e" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700">Lucy Answered</text>
+
+    <!-- Job details captured -->
+    <text x="120" y="200" text-anchor="middle" fill="#bab2b5" font-family="system-ui, sans-serif" font-size="11">Job captured, SMS sent</text>
+    <text x="120" y="218" text-anchor="middle" fill="#bab2b5" font-family="system-ui, sans-serif" font-size="11">Appointment booked</text>
+    <text x="120" y="236" text-anchor="middle" fill="#bab2b5" font-family="system-ui, sans-serif" font-size="11">Quote request forwarded</text>
+
+    <!-- Check marks -->
+    <g transform="translate(72, 194)" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round">
+      <polyline points="0,0 3,3 8,-3"/>
+    </g>
+    <g transform="translate(72, 212)" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round">
+      <polyline points="0,0 3,3 8,-3"/>
+    </g>
+    <g transform="translate(72, 230)" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round">
+      <polyline points="0,0 3,3 8,-3"/>
+    </g>
+  </g>
+
+  <!-- Bottom: lost revenue vs saved -->
+  <g transform="translate(200, 510)">
+    <rect x="0" y="0" width="220" height="50" rx="10" fill="#ef4444" fill-opacity="0.12" stroke="#ef4444" stroke-width="1" stroke-opacity="0.3"/>
+    <text x="110" y="22" text-anchor="middle" fill="#ef4444" font-family="system-ui, sans-serif" font-size="13" font-weight="600">Without Lucy</text>
+    <text x="110" y="40" text-anchor="middle" fill="#ef4444" font-family="system-ui, sans-serif" font-size="17" font-weight="800">-$4,800/mo lost</text>
+  </g>
+
+  <g transform="translate(780, 510)">
+    <rect x="0" y="0" width="220" height="50" rx="10" fill="#22c55e" fill-opacity="0.12" stroke="#22c55e" stroke-width="1" stroke-opacity="0.3"/>
+    <text x="110" y="22" text-anchor="middle" fill="#22c55e" font-family="system-ui, sans-serif" font-size="13" font-weight="600">With Lucy</text>
+    <text x="110" y="40" text-anchor="middle" fill="#22c55e" font-family="system-ui, sans-serif" font-size="17" font-weight="800">$99/mo — 0 missed</text>
+  </g>
+
+  <!-- Top headline -->
+  <text x="600" y="60" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="34" font-weight="800" letter-spacing="-0.5">
+    Every Missed Call Costs You
+  </text>
+
+  <!-- Subheadline with gradient -->
+  <text x="600" y="100" text-anchor="middle" fill="url(#accent)" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600" filter="url(#glow)">
+    Lucy makes sure you never miss one again
+  </text>
+
+  <!-- Atlas UX badge bottom right -->
+  <g transform="translate(1060, 585)">
+    <rect x="0" y="0" width="120" height="30" rx="15" fill="#0e1626" stroke="#3d5474" stroke-width="1" opacity="0.9"/>
+    <text x="60" y="20" text-anchor="middle" fill="#69b2cd" font-family="system-ui, sans-serif" font-size="13" font-weight="700">atlasux.cloud</text>
+  </g>
+</svg>
