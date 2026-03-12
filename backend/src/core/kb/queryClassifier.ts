@@ -61,6 +61,21 @@ const ORG_MEMORY_PATTERNS: RegExp[] = [
   /\b(decision (outcome|result|history)|outcome of)\b/i,
 ];
 
+// Patterns that need playbook strategic content — route to FULL_RAG
+const PLAYBOOK_PATTERNS: RegExp[] = [
+  /\b(playbook|strategic (review|plan|framework|audit))\b/i,
+  /\b(pricing (strategy|model|tier|validation)|unit economics|revenue (model|projection))\b/i,
+  /\b(launch (plan|strategy|engine)|first (10 )?customers|go.to.market|gtm)\b/i,
+  /\b(lucy.*(edge case|spec|requirement|call script))\b/i,
+  /\b(mercer.*(compliance|script|outbound|cold call))\b/i,
+  /\b(market sizing|competitive (intel|analysis)|positioning)\b/i,
+  /\b(onboarding (flow|strategy)|churn (prevention|rate)|retention strategy)\b/i,
+  /\b(mvp (scope|framework)|what (to|should we) build|feature priorit)\b/i,
+  /\b(blind spot|stress test|edge case.*(business|product))\b/i,
+  /\b(founder.?s? playbook|consulting framework|jtbd|porter.?s?|blue ocean)\b/i,
+  /\b(conversion (blind spot|problem|fix)|landing page (strategy|fix|audit))\b/i,
+];
+
 // Patterns that indicate a direct task — no KB needed
 const DIRECT_PATTERNS: RegExp[] = [
   /^(summarize|translate|proofread|fix|edit|rewrite|format|clean up|improve)\b/i,
@@ -86,6 +101,13 @@ export function classifyQuery(query: string): ClassifyResult {
   for (const pattern of ORG_MEMORY_PATTERNS) {
     if (pattern.test(q)) {
       return { tier: "FULL_RAG", reason: `matched org-memory pattern: ${pattern.source.slice(0, 40)}` };
+    }
+  }
+
+  // Playbook strategic queries — need full KB search to find playbook docs
+  for (const pattern of PLAYBOOK_PATTERNS) {
+    if (pattern.test(q)) {
+      return { tier: "FULL_RAG", reason: `matched playbook pattern: ${pattern.source.slice(0, 40)}` };
     }
   }
 

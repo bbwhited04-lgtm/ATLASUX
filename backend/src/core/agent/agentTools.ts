@@ -32,6 +32,7 @@
  *   deep_research            — multi-query parallel research with cited report synthesis
  *   recall_org_memory        — semantic search over persistent organizational memories
  *   store_org_memory         — store an organizational insight, preference, or pattern
+ *   search_playbook          — strategic playbook search (agents, frameworks, SMART-LOADER)
  *
  * Modular tools (from tools/ directory — see tools/toolRegistry.ts):
  *   hacker_news_search       — HackerNews via Algolia API (public)
@@ -442,6 +443,39 @@ async function readLegalDocs(tenantId: string, query: string): Promise<ToolResul
     return { tool: "read_legal_docs", data: `Legal docs (${kb.items.length}):\n${kb.text.slice(0, 3000)}`, usedAt: new Date().toISOString() };
   } catch (err: any) {
     return { tool: "read_legal_docs", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
+  }
+}
+
+// ── Tool: search_playbook ─────────────────────────────────────────────────────
+
+async function searchPlaybook(tenantId: string, query: string): Promise<ToolResult> {
+  try {
+    const keywords = query.split(/\s+/).slice(0, 3).join(" ");
+    const allDocs = await prisma.kbDocument.findMany({
+      where: {
+        tenantId,
+        slug: { startsWith: "playbook/" },
+        body: { contains: keywords, mode: "insensitive" as any },
+      },
+      select: { slug: true, title: true, body: true },
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+    });
+    if (!allDocs.length) {
+      const fallback = await prisma.kbDocument.findMany({
+        where: { tenantId, slug: { startsWith: "playbook/" } },
+        select: { slug: true, title: true, body: true },
+        orderBy: { updatedAt: "desc" },
+        take: 3,
+      });
+      if (!fallback.length) return { tool: "search_playbook", data: "No playbook content found. Run `npm run kb:ingest-agents` to load playbook docs.", usedAt: new Date().toISOString() };
+      const text = fallback.map(d => `**${d.title}** (\`${d.slug}\`)\n${d.body.slice(0, 2000)}`).join("\n\n---\n\n");
+      return { tool: "search_playbook", data: `Playbook docs (${fallback.length}, broad match):\n\n${text}`, usedAt: new Date().toISOString() };
+    }
+    const text = allDocs.map(d => `**${d.title}** (\`${d.slug}\`)\n${d.body.slice(0, 2000)}`).join("\n\n---\n\n");
+    return { tool: "search_playbook", data: `Playbook docs (${allDocs.length}):\n\n${text}`, usedAt: new Date().toISOString() };
+  } catch (err: any) {
+    return { tool: "search_playbook", data: `[error: ${err?.message}]`, usedAt: new Date().toISOString() };
   }
 }
 
@@ -1151,6 +1185,19 @@ const LEGAL_PATTERNS = [
   /\b(is.*legal|legal.*question|legal.*advice|legal.*review)\b/i,
 ];
 
+const PLAYBOOK_PATTERNS = [
+  /\b(playbook|strategic (review|plan|framework)|product (strategy|audit))\b/i,
+  /\b(pricing (strategy|model|tier|validation)|unit economics|revenue (model|projection))\b/i,
+  /\b(launch (plan|strategy|engine)|first (10 )?customers|go.to.market|gtm)\b/i,
+  /\b(lucy.*(edge case|spec|requirement|call script|error state))\b/i,
+  /\b(mercer.*(compliance|script|outbound|cold call))\b/i,
+  /\b(market sizing|competitive (intel|analysis)|positioning|blue ocean)\b/i,
+  /\b(onboarding (flow|strategy)|churn (prevention|rate)|retention (strategy|rate))\b/i,
+  /\b(mvp (scope|framework)|what to build|feature (priorit|scope))\b/i,
+  /\b(blind spot|stress test|edge case.*business)\b/i,
+  /\b(founder.*playbook|consulting framework|jtbd|porter)/i,
+];
+
 const IP_REGISTER_PATTERNS = [
   /\b(ip request|ip register|ip filing|intellectual property request|ip review)\b/i,
   /\b(trademark.*status|copyright.*status|patent.*status|ip.*status)\b/i,
@@ -1300,17 +1347,17 @@ const ORG_MEMORY_STORE_PATTERNS = [
 
 const AGENT_TOOL_PERMISSIONS: Record<string, string[]> = {
   // ── Executives ───────────────────────────────────────────────────────
-  atlas:       ["subscription", "calendar", "ledger", "team", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
-  binky:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "discord", "telegramFull", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
-  cheryl:      ["subscription", "team", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
-  tina:        ["calendar", "ledger", "crm", "ops", "tickets", "assets", "integrations", "subscription", "policy", "telegram", "memory", "delegate", "gmailRead", "googleSheets", "excel", "dropbox", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
-  larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "composio", "dropbox", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
+  atlas:       ["subscription", "calendar", "ledger", "team", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "excel", "dropbox", "xAnalytics", "postizPublish", "postizAnalytics", "postizBroadcast", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore", "playbook"],
+  binky:       ["calendar", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "fetchUrl", "redditSearch", "deepResearch", "browser", "localVision", "hackerNews", "arxiv", "composio", "discord", "telegramFull", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore", "playbook"],
+  cheryl:      ["subscription", "team", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "calendar", "email", "userProfile", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore", "playbook"],
+  tina:        ["calendar", "ledger", "crm", "ops", "tickets", "assets", "integrations", "subscription", "policy", "telegram", "memory", "delegate", "gmailRead", "googleSheets", "excel", "dropbox", "slackChat", "orgMemoryRecall", "orgMemoryStore", "playbook"],
+  larry:       ["calendar", "ledger", "legal", "ipRegister", "policy", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "composio", "dropbox", "slackChat", "orgMemoryRecall", "orgMemoryStore", "playbook"],
   jenny:       ["calendar", "legal", "policy", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "arxiv", "composio", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
   benny:       ["calendar", "legal", "ipRegister", "knowledge", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "webSearch", "composio", "slackChat", "orgMemoryRecall", "orgMemoryStore"],
 
   // ── Ops & Support ────────────────────────────────────────────────────
   petra:       ["calendar", "planner", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "googleCalendar", "googleSheets", "discord", "telegramFull", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
-  mercer:      ["crm", "ops", "tickets", "assets", "integrations", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "composio", "discord", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
+  mercer:      ["crm", "ops", "tickets", "assets", "integrations", "email", "knowledge", "telegram", "memory", "delegate", "webSearch", "localVision", "gmailRead", "composio", "discord", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore", "playbook"],
   frank:       ["userProfile", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "telegramFull", "slackChat", "orgMemoryRecall"],
   sandy:       ["calendar", "email", "userProfile", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat", "meetings", "orgMemoryRecall", "orgMemoryStore"],
   claire:      ["calendar", "email", "crm", "ops", "tickets", "assets", "integrations", "telegram", "memory", "delegate", "gmailRead", "googleCalendar", "slackChat", "orgMemoryRecall"],
@@ -1391,6 +1438,7 @@ export type ToolNeeds = {
   meetings:        boolean;
   orgMemoryRecall: boolean;
   orgMemoryStore:  boolean;
+  playbook:        boolean;
   query:          string;
 };
 
@@ -1436,6 +1484,7 @@ export function detectToolNeeds(query: string, agentId?: string): ToolNeeds {
     meetings:       can("meetings")       && MEETING_PATTERNS.some(p => p.test(q)),
     orgMemoryRecall: can("orgMemoryRecall") && ORG_MEMORY_RECALL_PATTERNS.some(p => p.test(q)),
     orgMemoryStore:  can("orgMemoryStore")  && ORG_MEMORY_STORE_PATTERNS.some(p => p.test(q)),
+    playbook:        can("playbook")        && PLAYBOOK_PATTERNS.some(p => p.test(q)),
     // Modular tools — delegated to tool registry
     ...detectModularNeeds(q, allowed),
     query:          q,
@@ -1705,6 +1754,7 @@ export async function resolveAgentTools(
     needs.meetings       ? readMeetings(tenantId)                                    : Promise.resolve(null),
     needs.orgMemoryRecall ? recallOrgMemoryTool(tenantId, needs.query)               : Promise.resolve(null),
     needs.orgMemoryStore  ? storeOrgMemoryTool(tenantId, aid, needs.query)           : Promise.resolve(null),
+    needs.playbook        ? searchPlaybook(tenantId, needs.query)                    : Promise.resolve(null),
     approvedToolsPromise,
   ];
 

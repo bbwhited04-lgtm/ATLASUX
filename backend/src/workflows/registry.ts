@@ -10,9 +10,10 @@ import { executeBrowserSession, resumeBrowserSession } from "../tools/browser/br
 import { validateSessionConfig, createBrowserSessionMemo } from "../tools/browser/browserGovernance.js";
 import { calculateSessionRiskTier, type BrowserSessionConfig, type BrowserActionStep } from "../tools/browser/browserActions.js";
 import { postAsAgent, getChannelByName, readHistory } from "../services/slack.js";
-import { generateSocialImage } from "../services/socialImage.js";
+import { generateSocialImage, resolveMediaUrls } from "../services/socialImage.js";
 import { resolveCredential } from "../services/credentialResolver.js";
 import { resolveAgentEmail } from "../services/agentEmailResolver.js";
+import { storeOrgMemory } from "../core/agent/orgMemory.js";
 
 export type WorkflowContext = {
   tenantId: string;
@@ -100,6 +101,12 @@ export const workflowCatalog = [
   { id: "WF-151", name: "Lucy Daily Voice Summary",                description: "End-of-day voice activity: calls handled, caller classifications, leads captured, action items.", ownerAgent: "lucy" },
   // ── VC Investor Outreach (WF-400) ─────────────────────────────────────────────
   { id: "WF-400", name: "VC Investor Outreach (Binky)",          description: "Cycle through VC/investor CRM contacts — personalized cold outreach email via Binky.",                ownerAgent: "binky"  },
+  // ── Playbook Strategic Reviews (WF-410 series) ──────────────────────────────
+  { id: "WF-410", name: "Playbook: Market & Strategy (Phase A)",        description: "Load playbook agents 02+03 + consulting-frameworks — personas, positioning, pricing validation.",       ownerAgent: "atlas" },
+  { id: "WF-411", name: "Playbook: Product & Engineering (Phase B)",    description: "Load playbook agents 04+06+09 + stress-test — Lucy/Mercer specs, architecture, security audit.",       ownerAgent: "atlas" },
+  { id: "WF-412", name: "Playbook: Launch & Revenue (Phase C)",         description: "Load playbook agents 14+15+18 + launch-engine — GTM plan, streaming strategy, unit economics.",       ownerAgent: "atlas" },
+  { id: "WF-413", name: "Playbook: Advisor Review (Phase D)",           description: "Load playbook agents 01+17 + all prior KDRs — blind spots, customer success, final recommendations.", ownerAgent: "atlas" },
+  { id: "WF-414", name: "Playbook: Quick Lookup",                       description: "Single-topic playbook lookup — routes via SMART-LOADER patterns to the right agent + framework.",     ownerAgent: "atlas" },
 ] as const;
 
 export const workflowCatalogAll = [
@@ -2973,10 +2980,12 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
 
     // Guard: block text-only posts on platforms that require media
     if (MEDIA_REQUIRED_PLATFORMS.has(platform)) {
-      const hasMedia = ctx.input?.image || ctx.input?.video || ctx.input?.media || ctx.input?.imageUrl || ctx.input?.videoUrl;
+      const hasMedia = ctx.input?.image || ctx.input?.video || ctx.input?.media
+        || ctx.input?.imageUrl || ctx.input?.image_url
+        || ctx.input?.videoUrl || ctx.input?.video_url;
       if (!hasMedia) {
         await writeStepAudit(ctx, `${ctx.workflowId}.blocked`, `Blocked: ${platform} requires video/image — no media asset provided. Route to Victor (WF-089) first.`);
-        return { ok: false, message: `${platform} post blocked — no video/image attached. ${platform} is a visual platform; text-only posts get zero reach. Provide media or route through Victor's video pipeline (WF-089) first.` };
+        return { ok: false, message: `${platform} post blocked — no video/image attached. ${platform} is a visual platform; text-only posts get zero reach. Provide imageUrl/videoUrl in input or route through Victor's video pipeline (WF-089) first.` };
       }
     }
 
@@ -3065,10 +3074,20 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
       Object.assign(settings, ctx.input.settings);
     }
 
-    // Generate image for the post (best-effort)
-    const imageUrls = ctx.input?.skipImage ? [] : await generateSocialImage(ctx.tenantId, caption);
-    console.log(`[postiz] ${platform} image generation: ${imageUrls.length ? imageUrls[0] : "NONE (Flux1 returned empty)"}`);
-    await writeStepAudit(ctx, `${ctx.workflowId}.image`, imageUrls.length ? `Image generated: ${imageUrls[0]}` : "No image generated — Flux1 returned empty", { imageUrls });
+    // Resolve media: explicit URLs from input take priority over Flux1 generation
+    const media = ctx.input?.skipImage
+      ? { imageUrls: [], videoUrls: [] }
+      : await resolveMediaUrls(ctx.tenantId, caption, {
+          imageUrl: ctx.input?.imageUrl ?? ctx.input?.image_url ?? ctx.input?.image,
+          videoUrl: ctx.input?.videoUrl ?? ctx.input?.video_url ?? ctx.input?.video,
+        });
+
+    const imageUrls = media.imageUrls;
+    const videoUrls = media.videoUrls;
+    const mediaSource = (ctx.input?.imageUrl || ctx.input?.image_url || ctx.input?.image || ctx.input?.videoUrl || ctx.input?.video_url || ctx.input?.video)
+      ? "provided" : imageUrls.length ? "flux1" : "none";
+    console.log(`[postiz] ${platform} media: ${mediaSource} — ${imageUrls.length} image(s), ${videoUrls.length} video(s)`);
+    await writeStepAudit(ctx, `${ctx.workflowId}.media`, `Media resolved (${mediaSource}): ${imageUrls.length} image(s), ${videoUrls.length} video(s)`, { imageUrls, videoUrls, mediaSource });
 
     const postBody = {
       type: "now",
@@ -3164,10 +3183,28 @@ handlers["WF-212"] = async (ctx) => {
     return { ok: false, message: "Could not generate cross-platform content — LLM unavailable and no manual caption provided." };
   }
 
-  // ── Generate image via Flux1 (if available) ───────────────────────────
+  // ── Resolve media: explicit URLs from input → Flux1 generation → empty ──
   let imageUrls: string[] = [];
+  let videoUrls: string[] = [];
   const skipImage = ctx.input?.skipImage === true;
-  if (!skipImage) {
+
+  // Check for explicitly provided URLs first
+  const providedImageUrl = ctx.input?.imageUrl ?? ctx.input?.image_url ?? ctx.input?.image;
+  const providedVideoUrl = ctx.input?.videoUrl ?? ctx.input?.video_url ?? ctx.input?.video;
+
+  if (providedImageUrl) {
+    const urls = Array.isArray(providedImageUrl) ? providedImageUrl : [providedImageUrl];
+    imageUrls.push(...urls.filter(Boolean));
+    await writeStepAudit(ctx, "WF-212.media-provided", `Using ${imageUrls.length} provided image URL(s)`, { imageUrls });
+  }
+  if (providedVideoUrl) {
+    const urls = Array.isArray(providedVideoUrl) ? providedVideoUrl : [providedVideoUrl];
+    videoUrls.push(...urls.filter(Boolean));
+    await writeStepAudit(ctx, "WF-212.video-provided", `Using ${videoUrls.length} provided video URL(s)`, { videoUrls });
+  }
+
+  // Only try Flux1 generation if no explicit URLs were provided
+  if (!skipImage && imageUrls.length === 0 && videoUrls.length === 0) {
     try {
       const { generateImage, isAvailable } = await import("../services/flux1.js");
       if (await isAvailable(ctx.tenantId)) {
@@ -3182,11 +3219,17 @@ handlers["WF-212"] = async (ctx) => {
           const imgResult = await generateImage(ctx.tenantId, { prompt: imagePrompt.trim(), width: 1024, height: 1024 });
           if (imgResult.ok && imgResult.imageUrl) {
             imageUrls = [imgResult.imageUrl];
-            await writeStepAudit(ctx, "WF-212.image", `Generated image for social post`, { imageUrl: imgResult.imageUrl });
+            await writeStepAudit(ctx, "WF-212.image", `Generated image via Flux1`, { imageUrl: imgResult.imageUrl });
+          } else {
+            console.log(`[WF-212] Flux1 returned no image`);
           }
         }
+      } else {
+        console.log(`[WF-212] Flux1 not available — no image generated`);
       }
-    } catch { /* image generation is best-effort */ }
+    } catch (err) {
+      console.log(`[WF-212] Image generation failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   // ── Pre-flight: fetch integrations + validate all platforms at once ────
@@ -3247,7 +3290,8 @@ handlers["WF-212"] = async (ctx) => {
   const succeeded = results.filter((r) => r.ok).length;
   const failed = results.filter((r) => !r.ok).length;
 
-  await writeStepAudit(ctx, "WF-212.complete", `Cross-posted to ${succeeded}/${results.length} platforms`, { results, hasImage: imageUrls.length > 0 });
+  const mediaSource = (providedImageUrl || providedVideoUrl) ? "provided" : imageUrls.length ? "flux1" : "none";
+  await writeStepAudit(ctx, "WF-212.complete", `Cross-posted to ${succeeded}/${results.length} platforms (media: ${mediaSource})`, { results, hasImage: imageUrls.length > 0, hasVideo: videoUrls.length > 0, mediaSource });
 
   const { to } = await getReportRecipients(ctx.tenantId, "sunday");
   await queueEmail(ctx, {
@@ -4487,6 +4531,145 @@ handlers["WF-151"] = async (ctx) => {
     message: `Voice summary: ${callNotes.length} calls, ${zoomNotes.length} meetings, ${newLeads} leads`,
     output: { calls: callNotes.length, meetings: zoomNotes.length, newLeads, openActions, totalMinutes },
   };
+};
+
+// ── WF-410 series: Playbook Strategic Reviews ────────────────────────────────
+
+type PlaybookPhase = {
+  id: string;
+  label: string;
+  agentSlugs: string[];
+  frameworkSlug: string;
+};
+
+const PLAYBOOK_PHASES: PlaybookPhase[] = [
+  { id: "WF-410", label: "Market & Strategy (Phase A)",     agentSlugs: ["playbook/agent/discovery", "playbook/agent/strategy"],               frameworkSlug: "playbook/framework/consulting-frameworks" },
+  { id: "WF-411", label: "Product & Engineering (Phase B)", agentSlugs: ["playbook/agent/prd", "playbook/agent/engineering", "playbook/agent/security"], frameworkSlug: "playbook/framework/stress-test" },
+  { id: "WF-412", label: "Launch & Revenue (Phase C)",      agentSlugs: ["playbook/agent/launch-gtm", "playbook/agent/marketing-sales", "playbook/agent/finance"], frameworkSlug: "playbook/framework/launch-engine-30day" },
+  { id: "WF-413", label: "Advisor Review (Phase D)",        agentSlugs: ["playbook/agent/advisor", "playbook/agent/customer-success"],          frameworkSlug: "playbook/framework/universal-checklists" },
+];
+
+async function loadPlaybookDocs(tenantId: string, slugs: string[]): Promise<string> {
+  const docs = await prisma.kbDocument.findMany({
+    where: { tenantId, slug: { in: slugs } },
+    select: { slug: true, title: true, body: true },
+  });
+  if (!docs.length) return "(No playbook docs found — run `npm run kb:ingest-agents` first)";
+  return docs.map(d => `## ${d.title}\n\n${d.body}`).join("\n\n---\n\n");
+}
+
+function createPlaybookPhaseHandler(phase: PlaybookPhase): WorkflowHandler {
+  return async (ctx) => {
+    await writeStepAudit(ctx, `${phase.id}.start`, `Playbook ${phase.label} starting`);
+
+    const allSlugs = [...phase.agentSlugs, phase.frameworkSlug];
+    const playbookContext = await loadPlaybookDocs(ctx.tenantId, allSlugs);
+
+    const priorInput = typeof ctx.input === "string" ? ctx.input : (ctx.input?.kdr ?? "");
+
+    const prompt = [
+      `You are running Atlas UX Playbook — ${phase.label}.`,
+      "",
+      "Your job: analyze the playbook content below, apply it to Atlas UX's current state, and produce:",
+      "1. Key findings and recommendations",
+      "2. Decisions made (numbered sequentially)",
+      "3. Open items for next phase",
+      "4. A KDR (Key Decision Record) block at the end",
+      "",
+      priorInput ? `## Prior Phase KDR\n\n${priorInput}\n\n---\n\n` : "",
+      "## Playbook Content\n\n",
+      playbookContext,
+    ].join("\n");
+
+    const result = await runLLM({
+      runId:   ctx.intentId,
+      agent:   "atlas",
+      purpose: `playbook-${phase.id.toLowerCase()}`,
+      route:   "LONG_CONTEXT_SUMMARY",
+      messages: [{ role: "user", content: prompt }],
+      seatTier: ctx.seatTier,
+    });
+
+    const output = result?.text ?? "(No LLM output)";
+
+    // Store key decisions as org memory
+    await storeOrgMemory({
+      tenantId:   ctx.tenantId,
+      category:   "outcome",
+      content:    `Playbook ${phase.label} output:\n\n${output.slice(0, 4000)}`,
+      source:     `atlas-playbook:${phase.id}`,
+      sourceId:   ctx.intentId,
+      confidence: 0.85,
+      tags:       ["playbook", phase.id.toLowerCase()],
+    });
+
+    await writeStepAudit(ctx, `${phase.id}.complete`, `Playbook ${phase.label} complete — ${output.length} chars`);
+
+    const { to } = await getReportRecipients(ctx.tenantId, "atlas");
+    await queueEmail(ctx, {
+      to,
+      subject: `Playbook: ${phase.label} Complete`,
+      text:    output.slice(0, 8000),
+      fromAgent: "atlas",
+    });
+
+    return { ok: true, message: `Playbook ${phase.label} complete`, output };
+  };
+}
+
+for (const phase of PLAYBOOK_PHASES) {
+  handlers[phase.id] = createPlaybookPhaseHandler(phase);
+}
+
+// WF-414 — Quick Playbook Lookup (single-topic, uses SMART-LOADER routing)
+handlers["WF-414"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-414.start", "Quick playbook lookup starting");
+
+  const query = typeof ctx.input === "string" ? ctx.input : (ctx.input?.query ?? "playbook overview");
+
+  // Load SMART-LOADER for routing context
+  const smartLoader = await prisma.kbDocument.findFirst({
+    where: { tenantId: ctx.tenantId, slug: "playbook/smart-loader" },
+    select: { body: true },
+  });
+
+  // Search playbook docs matching the query
+  const keywords = query.split(/\s+/).slice(0, 4).join(" ");
+  const matchingDocs = await prisma.kbDocument.findMany({
+    where: {
+      tenantId: ctx.tenantId,
+      slug: { startsWith: "playbook/" },
+      body: { contains: keywords, mode: "insensitive" as any },
+    },
+    select: { slug: true, title: true, body: true },
+    orderBy: { updatedAt: "desc" },
+    take: 4,
+  });
+
+  const context = matchingDocs.length
+    ? matchingDocs.map(d => `## ${d.title}\n\n${d.body.slice(0, 3000)}`).join("\n\n---\n\n")
+    : "(No matching playbook docs found)";
+
+  const prompt = [
+    "You are the Atlas UX Playbook advisor. Answer the following question using the playbook content provided.",
+    smartLoader?.body ? `\n## SMART-LOADER (Routing Guide)\n\n${smartLoader.body}\n\n---\n\n` : "",
+    `## Question\n\n${query}\n\n## Relevant Playbook Content\n\n${context}`,
+  ].join("\n");
+
+  const result = await runLLM({
+    runId:   ctx.intentId,
+    agent:   "atlas",
+    purpose: "playbook-quick-lookup",
+    route:   "DRAFT_GENERATION_FAST",
+    messages: [{ role: "user", content: prompt }],
+    seatTier: ctx.seatTier,
+  });
+
+  const output = result?.text ?? "(No LLM output)";
+
+  await writeStepAudit(ctx, "WF-414.complete", `Quick lookup complete — ${output.length} chars`);
+
+  return { ok: true, message: "Playbook lookup complete", output };
 };
 
 // ── Public API ────────────────────────────────────────────────────────────────

@@ -274,6 +274,86 @@ async function main() {
   }
 
   console.log(`✅ Ingested ${agents.length} agents and ${count} docs into KB.`);
+
+  // ── Playbook Ingestion ──────────────────────────────────────────────────────
+  // Walk atlas-playbook/agents/ and atlas-playbook/frameworks/ — each markdown
+  // file becomes a published KbDocument with a playbook/* slug.
+
+  const playbookRoot = path.join(repoRoot, "atlas-playbook");
+  let playbookCount = 0;
+
+  if (fs.existsSync(playbookRoot) && fs.statSync(playbookRoot).isDirectory()) {
+    console.log("\nIngesting Playbook from:", playbookRoot);
+
+    const playbookSections: { dir: string; slugPrefix: string; titlePrefix: string }[] = [
+      { dir: path.join(playbookRoot, "agents"),     slugPrefix: "playbook/agent",     titlePrefix: "Playbook Agent" },
+      { dir: path.join(playbookRoot, "frameworks"), slugPrefix: "playbook/framework", titlePrefix: "Playbook Framework" },
+    ];
+
+    for (const section of playbookSections) {
+      if (!fs.existsSync(section.dir)) continue;
+
+      const files = fs.readdirSync(section.dir, { withFileTypes: true })
+        .filter((e) => e.isFile() && e.name.toLowerCase().endsWith(".md"))
+        .map((e) => e.name);
+
+      for (const file of files) {
+        const filePath = path.join(section.dir, file);
+        const content = readIfExists(filePath);
+        if (!content) continue;
+
+        // Derive slug from filename: "01-advisor.md" -> "advisor", "launch-engine-30day.md" -> "launch-engine-30day"
+        const baseName = file.replace(/\.md$/i, "").replace(/^\d+-/, "");
+        const slug = `${section.slugPrefix}/${slugify(baseName)}`;
+
+        // Extract title from first markdown heading, fall back to filename
+        const headingMatch = content.match(/^#\s+(.+)$/m);
+        const title = headingMatch
+          ? `${section.titlePrefix}: ${headingMatch[1].trim()}`
+          : `${section.titlePrefix}: ${baseName}`;
+
+        const header = [
+          `# ${title}`,
+          "",
+          "> **Ingested from atlas-playbook**",
+          `> - Source: \`${path.relative(repoRoot, filePath)}\``,
+          `> - Category: playbook`,
+          "",
+          "---",
+          "",
+        ].join("\n");
+
+        await upsertKbDoc({
+          tenantId,
+          createdBy: actorUuid,
+          slug,
+          title,
+          body: header + content.trim() + "\n",
+          status: KbDocumentStatus.published,
+        });
+
+        playbookCount++;
+      }
+    }
+
+    // Playbook directory index doc
+    const smartLoaderContent = readIfExists(path.join(playbookRoot, "SMART-LOADER.md"));
+    if (smartLoaderContent) {
+      await upsertKbDoc({
+        tenantId,
+        createdBy: actorUuid,
+        slug: "playbook/smart-loader",
+        title: "Playbook: SMART-LOADER (Request Router)",
+        body: smartLoaderContent,
+        status: KbDocumentStatus.published,
+      });
+      playbookCount++;
+    }
+
+    console.log(`✅ Ingested ${playbookCount} playbook docs into KB.`);
+  } else {
+    console.log("⏭ No atlas-playbook/ directory found — skipping playbook ingestion.");
+  }
 }
 
 main()
