@@ -61,9 +61,9 @@ function MedicalIcon() {
 const CARDS = [
   {
     icon: <ScissorsIcon />,
-    title: "Salons & Barbers",
+    title: "Salons & Studios",
     valueProp:
-      "Lucy books appointments while you cut hair. Never lose a $60 booking to voicemail again.",
+      "Hair salons, barbers, tattoo artists, nail salons, spas, lash studios, and more — Lucy books while your hands are busy.",
     features:
       "Appointment booking · Service menu · Walk-in availability · Confirmation texts",
     cta: "See how Lucy works for salons →",
