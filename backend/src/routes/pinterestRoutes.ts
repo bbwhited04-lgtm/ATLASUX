@@ -9,6 +9,7 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
+import { timingSafeEqual } from "crypto";
 import { prisma } from "../db/prisma.js";
 
 export const pinterestRoutes: FastifyPluginAsync = async (app) => {
@@ -24,9 +25,11 @@ export const pinterestRoutes: FastifyPluginAsync = async (app) => {
   // ── POST /webhook — inbound event ───────────────────────────────────────
   app.post("/webhook", async (req, reply) => {
     // Validate shared inbound webhook secret
-    const expectedSecret = process.env.INBOUND_WEBHOOK_SECRET;
-    const providedSecret = req.headers["x-inbound-secret"] as string | undefined;
-    if (!expectedSecret || providedSecret !== expectedSecret) {
+    const expectedSecret = process.env.INBOUND_WEBHOOK_SECRET ?? "";
+    const providedSecret = String(req.headers["x-inbound-secret"] ?? "");
+    const eBuf = Buffer.from(expectedSecret);
+    const pBuf = Buffer.from(providedSecret);
+    if (!expectedSecret || eBuf.length !== pBuf.length || !timingSafeEqual(eBuf, pBuf)) {
       return reply.status(401).send({ ok: false, error: "Unauthorized: invalid or missing x-inbound-secret header" });
     }
 

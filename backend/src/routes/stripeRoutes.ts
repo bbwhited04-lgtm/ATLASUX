@@ -274,7 +274,18 @@ export const stripeRoutes: FastifyPluginAsync = async (app) => {
   app.post("/portal", async (req, reply) => {
     const env = loadEnv(process.env);
     const body = PortalSchema.parse(req.body ?? {});
+    const tenantId = (req as any).tenantId as string;
     const appUrl = env.APP_URL ?? "https://atlasux.cloud";
+
+    // Verify the caller's tenant owns this Stripe customer ID
+    const userId = (req as any).auth?.userId as string | undefined;
+    const sub = userId ? await prisma.subscription.findFirst({
+      where: { tenantId, userId, stripeCustomerId: body.stripeCustomerId },
+      select: { id: true },
+    }) : null;
+    if (!sub) {
+      return reply.code(403).send({ ok: false, error: "stripe_customer_mismatch" });
+    }
 
     const session = await stripeCreatePortalSession({
       customerId: body.stripeCustomerId,

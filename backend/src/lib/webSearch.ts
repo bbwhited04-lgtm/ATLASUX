@@ -1,7 +1,7 @@
 /**
  * Multi-provider web search router with automatic fallback.
  *
- * Provider priority: You.com → Tavily → SerpAPI
+ * Provider priority: You.com → Brave → Exa → Tavily → SerpAPI
  * If provider 1 fails (HTTP error, no key, empty results), tries provider 2, then 3.
  *
  * Also includes:
@@ -94,6 +94,98 @@ async function searchTavily(
   }));
 }
 
+// ── Provider: Brave Search ───────────────────────────────────────────────────
+
+async function searchBrave(
+  query: string,
+  count: number,
+  apiKey: string,
+): Promise<WebSearchResult[]> {
+  const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=${count}`;
+  const res = await fetch(url, {
+    headers: { "Accept": "application/json", "Accept-Encoding": "gzip", "X-Subscription-Token": apiKey },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`Brave ${res.status}: ${res.statusText}`);
+  const json = (await res.json()) as any;
+  const results = json?.web?.results ?? [];
+  return results.slice(0, count).map((r: any) => ({
+    title:   r.title ?? "",
+    snippet: r.description ?? "",
+    url:     r.url ?? "",
+    source:  "brave",
+  }));
+}
+
+// ── Provider: Exa (semantic search) ─────────────────────────────────────────
+
+async function searchExa(
+  query: string,
+  count: number,
+  apiKey: string,
+): Promise<WebSearchResult[]> {
+  const res = await fetch("https://api.exa.ai/search", {
+    method: "POST",
+    headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query,
+      type: "auto",
+      num_results: count,
+      contents: { highlights: { max_characters: 4000 } },
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`Exa ${res.status}: ${res.statusText}`);
+  const json = (await res.json()) as any;
+  const results = json?.results ?? [];
+  return results.slice(0, count).map((r: any) => ({
+    title:   r.title ?? "",
+    snippet: (r.highlights?.[0] ?? r.text ?? "").slice(0, 300),
+    url:     r.url ?? "",
+    source:  "exa",
+  }));
+}
+
+/**
+ * Exa category search — people, companies, news, research papers, tweets.
+ * Standalone function (not in the general fallback chain).
+ */
+export async function searchExaCategory(
+  query: string,
+  category: "people" | "company" | "news" | "research paper" | "tweet",
+  maxResults = 10,
+  tenantId?: string,
+): Promise<SearchResponse> {
+  const apiKey = await resolveCredential(tenantId || OWNER_TENANT_ID, "exa");
+  if (!apiKey) return { ok: false, query, results: [], provider: "exa", error: "EXA_API_KEY not configured" };
+
+  try {
+    const res = await fetch("https://api.exa.ai/search", {
+      method: "POST",
+      headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query,
+        type: "auto",
+        category,
+        num_results: maxResults,
+        contents: { highlights: { max_characters: 4000 } },
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) throw new Error(`Exa ${res.status}: ${res.statusText}`);
+    const json = (await res.json()) as any;
+    const results: WebSearchResult[] = (json?.results ?? []).map((r: any) => ({
+      title:   r.title ?? "",
+      snippet: (r.highlights?.[0] ?? r.text ?? "").slice(0, 300),
+      url:     r.url ?? "",
+      source:  `exa:${category}`,
+    }));
+    return { ok: true, query, results, provider: `exa:${category}` };
+  } catch (err: any) {
+    return { ok: false, query, results: [], provider: "exa", error: err?.message ?? String(err) };
+  }
+}
+
 // ── Provider: SerpAPI ────────────────────────────────────────────────────────
 
 async function searchSerpApi(
@@ -117,8 +209,9 @@ async function searchSerpApi(
 // ── Main search router ───────────────────────────────────────────────────────
 
 /**
- * Search the web using multi-provider fallback: You.com → Tavily → SerpAPI.
- * Returns whichever provider succeeds first. If all fail, returns { ok: false }.
+ * Search the web using randomized multi-provider rotation with fallback.
+ * Randomly selects a starting provider to spread load evenly, then falls
+ * through to the rest if the chosen one fails. If all fail, returns { ok: false }.
  */
 export async function searchWeb(
   query: string,
@@ -126,9 +219,11 @@ export async function searchWeb(
   tenantId?: string,
 ): Promise<SearchResponse> {
   // Resolve keys per-tenant when tenantId is provided, otherwise fall back to env
-  const [youKey, tavilyKey, serpKey] =
+  const [youKey, braveKey, exaKey, tavilyKey, serpKey] =
     await Promise.all([
         resolveCredential(tenantId || OWNER_TENANT_ID, "you_com"),
+        resolveCredential(tenantId || OWNER_TENANT_ID, "brave"),
+        resolveCredential(tenantId || OWNER_TENANT_ID, "exa"),
         resolveCredential(tenantId || OWNER_TENANT_ID, "tavily"),
         resolveCredential(tenantId || OWNER_TENANT_ID, "serp"),
       ]);
@@ -138,14 +233,20 @@ export async function searchWeb(
     key:    string | undefined;
     search: (q: string, n: number, k: string) => Promise<WebSearchResult[]>;
   }> = [
-    { name: "you.com",  key: youKey ?? undefined,    search: searchYouCom  },
-    { name: "tavily",   key: tavilyKey ?? undefined,  search: searchTavily  },
-    { name: "serpapi",   key: serpKey ?? undefined,    search: searchSerpApi },
+    { name: "you.com",  key: youKey ?? undefined,     search: searchYouCom  },
+    { name: "brave",    key: braveKey ?? undefined,    search: searchBrave   },
+    { name: "exa",      key: exaKey ?? undefined,      search: searchExa     },
+    { name: "tavily",   key: tavilyKey ?? undefined,   search: searchTavily  },
+    { name: "serpapi",  key: serpKey ?? undefined,      search: searchSerpApi },
   ];
+
+  // Rotate: pick a random start index, then wrap around so every provider gets tried
+  const start = Math.floor(Math.random() * providers.length);
+  const rotated = [...providers.slice(start), ...providers.slice(0, start)];
 
   const errors: string[] = [];
 
-  for (const p of providers) {
+  for (const p of rotated) {
     if (!p.key) {
       errors.push(`${p.name}: no API key`);
       continue;

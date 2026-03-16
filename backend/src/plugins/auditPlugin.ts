@@ -19,9 +19,17 @@ function isSchemaError(err: any): boolean {
 const auditPlugin: FastifyPluginAsync = async (app) => {
   app.log.info("AUDIT PLUGIN LOADED");
 
+  // Paths that generate too much noise for the audit table
+  const AUDIT_SKIP = new Set(["/v1/health", "/health", "/v1/runtime/status"]);
+
   app.addHook("onSend", async (req, reply, payload) => {
     // Temporary pause (not permanent disable) — auto-retries after window
     if (auditPausedUntil > Date.now()) return payload;
+
+    // Skip noisy polling endpoints and successful GETs (Gemini audit finding)
+    const urlPath = req.url.split("?")[0];
+    if (AUDIT_SKIP.has(urlPath)) return payload;
+    if (req.method === "GET" && reply.statusCode < 400) return payload;
 
     try {
       const level =
@@ -74,6 +82,17 @@ const auditPlugin: FastifyPluginAsync = async (app) => {
     } catch (err) {
       // Never fail the request because audit logging failed.
       app.log.error({ err }, "AUDIT DB WRITE FAILED (non-fatal)");
+
+      // Fallback: write to stderr so events are never fully lost
+      const fallback = {
+        _audit_fallback: true,
+        ts: new Date().toISOString(),
+        action: `${req.method} ${req.url}`,
+        tenantId: (req as any).tenantId ?? null,
+        status: reply.statusCode,
+        ip: (req as any).ip ?? null,
+      };
+      process.stderr.write(JSON.stringify(fallback) + "\n");
 
       if (isSchemaError(err)) {
         auditPausedUntil = Date.now() + AUDIT_PAUSE_MS;

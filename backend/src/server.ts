@@ -92,6 +92,7 @@ import { calibrationRoutes } from "./routes/calibrationRoutes.js";
 import { diagnosticsRoutes } from "./routes/diagnosticsRoutes.js";
 import { quickbooksRoutes } from "./routes/quickbooksRoutes.js";
 import { credentialRoutes } from "./routes/credentialRoutes.js";
+import elevenlabsRoutes from "./routes/elevenlabsRoutes.js";
 
 // Wait for DB before starting Fastify (retries on transient pooler blips)
 await connectWithRetry(5, 3000);
@@ -99,7 +100,15 @@ await connectWithRetry(5, 3000);
 const app = Fastify({
   logger: {
     level: process.env.NODE_ENV === "production" ? "info" : "debug",
-    redact: ["req.headers.authorization", "req.headers.cookie"],
+    redact: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      "req.headers.x-csrf-token",
+      "req.headers.x-gate-admin-key",
+      "req.headers.x-inbound-secret",
+      "req.headers.x-webhook-secret",
+      "req.headers.x-elevenlabs-secret",
+    ],
   },
   pluginTimeout: 30_000, // 30s — survive slow DB reconnects
 });
@@ -246,6 +255,8 @@ await app.register(async (publicAuth) => {
     return new jose.SignJWT({ sub: userId, email })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
+      .setIssuer("atlasux")
+      .setAudience("atlasux-api")
       .setExpirationTime("7d")
       .sign(secret);
   }
@@ -423,6 +434,9 @@ await app.register(localAgentRoutes, { prefix: "/v1/local-agent" });
 // Twilio — voice + SMS webhooks and outbound call API
 await app.register(twilioRoutes, { prefix: "/v1/twilio" });
 
+// ElevenLabs — conversational AI voice agents, webhooks, phone management
+await app.register(elevenlabsRoutes, { prefix: "/v1/elevenlabs" });
+
 // Org Memory — the Organizational Brain persistent memory layer
 await app.register(orgMemoryRoutes, { prefix: "/v1/org-memory" });
 
@@ -445,7 +459,11 @@ const engineEnabled = (process.env.ENGINE_ENABLED ?? "false").toLowerCase() === 
 const tickMs = Number(process.env.ENGINE_TICK_INTERVAL_MS ?? process.env.EMAIL_WORKER_INTERVAL_MS ?? 5000);
 
 if (engineEnabled) {
-  app.log.info(`Engine enabled. Ticking every ${tickMs}ms`);
+  app.log.warn(
+    `Engine enabled in-process (ENGINE_ENABLED=true). ` +
+    `Do NOT also run "npm run worker:engine" — use one or the other to avoid duplicate ticks.`
+  );
+  app.log.info(`Engine ticking every ${tickMs}ms`);
   setInterval(async () => {
     try {
       await engineTick();

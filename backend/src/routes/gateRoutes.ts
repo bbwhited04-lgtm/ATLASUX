@@ -36,7 +36,8 @@ export const gateRoutes: FastifyPluginAsync = async (app) => {
 
     // Check owner code first (baked env var — always valid)
     const ownerCode = (process.env.VITE_APP_GATE_CODE ?? "").trim();
-    if (ownerCode && trimmed === ownerCode) {
+    if (ownerCode && ownerCode.length === trimmed.length &&
+        timingSafeEqual(Buffer.from(trimmed), Buffer.from(ownerCode))) {
       return { valid: true, seat: { label: "Owner", role: "owner" } };
     }
 

@@ -22,6 +22,7 @@ const CSRF_TTL_MS = 60 * 60 * 1000; // 1 hour
 const SKIP_PREFIXES = [
   "/v1/billing/stripe/webhook",
   "/v1/stripe/webhook",
+  "/v1/stripe/subscription-webhook",
   "/v1/oauth/",
   "/v1/discord/webhook",
   "/v1/meta/deletion",
@@ -29,14 +30,21 @@ const SKIP_PREFIXES = [
   "/v1/x/webhook",
   "/v1/tiktok/webhook",
   "/v1/telegram/webhook",
-  "/v1/twilio/",
+  "/v1/twilio/sms/inbound",
+  "/v1/twilio/voice/inbound",
+  "/v1/twilio/voice/status",
+  "/v1/twilio/voice/recording",
+  "/v1/twilio/voice/stream",
+  "/v1/twilio/voice/mercer-stream",
   "/v1/linkedin/webhook",
   "/v1/alignable/webhook",
   "/v1/tumblr/webhook",
   "/v1/pinterest/webhook",
   "/v1/teams/webhook",
-  "/v1/zoom/",
-  "/v1/gate/",
+  "/v1/zoom/webhook",
+  "/v1/elevenlabs/tool/",
+  "/v1/elevenlabs/webhook/",
+  "/v1/gate/validate",
   "/v1/health",
   "/v1/auth/provision",
 ];
@@ -44,10 +52,16 @@ const SKIP_PREFIXES = [
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 const csrfPlugin: FastifyPluginAsync = async (app) => {
-  // Issue a new CSRF token on every authenticated response
+  // Issue a new CSRF token on mutating authenticated responses only
+  // (avoids DB write amplification from GET polling — Gemini audit finding)
   app.addHook("onSend", async (req, reply, payload) => {
     const userId = (req as any).auth?.userId;
     if (!userId) return payload;
+
+    // Only issue new tokens on mutating methods or when none was sent
+    const hadToken = !!req.headers[CSRF_HEADER];
+    const isMutation = MUTATING_METHODS.has(req.method.toUpperCase());
+    if (hadToken && !isMutation) return payload;
 
     // Generate token and store in DB
     const token = randomBytes(32).toString("hex");

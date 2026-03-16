@@ -225,15 +225,21 @@ const EnvSchema = z.object({
   // Postiz (social media publishing — used by Timmy for TikTok)
   POSTIZ_API_KEY: z.string().optional(),
 
-  // Web search providers (multi-provider fallback: You.com → Tavily → SerpAPI)
-  SERP_API_KEY:    z.string().optional(),
-  YOU_COM_API_KEY: z.string().optional(),
-  TAVILY_API_KEY:  z.string().optional(),
+  // Web search providers (multi-provider fallback: You.com → Brave → Exa → Tavily → SerpAPI)
+  SERP_API_KEY:          z.string().optional(),
+  YOU_COM_API_KEY:       z.string().optional(),
+  BRAVE_SEARCH_API_KEY:  z.string().optional(),
+  EXA_API_KEY:           z.string().optional(),
+  TAVILY_API_KEY:        z.string().optional(),
 
   // News APIs — used by WF-035 Hourly Signal Tripwire
   NEWSDATA_API_KEY:   z.string().optional(), // NewsData.io
   NYT_API_KEY:        z.string().optional(), // New York Times Article Search + Top Stories
   MEDIASTACK_API_KEY: z.string().optional(), // MediaStack global news
+
+  // ElevenLabs (text-to-speech / voice cloning / conversational AI)
+  ELEVENLABS_API_KEY: z.string().optional(),
+  ELEVENLABS_WEBHOOK_SECRET: z.string().optional(),
 
   // QuickBooks OAuth2
   QUICKBOOKS_CLIENT_ID:          z.string().optional(), // sandbox

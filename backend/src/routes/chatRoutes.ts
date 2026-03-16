@@ -25,7 +25,7 @@ const ChatBody = z.object({
   provider: z.string().max(100).optional(),
   model: z.string().max(100).optional(),
   sessionId: z.string().max(200).optional(),
-}).passthrough();
+}).strict();
 
 const MAX_DOC_CHARS = 12_000;
 const BUDGET_CHARS  = 60_000;
@@ -59,7 +59,7 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
     try {
       body = ChatBody.parse(req.body);
     } catch (e: any) {
-      return reply.code(400).send({ ok: false, error: "Invalid request body", details: e.errors });
+      return reply.code(400).send({ ok: false, error: "Invalid request body" });
     }
 
     // ── Seat limit enforcement ──────────────────────────────────────────────
@@ -262,7 +262,19 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    const result = await runChat(enrichedBody, process.env as any);
+    // Only pass needed AI provider keys — never the full process.env
+    const aiEnv = {
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+      OPENAI_BASE_URL: process.env.OPENAI_BASE_URL,
+      DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+      DEEPSEEK_BASE_URL: process.env.DEEPSEEK_BASE_URL,
+      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+      CEREBRAS_API_KEY: process.env.CEREBRAS_API_KEY,
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+      GROQ_API_KEY: process.env.GROQ_API_KEY,
+      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    };
+    const result = await runChat(enrichedBody, aiEnv);
 
     // Phase 2: meter token usage (fire-and-forget)
     if (userId && tenantId) {

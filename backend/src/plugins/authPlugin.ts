@@ -31,7 +31,10 @@ export const authPlugin: FastifyPluginAsync = async (app) => {
     let payload: jose.JWTPayload;
     try {
       const secret = new TextEncoder().encode(jwtSecret);
-      const { payload: p } = await jose.jwtVerify(token, secret);
+      const { payload: p } = await jose.jwtVerify(token, secret, {
+        issuer: "atlasux",
+        audience: "atlasux-api",
+      });
       payload = p;
     } catch {
       return reply.code(401).send({ ok: false, error: "invalid_token" });

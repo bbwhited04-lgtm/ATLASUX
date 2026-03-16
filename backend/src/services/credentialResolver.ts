@@ -11,6 +11,9 @@
  */
 
 import { prisma } from "../db/prisma.js";
+import { decryptToken } from "../lib/encryption.js";
+
+const ENCRYPTION_KEY = process.env.TOKEN_ENCRYPTION_KEY;
 
 const OWNER_TENANT_ID = process.env.TENANT_ID || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
 
@@ -36,8 +39,11 @@ const ENV_FALLBACK_MAP: Record<string, string> = {
   newsdata:     "NEWSDATA_API_KEY",
   tavily:       "TAVILY_API_KEY",
   you_com:      "YOU_COM_API_KEY",
+  brave:        "BRAVE_SEARCH_API_KEY",
+  exa:          "EXA_API_KEY",
   nyt:          "NYT_API_KEY",
   mediastack:   "MEDIASTACK_API_KEY",
+  elevenlabs:   "ELEVENLABS_API_KEY",
 };
 
 // In-memory cache: tenantId:provider -> key (TTL 5 min)
@@ -65,8 +71,9 @@ export async function resolveCredential(
       select: { key: true, isActive: true },
     });
     if (row?.isActive && row.key) {
-      cache.set(cacheKey, { key: row.key, expiresAt: Date.now() + CACHE_TTL_MS });
-      return row.key;
+      const decrypted = decryptToken(row.key, ENCRYPTION_KEY);
+      cache.set(cacheKey, { key: decrypted, expiresAt: Date.now() + CACHE_TTL_MS });
+      return decrypted;
     }
   } catch {
     // DB error — fall through to env

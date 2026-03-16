@@ -1,12 +1,16 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
 import { clearCredentialCache } from "../services/credentialResolver.js";
+import { encryptToken } from "../lib/encryption.js";
+
+const ENCRYPTION_KEY = process.env.TOKEN_ENCRYPTION_KEY;
 
 const ALLOWED_PROVIDERS = new Set([
   "postiz", "openai", "anthropic", "deepseek", "openrouter",
   "slack", "twilio_sid", "twilio_token", "twilio_from",
   "flux1", "serp", "resend", "sendgrid", "gemini",
   "pinecone", "stability", "newsdata", "tavily",
+  "elevenlabs", "you_com", "brave", "exa", "mediastack", "nyt",
 ]);
 
 export const credentialRoutes: FastifyPluginAsync = async (app) => {
@@ -34,10 +38,11 @@ export const credentialRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ ok: false, error: "Invalid API key" });
     }
 
+    const encryptedKey = encryptToken(key.trim(), ENCRYPTION_KEY);
     const row = await prisma.tenantCredential.upsert({
       where: { tenantId_provider: { tenantId, provider } },
-      create: { tenantId, provider, key: key.trim(), label: label?.trim() ?? null, isActive: true },
-      update: { key: key.trim(), label: label?.trim() ?? undefined, isActive: true },
+      create: { tenantId, provider, key: encryptedKey, label: label?.trim() ?? null, isActive: true },
+      update: { key: encryptedKey, label: label?.trim() ?? undefined, isActive: true },
     });
 
     clearCredentialCache(tenantId);

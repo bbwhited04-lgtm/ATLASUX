@@ -14,7 +14,7 @@
  */
 
 import type { FastifyPluginAsync } from "fastify";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 import { prisma } from "../db/prisma.js";
 import { handleTwilioMediaStream } from "../voice/twilioStream.js";
 import { handleMercerMediaStream } from "../voice/mercerStream.js";
@@ -75,7 +75,10 @@ function validateTwilioSignature(
   let data = url;
   for (const key of keys) data += key + params[key];
   const expected = createHmac("sha1", authToken).update(data).digest("base64");
-  return expected === signature;
+  const expectedBuf = Buffer.from(expected);
+  const signatureBuf = Buffer.from(signature);
+  if (expectedBuf.length !== signatureBuf.length) return false;
+  return timingSafeEqual(expectedBuf, signatureBuf);
 }
 
 // ── Route plugin ─────────────────────────────────────────────────────────────
