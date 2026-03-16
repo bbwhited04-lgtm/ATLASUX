@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Atlas UX** is a full-stack AI employee productivity platform with autonomous agents that automate business tasks. It runs as both a web SPA (deployed on Vercel + Render) and an Electron desktop app. The project is in Alpha, targeting a 7-day stability test with built-in approval workflows and safety guardrails.
+**Atlas UX** is a full-stack AI receptionist platform for trade businesses (plumbers, salons, HVAC). Lucy answers calls 24/7, books appointments, sends SMS confirmations, and notifies via Slack — for $99/mo. It runs as a web SPA and Electron desktop app, deployed on AWS Lightsail. The project is in Beta with built-in approval workflows and safety guardrails.
 
 ## Commands
 
@@ -94,7 +94,7 @@ cd backend && npm run kb:chunk-docs     # Chunk KB documents
 - `VITE_API_BASE_URL` — Backend URL (default: `http://localhost:8787`)
 
 **Backend (`backend/.env`):**
-- DB: `DATABASE_URL`, `DIRECT_URL` (Supabase Pgbouncer + direct)
+- DB: `DATABASE_URL` (AWS Lightsail PostgreSQL)
 - AI: `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`
 - OAuth: `GOOGLE_CLIENT_ID/SECRET`, `META_APP_ID/SECRET`, `X_CLIENT_ID/SECRET`
 - Engine: `ENGINE_ENABLED`, `ENGINE_TICK_INTERVAL_MS`
@@ -102,9 +102,10 @@ cd backend && npm run kb:chunk-docs     # Chunk KB documents
 - Agent emails: one per named agent
 
 ### Deployment
-- **Frontend:** Vercel (`npm run build`, deploys `./dist`)
-- **Backend:** Render (`render.yaml`; build: `npm install && npm run build`; start: `npm run start`)
-- **Database:** Supabase PostgreSQL
+- **Frontend:** AWS Lightsail (`npm run build`, deploy via `scp` to `/home/bitnami/dist/` on `3.94.224.34`)
+- **Backend:** AWS Lightsail (PM2 managed Node.js process on same instance)
+- **Database:** AWS Lightsail Managed PostgreSQL 16
+- **SSH:** `ssh -i ~/.ssh/lightsail-default.pem bitnami@3.94.224.34`
 
 ### Alpha Safety Constraints
 The platform enforces hard safety guardrails:
@@ -129,7 +130,7 @@ Before committing ANY frontend change, run:
 ```bash
 npm run build
 ```
-If either build fails, **do not commit**. Fix every error first. A broken build takes down production — Render and Vercel deploy directly from main.
+If either build fails, **do not commit**. Fix every error first. A broken build takes down production — Lightsail serves directly from the latest deploy.
 
 ### 2. Never import files that don't exist
 Before adding an `import` statement, verify the target file exists on disk. Do not create phantom imports expecting the file to appear later. If you need a new module, create the file first, then import it.

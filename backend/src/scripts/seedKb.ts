@@ -453,8 +453,7 @@ Atlas is the supreme orchestrator of the Atlas UX AI workforce. All high-level d
 - Developer tooling and deployment management
 
 ## Platforms Managed
-- Render (backend deployment)
-- Supabase (database and token vault)
+- AWS Lightsail (backend + database)
 - GitHub (source control)
 - Vercel (frontend deployment)
 
@@ -635,7 +634,7 @@ Binky (CRO) — core member of the Binky intel team (BinkyPro)
 ## Pinterest Credentials
 - App ID: 1548138 (configured)
 - OAuth: ACTIVE via /v1/oauth/pinterest/start
-- Redirect URI: https://atlas-ux.onrender.com/v1/oauth/pinterest/callback`,
+- Redirect URI: https://api.atlasux.cloud/v1/oauth/pinterest/callback`,
   },
   {
     slug: "agent/donna/definition",
@@ -1675,18 +1674,18 @@ These generate AWAITING_HUMAN intents until approved in the UI.`,
 - **Twilio**: SMS configured (account SID + auth token)
 
 ## Connect URLs
-All OAuth connections start at: https://atlas-ux.onrender.com/v1/oauth/{provider}/start
+All OAuth connections start at: https://api.atlasux.cloud/v1/oauth/{provider}/start
 Parameters: ?tenantId={tenantId}&org_id={tenantId}&user_id={userId}
 
 ## Redirect URIs (registered in platform developer consoles)
-- Google: https://atlas-ux.onrender.com/v1/oauth/google/callback
-- Meta: https://atlas-ux.onrender.com/v1/oauth/meta/callback
-- Microsoft: https://atlas-ux.onrender.com/v1/oauth/microsoft/callback
-- X: atlas-ux.onrender.com/v1/oauth/x/callback
+- Google: https://api.atlasux.cloud/v1/oauth/google/callback
+- Meta: https://api.atlasux.cloud/v1/oauth/meta/callback
+- Microsoft: https://api.atlasux.cloud/v1/oauth/microsoft/callback
+- X: https://api.atlasux.cloud/v1/oauth/x/callback
 - Tumblr: (uses tumblr request token flow)
 - Reddit: (configured in Reddit app settings)
-- Pinterest: https://atlas-ux.onrender.com/v1/oauth/pinterest/callback
-- LinkedIn: https://atlas-ux.onrender.com/v1/oauth/linkedin/callback`,
+- Pinterest: https://api.atlasux.cloud/v1/oauth/pinterest/callback
+- LinkedIn: https://api.atlasux.cloud/v1/oauth/linkedin/callback`,
   },
   {
     slug: "atlas-policy-daily-intel",

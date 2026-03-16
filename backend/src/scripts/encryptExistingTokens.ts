@@ -3,8 +3,8 @@
  *
  * Reads TOKEN_ENCRYPTION_KEY from env. If not set, exits with error.
  * Encrypts access_token and refresh_token in both:
- *   - Supabase `token_vault` table
- *   - Prisma `integrations` table
+ *   - `token_vault` table (via raw SQL)
+ *   - `integrations` table (via Prisma)
  *
  * Safe to run multiple times — skips already-encrypted values.
  *
@@ -12,7 +12,6 @@
  *   TOKEN_ENCRYPTION_KEY=<64-hex-chars> npx tsx src/scripts/encryptExistingTokens.ts
  */
 import "dotenv/config";
-import { createClient } from "@supabase/supabase-js";
 import { PrismaClient } from "@prisma/client";
 import { encryptToken, isEncrypted } from "../lib/encryption.js";
 
@@ -22,23 +21,15 @@ if (!KEY) {
   process.exit(1);
 }
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false, autoRefreshToken: false } },
-);
 const prisma = new PrismaClient({ log: ["error"] });
 
 async function migrateTokenVault() {
   console.log("Migrating token_vault...");
-  const { data: rows, error } = await supabase
-    .from("token_vault")
-    .select("org_id, user_id, provider, access_token, refresh_token");
 
-  if (error) {
-    console.error("Failed to read token_vault:", error.message);
-    return;
-  }
+  const rows = await prisma.$queryRaw<
+    Array<{ org_id: string; user_id: string; provider: string; access_token: string | null; refresh_token: string | null }>
+  >`SELECT org_id, user_id, provider, access_token, refresh_token FROM token_vault`.catch(() => []);
+
   if (!rows?.length) {
     console.log("  No rows in token_vault.");
     return;
@@ -46,27 +37,40 @@ async function migrateTokenVault() {
 
   let updated = 0;
   for (const row of rows) {
-    const updates: Record<string, string> = {};
+    let newAccess: string | null = null;
+    let newRefresh: string | null = null;
+
     if (row.access_token && !isEncrypted(row.access_token)) {
-      updates.access_token = encryptToken(row.access_token, KEY);
+      newAccess = encryptToken(row.access_token, KEY!);
     }
     if (row.refresh_token && !isEncrypted(row.refresh_token)) {
-      updates.refresh_token = encryptToken(row.refresh_token, KEY);
+      newRefresh = encryptToken(row.refresh_token, KEY!);
     }
-    if (Object.keys(updates).length === 0) continue;
+    if (!newAccess && !newRefresh) continue;
 
-    updates.updated_at = new Date().toISOString();
-    const { error: ue } = await supabase
-      .from("token_vault")
-      .update(updates)
-      .eq("org_id", row.org_id)
-      .eq("user_id", row.user_id)
-      .eq("provider", row.provider);
-
-    if (ue) {
-      console.error(`  Failed to update ${row.provider} for org ${row.org_id}: ${ue.message}`);
-    } else {
+    try {
+      if (newAccess && newRefresh) {
+        await prisma.$executeRaw`
+          UPDATE token_vault
+          SET access_token = ${newAccess}, refresh_token = ${newRefresh}, updated_at = NOW()
+          WHERE org_id = ${row.org_id} AND user_id = ${row.user_id} AND provider = ${row.provider}
+        `;
+      } else if (newAccess) {
+        await prisma.$executeRaw`
+          UPDATE token_vault
+          SET access_token = ${newAccess}, updated_at = NOW()
+          WHERE org_id = ${row.org_id} AND user_id = ${row.user_id} AND provider = ${row.provider}
+        `;
+      } else if (newRefresh) {
+        await prisma.$executeRaw`
+          UPDATE token_vault
+          SET refresh_token = ${newRefresh}, updated_at = NOW()
+          WHERE org_id = ${row.org_id} AND user_id = ${row.user_id} AND provider = ${row.provider}
+        `;
+      }
       updated++;
+    } catch (e: any) {
+      console.error(`  Failed to update ${row.provider} for org ${row.org_id}: ${e.message}`);
     }
   }
   console.log(`  token_vault: ${updated}/${rows.length} rows encrypted.`);
@@ -93,10 +97,10 @@ async function migrateIntegrations() {
   for (const row of rows) {
     const data: Record<string, any> = {};
     if (row.access_token && !isEncrypted(row.access_token)) {
-      data.access_token = encryptToken(row.access_token, KEY);
+      data.access_token = encryptToken(row.access_token, KEY!);
     }
     if (row.refresh_token && !isEncrypted(row.refresh_token)) {
-      data.refresh_token = encryptToken(row.refresh_token, KEY);
+      data.refresh_token = encryptToken(row.refresh_token, KEY!);
     }
     if (Object.keys(data).length === 0) continue;
 

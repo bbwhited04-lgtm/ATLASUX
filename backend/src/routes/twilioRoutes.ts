@@ -19,6 +19,7 @@ import { prisma } from "../db/prisma.js";
 import { handleTwilioMediaStream } from "../voice/twilioStream.js";
 import { handleMercerMediaStream } from "../voice/mercerStream.js";
 import { startDialingSession, dialSingle, getDialerStatus, stopDialingSession } from "../voice/outboundDialer.js";
+import { queueFollowUpSms } from "../voice/mercerPostCall.js";
 import { resolveCredential } from "../services/credentialResolver.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -105,7 +106,7 @@ export const twilioRoutes: FastifyPluginAsync = async (app) => {
       }
       const sig = (req.headers as any)["x-twilio-signature"] as string | undefined;
       const proto = (req.headers as any)["x-forwarded-proto"] ?? "https";
-      const host = (req.headers as any)["host"] ?? "localhost";
+      const host = (req.headers as any)["host"] ?? "api.atlasux.cloud";
       const url = `${proto}://${host}${req.url}`;
       const params = (req.body as Record<string, string>) ?? {};
 
@@ -250,6 +251,14 @@ export const twilioRoutes: FastifyPluginAsync = async (app) => {
         },
       }).catch((err) => app.log.error({ err }, "Failed to audit voice status"));
 
+      // SMS follow-up for outbound calls that didn't connect
+      const noConnectStatuses = ["no-answer", "busy", "failed", "canceled"];
+      if (noConnectStatuses.includes(callStatus) && to) {
+        queueFollowUpSms(to).catch((err) =>
+          app.log.error({ err }, "Failed to queue SMS follow-up from status callback")
+        );
+      }
+
       return reply.status(200).send("");
     });
 
@@ -306,6 +315,8 @@ export const twilioRoutes: FastifyPluginAsync = async (app) => {
       phone: String(params.contactPhone ?? "unknown"),
       name: String(params.contactName ?? "Unknown"),
       contactId: params.contactId ? String(params.contactId) : undefined,
+      company: params.contactCompany ? String(params.contactCompany) : undefined,
+      industry: params.contactIndustry ? String(params.contactIndustry) : undefined,
     };
     handleMercerMediaStream(socket, contactInfo);
   });

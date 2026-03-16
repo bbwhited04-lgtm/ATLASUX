@@ -217,7 +217,7 @@ Returns contacts matching the segment's filter criteria.
 **Example:**
 
 ```bash
-curl -s https://atlas-ux.onrender.com/v1/crm/contacts?q=jane \
+curl -s https://atlasux.cloud/v1/crm/contacts?q=jane \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID"
 ```

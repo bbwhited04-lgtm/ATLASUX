@@ -12,9 +12,13 @@
  */
 
 import { OpenAI } from 'openai';
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { prisma } from '../db/prisma.js';
 import { loadEnv } from '../env.js';
-import { makeSupabase } from '../supabase.js';
+
+const s3 = new S3Client({ region: "us-east-1" });
+const S3_BUCKET = process.env.S3_BUCKET ?? "atlasux-files";
 
 const env = loadEnv(process.env);
 
@@ -148,7 +152,6 @@ interface OrchestrationDecision {
 
 class AtlasOrchestrationAgent {
   private openai: OpenAI;
-  private supabase: ReturnType<typeof makeSupabase>;
   private config: AtlasConfig;
   private voice_cache: Map<string, VoiceResponse> = new Map();
   private conversation_cache: Map<string, ConversationContext> = new Map();
@@ -158,9 +161,7 @@ class AtlasOrchestrationAgent {
       apiKey: env.OPENAI_API_KEY,
       // organization: env.OPENAI_ORGANIZATION_ID, // Optional - remove if not in env
     });
-    
-    this.supabase = makeSupabase(env);
-    
+
     this.config = {
       voice: {
         enabled: true,
@@ -561,20 +562,18 @@ Be concise but thorough. Show strategic thinking and emotional intelligence.
         });
 
         const buffer = Buffer.from(await mp3.arrayBuffer());
-        
-        // Store in Supabase storage
-        const fileName = `atlas-voice-${Date.now()}.mp3`;
-        const { data, error } = await this.supabase.storage
-          .from('voice-responses')
-          .upload(fileName, buffer, {
-            contentType: 'audio/mpeg',
-          });
 
-        if (error) throw error;
+        // Store in S3
+        const fileName = `voice-responses/atlas-voice-${Date.now()}.mp3`;
+        await s3.send(new PutObjectCommand({
+          Bucket: S3_BUCKET,
+          Key: fileName,
+          Body: buffer,
+          ContentType: "audio/mpeg",
+        }));
 
-        const { data: { publicUrl } } = this.supabase.storage
-          .from('voice-responses')
-          .getPublicUrl(fileName);
+        const command = new GetObjectCommand({ Bucket: S3_BUCKET, Key: fileName });
+        const publicUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
 
         const voiceResponse: VoiceResponse = {
           audio_url: publicUrl,
@@ -610,19 +609,18 @@ Be concise but thorough. Show strategic thinking and emotional intelligence.
 
     // Load from database if exists
     try {
-      const { data: existingSession } = await this.supabase
-        .from('atlas_conversations')
-        .select('*')
-        .eq('session_id', sessionId)
-        .single();
+      const existingSession = await prisma.system_state.findUnique({
+        where: { key: `atlas_conversation_${sessionId}` },
+      });
 
-      if (existingSession) {
+      if (existingSession?.value) {
+        const stored = existingSession.value as Record<string, any>;
         const context: ConversationContext = {
           user_id: userId,
           tenant_id: tenantId,
           session_id: sessionId,
-          conversation_history: existingSession.conversation_history || [],
-          user_profile: existingSession.user_profile || {},
+          conversation_history: stored.conversation_history || [],
+          user_profile: stored.user_profile || { interaction_history: [] },
           current_context: {
             active_tasks: [],
             available_agents: await this.getAvailableAgents(tenantId),
@@ -699,15 +697,14 @@ Be concise but thorough. Show strategic thinking and emotional intelligence.
     current_status: 'available' | 'busy' | 'offline';
   }>> {
     try {
-      const { data: agents } = await this.supabase
-        .from('agents')
-        .select('agent_key, display_name, metadata')
-        .eq('status', 'active');
+      const agents = await prisma.agents.findMany({
+        select: { agent_key: true, display_name: true, metadata: true },
+      });
 
-      return (agents || []).map(agent => ({
+      return agents.map(agent => ({
         agent_key: agent.agent_key,
-        name: agent.display_name,
-        capabilities: agent.metadata?.capabilities || [],
+        name: agent.display_name ?? agent.agent_key,
+        capabilities: (agent.metadata as any)?.capabilities || [],
         current_status: 'available' as const,
       }));
     } catch (error) {
@@ -726,24 +723,20 @@ Be concise but thorough. Show strategic thinking and emotional intelligence.
     system_load: number;
   }> {
     try {
-      const [jobsCount, decisionsCount] = await Promise.all([
-        this.supabase
-          .from('jobs')
-          .select('id')
-          .eq('tenant_id', tenantId)
-          .in('status', ['queued', 'running']),
-        this.supabase
-          .from('decision_memos')
-          .select('id')
-          .eq('tenant_id', tenantId)
-          .eq('status', 'PROPOSED'),
+      const [activeJobs, pendingDecisions] = await Promise.all([
+        prisma.job.count({
+          where: { tenantId, status: { in: ["queued", "running"] } },
+        }),
+        prisma.decisionMemo.count({
+          where: { tenantId, status: "PROPOSED" },
+        }),
       ]);
 
       return {
-        health_score: 0.95, // Mock - calculate based on various metrics
-        active_workflows: jobsCount.data?.length || 0,
-        pending_decisions: decisionsCount.data?.length || 0,
-        system_load: 0.3, // Mock - calculate actual system load
+        health_score: 0.95,
+        active_workflows: activeJobs,
+        pending_decisions: pendingDecisions,
+        system_load: 0.3,
       };
     } catch (error) {
       console.error('Error getting system status:', error);
@@ -761,16 +754,30 @@ Be concise but thorough. Show strategic thinking and emotional intelligence.
    */
   private async persistConversation(context: ConversationContext): Promise<void> {
     try {
-      await this.supabase
-        .from('atlas_conversations')
-        .upsert({
-          session_id: context.session_id,
-          user_id: context.user_id,
-          tenant_id: context.tenant_id,
-          conversation_history: context.conversation_history,
-          user_profile: context.user_profile,
-          updated_at: new Date().toISOString(),
-        });
+      await prisma.system_state.upsert({
+        where: { key: `atlas_conversation_${context.session_id}` },
+        create: {
+          key: `atlas_conversation_${context.session_id}`,
+          value: {
+            session_id: context.session_id,
+            user_id: context.user_id,
+            tenant_id: context.tenant_id,
+            conversation_history: context.conversation_history,
+            user_profile: context.user_profile,
+            updated_at: new Date().toISOString(),
+          },
+        },
+        update: {
+          value: {
+            session_id: context.session_id,
+            user_id: context.user_id,
+            tenant_id: context.tenant_id,
+            conversation_history: context.conversation_history,
+            user_profile: context.user_profile,
+            updated_at: new Date().toISOString(),
+          },
+        },
+      });
     } catch (error) {
       console.error('Error persisting conversation:', error);
     }
@@ -838,27 +845,25 @@ Be concise but thorough. Show strategic thinking and emotional intelligence.
     userId: string
   ): Promise<any> {
     // Create job for target agent
-    const { data } = await this.supabase
-      .from('jobs')
-      .insert({
-        tenant_id: tenantId,
+    const job = await prisma.job.create({
+      data: {
+        tenantId,
         requested_by_user_id: userId,
-        job_type: 'AGENT_TASK',
-        priority: decision.priority === 'critical' ? 100 : 
-                 decision.priority === 'high' ? 75 :
-                 decision.priority === 'medium' ? 50 : 25,
+        jobType: "AGENT_TASK",
+        priority: decision.priority === 'critical' ? 100 :
+                  decision.priority === 'high' ? 75 :
+                  decision.priority === 'medium' ? 50 : 25,
         input: {
           target_agent: decision.target_agent,
           task_description: decision.task_description,
           success_criteria: decision.success_criteria,
           dependencies: decision.dependencies,
         },
-        status: 'queued',
-      })
-      .select()
-      .single();
+        status: "queued",
+      },
+    });
 
-    return data;
+    return job;
   }
 
   private async executeDirectly(
@@ -918,7 +923,7 @@ Be concise but thorough. Show strategic thinking and emotional intelligence.
    * Get avatar model URL for frontend
    */
   getAvatarUrl(): string {
-    const baseUrl = env.APP_URL || 'https://atlasux-backend.onrender.com';
+    const baseUrl = env.APP_URL || 'https://api.atlasux.cloud';
     return `${baseUrl}/v1/atlas/models/atlas-avatar.glb`;
   }
 
@@ -929,7 +934,7 @@ Be concise but thorough. Show strategic thinking and emotional intelligence.
     status: 'healthy' | 'degraded' | 'unhealthy';
     components: {
       openai: boolean;
-      supabase: boolean;
+      database: boolean;
       voice: boolean;
       orchestration: boolean;
     };
@@ -941,7 +946,7 @@ Be concise but thorough. Show strategic thinking and emotional intelligence.
   }> {
     const components = {
       openai: !!this.openai,
-      supabase: !!this.supabase,
+      database: !!prisma,
       voice: this.config.voice.enabled,
       orchestration: true,
     };

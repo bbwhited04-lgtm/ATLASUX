@@ -25,7 +25,7 @@ import {
 async function getGoogleToken(tenantId: string): Promise<string | null> {
   try {
     return await withTenant(tenantId, async (tx) => {
-      // Try token_vault (Supabase) first
+      // Try token_vault first
       const vault = await tx.$queryRaw<Array<{ access_token: string }>>`
         SELECT access_token FROM token_vault
         WHERE org_id = ${tenantId} AND provider = 'google'

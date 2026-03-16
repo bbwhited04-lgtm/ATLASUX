@@ -40,7 +40,7 @@ async function validateRemote(code: string): Promise<{
   }
 }
 
-/** Provision tenant after Supabase login */
+/** Provision tenant after login */
 async function provisionTenant(token: string): Promise<{
   ok: boolean;
   tenantId?: string;
@@ -103,7 +103,7 @@ export default function AppGate({ children }: { children: React.ReactNode }) {
     setAuthed(true);
   };
 
-  // Auto-check for existing Supabase session on load
+  // Auto-check for existing session on load
   useEffect(() => {
     if (authed || isGateOpen()) {
       setSessionChecked(true);

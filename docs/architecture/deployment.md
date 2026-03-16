@@ -1,9 +1,9 @@
 # Deployment Architecture
 
-Atlas UX is deployed across three infrastructure providers: Vercel for the
-frontend SPA, Render for the backend API and worker processes, and Supabase for
-the database and file storage. A GitHub Actions pipeline handles CI for desktop
-(Tauri) builds.
+Atlas UX is deployed on a single **AWS Lightsail** instance running both the
+frontend static files and backend API/worker processes. The database is an
+**AWS Lightsail Managed PostgreSQL** instance. A GitHub Actions pipeline handles
+CI for desktop (Tauri) builds.
 
 ---
 
@@ -13,38 +13,42 @@ the database and file storage. A GitHub Actions pipeline handles CI for desktop
 +--------------------------------------------------------------+
 |                        GitHub Repository                      |
 |  (source of truth for all code, configs, and CI pipelines)   |
-+------+------------------+------------------+-----------------+
-       |                  |                  |
-       v                  v                  v
-  +---------+      +------------+      +-----------+
-  | Vercel  |      |   Render   |      |  Supabase |
-  | Frontend|      |  Backend   |      |  Database  |
-  +---------+      +------------+      |  + Storage |
-                   | 4 services |      +-----------+
-                   +------------+
++------+------------------+-----------------------------------+
+       |                  |
+       v                  v
+  +-----------+    +--------------------+
+  | Lightsail |    | Lightsail Managed  |
+  | Instance  |    | PostgreSQL 16      |
+  | 3.94.224.34|   +--------------------+
+  +-----------+
+  | Frontend  |
+  | (static)  |
+  | Backend   |
+  | (PM2)     |
+  +-----------+
 ```
 
-## Vercel (Frontend)
+## AWS Lightsail Instance (3.94.224.34)
 
-The React SPA is deployed on Vercel as a static site.
+The single Lightsail instance hosts both the frontend and backend.
+
+### Frontend
+
+The React SPA is deployed as static files served by the web server on the Lightsail instance.
 
 | Setting        | Value                              |
 |----------------|------------------------------------|
 | Build command  | `npm run build`                    |
 | Output dir     | `./dist`                           |
+| Deploy path    | `/home/bitnami/dist/`              |
+| Deploy method  | `scp` from local/CI to instance    |
 | Framework      | Vite                               |
 | Node version   | 18+                                |
 
-### Build Process
+#### Build & Deploy Process
 
 ```
-GitHub push to main
-        |
-        v
-Vercel detects change
-        |
-        v
-npm install
+Local machine (or CI)
         |
         v
 npm run build (Vite)
@@ -54,129 +58,73 @@ npm run build (Vite)
   - Outputs to ./dist
         |
         v
-Deploy to Vercel CDN
-  - Global edge distribution
-  - Automatic HTTPS
-  - Serves index.html for all routes (SPA)
+scp -r ./dist/* bitnami@3.94.224.34:/home/bitnami/dist/
+        |
+        v
+Static files served via HTTPS at atlasux.cloud
 ```
 
-### Environment Variables (Vercel)
+#### Environment Variables (Frontend)
 
 | Variable               | Description                        |
 |------------------------|------------------------------------|
 | `VITE_APP_GATE_CODE`  | Alpha access gate code             |
-| `VITE_API_BASE_URL`   | Backend URL (Render web service)   |
+| `VITE_API_BASE_URL`   | Backend URL (`https://atlasux.cloud`) |
 
 These are baked into the build at compile time (Vite `VITE_` prefix).
 
-## Render (Backend)
+### Backend
 
-The backend runs as four separate Render services, all from the same codebase
-but with different start commands.
+The backend runs as multiple Node.js processes managed by **PM2** on the same Lightsail instance.
 
-### Service Inventory
+#### Service Inventory
 
 ```
 +------------------------------------------------------------------+
-|                    Render Dashboard                                |
+|                    PM2 Process Manager                             |
 +------------------------------------------------------------------+
 |                                                                   |
-|  [Web Service]     srv-d62bnoq4d50c738b4e6g                     |
-|  Name: web                                                       |
-|  Command: npm run start                                          |
-|  Purpose: Fastify HTTP API server (port 8787)                    |
+|  [Process]  web                                                   |
+|  Command: npm run start                                           |
+|  Purpose: Fastify HTTP API server (port 8787)                     |
 |                                                                   |
-|  [Worker Service]  srv-d6eoq07gi27c73ae4ing                     |
-|  Name: email-worker                                              |
-|  Command: npm run worker:email                                   |
-|  Purpose: Polls jobs table for EMAIL_SEND, sends via MS Graph    |
+|  [Process]  email-worker                                          |
+|  Command: npm run worker:email                                    |
+|  Purpose: Polls jobs table for EMAIL_SEND, sends via MS Graph     |
 |                                                                   |
-|  [Worker Service]  srv-d6eoojkr85hc73frr5rg                     |
-|  Name: engine-worker                                             |
-|  Command: npm run worker:engine                                  |
-|  Purpose: Orchestration loop, ticks every 5s, processes jobs     |
+|  [Process]  engine-worker                                         |
+|  Command: npm run worker:engine                                   |
+|  Purpose: Orchestration loop, ticks every 5s, processes jobs      |
 |                                                                   |
-|  [Worker Service]  srv-d6fk5utm5p6s73bqrohg                     |
-|  Name: scheduler                                                 |
-|  Command: (scheduler entry point)                                |
-|  Purpose: Cron-like triggers, fires workflows on schedule        |
+|  [Process]  scheduler                                             |
+|  Command: (scheduler entry point)                                 |
+|  Purpose: Cron-like triggers, fires workflows on schedule         |
 |                                                                   |
 +------------------------------------------------------------------+
 ```
 
-### Build Configuration (render.yaml)
-
-All four services share the same build process:
-
-```yaml
-services:
-  - type: web
-    name: web
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
-
-  - type: worker
-    name: email-worker
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run worker:email
-
-  - type: worker
-    name: engine-worker
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run worker:engine
-
-  - type: worker
-    name: scheduler
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: (scheduler start command)
-```
-
-### Build Process
+#### Build & Deploy Process
 
 ```
-GitHub push to main
+Local machine (or CI)
         |
         v
-Render detects change (all 4 services)
+cd backend && npm run build (tsc)
+  - Compiles TypeScript to JavaScript
+  - Outputs to backend/dist/
         |
         v
-For each service:
-  npm install
+scp files to bitnami@3.94.224.34
         |
         v
-  npm run build (tsc)
-    - Compiles TypeScript to JavaScript
-    - Outputs to backend/dist/
-        |
-        v
-  Start service with respective command
+ssh: pm2 restart all
 ```
 
-### Environment Variable Management
+#### Environment Variable Management
 
-All four Render services share the same set of environment variables. When
-updating variables, changes must be pushed to all four services:
+Environment variables are set in the shell profile or PM2 ecosystem config on the Lightsail instance. All processes share the same set of environment variables.
 
-```
-PUT /v1/services/{service-id}/env-vars
-
-IMPORTANT: This API replaces ALL env vars for the service.
-           Always deduplicate keys before pushing.
-           Push to all 4 service IDs.
-```
-
-Service IDs for env var updates:
-
-- `srv-d62bnoq4d50c738b4e6g` (web)
-- `srv-d6eoq07gi27c73ae4ing` (email-worker)
-- `srv-d6eoojkr85hc73frr5rg` (engine-worker)
-- `srv-d6fk5utm5p6s73bqrohg` (scheduler)
-
-### Key Environment Variables (Render)
+#### Key Environment Variables
 
 | Category    | Variables                                              |
 |-------------|--------------------------------------------------------|
@@ -191,40 +139,28 @@ Service IDs for env var updates:
 | Email       | `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET`     |
 |             | `MS_SENDER_UPN`, `OUTBOUND_EMAIL_PROVIDER`             |
 | Telegram    | `BOTFATHERTOKEN`                                       |
-| Supabase    | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`            |
 
-## Supabase (Database + Storage)
+## AWS Lightsail Managed PostgreSQL (Database)
 
 ### Database
 
 | Setting          | Value                              |
 |------------------|------------------------------------|
 | PostgreSQL       | Version 16                         |
-| Connection pool  | Pgbouncer (transaction mode)       |
-| Direct access    | For migrations only                |
+| Hosting          | AWS Lightsail Managed Database     |
+| Connection       | Direct connection string           |
 
 ```
-Application ----> Pgbouncer (DATABASE_URL) ----> PostgreSQL
+Application ----> PostgreSQL (DATABASE_URL)
                        |
-                  Connection pooling
-                  Transaction mode
-                  Handles concurrent connections
-                  from API + 3 workers
+                  Managed by AWS Lightsail
+                  Automatic backups
+                  High availability option
 
 Prisma Migrate -> Direct connection (DIRECT_URL) -> PostgreSQL
                        |
-                  No pooling
                   Required for migration DDL
 ```
-
-### File Storage
-
-| Setting     | Value                                    |
-|-------------|------------------------------------------|
-| Bucket      | `kb_uploads`                             |
-| Path format | `tenants/{tenantId}/filename.ext`        |
-| Auth        | Supabase service role key (JWT)          |
-| API         | S3-compatible                            |
 
 ## GitHub Actions (CI/CD)
 
@@ -256,49 +192,63 @@ Build artifacts:
 ```
                     End Users
                        |
-          +------------+------------+
-          |                         |
-     +----v-----+            +-----v----+
-     |  Vercel  |            |  Render  |
-     |  CDN     |            |  Web     |
-     |  (SPA)   |    /v1     |  (API)   |
-     |          |----------->|  :8787   |
-     +----------+            +----+-----+
-                                  |
-                    +-------------+-------------+
-                    |             |             |
-               +----v---+  +----v----+  +-----v-----+
-               | Engine |  | Email   |  | Scheduler |
-               | Worker |  | Worker  |  | Worker    |
-               +----+---+  +----+----+  +-----+-----+
-                    |            |              |
-                    +------------+--------------+
-                                 |
-                          +------v------+
-                          |  Supabase   |
-                          | PostgreSQL  |
-                          | + Storage   |
-                          +-------------+
+                       v
+              +----------------+
+              | AWS Lightsail  |
+              | 3.94.224.34    |
+              | atlasux.cloud  |
+              +--------+-------+
+              |  Nginx / Caddy |
+              |  (reverse proxy)|
+              +--------+-------+
+              |        |       |
+         +----v--+ +---v---+  |
+         |Static | |Fastify|  |
+         |Files  | |API    |  |
+         |(SPA)  | |:8787  |  |
+         +-------+ +---+---+  |
+                       |       |
+         +-------------+---+---+
+         |             |       |
+    +----v---+  +----v----+  +-----v-----+
+    | Engine |  | Email   |  | Scheduler |
+    | Worker |  | Worker  |  | Worker    |
+    +----+---+  +----+----+  +-----+-----+
+         |            |              |
+         +------------+--------------+
+                      |
+               +------v------+
+               |  Lightsail  |
+               |  Managed    |
+               |  PostgreSQL |
+               +------+------+
+                      |
+       +--------------+--------------+
+       |              |              |
+  +----v-------+  +---v--------+  +--v-----------+
+  |  OpenAI    |  |  DeepSeek  |  |  OpenRouter   |
+  |  API       |  |  API       |  |  API          |
+  +------------+  +------------+  +---------------+
 ```
 
 ## Scaling Considerations
 
 ### Current State (Alpha)
 
-- Single instance of each Render service
-- Supabase free/pro tier database
-- Vercel hobby/pro plan for frontend
+- Single Lightsail instance running all services via PM2
+- AWS Lightsail Managed PostgreSQL
+- Static frontend files served from the same instance
 
 ### Future Scaling
 
 | Component     | Scaling Strategy                                    |
 |---------------|-----------------------------------------------------|
-| Web API       | Horizontal scaling (multiple Render instances)      |
-| Engine worker | Horizontal scaling with job locking                 |
+| Web API       | Vertical scaling (larger Lightsail instance) or migrate to ECS/EKS |
+| Engine worker | Horizontal scaling with job locking on separate instances |
 | Email worker  | Horizontal scaling with job locking                 |
 | Scheduler     | Single instance only (to avoid duplicate triggers)  |
-| Database      | Supabase plan upgrade, read replicas               |
-| Frontend      | Already globally distributed via Vercel CDN         |
+| Database      | Lightsail DB plan upgrade, read replicas            |
+| Frontend      | Move to CloudFront CDN for global distribution      |
 
 The scheduler must remain a single instance to prevent duplicate workflow
 triggers. The engine and email workers can scale horizontally because the job
@@ -308,23 +258,24 @@ queue uses row-level locking to prevent duplicate processing.
 
 | Service        | Health Check                                |
 |----------------|---------------------------------------------|
-| Web API        | Render automatic HTTP health check          |
-| Engine worker  | Logs engine tick activity                   |
-| Email worker   | Logs email processing activity              |
-| Scheduler      | Logs scheduled workflow triggers            |
-| Database       | Supabase dashboard monitoring               |
+| Web API        | PM2 process monitoring + HTTP health check  |
+| Engine worker  | PM2 process monitoring + logs               |
+| Email worker   | PM2 process monitoring + logs               |
+| Scheduler      | PM2 process monitoring + logs               |
+| Database       | AWS Lightsail console monitoring            |
 
 ## Deployment Checklist
 
 When deploying changes:
 
-1. Push to GitHub main branch
-2. Vercel auto-deploys frontend (2-3 minutes)
-3. Render auto-deploys all 4 backend services (3-5 minutes)
-4. If schema changed: run `npx prisma migrate deploy` against production
-5. If env vars changed: push to all 4 Render services
-6. Verify: check Render logs for startup errors
-7. Verify: check frontend loads and can reach API
+1. Build frontend: `npm run build`
+2. Build backend: `cd backend && npm run build`
+3. If schema changed: run `npx prisma migrate deploy` against production
+4. Deploy frontend: `scp -r ./dist/* bitnami@3.94.224.34:/home/bitnami/dist/`
+5. Deploy backend: `scp` backend/dist to instance, then `ssh` and `pm2 restart all`
+6. If env vars changed: update on the Lightsail instance and restart PM2
+7. Verify: check PM2 logs for startup errors (`pm2 logs`)
+8. Verify: check frontend loads and can reach API
 
 ## Related Documentation
 

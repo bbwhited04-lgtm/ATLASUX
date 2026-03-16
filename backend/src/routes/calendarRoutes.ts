@@ -1,13 +1,17 @@
 /**
- * calendarRoutes.ts — M365 Calendar API
+ * calendarRoutes.ts — M365 Calendar API + Booking (advisory-lock guarded)
  *
  * Reads calendar events via Microsoft Graph (app-only credentials).
  * Calendars.Read application permission is granted in Azure AD.
  *
- * GET  /v1/calendar/events       — list events for a date range
- * GET  /v1/calendar/event/:id    — single event detail
- * GET  /v1/calendar/calendars    — list all calendars for the user
- * GET  /v1/calendar/status       — connection health check
+ * GET  /v1/calendar/events           — list events for a date range
+ * GET  /v1/calendar/event/:id        — single event detail
+ * GET  /v1/calendar/calendars        — list all calendars for the user
+ * GET  /v1/calendar/status           — connection health check
+ * POST /v1/calendar/book             — create a booking (advisory-lock guarded)
+ * GET  /v1/calendar/slots            — available slots for a date
+ * POST /v1/calendar/book/:id/cancel  — cancel a booking
+ * GET  /v1/calendar/circuit-breaker  — external calendar API health
  */
 
 import type { FastifyPluginAsync } from "fastify";
@@ -15,6 +19,12 @@ import { enforceFeatureAccess } from "../lib/seatEnforcement.js";
 import { agentEmails } from "../config/agentEmails.js";
 import { sanitizeError } from "../lib/sanitizeError.js";
 import { resolveAgentEmail } from "../services/agentEmailResolver.js";
+import {
+  createBooking,
+  getAvailableSlots,
+  cancelBooking,
+  getCircuitBreakerStatus,
+} from "../services/calendarBooking.js";
 
 const tenantId = process.env.MS_TENANT_ID ?? "";
 const clientId = process.env.MS_CLIENT_ID ?? "";
@@ -273,5 +283,121 @@ export const calendarRoutes: FastifyPluginAsync = async (app) => {
       app.log.error({ err }, "Calendar event detail failed");
       return reply.status(500).send({ ok: false, error: sanitizeError(err) });
     }
+  });
+
+  // ── POST /book — create a booking (advisory-lock guarded) ─────────────
+  app.post("/book", async (req, reply) => {
+    try {
+      const body = req.body as any;
+      const reqTenantId = (req as any).tenantId as string | undefined;
+      if (!reqTenantId) {
+        return reply.code(400).send({ ok: false, error: "tenant_id required" });
+      }
+
+      const businessId = String(body?.businessId ?? "").trim();
+      const scheduledAtRaw = body?.scheduledAt;
+      if (!businessId || !scheduledAtRaw) {
+        return reply.code(400).send({ ok: false, error: "businessId and scheduledAt are required" });
+      }
+
+      const scheduledAt = new Date(scheduledAtRaw);
+      if (isNaN(scheduledAt.getTime())) {
+        return reply.code(400).send({ ok: false, error: "Invalid scheduledAt date" });
+      }
+
+      const result = await createBooking({
+        tenantId: reqTenantId,
+        businessId,
+        scheduledAt,
+        durationMin: body?.durationMin,
+        customerName: body?.customerName,
+        customerPhone: body?.customerPhone,
+        customerEmail: body?.customerEmail,
+        service: body?.service,
+        notes: body?.notes,
+        source: body?.source,
+      });
+
+      if (!result.ok) {
+        const statusCode = result.error === "SLOT_TAKEN" ? 409 : 500;
+        return reply.code(statusCode).send(result);
+      }
+
+      return reply.code(201).send(result);
+    } catch (err: any) {
+      app.log.error({ err }, "Booking creation failed");
+      return reply.status(500).send({ ok: false, error: sanitizeError(err) });
+    }
+  });
+
+  // ── GET /slots — available slots for a date ───────────────────────────
+  app.get("/slots", async (req, reply) => {
+    try {
+      const q = req.query as Record<string, string>;
+      const reqTenantId = (req as any).tenantId as string | undefined;
+      if (!reqTenantId) {
+        return reply.code(400).send({ ok: false, error: "tenant_id required" });
+      }
+
+      const businessId = q.businessId;
+      const dateRaw = q.date;
+      if (!businessId || !dateRaw) {
+        return reply.code(400).send({ ok: false, error: "businessId and date are required" });
+      }
+
+      const date = new Date(dateRaw);
+      if (isNaN(date.getTime())) {
+        return reply.code(400).send({ ok: false, error: "Invalid date" });
+      }
+
+      const startHour = q.startHour ? parseInt(q.startHour, 10) : 9;
+      const endHour = q.endHour ? parseInt(q.endHour, 10) : 17;
+
+      const slots = await getAvailableSlots(reqTenantId, businessId, date, startHour, endHour);
+
+      return reply.send({
+        ok: true,
+        slots: slots.map(s => s.toISOString()),
+        count: slots.length,
+        date: dateRaw,
+        businessId,
+      });
+    } catch (err: any) {
+      app.log.error({ err }, "Available slots fetch failed");
+      return reply.status(500).send({ ok: false, error: sanitizeError(err) });
+    }
+  });
+
+  // ── POST /book/:id/cancel — cancel a booking ─────────────────────────
+  app.post("/book/:id/cancel", async (req, reply) => {
+    try {
+      const { id } = req.params as { id: string };
+      const reqTenantId = (req as any).tenantId as string | undefined;
+      if (!reqTenantId) {
+        return reply.code(400).send({ ok: false, error: "tenant_id required" });
+      }
+
+      const result = await cancelBooking(id, reqTenantId);
+      if (!result.ok) {
+        return reply.code(404).send(result);
+      }
+      return reply.send(result);
+    } catch (err: any) {
+      app.log.error({ err }, "Booking cancellation failed");
+      return reply.status(500).send({ ok: false, error: sanitizeError(err) });
+    }
+  });
+
+  // ── GET /circuit-breaker — external calendar API health ───────────────
+  app.get("/circuit-breaker", async (_req, reply) => {
+    const status = getCircuitBreakerStatus();
+    return reply.send({
+      ok: true,
+      calendarApi: {
+        healthy: !status.isOpen,
+        consecutiveFailures: status.failures,
+        circuitOpen: status.isOpen,
+      },
+    });
   });
 };

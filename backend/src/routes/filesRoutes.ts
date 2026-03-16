@@ -1,7 +1,7 @@
 /**
- * filesRoutes.ts — File management via Supabase Storage.
+ * filesRoutes.ts — File management via AWS S3.
  *
- * Bucket: KB_UPLOAD_BUCKET (default "kb_uploads")
+ * Bucket: S3_BUCKET (default "atlasux-files")
  *
  * Routes:
  *   GET  /v1/files          → list files for tenant
@@ -12,7 +12,8 @@
 
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { createClient } from "@supabase/supabase-js";
+import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import multipart from "@fastify/multipart";
 import { meterStorage } from "../lib/usageMeter.js";
 import { enforceStorageLimit } from "../lib/seatEnforcement.js";
@@ -22,6 +23,9 @@ import { Readable } from "stream";
 import { prisma } from "../db/prisma.js";
 
 const env = loadEnv(process.env);
+
+const s3 = new S3Client({ region: "us-east-1" });
+const BUCKET = process.env.S3_BUCKET ?? "atlasux-files";
 
 const ALLOWED_MIME = new Set([
   "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
@@ -56,17 +60,9 @@ const MIME_EXT_MAP: Record<string, string[]> = {
   "video/webm": [".webm"],
 };
 
-const BUCKET = process.env.KB_UPLOAD_BUCKET ?? "kb_uploads";
 const SIGNED_URL_TTL = 3600; // 1 hour
 const MAX_FILES_PER_TENANT = Number(process.env.MAX_FILES_PER_TENANT ?? 500);
 const MAX_STORAGE_BYTES_PER_TENANT = Number(process.env.MAX_STORAGE_MB_PER_TENANT ?? 500) * 1024 * 1024;
-
-function makeStorage() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required");
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }).storage;
-}
 
 function tenantPrefix(tenantId: string) {
   return `tenants/${tenantId}/`;
@@ -91,21 +87,19 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
     if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
 
     try {
-      const storage = makeStorage();
       const prefix = tenantPrefix(tenantId);
-      const { data, error } = await storage.from(BUCKET).list(prefix, {
-        limit: 200,
-        sortBy: { column: "updated_at", order: "desc" },
-      });
+      const listResult = await s3.send(new ListObjectsV2Command({
+        Bucket: BUCKET,
+        Prefix: prefix,
+        MaxKeys: 200,
+      }));
 
-      if (error) return reply.code(500).send({ ok: false, error: error.message });
-
-      const files = (data ?? []).map((f) => ({
-        name: f.name,
-        path: `${prefix}${f.name}`,
-        size: f.metadata?.size ?? null,
-        contentType: f.metadata?.mimetype ?? null,
-        updatedAt: f.updated_at ?? null,
+      const files = (listResult.Contents ?? []).map((obj) => ({
+        name: obj.Key?.replace(prefix, "") ?? "",
+        path: obj.Key ?? "",
+        size: obj.Size ?? null,
+        contentType: null,
+        updatedAt: obj.LastModified?.toISOString() ?? null,
       }));
 
       return reply.send({ ok: true, files });
@@ -123,14 +117,18 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
       const userId = (req as any).auth?.userId as string | undefined;
 
       // Per-tenant quota check
-      const storage = makeStorage();
       const prefix = tenantPrefix(tenantId);
-      const { data: existing } = await storage.from(BUCKET).list(prefix, { limit: MAX_FILES_PER_TENANT + 1 });
-      const fileCount = existing?.length ?? 0;
+      const listResult = await s3.send(new ListObjectsV2Command({
+        Bucket: BUCKET,
+        Prefix: prefix,
+        MaxKeys: MAX_FILES_PER_TENANT + 1,
+      }));
+      const existing = listResult.Contents ?? [];
+      const fileCount = existing.length;
       if (fileCount >= MAX_FILES_PER_TENANT) {
         return reply.code(429).send({ ok: false, error: `File limit reached (${MAX_FILES_PER_TENANT} files per tenant)` });
       }
-      const totalBytes = (existing ?? []).reduce((sum, f) => sum + (f.metadata?.size ?? 0), 0);
+      const totalBytes = existing.reduce((sum, f) => sum + (f.Size ?? 0), 0);
 
       const data = await req.file();
       if (!data) return reply.code(400).send({ ok: false, error: "No file in request" });
@@ -170,12 +168,12 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
       const safeName = data.filename.replace(/[^a-zA-Z0-9._\- ]/g, "_");
       const path = `${tenantPrefix(tenantId)}${Date.now()}_${safeName}`;
 
-      const { error } = await storage.from(BUCKET).upload(path, buf, {
-        contentType: data.mimetype,
-        upsert: false,
-      });
-
-      if (error) return reply.code(500).send({ ok: false, error: error.message });
+      await s3.send(new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: path,
+        Body: buf,
+        ContentType: data.mimetype,
+      }));
 
       // Meter storage usage
       if (userId && tenantId) meterStorage(userId, tenantId, buf.length);
@@ -203,10 +201,9 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      const storage = makeStorage();
-      const { data, error } = await storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL);
-      if (error) return reply.code(500).send({ ok: false, error: error.message });
-      return reply.send({ ok: true, url: data?.signedUrl });
+      const command = new GetObjectCommand({ Bucket: BUCKET, Key: path });
+      const signedUrl = await getSignedUrl(s3, command, { expiresIn: SIGNED_URL_TTL });
+      return reply.send({ ok: true, url: signedUrl });
     } catch (e: any) {
       return reply.code(500).send({ ok: false, error: e?.message ?? "Signed URL error" });
     }
@@ -225,9 +222,7 @@ export const filesRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      const storage = makeStorage();
-      const { error } = await storage.from(BUCKET).remove([path]);
-      if (error) return reply.code(500).send({ ok: false, error: error.message });
+      await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: path }));
 
       await prisma.auditLog.create({
         data: {

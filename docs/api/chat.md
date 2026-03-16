@@ -81,7 +81,7 @@ The backend classifies queries into tiers to control how much context is injecte
 **Example:**
 
 ```bash
-curl -s -X POST https://atlas-ux.onrender.com/v1/chat \
+curl -s -X POST https://atlasux.cloud/v1/chat \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID" \
   -H "Content-Type: application/json" \

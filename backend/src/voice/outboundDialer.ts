@@ -20,10 +20,15 @@
 import { prisma } from "../db/prisma.js";
 import { postAsAgent, getChannelByName } from "../services/slack.js";
 import { resolveCredential } from "../services/credentialResolver.js";
+import { checkCircuitBreaker } from "./callCostTracker.js";
 
 const TENANT_ID = process.env.TENANT_ID?.trim() || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
 const CALL_COOLDOWN_MS = 30_000;  // 30s between calls
 const MAX_CALLS_PER_SESSION = 50; // safety cap
+
+// TCPA compliance: allowed calling window (local time for the business)
+const CALLING_HOURS_START = 8;  // 8am
+const CALLING_HOURS_END = 21;   // 9pm
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -43,6 +48,7 @@ interface QueuedContact {
   phone: string;
   name: string;
   company?: string;
+  industry?: string;
 }
 
 interface CompletedCall {
@@ -121,6 +127,7 @@ export async function startDialingSession(options?: {
         phone: co.phone,
         name: co.contactName || co.name,
         company: co.name,
+        industry: co.industry ?? undefined,
       });
       if (queue.length >= limit) break;
     }
@@ -315,10 +322,124 @@ async function dialNext(): Promise<void> {
   await placeOutboundCall(next.phone, next);
 }
 
+// ── TCPA Compliance ───────────────────────────────────────────────────────────
+
+/**
+ * Check if a phone number is on the Do Not Call list.
+ * Normalizes to last 10 digits for consistent matching.
+ */
+async function isDncListed(phone: string): Promise<boolean> {
+  const normalized = phone.replace(/\D/g, "").slice(-10);
+  if (!normalized || normalized.length < 10) return false;
+  const match = await prisma.dncPhone.findFirst({
+    where: {
+      tenantId: TENANT_ID,
+      phone: normalized,
+    },
+  });
+  return !!match;
+}
+
+/**
+ * Add a phone number to the DNC list.
+ * Used when a callee says "do not call" or "stop calling".
+ */
+export async function addToDnc(phone: string, source: "ftc_list" | "caller_request" | "manual"): Promise<void> {
+  const normalized = phone.replace(/\D/g, "").slice(-10);
+  if (!normalized || normalized.length < 10) return;
+  try {
+    await prisma.dncPhone.upsert({
+      where: { tenantId_phone: { tenantId: TENANT_ID, phone: normalized } },
+      update: { source, addedAt: new Date() },
+      create: { tenantId: TENANT_ID, phone: normalized, source },
+    });
+    console.log(`[mercer-dialer] Added ${normalized} to DNC list (source: ${source})`);
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId: TENANT_ID,
+        actorType: "agent",
+        actorExternalId: "mercer",
+        action: "mercer.compliance.dnc_added",
+        entityType: "dnc_phones",
+        message: `Phone ${normalized} added to DNC list (${source})`,
+        meta: { phone: normalized, source },
+      },
+    }).catch(() => null);
+  } catch (err: any) {
+    // Ignore unique constraint violations (already on list)
+    if (!err?.message?.includes("Unique constraint")) {
+      console.error("[mercer-dialer] Failed to add to DNC:", err?.message);
+    }
+  }
+}
+
+/**
+ * Check if current time is within allowed calling hours.
+ * Uses the business timezone (defaults to America/New_York).
+ */
+function isWithinCallingHours(timezone?: string): boolean {
+  const tz = timezone || process.env.BUSINESS_TIMEZONE || "America/New_York";
+  try {
+    const now = new Date();
+    const localTimeStr = now.toLocaleString("en-US", { timeZone: tz, hour12: false });
+    const hour = parseInt(localTimeStr.split(",")[1].trim().split(":")[0], 10);
+    return hour >= CALLING_HOURS_START && hour < CALLING_HOURS_END;
+  } catch {
+    // If timezone parsing fails, fall back to UTC-safe check (conservative: block)
+    console.error(`[mercer-dialer] Invalid timezone: ${timezone}, blocking call for safety`);
+    return false;
+  }
+}
+
 async function placeOutboundCall(
   to: string,
   contact: QueuedContact,
 ): Promise<{ ok: boolean; callSid?: string; error?: string }> {
+  // ── TCPA Compliance: Time-zone check ──
+  if (!isWithinCallingHours()) {
+    const reason = `Call to ${to} blocked — outside calling hours (${CALLING_HOURS_START}am-${CALLING_HOURS_END - 12}pm local)`;
+    console.log(`[mercer-dialer] ${reason}`);
+    await prisma.auditLog.create({
+      data: {
+        tenantId: TENANT_ID,
+        actorType: "agent",
+        actorExternalId: "mercer",
+        action: "mercer.compliance.call_blocked_hours",
+        entityType: "crm_contact",
+        message: reason,
+        meta: { to, contactId: contact.contactId, contactName: contact.name },
+      },
+    }).catch(() => null);
+    return { ok: false, error: reason };
+  }
+
+  // ── TCPA Compliance: DNC check ──
+  if (await isDncListed(to)) {
+    const reason = `Call to ${to} blocked — number is on DNC list`;
+    console.log(`[mercer-dialer] ${reason}`);
+    await prisma.auditLog.create({
+      data: {
+        tenantId: TENANT_ID,
+        actorType: "agent",
+        actorExternalId: "mercer",
+        action: "mercer.compliance.call_blocked_dnc",
+        entityType: "crm_contact",
+        message: reason,
+        meta: { to, contactId: contact.contactId, contactName: contact.name },
+      },
+    }).catch(() => null);
+    return { ok: false, error: reason };
+  }
+
+  // ── Cost Circuit Breaker: block calls if projected cost exceeds revenue threshold ──
+  const circuitCheck = await checkCircuitBreaker(TENANT_ID).catch(() => ({ allowed: true } as { allowed: boolean; reason?: string }));
+  if (!circuitCheck.allowed) {
+    const reason = `Call to ${to} blocked — circuit breaker tripped: ${(circuitCheck as any).reason ?? "cost threshold exceeded"}`;
+    console.warn(`[mercer-dialer] ${reason}`);
+    return { ok: false, error: reason };
+  }
+
   const accountSid = await resolveCredential(TENANT_ID, "twilio_sid") ?? "";
   const authToken = await resolveCredential(TENANT_ID, "twilio_token") ?? "";
   const fromNumber = process.env.MERCER_FROM_NUMBER
@@ -339,6 +460,8 @@ async function placeOutboundCall(
       <Parameter name="contactId" value="${contact.contactId}" />
       <Parameter name="contactName" value="${contact.name}" />
       <Parameter name="contactPhone" value="${contact.phone}" />
+      <Parameter name="contactCompany" value="${contact.company ?? ""}" />
+      <Parameter name="contactIndustry" value="${contact.industry ?? ""}" />
     </Stream>
   </Connect>
 </Response>`;

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Atlas UX runs as a distributed system with 4 Render services, a Supabase PostgreSQL database, Vercel-hosted frontend, and multiple AI provider integrations. This document covers DevOps principles and practices — CI/CD, infrastructure as code, deployment strategies, monitoring, incident management, and reliability engineering — with specific mappings to the Atlas UX production environment.
+Atlas UX runs on a single AWS Lightsail instance (3.94.224.34) with PM2-managed backend processes, a Lightsail Managed PostgreSQL database, and static frontend files served from the same instance. This document covers DevOps principles and practices — CI/CD, infrastructure as code, deployment strategies, monitoring, incident management, and reliability engineering — with specific mappings to the Atlas UX production environment.
 
 ---
 
@@ -39,9 +39,9 @@ A production-grade CI/CD pipeline proceeds through these stages in order. Failur
 
 **Stage 4: Deploy**
 - Database migration: `npx prisma migrate deploy` (run before code deploy)
-- Backend services: rolling deploy on Render (all 4 services)
-- Frontend: Vercel auto-deploys on push to main
-- Configuration: verify environment variables are current
+- Backend: `scp` compiled dist to Lightsail instance, `pm2 restart all`
+- Frontend: `scp` built static files to `/home/bitnami/dist/` on 3.94.224.34
+- Configuration: verify environment variables are current on the instance
 
 **Stage 5: Smoke Tests**
 - Health check endpoints respond with 200
@@ -59,32 +59,35 @@ A production-grade CI/CD pipeline proceeds through these stages in order. Failur
 ### Atlas UX Pipeline Configuration
 
 ```yaml
-# render.yaml (simplified)
-services:
-  - type: web
-    name: atlasux-api
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
-    healthCheckPath: /v1/health
-
-  - type: worker
-    name: atlasux-engine
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run worker:engine
-
-  - type: worker
-    name: atlasux-email
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run worker:email
-
-  - type: worker
-    name: atlasux-scheduler
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run worker:scheduler
+# PM2 ecosystem config (ecosystem.config.js)
+module.exports = {
+  apps: [
+    {
+      name: "web",
+      script: "npm",
+      args: "run start",
+      cwd: "/home/bitnami/backend",
+    },
+    {
+      name: "engine-worker",
+      script: "npm",
+      args: "run worker:engine",
+      cwd: "/home/bitnami/backend",
+    },
+    {
+      name: "email-worker",
+      script: "npm",
+      args: "run worker:email",
+      cwd: "/home/bitnami/backend",
+    },
+    {
+      name: "scheduler",
+      script: "npm",
+      args: "run worker:scheduler",
+      cwd: "/home/bitnami/backend",
+    },
+  ],
+};
 ```
 
 ---
@@ -105,34 +108,33 @@ services:
 
 ### Atlas UX IaC
 
-- **Render**: `render.yaml` defines all 4 services, their build/start commands, and scaling parameters
-- **Supabase**: Database schema managed by Prisma migrations (version controlled in `backend/prisma/migrations/`)
-- **Vercel**: Configuration in `vercel.json` for build settings, routes, and headers
-- **Environment variables**: Managed via Render dashboard and pushed programmatically via API (PUT `/v1/services/{id}/env-vars`)
+- **AWS Lightsail**: Single instance (3.94.224.34) running all services via PM2
+- **Database**: Lightsail Managed PostgreSQL; schema managed by Prisma migrations (version controlled in `backend/prisma/migrations/`)
+- **PM2**: `ecosystem.config.js` defines all processes, their start commands, and restart policies
+- **Environment variables**: Managed on the Lightsail instance via PM2 ecosystem config or shell profile
 
 ### Environment Variable Management
 
 ```
-CRITICAL RULE: Environment variable pushes to Render REPLACE ALL existing vars.
+Environment variables are managed on the Lightsail instance.
 
 Process:
-1. Fetch current vars: GET /v1/services/{serviceId}/env-vars
-2. Merge new/updated vars into the existing set
-3. Deduplicate (last write wins for duplicate keys)
-4. Push to ALL 4 services (web, engine, email, scheduler)
-5. Verify each service restarts successfully
+1. SSH into the instance: ssh bitnami@3.94.224.34
+2. Edit the PM2 ecosystem config or .env file
+3. Restart all processes: pm2 restart all
+4. Verify all processes restart successfully: pm2 status
 ```
 
 ---
 
 ## Deployment Strategies
 
-### Rolling Deploy (Current — Render Default)
+### PM2 Restart (Current — Lightsail Default)
 
-New instances start alongside old ones. Traffic gradually shifts as health checks pass. Old instances terminate after drain period.
+PM2 restarts processes in-place on the single instance. Brief downtime during restart (typically <2 seconds per process).
 
-- **Pros**: Zero downtime, simple configuration, automatic rollback on health check failure
-- **Cons**: Brief period where old and new code run simultaneously (must handle schema compatibility)
+- **Pros**: Simple, fast, single command (`pm2 restart all`)
+- **Cons**: Brief interruption per process during restart; no traffic splitting
 
 ### Blue-Green Deployment
 
@@ -476,7 +478,7 @@ When the error budget is exhausted, freeze new feature deployments and focus exc
 | Inject 500ms latency on DB | Timeout handling, circuit breakers | Medium risk: affects response times |
 | Revoke one AI provider key | Fallback model routing | Low risk: multi-model setup should handle |
 | Fill job queue with 1000 dummy jobs | Queue processing under load | Low risk: engine skips invalid jobs |
-| Simulate Render service restart | Zero-downtime deploy behavior | Low risk: Render handles gracefully |
+| Simulate PM2 process restart | Process recovery behavior | Low risk: PM2 handles gracefully |
 
 ### Prerequisites Before Chaos Testing
 
@@ -493,8 +495,8 @@ When the error budget is exhausted, freeze new feature deployments and focus exc
 
 | Data | Backup Method | Frequency | Retention | RTO | RPO |
 |---|---|---|---|---|---|
-| PostgreSQL (Supabase) | Automated snapshots | Daily + WAL continuous | 30 days | 1 hour | < 5 minutes (WAL) |
-| File storage (Supabase) | Bucket replication | Continuous | 30 days | 2 hours | < 1 hour |
+| PostgreSQL (Lightsail) | Automated snapshots | Daily + point-in-time recovery | 7 days | 1 hour | < 5 minutes |
+| File storage | Instance backups / S3 | Daily | 30 days | 2 hours | < 1 hour |
 | Environment variables | Exported to encrypted file in repo | On every change | Git history | 15 minutes | 0 (versioned) |
 | Prisma migrations | Git repository | Every commit | Permanent | 5 minutes | 0 (versioned) |
 | KB documents | Database backup + file backup | Daily | 30 days | 1 hour | < 5 minutes |
@@ -506,24 +508,23 @@ When the error budget is exhausted, freeze new feature deployments and focus exc
 
 **Scenario: Database corruption or loss**
 1. Identify the last known good backup
-2. Restore Supabase database from snapshot
-3. Apply WAL logs to reach closest-to-present state
-4. Verify data integrity with checksums
-5. Restart all 4 Render services
-6. Run smoke tests
-7. Notify affected tenants
+2. Restore Lightsail Managed PostgreSQL from snapshot or point-in-time recovery
+3. Verify data integrity with checksums
+4. Restart all PM2 processes: `pm2 restart all`
+5. Run smoke tests
+6. Notify affected tenants
 
-**Scenario: Render region outage**
-1. Verify the outage is Render-side (check status page)
-2. If prolonged (>1 hour), deploy to backup region
-3. Update DNS/routing to point to backup region
-4. Verify Supabase connectivity from new region
+**Scenario: Lightsail instance failure**
+1. Verify the outage via AWS Lightsail console
+2. If instance is unrecoverable, create a new instance from the latest snapshot
+3. Assign static IP and update DNS if needed
+4. Restore PM2 processes and verify connectivity to the managed database
 5. Monitor for data consistency issues
 
-**Scenario: Supabase outage**
+**Scenario: Database outage**
 1. All services enter degraded mode (read from cache where possible)
 2. Queue writes in memory (limited by available RAM)
-3. When Supabase recovers, replay queued writes
+3. When database recovers, replay queued writes
 4. Verify no data loss by comparing queue records against database
 
 ---
@@ -531,31 +532,21 @@ When the error budget is exhausted, freeze new feature deployments and focus exc
 ## Atlas UX Production Topology
 
 ```
-                    ┌────────────────────┐
-                    │   Vercel (CDN)     │
-                    │   Frontend SPA     │
-                    └────────┬───────────┘
-                             │ HTTPS
-                    ┌────────▼───────────┐
-                    │   Render: Web      │
-                    │   srv-d62bnoq...   │
-                    │   Fastify API      │
-                    └────────┬───────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              │              │              │
-    ┌─────────▼──┐  ┌───────▼────┐  ┌──────▼──────┐
-    │  Render:   │  │  Render:   │  │  Render:    │
-    │  Engine    │  │  Email     │  │  Scheduler  │
-    │  Worker    │  │  Worker    │  │  Worker     │
-    └─────────┬──┘  └───────┬────┘  └──────┬──────┘
-              │              │              │
-              └──────────────┼──────────────┘
+                    ┌─────────────────────────┐
+                    │  AWS Lightsail Instance  │
+                    │  3.94.224.34             │
+                    │  atlasux.cloud           │
+                    ├─────────────────────────┤
+                    │  Static Files (SPA)     │
+                    │  Fastify API (PM2)      │
+                    │  Engine Worker (PM2)    │
+                    │  Email Worker (PM2)     │
+                    │  Scheduler (PM2)        │
+                    └────────┬────────────────┘
                              │
                     ┌────────▼───────────┐
-                    │   Supabase         │
-                    │   PostgreSQL 16    │
-                    │   + File Storage   │
+                    │  Lightsail Managed  │
+                    │  PostgreSQL 16      │
                     └────────────────────┘
                              │
               ┌──────────────┼──────────────┐
@@ -566,32 +557,32 @@ When the error budget is exhausted, freeze new feature deployments and focus exc
     └────────────┘  └────────────┘  └──────────────┘
 ```
 
-### Service Responsibilities
+### Service Responsibilities (PM2 Processes)
 
-- **Web (srv-d62bnoq...)**: HTTP API, authentication, route handling, real-time endpoints
-- **Engine Worker (srv-d6eooj...)**: AI orchestration loop, intent processing, agent execution
-- **Email Worker (srv-d6eoq0...)**: Email queue processing, Microsoft Graph API integration
-- **Scheduler (srv-d6fk5u...)**: Cron-like workflow triggering, daily intel sweep, aggregation
+- **web**: HTTP API, authentication, route handling, real-time endpoints
+- **engine-worker**: AI orchestration loop, intent processing, agent execution
+- **email-worker**: Email queue processing, Microsoft Graph API integration
+- **scheduler**: Cron-like workflow triggering, daily intel sweep, aggregation
 
-### Zero-Downtime Deployment Procedure
+### Deployment Procedure
 
 1. Run `npx prisma migrate deploy` (backward-compatible migrations only)
-2. Push code to main branch
-3. Render auto-builds all 4 services in parallel
-4. Each service does rolling restart (new instance starts, health check passes, old instance drains)
-5. Verify all 4 services are healthy via `/v1/health` endpoint
-6. Monitor error rates for 15 minutes
-7. Deployment complete
+2. Build backend: `cd backend && npm run build`
+3. Build frontend: `npm run build`
+4. Deploy files to Lightsail instance via `scp`
+5. SSH in and restart: `pm2 restart all`
+6. Verify all processes are healthy: `pm2 status` and `curl https://atlasux.cloud/v1/health`
+7. Monitor error rates for 15 minutes via `pm2 logs`
+8. Deployment complete
 
 ### Environment Variable Synchronization
 
-All 4 Render services share the same environment variables. When updating:
+All PM2 processes share the same environment on the Lightsail instance. When updating:
 ```
-1. Fetch current vars from any service
-2. Add/modify the target variables
-3. Push the COMPLETE set to ALL 4 services
-4. Services auto-restart on env var change
-5. Verify all services restart successfully
+1. SSH into the instance: ssh bitnami@3.94.224.34
+2. Edit the .env file or PM2 ecosystem config
+3. Restart all processes: pm2 restart all
+4. Verify all processes restart successfully: pm2 status
 ```
 
-This ensures no service has stale configuration, which could cause inconsistent behavior across the distributed system.
+Since all processes run on the same machine, there is no risk of env var drift between services.

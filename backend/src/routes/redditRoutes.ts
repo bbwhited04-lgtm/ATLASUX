@@ -1,10 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma, withTenant } from "../db/prisma.js";
-import { makeSupabase } from "../supabase.js";
 import { loadEnv } from "../env.js";
 import { submitComment, submitPost } from "../services/reddit.js";
 import { sanitizeError } from "../lib/sanitizeError.js";
+import { getProviderToken } from "../lib/tokenStore.js";
 
 const QueuePostSchema = z.object({
   subreddit: z.string().min(1).max(100).regex(/^[A-Za-z0-9_]+$/, "invalid subreddit name"),
@@ -19,14 +19,7 @@ function resolveTenant(req: any): string | null {
 
 async function getRedditToken(tenantId: string): Promise<string | null> {
   const env = loadEnv(process.env);
-  const supabase = makeSupabase(env);
-  const { data } = await supabase
-    .from("token_vault")
-    .select("access_token")
-    .eq("org_id", tenantId)
-    .eq("provider", "reddit")
-    .maybeSingle();
-  return data?.access_token ?? null;
+  return getProviderToken(env, tenantId, "reddit");
 }
 
 export const redditRoutes: FastifyPluginAsync = async (app) => {

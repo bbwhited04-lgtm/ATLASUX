@@ -24,7 +24,7 @@ import { prisma } from "../db/prisma.js";
 import { setOAuthState, getOAuthState, deleteOAuthState, pruneExpiredOAuthState } from "../lib/oauthState.js";
 
 export const oauthRoutes: FastifyPluginAsync = async (app) => {
-  const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+  const FRONTEND_URL = process.env.FRONTEND_URL || "https://atlasux.cloud";
   const env = loadEnv(process.env);
 
   function genNonce() { return randomBytes(16).toString("hex"); }

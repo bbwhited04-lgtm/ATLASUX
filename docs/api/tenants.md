@@ -32,7 +32,7 @@ Returns up to 100 tenants, ordered by creation date (newest first).
 **Example:**
 
 ```bash
-curl -s https://atlas-ux.onrender.com/v1/tenants \
+curl -s https://atlasux.cloud/v1/tenants \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -90,7 +90,7 @@ Creates a new tenant organization. Automatically generates a slug from the name,
 **Example:**
 
 ```bash
-curl -s -X POST https://atlas-ux.onrender.com/v1/tenants \
+curl -s -X POST https://atlasux.cloud/v1/tenants \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name": "Acme Corp"}'

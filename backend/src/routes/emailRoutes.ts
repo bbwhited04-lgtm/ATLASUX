@@ -249,14 +249,12 @@ export const emailRoutes: FastifyPluginAsync = async (app) => {
     if (!org_id) return reply.code(400).send({ ok: false, error: "org_id required" });
     if (!body.password) return reply.code(400).send({ ok: false, error: "password required" });
 
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const { loadEnv } = await import("../env.js");
+    const { writeTokenVault } = await import("../lib/tokenStore.js");
+    const env = loadEnv(process.env);
 
-    const { error } = await supabase.from("token_vault").upsert(
-      {
+    try {
+      await writeTokenVault(env, {
         org_id,
         user_id: org_id,
         provider: "smtp",
@@ -269,12 +267,11 @@ export const emailRoutes: FastifyPluginAsync = async (app) => {
           fromEmail: String(body.fromEmail ?? ""),
           tls: body.tls !== false,
         },
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "org_id,user_id,provider" }
-    );
+      });
+    } catch {
+      return reply.code(500).send({ ok: false, error: "STORE_FAILED" });
+    }
 
-    if (error) return reply.code(500).send({ ok: false, error: "STORE_FAILED" });
     return reply.send({ ok: true });
   });
 

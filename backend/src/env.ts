@@ -5,18 +5,21 @@ const EnvSchema = z.object({
   PORT: z.string().optional(),
   NODE_ENV: z.string().optional(),
 
-  // Database
+  // Database (AWS Lightsail PostgreSQL — direct connection)
   DATABASE_URL: z.string().optional(),
-  DIRECT_URL: z.string().optional(),
 
   // Public app url(s)
   APP_URL: z.string().optional(),          // e.g. https://atlasux.cloud
+  BACKEND_URL: z.string().optional(),      // e.g. https://api.atlasux.cloud
   APP_PROTOCOL: z.string().optional(),     // e.g. atlasux://oauth/callback
   ALLOWED_ORIGINS: z.string().optional(),  // comma-separated
 
-  // Supabase (token vault + jobs)
-  SUPABASE_URL: z.string().min(1),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  // Self-managed auth
+  JWT_SECRET: z.string().optional(),
+
+  // AWS S3 (file storage)
+  S3_BUCKET: z.string().optional(),
+  S3_REGION: z.string().optional(),
 
   // AI providers (platform-owned keys)
   OPENAI_API_KEY: z.string().optional(),
@@ -186,6 +189,8 @@ const EnvSchema = z.object({
   SLACK_BOT_TOKEN: z.string().optional(),    // xoxb-* bot token for inter-agent chat
   SLACK_USER_TOKEN: z.string().optional(),   // xoxp-* user token (fallback)
   SLACK_APP_TOKEN: z.string().optional(),    // xoxe-* app-level token
+  SLACK_LEADS_CHANNEL_ID: z.string().optional(), // channel ID for inbound lead alerts
+  GOOGLE_PLACES_API_KEY: z.string().optional(),  // Google Places API for prospecting
 
   // PayPal OAuth2
   PAYPAL_CLIENT_ID: z.string().optional(),

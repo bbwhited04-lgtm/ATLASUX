@@ -66,7 +66,7 @@ Returns paginated audit log entries, newest first.
 **Example:**
 
 ```bash
-curl -s "https://atlas-ux.onrender.com/v1/audit/list?limit=20&level=warn" \
+curl -s "https://atlasux.cloud/v1/audit/list?limit=20&level=warn" \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID"
 ```
@@ -113,7 +113,7 @@ Inserts a manual audit event. Useful for testing and wiring.
 **Example:**
 
 ```bash
-curl -s -X POST https://atlas-ux.onrender.com/v1/audit \
+curl -s -X POST https://atlasux.cloud/v1/audit \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"tenantId":"uuid","action":"test","level":"info","message":"Test"}'

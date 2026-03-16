@@ -40,6 +40,9 @@ export const workflowCatalog = [
   { id: "WF-010", name: "Daily Executive Brief (Binky)",  description: "Daily intel digest with traceability.",                                          ownerAgent: "binky"  },
   { id: "WF-020", name: "Engine Run Smoke Test (Atlas)",  description: "Minimal end-to-end cloud surface verification.",                                  ownerAgent: "atlas"  },
   { id: "WF-021", name: "Bootstrap Atlas (Atlas)",          description: "Boot → discover agents → load KB → seed tasks → queue boot email → await command.", ownerAgent: "atlas"    },
+  { id: "WF-040", name: "Multi-Platform Social Content Creator (Penny)", description: "Daily content run — generate platform-tailored posts from intel + brand playbook → dispatch to cross-platform publisher.", ownerAgent: "penny" },
+  { id: "WF-051", name: "Reddit Subreddit Monitor (Donna)",  description: "Scan target subreddits for relevant posts → AI draft replies → queue DecisionMemos for approval.", ownerAgent: "donna" },
+  { id: "WF-052", name: "Reddit Engagement Scanner (Donna)", description: "Scan for engagement opportunities — comments, questions, threads where Donna can add value.", ownerAgent: "donna" },
   { id: "WF-093", name: "X (Twitter) Platform Intel (Kelly)",         description: "Daily X/Twitter trend sweep — trending hashtags, viral content, tech startup chatter.",               ownerAgent: "kelly"    },
   { id: "WF-094", name: "Facebook Platform Intel (Fran)",             description: "Daily Facebook trend sweep — trending topics, small business Pages & Groups activity.",          ownerAgent: "fran"     },
   { id: "WF-095", name: "Threads Platform Intel (Dwight)",            description: "Daily Threads trend sweep — trending topics, creator conversations, Meta ecosystem.",            ownerAgent: "dwight"   },
@@ -1246,6 +1249,129 @@ handlers["WF-103"] = createPlatformIntelHandler("Facebook Ads", "Facebook Ads tr
 handlers["WF-104"] = createPlatformIntelHandler("Instagram", "Instagram trending Reels hashtags visual content creators");
 handlers["WF-105"] = createPlatformIntelHandler("YouTube", "YouTube trending videos AI automation creators topics 2026");
 
+// ── WF-051 Donna Reddit Subreddit Monitor ─────────────────────────────────────
+// Scans target subreddits for relevant posts, drafts AI replies, and queues
+// DecisionMemos for human approval. The separate redditWorker PM2 process
+// handles the actual posting of approved replies.
+handlers["WF-051"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-051.start", "Donna Reddit subreddit monitor starting");
+
+  const ENGAGE_SUBS = [
+    "AiForSmallBusiness", "AskProgramming", "ChatGPTCoding",
+    "SaaS", "startups", "smallbusiness", "Entrepreneur",
+  ];
+  const RELEVANCE_KEYWORDS = [
+    "ai agent", "social media automation", "content scheduling",
+    "small business ai", "ai workflow", "ai tool", "chatgpt automation",
+    "ai assistant", "marketing automation", "ai startup",
+  ];
+
+  let scanned = 0;
+  let memosCreated = 0;
+
+  // Try to get Reddit credentials
+  let accessToken: string | null = null;
+  try {
+    const { refreshTokenIfNeeded } = await import("../lib/tokenLifecycle.js");
+    const { loadEnv } = await import("../env.js");
+    accessToken = await refreshTokenIfNeeded(loadEnv(process.env), ctx.tenantId, "reddit");
+  } catch {
+    await writeStepAudit(ctx, "WF-051.skip", "No Reddit credentials available");
+    return { ok: true, message: "Reddit monitor skipped — no credentials" };
+  }
+
+  if (!accessToken) {
+    await writeStepAudit(ctx, "WF-051.skip", "No Reddit access token");
+    return { ok: true, message: "Reddit monitor skipped — no access token" };
+  }
+
+  try {
+    const { fetchNewPosts, hasAlreadyCommented } = await import("../services/reddit.js");
+
+    for (const sub of ENGAGE_SUBS) {
+      let posts: any[] = [];
+      try {
+        posts = await fetchNewPosts(accessToken, sub, 15);
+      } catch {
+        continue;
+      }
+
+      const cutoff = Date.now() / 1000 - 6 * 60 * 60;
+      const fresh = posts.filter((p: any) => {
+        const text = `${p.title} ${p.selftext || ""}`.toLowerCase();
+        return p.created_utc > cutoff && RELEVANCE_KEYWORDS.some(kw => text.includes(kw));
+      });
+
+      scanned += posts.length;
+
+      for (const post of fresh.slice(0, 3)) {
+        // Skip if memo already exists for this post
+        const existing = await prisma.decisionMemo.findFirst({
+          where: {
+            tenantId: ctx.tenantId,
+            agent: "donna",
+            status: { in: ["PROPOSED", "APPROVED"] },
+            payload: { path: ["post_id"], equals: post.id },
+          },
+        });
+        if (existing) continue;
+
+        const alreadyReplied = await hasAlreadyCommented(accessToken!, post.name);
+        if (alreadyReplied) continue;
+
+        // Draft AI reply
+        const openaiKey = process.env.OPENAI_API_KEY || "";
+        if (!openaiKey) continue;
+
+        const prompt = `You are Donna, a helpful community member on Reddit representing AtlasUX, an AI business automation platform.\n\nPost in r/${sub}:\nTitle: ${post.title}\nBody: ${(post.selftext || "").slice(0, 800)}\n\nWrite a helpful, genuine 2-4 sentence reply. Only mention AtlasUX if directly relevant. Sound human, not salesy. If you can't help, reply: SKIP`;
+
+        let draft: string | null = null;
+        try {
+          const r = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${openaiKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "user", content: prompt }], max_tokens: 300, temperature: 0.7 }),
+          });
+          const data = await r.json() as any;
+          draft = data?.choices?.[0]?.message?.content?.trim() ?? null;
+          if (draft === "SKIP") draft = null;
+        } catch { /* non-fatal */ }
+
+        if (!draft) continue;
+
+        await prisma.decisionMemo.create({
+          data: {
+            tenantId: ctx.tenantId,
+            agent: "donna",
+            title: `Reply to r/${sub}: ${post.title.slice(0, 80)}`,
+            rationale: draft,
+            status: "PROPOSED",
+            riskTier: 1,
+            requiresApproval: true,
+            payload: { action: "reddit_reply", post_id: post.id, post_name: post.name, subreddit: sub, post_title: post.title, draft_reply: draft },
+          },
+        });
+        memosCreated++;
+      }
+    }
+  } catch (err: any) {
+    await writeStepAudit(ctx, "WF-051.error", `Scan error: ${err.message}`);
+  }
+
+  await writeStepAudit(ctx, "WF-051.done", `Scanned ${scanned} posts, created ${memosCreated} decision memos`);
+  return { ok: true, message: `Reddit monitor: ${scanned} posts scanned, ${memosCreated} memos queued` };
+};
+
+// ── WF-052 Donna Reddit Engagement Scanner ────────────────────────────────────
+// Lighter-weight scan focused on finding engagement opportunities in threads.
+handlers["WF-052"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-052.start", "Donna Reddit engagement scanner starting");
+  // Delegates to the same logic as WF-051 but with a focus on hot posts
+  // For now, reuse WF-051 handler (the redditWorker PM2 process handles execution)
+  const result = await handlers["WF-051"]!(ctx);
+  await writeStepAudit(ctx, "WF-052.done", "Engagement scan complete");
+  return result;
+};
 
 // ── WF-107 Atlas Tool Discovery & Proposal ────────────────────────────────────
 // Atlas reviews every agent's SKILL.md, identifies tool gaps, generates a
@@ -1257,7 +1383,7 @@ handlers["WF-107"] = async (ctx) => {
 
   const billyEmail  = process.env.OWNER_EMAIL?.trim()  ?? "billy@deadapp.info";
   const atlasEmail  = await tenantAgentEmail(ctx.tenantId, "atlas") ?? "atlas.ceo@deadapp.info";
-  const backendUrl  = (process.env.BACKEND_URL ?? process.env.RENDER_EXTERNAL_URL ?? "https://atlasux-backend.onrender.com").replace(/\/$/, "");
+  const backendUrl  = (process.env.BACKEND_URL ?? process.env.RENDER_EXTERNAL_URL ?? "https://api.atlasux.cloud").replace(/\/$/, "");
   const today       = new Date().toISOString().slice(0, 10);
 
   // ── Load already-decided proposals (skip duplicates) ─────────────────────────
@@ -2998,11 +3124,19 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
       // 1. Get platform intel from recent audit logs
       const intel = await getPublishIntel(ctx, platform);
 
-      // 2. Get agent KB context
+      // 2. Get brand playbook (mandatory) + agent KB context
+      const brandPlaybook = await getKbContext({
+        tenantId: ctx.tenantId,
+        agentId: ctx.agentId,
+        query: `brand playbook mandatory guide voice tone audience pain points banned phrases`,
+        intentId: ctx.intentId,
+        requestedBy: ctx.requestedBy,
+      });
+
       const kb = await getKbContext({
         tenantId: ctx.tenantId,
         agentId: ctx.agentId,
-        query: `${platform} content strategy trending topics Atlas UX`,
+        query: `${platform} content strategy trending topics Atlas UX AI receptionist trade business`,
         intentId: ctx.intentId,
         requestedBy: ctx.requestedBy,
       });
@@ -3025,25 +3159,41 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
         purpose: `${platform}_content_generation`,
         route: "DRAFT_GENERATION_FAST",
         system: [
-          `You are ${agentName}, the ${platform} content agent for Atlas UX — an AI employee platform with 31 autonomous agents that actually run a business.`,
-          `Your job: write ONE scroll-stopping ${platform} post that gets engagement (replies, shares, comments) — not just views.`,
+          `You are ${agentName}, the ${platform} content agent for Atlas UX.`,
+          ``,
+          `WHAT ATLAS UX IS: An AI receptionist for trade businesses — plumbers, salons, HVAC techs, electricians, dentists.`,
+          `Lucy answers their phone 24/7, books appointments, sends SMS confirmations, and notifies via Slack — for $99/mo.`,
+          `We compete with the missed call, not with Salesforce.`,
+          ``,
+          `WHO YOU'RE TALKING TO: Trade business owners who can't answer the phone while working. They have a van and a wrench, not an IT department.`,
+          `They don't care about AI orchestration, agent counts, or integrations. They care about missed calls costing them $400/day.`,
+          ``,
+          brandPlaybook.text ? `\nBRAND PLAYBOOK (FOLLOW THIS — IT IS MANDATORY):\n${brandPlaybook.text.slice(0, 2000)}` : "",
+          ``,
+          `Your job: write ONE scroll-stopping ${platform} post that makes a trade business owner stop scrolling.`,
           HOOK_STRATEGY,
           `\nPLATFORM-SPECIFIC RULES:\n${contentRules}`,
-          `\nATLAS UX FACTS (use specific numbers, not vague claims):`,
-          `- 31 AI agents running live in production`,
-          `- Full governance layer: audit trail on every action, spending limits, human-in-the-loop for high-risk decisions`,
-          `- Agents have personalities, Slack workspace, email accounts — they're employees, not chatbots`,
-          `- Built by one founder. No VC money (yet). Running live for 10+ days zero incidents.`,
-          `- Website: atlasux.cloud`,
-          intel ? `\nTODAY'S PLATFORM INTEL:\n${intel}` : "",
+          `\nKEY TALKING POINTS (use specific numbers):`,
+          `- Missed calls cost trade businesses $200-$400 each`,
+          `- 85% of callers who hit voicemail call the next business on Google`,
+          `- Lucy: $99/mo vs $2,400/mo human receptionist`,
+          `- 24/7, 8 languages, books appointments, SMS confirmations`,
+          `- Smith.ai charges $95 but uses humans with limited hours`,
+          `- Call Lucy now: (573) 742-2028`,
+          `- Website: atlasux.cloud — 14-day free trial, no card required`,
+          intel ? `\nTODAY'S PLATFORM INTEL (reference this for trending topics and content gaps):\n${intel}` : "",
           webTrends ? `\nLIVE TRENDS:\n${webTrends}` : "",
-          kb.text ? `\nKB CONTEXT:\n${kb.text.slice(0, 800)}` : "",
+          kb.text ? `\nADDITIONAL KB CONTEXT:\n${kb.text.slice(0, 800)}` : "",
+          `\nBANNED PHRASES — NEVER USE THESE:`,
+          `"AI workforce platform", "orchestrator", "generating intel", "employee platform", "stay tuned", "stay ahead",`,
+          `"Monday prep mode", "game changer", "revolutionary", "leverage", "synergy", "ecosystem", "unlock", "unleash", "supercharge"`,
           `\nOUTPUT RULES:`,
           `- Output ONLY the post content — no preamble, no "Here's a post:", no quotes.`,
-          `- The FIRST LINE must be the hook. If you start with anything boring, you've failed.`,
-          `- Every post must end with something that invites a response.`,
+          `- The FIRST LINE must be the hook — address their PAIN, not our features.`,
+          `- Every post must end with CTA: call Lucy's number or visit atlasux.cloud.`,
+          `- Ask yourself: "Would a plumber who missed 3 calls today stop scrolling for this?" If no, rewrite.`,
         ].filter(Boolean).join("\n"),
-        user: `Write a ${platform} post for today (${new Date().toISOString().slice(0, 10)}). Pick ONE hook type from the strategy above. Make it specific to Atlas UX — use real numbers, real stories, real opinions. No generic AI hype.`,
+        user: `Write a ${platform} post for today (${new Date().toISOString().slice(0, 10)}). Reference today's platform intel for trending topics. Make it about the CUSTOMER'S problem (missed calls, lost revenue), not about our platform. Target trade business owners.`,
       });
 
       // Clean LLM output — strip any quotes or preamble
@@ -3080,6 +3230,7 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
       : await resolveMediaUrls(ctx.tenantId, caption, {
           imageUrl: ctx.input?.imageUrl ?? ctx.input?.image_url ?? ctx.input?.image,
           videoUrl: ctx.input?.videoUrl ?? ctx.input?.video_url ?? ctx.input?.video,
+          platform,
         });
 
     const imageUrls = media.imageUrls;
@@ -3132,6 +3283,100 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
     };
   };
 }
+
+// WF-040 — Penny Multi-Platform Social Content Creator
+// Generates content from intel + brand playbook, then dispatches to WF-212 (cross-platform publish)
+handlers["WF-040"] = async (ctx) => {
+  await writeStepAudit(ctx, "WF-040.start", "Penny daily content run starting");
+
+  // 1. Gather intel from all platform reports
+  const intel = await getPublishIntel(ctx, "all");
+
+  // 2. Get brand playbook
+  const brandPlaybook = await getKbContext({
+    tenantId: ctx.tenantId,
+    agentId: ctx.agentId,
+    query: "brand playbook mandatory guide voice tone audience pain points banned phrases",
+    intentId: ctx.intentId,
+    requestedBy: ctx.requestedBy,
+  });
+
+  // 3. Get general KB context
+  const kb = await getKbContext({
+    tenantId: ctx.tenantId,
+    agentId: ctx.agentId,
+    query: "Atlas UX AI receptionist trade business Lucy plumber salon HVAC content strategy",
+    intentId: ctx.intentId,
+    requestedBy: ctx.requestedBy,
+  });
+
+  // 4. Generate content via LLM
+  const system = [
+    "You are Penny, the social media content creator for Atlas UX.",
+    "WHAT ATLAS UX IS: An AI receptionist for trade businesses — plumbers, salons, HVAC techs, electricians, dentists.",
+    "Lucy answers their phone 24/7, books appointments, sends SMS confirmations, and notifies via Slack — for $99/mo.",
+    "We compete with the missed call, not with Salesforce.",
+    "",
+    "BRAND PLAYBOOK:",
+    brandPlaybook?.text ?? "(no playbook found)",
+    "",
+    "RECENT PLATFORM INTEL:",
+    intel.length > 0 ? intel : "(no recent intel)",
+    "",
+    "KB CONTEXT:",
+    kb?.text ?? "",
+    "",
+    "TASK: Create ONE high-quality social media post for cross-platform publishing.",
+    "The post should be tailored for maximum engagement across Facebook, X, LinkedIn, and Instagram.",
+    "Include relevant hashtags. Focus on a specific pain point or use case — not generic hype.",
+    "",
+    "BANNED: 'game-changer', 'revolutionary', 'unlock', 'supercharge', 'dive in', 'harness the power',",
+    "'Monday prep mode', 'crushing it', generic motivational content, pink balloons, clip art aesthetics.",
+    "",
+    "Return ONLY the post caption text. No explanations, no labels, no markdown formatting.",
+  ].join("\n");
+
+  const caption = await safeLLM(ctx, {
+    agent: "penny",
+    purpose: "social-content-generation",
+    route: "DRAFT_GENERATION_FAST",
+    system,
+    user: `Today's topic suggestion from scheduler: ${ctx.input?.topic ?? "Lucy solving missed calls for trade businesses"}. Write the post now.`,
+  });
+  if (!caption) {
+    await writeStepAudit(ctx, "WF-040.empty", "LLM returned empty content — aborting");
+    return { ok: false, message: "No content generated" };
+  }
+
+  await writeStepAudit(ctx, "WF-040.content", `Generated post (${caption.length} chars)`, { caption: caption.slice(0, 200) });
+
+  // 5. Resolve media
+  const media = await resolveMediaUrls(ctx.tenantId, caption, { platform: "all" });
+  await writeStepAudit(ctx, "WF-040.media", `Resolved media: ${media.imageUrls.length} images, ${media.videoUrls.length} videos`);
+
+  // 6. Dispatch to WF-212 (cross-platform publish)
+  const job = await prisma.job.create({
+    data: {
+      tenantId: ctx.tenantId,
+      status: "queued",
+      jobType: "WORKFLOW",
+      priority: 5,
+      input: {
+        workflowKey: "WF-212",
+        agentId: "sunday",
+        caption,
+        imageUrl: media.imageUrls[0] ?? null,
+        videoUrl: media.videoUrls[0] ?? null,
+        triggeredBy: "WF-040",
+        traceId: ctx.traceId,
+      },
+    },
+  });
+
+  await writeStepAudit(ctx, "WF-040.dispatched", `Dispatched to WF-212 cross-platform publish (job ${job.id})`, { jobId: job.id });
+
+  return { ok: true, message: `Content created and dispatched to WF-212 (job ${job.id})`, output: caption };
+};
 
 // Register per-platform publish handlers
 handlers["WF-200"] = createPostizPublishHandler("tiktok");

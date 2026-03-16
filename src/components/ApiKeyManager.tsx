@@ -24,7 +24,7 @@ import {
   Code,
   Users,
 } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { API_BASE } from '../lib/api';
 
 interface ServiceConfig {
   [key: string]: string;
@@ -137,11 +137,12 @@ export function ApiKeyManager() {
 
   const loadConfiguredServices = async () => {
     try {
+      const token = localStorage.getItem("atlas_token") ?? "";
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-cb847823/api-keys/list`,
+        `${API_BASE}/v1/api-keys/list`,
         {
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -159,13 +160,14 @@ export function ApiKeyManager() {
   const handleSaveService = async (serviceId: string) => {
     setLoading(true);
     try {
+      const token = localStorage.getItem("atlas_token") ?? "";
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-cb847823/api-keys/store`,
+        `${API_BASE}/v1/api-keys/store`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             service: serviceId,
@@ -192,12 +194,13 @@ export function ApiKeyManager() {
 
   const handleDeleteService = async (serviceId: string) => {
     try {
+      const token = localStorage.getItem("atlas_token") ?? "";
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-cb847823/api-keys/${serviceId}`,
+        `${API_BASE}/v1/api-keys/${serviceId}`,
         {
           method: 'DELETE',
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );

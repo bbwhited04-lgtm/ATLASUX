@@ -9,7 +9,7 @@ type PairSession = {
 const TEN_MIN = 10 * 60 * 1000;
 
 // Dev-only in-memory session store.
-// In production: move to Supabase table (pair_sessions) and bind to org/user.
+// In production: move to DB table (pair_sessions) and bind to org/user.
 const sessions = new Map<string, PairSession>();
 
 function makeCode() {

@@ -60,7 +60,7 @@ After installing the extension in any browser:
 
 1. Click the Atlas UX icon in the toolbar to open the popup.
 2. You will see the **Connect to Atlas** login form with three fields:
-   - **API URL** -- The backend endpoint. Defaults to `https://atlas-ux.onrender.com`. Change this only if you are running a local backend (`http://localhost:8787`).
+   - **API URL** -- The backend endpoint. Defaults to `https://atlasux.cloud`. Change this only if you are running a local backend (`http://localhost:8787`).
    - **Auth Token** -- Your JWT bearer token. Obtain this from the Atlas UX web app after logging in.
    - **Tenant ID** -- Your organization's tenant UUID. Find this in the web app under Settings or in the URL.
 3. Click **Connect**. The extension tests the connection against `/v1/runtime/status`. A green dot in the header confirms a successful connection.
@@ -154,4 +154,4 @@ This is expected behavior. Browser extension popups are destroyed when closed an
 
 ### CORS errors in the console
 
-The extension's `host_permissions` in `manifest.json` must include the API domain. The default configuration covers `https://atlas-ux.onrender.com/*` and `http://localhost:8787/*`. If you are using a custom API domain, add it to the manifest's `host_permissions` array.
+The extension's `host_permissions` in `manifest.json` must include the API domain. The default configuration covers `https://atlasux.cloud/*` and `http://localhost:8787/*`. If you are using a custom API domain, add it to the manifest's `host_permissions` array.

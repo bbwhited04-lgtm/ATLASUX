@@ -115,25 +115,24 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
     if (!tid) return { ok: false, error: "TENANT_REQUIRED" };
 
     // Check token_vault for a microsoft provider token
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-    const { data } = await supabase
-      .from("token_vault")
-      .select("provider, expires_at, updated_at")
-      .eq("org_id", tid)
-      .in("provider", ["microsoft", "m365"])
-      .limit(1)
-      .single();
+    const { loadEnv } = await import("../env.js");
+    const { readTokenVault } = await import("../lib/tokenStore.js");
+    const env = loadEnv(process.env);
+
+    // Try "microsoft" first, then "m365"
+    let vaultRow = await readTokenVault(env, tid, "microsoft");
+    let provider: string | null = vaultRow ? "microsoft" : null;
+    if (!vaultRow) {
+      vaultRow = await readTokenVault(env, tid, "m365");
+      provider = vaultRow ? "m365" : null;
+    }
 
     return {
       ok: true,
       tenantId: tid,
-      connected: !!data,
-      provider: data?.provider ?? null,
-      tokenExpiresAt: data?.expires_at ?? null,
+      connected: !!vaultRow,
+      provider,
+      tokenExpiresAt: vaultRow?.expires_at ?? null,
       graphBase: "https://graph.microsoft.com/v1.0",
       portalUrl: "https://m365.cloud.microsoft",
       adminUrl: "https://admin.microsoft.com",
@@ -162,23 +161,17 @@ export const toolsRoutes: FastifyPluginAsync = async (app) => {
     }
 
     // Fetch Microsoft access token server-side from token_vault
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-    const { data: vaultRow } = await supabase
-      .from("token_vault")
-      .select("access_token")
-      .eq("org_id", tid)
-      .in("provider", ["microsoft", "m365"])
-      .limit(1)
-      .single();
+    const { loadEnv: loadEnvInvoke } = await import("../env.js");
+    const { getProviderToken } = await import("../lib/tokenStore.js");
+    const envInvoke = loadEnvInvoke(process.env);
 
-    if (!vaultRow?.access_token) {
+    // Try "microsoft" first, then "m365"
+    let accessToken = await getProviderToken(envInvoke, tid, "microsoft");
+    if (!accessToken) accessToken = await getProviderToken(envInvoke, tid, "m365");
+
+    if (!accessToken) {
       return reply.code(401).send({ ok: false, error: "M365_NOT_CONNECTED", message: "Microsoft not connected for this tenant" });
     }
-    const accessToken = vaultRow.access_token;
 
     const normalizedAgent = String(agentId).toLowerCase();
     const tool = getTool(String(toolId));

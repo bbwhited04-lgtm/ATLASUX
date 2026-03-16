@@ -331,7 +331,7 @@ export function BlogManager() {
                   const fd = new FormData();
                   fd.append("file", file);
                   try {
-                    // Upload to Supabase via /v1/files/upload
+                    // Upload via /v1/files/upload
                     const res = await fetch(`${API_BASE}/v1/files/upload`, {
                       method: "POST",
                       headers: { "x-tenant-id": activeTenantId },

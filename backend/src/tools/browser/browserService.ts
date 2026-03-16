@@ -2,7 +2,7 @@
  * Browser Service — Playwright headless Chromium wrapper.
  *
  * Provides governed browser automation with:
- *   - Screenshot at every action (stored to Supabase storage)
+ *   - Screenshot at every action (stored to S3)
  *   - Simplified DOM snapshots for audit
  *   - Hard session timeout (5 minutes)
  *   - Action limits (30 per session)
@@ -13,7 +13,7 @@
  */
 
 import { chromium, type Browser, type Page, type BrowserContext } from "playwright";
-import { createClient } from "@supabase/supabase-js";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { prisma } from "../../db/prisma.js";
 import { loadEnv } from "../../env.js";
 import {
@@ -34,13 +34,9 @@ import {
 
 const env = loadEnv(process.env);
 
-function getStorage() {
-  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  }).storage;
-}
-
-const BUCKET = "browser-screenshots";
+const s3 = new S3Client({ region: "us-east-1" });
+const S3_BUCKET = process.env.S3_BUCKET ?? "atlasux-files";
+const SCREENSHOT_PREFIX = "browser-screenshots";
 
 // ── Concurrent session tracking ──────────────────────────────────────────────
 
@@ -72,19 +68,20 @@ async function captureScreenshot(
   label: string,
 ): Promise<string> {
   const buf = await page.screenshot({ fullPage: false, type: "png" });
-  const path = `${tenantId}/${sessionId}/${actionIndex}_${label}.png`;
+  const key = `${SCREENSHOT_PREFIX}/${tenantId}/${sessionId}/${actionIndex}_${label}.png`;
 
   try {
-    const storage = getStorage();
-    await storage.from(BUCKET).upload(path, buf, {
-      contentType: "image/png",
-      upsert: true,
-    });
+    await s3.send(new PutObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: key,
+      Body: buf,
+      ContentType: "image/png",
+    }));
   } catch {
     // Non-fatal — screenshot upload failure shouldn't kill the session
   }
 
-  return `${BUCKET}/${path}`;
+  return key;
 }
 
 // ── DOM Snapshot ─────────────────────────────────────────────────────────────

@@ -3,8 +3,12 @@ import { prisma, withTenant } from "../db/prisma.js";
 import { randomBytes } from "node:crypto";
 import { hasPremiumAccess, type SeatTier } from "../lib/seatLimits.js";
 import { getSystemState, setSystemState } from "../services/systemState.js";
-import { createClient } from "@supabase/supabase-js";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { sanitizeError } from "../lib/sanitizeError.js";
+
+const s3 = new S3Client({ region: "us-east-1" });
+const S3_BUCKET = process.env.S3_BUCKET ?? "atlasux-files";
 
 /**
  * Local Vision Agent API — endpoints for a locally-running vision agent
@@ -249,7 +253,7 @@ export const localAgentRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ ok: true, status });
   });
 
-  // ── POST /screenshot — Upload screenshot to Supabase ───────────────────
+  // ── POST /screenshot — Upload screenshot to S3 ─────────────────────────
   app.post("/screenshot", async (request, reply) => {
     const auth = await validateLocalAgentAuth(request.headers.authorization);
     if (!auth.valid) return reply.code(401).send({ ok: false, error: auth.reason });
@@ -262,34 +266,32 @@ export const localAgentRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ ok: false, error: "jobId and screenshot (base64) required" });
     }
 
-    const supabaseUrl = process.env.SUPABASE_URL ?? "";
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-    if (!supabaseUrl || !supabaseKey) {
-      return reply.code(503).send({ ok: false, error: "Supabase not configured" });
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
     const buf = Buffer.from(screenshot, "base64");
     const fname = filename ?? `${jobId}_${Date.now()}.png`;
-    const path = `tenants/${tenantId}/${fname}`;
+    const path = `${SCREENSHOT_BUCKET}/tenants/${tenantId}/${fname}`;
 
-    const { error } = await supabase.storage
-      .from(SCREENSHOT_BUCKET)
-      .upload(path, buf, { contentType: "image/png", upsert: true });
-
-    if (error) {
-      app.log.error({ err: error }, "Local agent screenshot upload failed");
-      return reply.code(500).send({ ok: false, error: `Upload failed: ${sanitizeError(error)}` });
+    try {
+      await s3.send(new PutObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: path,
+        Body: buf,
+        ContentType: "image/png",
+      }));
+    } catch (err: any) {
+      app.log.error({ err }, "Local agent screenshot upload failed");
+      return reply.code(500).send({ ok: false, error: `Upload failed: ${sanitizeError(err)}` });
     }
 
-    const { data: urlData } = await supabase.storage
-      .from(SCREENSHOT_BUCKET)
-      .createSignedUrl(path, 3600);
+    let signedUrl: string | null = null;
+    try {
+      const command = new GetObjectCommand({ Bucket: S3_BUCKET, Key: path });
+      signedUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    } catch { /* non-fatal */ }
 
     return reply.send({
       ok: true,
       path,
-      signedUrl: urlData?.signedUrl ?? null,
+      signedUrl,
     });
   });
 

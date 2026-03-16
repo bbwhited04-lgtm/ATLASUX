@@ -7,6 +7,7 @@
  *   3. Log to ContactActivity
  *   4. Audit trail
  *   5. Slack notification
+ *   6. SMS follow-up if no answer / voicemail / wrong number
  */
 
 import { prisma } from "../db/prisma.js";
@@ -15,6 +16,8 @@ import { postAsAgent, getChannelByName } from "../services/slack.js";
 import { runLLM, type LlmMessage } from "../core/engine/brainllm.js";
 
 const TENANT_ID = process.env.TENANT_ID?.trim() || "9a8a332c-c47d-4792-a0d4-56ad4e4a3391";
+
+const SMS_FOLLOWUP_MESSAGE = `Missing calls? We have the solution! Lucy at Atlas UX answers every call, books appointments & never puts anyone on hold. Free trial at https://Atlasux.cloud`;
 
 export async function processEndedOutboundCall(sessionId: string): Promise<void> {
   const session = getSession(sessionId);
@@ -167,5 +170,65 @@ ACTIONS: ["item1", "item2"]`,
     }
   } catch { /* best-effort */ }
 
+  // 6. SMS follow-up if no answer or wrong number
+  const noAnswerQualifications = ["wrong_number", "unknown"];
+  const shortCall = duration < 15; // less than 15 seconds = probably didn't connect
+  if (noAnswerQualifications.includes(qualification) || shortCall) {
+    await queueFollowUpSms(profile.phone ?? "", profile.name);
+  }
+
   endSession(sessionId);
+}
+
+/**
+ * Queue an SMS follow-up for calls that didn't connect.
+ * Called from post-call processor and from Twilio status callback.
+ */
+export async function queueFollowUpSms(phone: string, contactName?: string | null): Promise<void> {
+  if (!phone) return;
+
+  // Normalize phone
+  const normalized = phone.replace(/\D/g, "");
+  const to = normalized.startsWith("1") ? `+${normalized}` : `+1${normalized}`;
+
+  // Check if we already sent this SMS recently (within 7 days)
+  const recentSms = await prisma.auditLog.findFirst({
+    where: {
+      tenantId: TENANT_ID,
+      action: "mercer.sms.followup",
+      meta: { path: ["to"], equals: to },
+      createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+    },
+  });
+  if (recentSms) return; // Already sent recently
+
+  // Queue SMS job
+  try {
+    await prisma.job.create({
+      data: {
+        tenantId: TENANT_ID,
+        jobType: "SMS_SEND",
+        status: "queued",
+        priority: 30,
+        input: { to, message: SMS_FOLLOWUP_MESSAGE },
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId: TENANT_ID,
+        actorType: "agent",
+        actorExternalId: "mercer",
+        action: "mercer.sms.followup",
+        entityType: "sms",
+        message: `SMS follow-up queued for ${contactName ?? to} (no answer)`,
+        meta: { to, contactName },
+        timestamp: new Date(),
+      },
+    });
+
+    console.log(`[mercer-postcall] SMS follow-up queued for ${to}`);
+  } catch (err: any) {
+    console.error("[mercer-postcall] Failed to queue SMS follow-up:", err?.message);
+  }
 }

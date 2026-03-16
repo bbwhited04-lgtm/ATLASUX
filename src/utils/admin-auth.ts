@@ -1,6 +1,4 @@
-import { projectId, publicAnonKey } from './supabase/info';
-
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-cb847823`;
+import { API_BASE } from '../lib/api';
 
 // Admin email address
 export const ADMIN_EMAIL = 'bbwhited@icloud.com';
@@ -14,7 +12,7 @@ export async function requestAdminCode(email: string): Promise<{ success: boolea
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`,
+        'Authorization': `Bearer ${localStorage.getItem('atlas_token') ?? ''}`,
       },
       body: JSON.stringify({ email }),
     });
@@ -47,7 +45,7 @@ export async function verifyAdminCode(email: string, code: string): Promise<{ su
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`,
+        'Authorization': `Bearer ${localStorage.getItem('atlas_token') ?? ''}`,
       },
       body: JSON.stringify({ email, code }),
     });

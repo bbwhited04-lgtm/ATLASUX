@@ -305,7 +305,7 @@ Each audit record captures:
   - `csrf_token` cookie set on non-mutating requests
   - `x-csrf-token` header required on `POST`, `PUT`, `PATCH`, `DELETE` requests
   - Skip list for webhook endpoints (Discord, Meta, Google, X, TikTok, Telegram, LinkedIn, etc.)
-- However, **the plugin is currently disabled** in `server.ts` (line 199: `// await app.register(csrfPlugin);`) because double-submit cookies do not work cross-origin (Vercel frontend on `atlasux.cloud` to Render backend on `atlas-ux.onrender.com`)
+- However, **the plugin is currently disabled** in `server.ts` (line 199: `// await app.register(csrfPlugin);`) because double-submit cookies do not work cross-origin (previously Vercel frontend to Render backend; now consolidated on AWS Lightsail at `atlasux.cloud`)
 - CORS origin whitelist provides partial CSRF mitigation by rejecting requests from unlisted origins
 
 **Designed remediation (from compliance hardening design, Section 2):**
@@ -387,7 +387,7 @@ Each audit record captures:
   - `styleSrc: ["'self'", "'unsafe-inline'"]`
   - `imgSrc: ["'self'", "data:", "blob:", "https://*.supabase.co", "https://atlasux.cloud"]`
   - `fontSrc: ["'self'"]`
-  - `connectSrc: ["'self'", "https://atlas-ux.onrender.com", "https://*.supabase.co", "wss://*.supabase.co"]`
+  - `connectSrc: ["'self'", "https://atlasux.cloud", "https://*.supabase.co", "wss://*.supabase.co"]`
   - `frameSrc: ["'none'"]` — prevents clickjacking via iframe embedding
   - `objectSrc: ["'none'"]` — blocks Flash/Java plugin embedding
   - `baseUri: ["'self'"]` — prevents base tag hijacking
@@ -426,18 +426,18 @@ Each audit record captures:
 
 | Endpoint | Method | Control | Description |
 |---|---|---|---|
-| `https://atlas-ux.onrender.com/v1/compliance/dashboard` | GET | AU-2, Multiple | Unified compliance status across all frameworks |
-| `https://atlas-ux.onrender.com/v1/compliance/dsar` | GET/POST | SI-10 | GDPR data subject request management |
-| `https://atlas-ux.onrender.com/v1/compliance/dsar/:id` | PATCH | AU-2 | Update DSAR status (audit-logged) |
-| `https://atlas-ux.onrender.com/v1/compliance/dsar/:email/export` | GET | MP-5 | Data portability export (GDPR Art. 20) |
-| `https://atlas-ux.onrender.com/v1/compliance/dsar/:email/erase` | DELETE | AU-2 | Data erasure (GDPR Art. 17), audit-logged |
-| `https://atlas-ux.onrender.com/v1/compliance/consent` | POST | AU-2 | Consent grant with audit trail |
-| `https://atlas-ux.onrender.com/v1/compliance/consent/:email/:purpose` | DELETE | AU-2 | Consent withdrawal with audit trail |
-| `https://atlas-ux.onrender.com/v1/compliance/breaches` | GET/POST | AU-2, SI-11 | Data breach register |
-| `https://atlas-ux.onrender.com/v1/compliance/incidents` | GET/POST | AU-2 | Incident report management |
-| `https://atlas-ux.onrender.com/v1/compliance/vendors` | GET/POST | CM-6 | Vendor risk assessment registry |
-| `https://atlas-ux.onrender.com/v1/audit` | GET | AU-2, AU-3 | Audit log query interface |
-| `https://atlas-ux.onrender.com/health` | GET | SC-5 | Health check (unauthenticated) |
+| `https://atlasux.cloud/v1/compliance/dashboard` | GET | AU-2, Multiple | Unified compliance status across all frameworks |
+| `https://atlasux.cloud/v1/compliance/dsar` | GET/POST | SI-10 | GDPR data subject request management |
+| `https://atlasux.cloud/v1/compliance/dsar/:id` | PATCH | AU-2 | Update DSAR status (audit-logged) |
+| `https://atlasux.cloud/v1/compliance/dsar/:email/export` | GET | MP-5 | Data portability export (GDPR Art. 20) |
+| `https://atlasux.cloud/v1/compliance/dsar/:email/erase` | DELETE | AU-2 | Data erasure (GDPR Art. 17), audit-logged |
+| `https://atlasux.cloud/v1/compliance/consent` | POST | AU-2 | Consent grant with audit trail |
+| `https://atlasux.cloud/v1/compliance/consent/:email/:purpose` | DELETE | AU-2 | Consent withdrawal with audit trail |
+| `https://atlasux.cloud/v1/compliance/breaches` | GET/POST | AU-2, SI-11 | Data breach register |
+| `https://atlasux.cloud/v1/compliance/incidents` | GET/POST | AU-2 | Incident report management |
+| `https://atlasux.cloud/v1/compliance/vendors` | GET/POST | CM-6 | Vendor risk assessment registry |
+| `https://atlasux.cloud/v1/audit` | GET | AU-2, AU-3 | Audit log query interface |
+| `https://atlasux.cloud/health` | GET | SC-5 | Health check (unauthenticated) |
 
 ### 4.2 File Path References
 

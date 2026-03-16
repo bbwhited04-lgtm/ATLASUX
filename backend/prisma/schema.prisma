@@ -65,6 +65,9 @@ model Tenant {
   credentials                              TenantCredential[]
   agentConfigs                             TenantAgentConfig[]
   workflowConfigs                          TenantWorkflowConfig[]
+  dncPhones                                DncPhone[]
+  callCosts                                CallCost[]
+  calendarBookings                         CalendarBooking[]
 
   @@map("tenants")
 }
@@ -1096,6 +1099,7 @@ model AgentMemory {
 model User {
   id            String         @id @db.Uuid
   email         String         @unique
+  passwordHash  String?        @map("password_hash")
   displayName   String?        @map("display_name")
   avatarUrl     String?        @map("avatar_url")
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -1472,4 +1476,83 @@ model RevokedToken {
 
   @@index([expiresAt])
   @@map("revoked_tokens")
+}
+
+model Lead {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  email        String
+  phone        String
+  businessName String?  @map("business_name")
+  businessType String?  @map("business_type")
+  message      String?
+  source       String   @default("website")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([email])
+  @@index([createdAt(sort: Desc)])
+  @@map("leads")
+}
+
+model DncPhone {
+  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String   @map("tenant_id") @db.Uuid
+  phone    String
+  source   String   // "ftc_list", "caller_request", "manual"
+  addedAt  DateTime @default(now()) @map("added_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, phone])
+  @@index([phone])
+  @@map("dnc_phones")
+}
+
+model CallCost {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  callSid        String   @map("call_sid")
+  direction      String   // "inbound" or "outbound"
+  durationSec    Int      @map("duration_sec")
+  sttCost        Decimal  @map("stt_cost") @db.Decimal(10, 6)
+  llmCost        Decimal  @map("llm_cost") @db.Decimal(10, 6)
+  ttsCost        Decimal  @map("tts_cost") @db.Decimal(10, 6)
+  telephonyCost  Decimal  @map("telephony_cost") @db.Decimal(10, 6)
+  totalCost      Decimal  @map("total_cost") @db.Decimal(10, 6)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@map("call_costs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Calendar Bookings — appointment slots with advisory-lock double-booking guard
+// ─────────────────────────────────────────────────────────────────────────────
+
+model CalendarBooking {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  businessId      String   @map("business_id") @db.Uuid
+  scheduledAt     DateTime @map("scheduled_at") @db.Timestamptz(6)
+  durationMin     Int      @default(30) @map("duration_min")
+  customerName    String?  @map("customer_name")
+  customerPhone   String?  @map("customer_phone")
+  customerEmail   String?  @map("customer_email")
+  service         String?
+  notes           String?
+  status          String   @default("confirmed") // confirmed, cancelled, no_show, completed
+  source          String   @default("lucy_voice") // lucy_voice, web, api, manual
+  calendarSynced  Boolean  @default(false) @map("calendar_synced")
+  externalEventId String?  @map("external_event_id")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, scheduledAt])
+  @@index([tenantId, businessId, scheduledAt])
+  @@index([tenantId, status])
+  @@map("calendar_bookings")
 }

@@ -48,6 +48,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
+    "@remotion/three": "4.0.435",
     "@supabase/supabase-js": "^2.98.0",
     "@tailwindcss/vite": "^4.1.18",
     "class-variance-authority": "^0.7.1",
@@ -73,6 +74,8 @@
     "three": "^0.183.1"
   },
   "devDependencies": {
+    "@remotion/cli": "^4.0.435",
+    "@remotion/player": "^4.0.435",
     "@types/dompurify": "^3.0.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -83,6 +86,7 @@
     "electron": "^40.6.1",
     "postcss": "^8.5.6",
     "postcss-cli": "^11.0.1",
+    "remotion": "^4.0.435",
     "tailwindcss": "^3.4.19",
     "vite": "^6.0.11"
   }

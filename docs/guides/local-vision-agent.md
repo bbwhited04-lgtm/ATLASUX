@@ -33,7 +33,7 @@ Uploads screenshots, reports result back to backend
 
 | Component | Where It Runs | What It Does |
 |-----------|---------------|--------------|
-| API endpoints (`/v1/local-agent/*`) | Render (cloud server) | Receives registrations, serves job queue, stores results |
+| API endpoints (`/v1/local-agent/*`) | AWS Lightsail (cloud server) | Receives registrations, serves job queue, stores results |
 | Vision worker (`localVisionAgent.ts`) | **Your local machine** | Polls for jobs, drives your browser, calls Claude Vision |
 | Edge browser | **Your local machine** | The browser you're already logged into |
 | Claude Vision API | Anthropic cloud | Analyzes screenshots, decides next actions |
@@ -54,7 +54,7 @@ Uploads screenshots, reports result back to backend
 5. **Anthropic API key** — for Claude Vision (Sonnet) screenshot analysis
 6. **Pro or Enterprise subscription** — local vision is a premium feature
 
-### On the Server (Render)
+### On the Server (AWS Lightsail)
 
 Nothing extra. The API endpoints are part of the regular Fastify backend. No Playwright, no browser, no Anthropic key needed server-side. The server just manages the job queue.
 
@@ -80,7 +80,7 @@ Make sure you're logged into the platforms you need (TikTok, Facebook, LinkedIn,
 From the app (or via curl), register to get an API key:
 
 ```bash
-curl -X POST https://atlas-ux.onrender.com/v1/local-agent/register \
+curl -X POST https://atlasux.cloud/v1/local-agent/register \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "x-tenant-id: YOUR_TENANT_ID" \
   -H "Content-Type: application/json"
@@ -103,7 +103,7 @@ Save the `apiKey` — you'll need it in the next step.
 Create or update `backend/.env` with:
 
 ```env
-ATLAS_API_URL=https://atlas-ux.onrender.com
+ATLAS_API_URL=https://atlasux.cloud
 ATLAS_TENANT_ID=your-tenant-id
 ATLAS_LOCAL_AGENT_KEY=the-api-key-from-step-2
 ANTHROPIC_API_KEY=sk-ant-your-key-here
@@ -120,7 +120,7 @@ npm run worker:local-vision
 You should see:
 ```
 [localVision] Starting local vision agent
-[localVision]   API: https://atlas-ux.onrender.com
+[localVision]   API: https://atlasux.cloud
 [localVision]   Tenant: your-tenant-id
 [localVision]   CDP: http://localhost:9222
 [localVision]   Poll: 5000ms
@@ -167,7 +167,7 @@ The local vision agent inherits all browser governance rules plus additional res
 Any component can check if the local agent is online:
 
 ```bash
-curl https://atlas-ux.onrender.com/v1/local-agent/status \
+curl https://atlasux.cloud/v1/local-agent/status \
   -H "x-tenant-id: YOUR_TENANT_ID"
 ```
 

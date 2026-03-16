@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import type { Env } from "./env.js";
-import { makeSupabase } from "./supabase.js";
+import { prisma } from "./db/prisma.js";
 
 export type AuditStatus = "success" | "failure";
 
@@ -24,9 +24,6 @@ export type AuditEvent = {
 // --------------------
 // Local-first + cost-aware audit batching
 // --------------------
-// We batch audit writes to reduce DB chatter (important once Atlas is logging
-// *everything* it touches). This also keeps things resilient if the DB is
-// briefly unavailable.
 const AUDIT_BATCH_MAX = 25;
 const AUDIT_FLUSH_INTERVAL_MS = 2000;
 
@@ -34,11 +31,11 @@ let auditQueue: any[] = [];
 let flushing = false;
 let timerStarted = false;
 
-function startFlushTimer(env: Env) {
+function startFlushTimer(_env: Env) {
   if (timerStarted) return;
   timerStarted = true;
   setInterval(() => {
-    void flushAuditQueue(env);
+    void flushAuditQueue();
   }, AUDIT_FLUSH_INTERVAL_MS).unref?.();
 }
 
@@ -67,50 +64,46 @@ export function getRequestContext(req: Request) {
   };
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function writeAudit(env: Env, event: AuditEvent) {
-  // "Local-first": if Supabase isn't configured or table isn't present, we won't crash.
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return { ok: false, skipped: true, reason: "supabase_not_configured" };
   startFlushTimer(env);
 
   const row = {
     timestamp: event.timestamp || isoNow(),
-    actor_type: event.actor_type,
-    actor_id: event.actor_id ?? null,
-    org_id: event.org_id ?? null,
-    device_id: event.device_id ?? null,
-    source: event.source ?? "api",
+    actorType: event.actor_type,
+    actorUserId: event.actor_id && UUID_RE.test(event.actor_id) ? event.actor_id : null,
+    actorExternalId: event.actor_id && !UUID_RE.test(event.actor_id) ? event.actor_id : null,
+    tenantId: event.org_id && UUID_RE.test(event.org_id) ? event.org_id : null,
     action: event.action,
-    entity_type: event.entity_type ?? null,
-    entity_id: event.entity_id ?? null,
-    status: event.status,
-    metadata: safeJson(event.metadata),
-    ip_address: event.ip_address ?? null,
-    user_agent: event.user_agent ?? null,
-    request_id: event.request_id ?? null
+    entityType: event.entity_type ?? null,
+    entityId: event.entity_id && UUID_RE.test(event.entity_id) ? event.entity_id : null,
+    meta: safeJson({
+      ...event.metadata,
+      status: event.status,
+      source: event.source ?? "api",
+      device_id: event.device_id ?? null,
+      ip_address: event.ip_address ?? null,
+      user_agent: event.user_agent ?? null,
+      request_id: event.request_id ?? null,
+    }),
   };
 
-  // Queue + flush (batch insert)
   auditQueue.push(row);
-  if (auditQueue.length >= AUDIT_BATCH_MAX) void flushAuditQueue(env);
+  if (auditQueue.length >= AUDIT_BATCH_MAX) void flushAuditQueue();
   return { ok: true, queued: true };
 }
 
-async function flushAuditQueue(env: Env) {
+async function flushAuditQueue() {
   if (flushing) return;
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return;
   if (!auditQueue.length) return;
   flushing = true;
-  const supabase = makeSupabase(env);
   let batch: any[] = [];
   try {
     batch = auditQueue.splice(0, AUDIT_BATCH_MAX);
-    const { error } = await supabase.from("audit_log").insert(batch);
-    if (error) {
-      // Put back to queue (front) for retry later.
-      auditQueue = batch.concat(auditQueue);
-    }
+    await prisma.auditLog.createMany({ data: batch });
   } catch {
-    // Put back to queue for retry later.
+    // Put back to queue (front) for retry later.
     if (batch.length) auditQueue = batch.concat(auditQueue);
   } finally {
     flushing = false;
@@ -123,14 +116,12 @@ export function auditMiddleware(env: Env) {
     const ctx = getRequestContext(req);
 
     res.on("finish", async () => {
-      // Don't log noisy endpoints unless they are important
       const path = req.path || "";
       if (path === "/health") return;
 
       const duration_ms = Date.now() - started;
       const status: AuditStatus = res.statusCode >= 400 ? "failure" : "success";
 
-      // Avoid logging sensitive payloads; only keys.
       const bodyKeys = req.body && typeof req.body === "object" ? Object.keys(req.body).slice(0, 25) : [];
       const queryKeys = req.query && typeof req.query === "object" ? Object.keys(req.query).slice(0, 25) : [];
 

@@ -4,7 +4,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Render (Cloud)                                                  │
+│  AWS Lightsail (Cloud)                                                  │
 │                                                                  │
 │  ┌──────────────────────────┐     ┌──────────────────────────┐  │
 │  │  Fastify API Server      │     │  jobs table              │  │
@@ -203,7 +203,7 @@ For the local worker (in `backend/.env`):
 
 ```env
 # Required
-ATLAS_API_URL=https://atlas-ux.onrender.com
+ATLAS_API_URL=https://atlasux.cloud
 ATLAS_TENANT_ID=your-tenant-id
 ATLAS_LOCAL_AGENT_KEY=hex-key-from-register
 ANTHROPIC_API_KEY=sk-ant-...

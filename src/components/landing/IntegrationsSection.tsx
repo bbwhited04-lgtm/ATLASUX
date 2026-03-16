@@ -30,7 +30,7 @@ const INTEGRATION_CATEGORIES = [
     { emoji: "📋", name: "Google Sheets", sub: "Data Sheets" },
   ]},
   { title: "Infrastructure", items: [
-    { emoji: "🗄️", name: "Supabase", sub: "Database & Auth" },
+    { emoji: "🗄️", name: "PostgreSQL", sub: "Database" },
     { emoji: "🤖", name: "OpenAI", sub: "GPT Models" },
     { emoji: "🔍", name: "DeepSeek", sub: "AI Models" },
     { emoji: "☁️", name: "iCloud", sub: "Apple Sync" },
@@ -63,7 +63,7 @@ export default function IntegrationsSection() {
 
         {/* Top icon bar */}
         <div className="mt-10 flex flex-wrap justify-center gap-4">
-          {["📞 Twilio","🟦 Microsoft","✈️ Telegram","💬 SMS","🤖 OpenAI","🗄️ Supabase","🔍 Google","📘 Facebook"].map((item) => {
+          {["📞 Twilio","🟦 Microsoft","✈️ Telegram","💬 SMS","🤖 OpenAI","🗄️ PostgreSQL","🔍 Google","📘 Facebook"].map((item) => {
             const [emoji, name] = [item.slice(0, 2), item.slice(3)];
             return (
               <div key={name} className="flex items-center gap-2 rounded-full border border-[#3d5474]/30 bg-[#0e1626]/60 px-4 py-2 text-xs text-[#bab2b5]">

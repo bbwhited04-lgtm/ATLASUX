@@ -30,7 +30,7 @@ function canWrite(role: string | null | undefined) {
 }
 
 function authHeaders(tenantId: string) {
-  // NOTE: Backend expects Bearer token via Supabase auth. If you're in early private beta
+  // NOTE: Backend expects Bearer token via JWT auth. If you're in early private beta
   // without login wired yet, you can still browse the UI but API calls will 401.
   return {
     "Content-Type": "application/json",

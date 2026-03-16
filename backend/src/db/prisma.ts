@@ -13,6 +13,23 @@ export const prisma =
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
+/**
+ * Attempt to connect to the database with retries.
+ * Keeps the server from crashing on transient pooler blips.
+ */
+export async function connectWithRetry(maxRetries = 5, delayMs = 3000): Promise<void> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return;
+    } catch (err) {
+      if (attempt === maxRetries) throw err;
+      console.warn(`DB connection attempt ${attempt}/${maxRetries} failed, retrying in ${delayMs}ms...`);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**

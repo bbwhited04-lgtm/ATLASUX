@@ -1,7 +1,7 @@
 /**
  * Zoom API service — token retrieval, recording transcript fetch, meeting list.
  *
- * Uses Supabase token_vault for OAuth token storage (same pattern as other providers).
+ * Uses token_vault for OAuth token storage (same pattern as other providers).
  * VTT parser is exported so both Teams and Zoom transcript flows can reuse it.
  */
 import type { Env } from "../env.js";

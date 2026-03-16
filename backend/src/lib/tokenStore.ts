@@ -6,11 +6,10 @@
  * is returned as-is. New writes are encrypted when TOKEN_ENCRYPTION_KEY is set.
  */
 import type { Env } from "../env.js";
-import { makeSupabase } from "../supabase.js";
 import { prisma } from "../db/prisma.js";
 import { encryptToken, decryptToken } from "./encryption.js";
 
-// ── Token vault (Supabase) ───────────────────────────────────────────────────
+// ── Token vault (Prisma) ───────────────────────────────────────────────────
 
 export interface TokenVaultRow {
   access_token: string;
@@ -19,7 +18,7 @@ export interface TokenVaultRow {
 }
 
 /**
- * Read a token from Supabase token_vault for a given org + provider.
+ * Read a token from token_vault for a given org + provider.
  * Decrypts automatically if encrypted.
  */
 export async function readTokenVault(
@@ -27,26 +26,23 @@ export async function readTokenVault(
   orgId: string,
   provider: string,
 ): Promise<TokenVaultRow | null> {
-  const supabase = makeSupabase(env);
-  const { data } = await supabase
-    .from("token_vault")
-    .select("access_token, refresh_token, expires_at")
-    .eq("org_id", orgId)
-    .eq("provider", provider)
-    .maybeSingle();
+  const row = await prisma.tokenVault.findFirst({
+    where: { orgId, provider },
+    select: { accessToken: true, refreshToken: true, expiresAt: true },
+  });
 
-  if (!data) return null;
+  if (!row) return null;
 
   const key = env.TOKEN_ENCRYPTION_KEY;
   return {
-    access_token: decryptToken(data.access_token, key),
-    refresh_token: data.refresh_token ? decryptToken(data.refresh_token, key) : null,
-    expires_at: data.expires_at,
+    access_token: decryptToken(row.accessToken, key),
+    refresh_token: row.refreshToken ? decryptToken(row.refreshToken, key) : null,
+    expires_at: row.expiresAt,
   };
 }
 
 /**
- * Write (upsert) a full token set to Supabase token_vault.
+ * Write (upsert) a full token set to token_vault.
  * Encrypts access_token and refresh_token before storage.
  */
 export async function writeTokenVault(
@@ -63,22 +59,35 @@ export async function writeTokenVault(
   },
 ): Promise<void> {
   const key = env.TOKEN_ENCRYPTION_KEY;
-  const supabase = makeSupabase(env);
-  const { error } = await supabase.from("token_vault").upsert(
-    {
-      org_id: args.org_id,
-      user_id: args.user_id || args.org_id,
+  const userId = args.user_id || args.org_id;
+
+  await prisma.tokenVault.upsert({
+    where: {
+      orgId_userId_provider: {
+        orgId: args.org_id,
+        userId,
+        provider: args.provider,
+      },
+    },
+    create: {
+      orgId: args.org_id,
+      userId,
       provider: args.provider,
-      access_token: encryptToken(args.access_token, key),
-      refresh_token: args.refresh_token ? encryptToken(args.refresh_token, key) : null,
-      expires_at: args.expires_at ?? null,
+      accessToken: encryptToken(args.access_token, key),
+      refreshToken: args.refresh_token ? encryptToken(args.refresh_token, key) : null,
+      expiresAt: args.expires_at ?? null,
       scope: args.scope ?? null,
       meta: args.meta ?? null,
-      updated_at: new Date().toISOString(),
     },
-    { onConflict: "org_id,user_id,provider" },
-  );
-  if (error) throw new Error(`token_vault upsert failed: ${error.message}`);
+    update: {
+      accessToken: encryptToken(args.access_token, key),
+      refreshToken: args.refresh_token ? encryptToken(args.refresh_token, key) : null,
+      expiresAt: args.expires_at ?? null,
+      scope: args.scope ?? null,
+      meta: args.meta ?? null,
+      updatedAt: new Date(),
+    },
+  });
 }
 
 /**
@@ -93,18 +102,16 @@ export async function updateTokenVaultAccessToken(
   expiresAt?: string,
 ): Promise<void> {
   const key = env.TOKEN_ENCRYPTION_KEY;
-  const supabase = makeSupabase(env);
   const update: Record<string, any> = {
-    access_token: encryptToken(accessToken, key),
-    updated_at: new Date().toISOString(),
+    accessToken: encryptToken(accessToken, key),
+    updatedAt: new Date(),
   };
-  if (expiresAt) update.expires_at = expiresAt;
-  const { error } = await supabase
-    .from("token_vault")
-    .update(update)
-    .eq("org_id", orgId)
-    .eq("provider", provider);
-  if (error) throw new Error(`token_vault update failed: ${error.message}`);
+  if (expiresAt) update.expiresAt = expiresAt;
+
+  await prisma.tokenVault.updateMany({
+    where: { orgId, provider },
+    data: update,
+  });
 }
 
 // ── Integration table (Prisma) ───────────────────────────────────────────────
@@ -152,17 +159,14 @@ export async function getProviderToken(
 }
 
 /**
- * Clear tokens from the Supabase token_vault for a given org + provider.
+ * Clear tokens from the token_vault for a given org + provider.
  */
 export async function clearTokenVault(
   env: Env,
   orgId: string,
   provider: string,
 ): Promise<void> {
-  const supabase = makeSupabase(env);
-  await supabase
-    .from("token_vault")
-    .delete()
-    .eq("org_id", orgId)
-    .eq("provider", provider);
+  await prisma.tokenVault.deleteMany({
+    where: { orgId, provider },
+  });
 }

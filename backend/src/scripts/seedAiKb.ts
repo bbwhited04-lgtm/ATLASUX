@@ -355,7 +355,7 @@ Place approval gates before:
 - Embeddings of documents and past interactions
 - Similarity search retrieves relevant chunks
 - Use for: knowledge base lookups, finding relevant past decisions
-- Atlas UX: KB embeddings via Supabase vector or pgvector
+- Atlas UX: KB embeddings via pgvector
 
 ## Memory Write Strategies
 - **Explicit**: Agent decides to remember something
@@ -629,12 +629,6 @@ RAGAS framework measures all four automatically.
 - Cons: slower at scale (>10M vectors), no ANN by default
 - Best for: <1M vectors, existing Postgres stack
 - Atlas UX: uses this approach
-
-### Supabase Vector
-- Built on pgvector + Supabase
-- Pros: managed, includes auth/API layer
-- Cons: same scale limits as pgvector
-- Atlas UX: kb_chunks table in Supabase
 
 ### Pinecone
 - Pros: fastest at scale, fully managed, great SDK
@@ -1420,7 +1414,7 @@ AI can automatically:
 
 ## Atlas UX Sales
 Currently pre-revenue / early access.
-Pricing stored in Supabase.
+Pricing stored in Postgres.
 Sandy manages demo bookings.
 Cheryl handles onboarding questions.`,
   },
@@ -1888,7 +1882,7 @@ Atlas UX future roadmap: local-first LLM option for enterprise tier.
 - **SOC 2**: security controls, availability, confidentiality
 
 ## Atlas UX Privacy
-- Data stays in Supabase (EU or US depending on tenant config)
+- Data stays in AWS Lightsail PostgreSQL (US-East)
 - LLM calls go to Anthropic (Claude) — covered by Anthropic's privacy policy
 - No customer data used for model training (Anthropic agreement)
 - Larry (compliance agent) monitors for regulatory issues`,
@@ -2363,7 +2357,7 @@ Prepare data before injection:
 - Summarize if volume too high
 
 ## Atlas UX Data Architecture
-- **Postgres (Supabase)**: primary relational store (users, tenants, jobs, CRM, integrations)
+- **Postgres (AWS Lightsail)**: primary relational store (users, tenants, jobs, CRM, integrations)
 - **KB (Postgres)**: knowledge documents + chunks for RAG
 - **Audit log**: append-only agent action log
 - **Stripe**: billing data (webhooks → Postgres)

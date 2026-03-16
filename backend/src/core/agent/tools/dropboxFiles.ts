@@ -11,19 +11,10 @@ const DROPBOX_API = "https://api.dropboxapi.com/2";
 
 async function getDropboxToken(tenantId: string): Promise<string | null> {
   try {
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-    const { data } = await supabase
-      .from("token_vault")
-      .select("access_token")
-      .eq("org_id", tenantId)
-      .eq("provider", "dropbox")
-      .limit(1)
-      .single();
-    return data?.access_token ?? null;
+    const { loadEnv } = await import("../../../env.js");
+    const { getProviderToken } = await import("../../../lib/tokenStore.js");
+    const env = loadEnv(process.env);
+    return getProviderToken(env, tenantId, "dropbox");
   } catch {
     return null;
   }

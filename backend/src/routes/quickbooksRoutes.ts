@@ -11,7 +11,7 @@ const QB_PROD_AUTH_URL = "https://appcenter.intuit.com/connect/oauth2";
 const QB_PROD_TOKEN_URL = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer";
 const QB_REVOKE_URL = "https://developer.api.intuit.com/v2/oauth2/tokens/revoke";
 
-const REDIRECT_URI = "https://atlas-ux.onrender.com/v1/quickbooks/callback";
+const REDIRECT_URI = process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/v1/quickbooks/callback` : "https://api.atlasux.cloud/v1/quickbooks/callback";
 
 function getQBCredentials(env: ReturnType<typeof loadEnv>) {
   const isSandbox = (env.QUICKBOOKS_ENVIRONMENT ?? "sandbox") === "sandbox";
@@ -39,7 +39,7 @@ function parseState(state: string): any {
 }
 
 export const quickbooksRoutes: FastifyPluginAsync = async (app) => {
-  const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+  const FRONTEND_URL = process.env.FRONTEND_URL || "https://atlasux.cloud";
   const env = loadEnv(process.env);
 
   function buildReturnUrl(params: Record<string, string>): string {

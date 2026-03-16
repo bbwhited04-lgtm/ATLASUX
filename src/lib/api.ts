@@ -1,14 +1,11 @@
-const PRODUCTION_API = "https://api.atlasux.cloud";
-
 // Desktop (Electron): use local backend on localhost:8787.
-// Run `cd backend && npm run start` to connect to Supabase directly.
-// Web/cloud: use env var or fall back to Render production backend.
+// Web/cloud: use api.atlasux.cloud.
 const isElectron = typeof navigator !== "undefined" && /electron/i.test(navigator.userAgent);
 const envUrl = import.meta.env.VITE_API_BASE_URL || "";
 
 export const API_BASE = isElectron
   ? "http://localhost:8787"
-  : (envUrl || PRODUCTION_API);
+  : (envUrl || "https://api.atlasux.cloud");
 
 // CSRF token captured from response headers (PCI DSS 6.5.9, NIST SC-23)
 let csrfToken: string | null = null;

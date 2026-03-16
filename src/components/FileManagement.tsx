@@ -489,7 +489,7 @@ export function FileManagement() {
                 <div className="flex-1">
                   <h4 className="font-semibold mb-2">Storage Bucket</h4>
                   <p className="text-sm text-slate-300 mb-4">
-                    Files are stored in Supabase Storage bucket <code className="bg-slate-800 px-1 rounded text-cyan-300">{(import.meta.env.VITE_KB_UPLOAD_BUCKET as string) ?? "kb_uploads"}</code>.
+                    Files are stored in the <code className="bg-slate-800 px-1 rounded text-cyan-300">{(import.meta.env.VITE_KB_UPLOAD_BUCKET as string) ?? "kb_uploads"}</code> storage bucket.
                     Max file size: 50 MB.
                   </p>
                   <div className="flex items-center gap-2">

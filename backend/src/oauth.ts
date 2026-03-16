@@ -1,5 +1,4 @@
 import type { Env } from "./env.js";
-import { makeSupabase } from "./supabase.js";
 import { webcrypto } from "node:crypto";
 import { writeTokenVault } from "./lib/tokenStore.js";
 
@@ -777,7 +776,7 @@ export async function fetchTikTokUserInfo(accessToken: string): Promise<{
   return data.data?.user ?? data;
 }
 
-// Token vault storage (Supabase table: token_vault)
+// Token vault storage (token_vault table)
 // Delegates to tokenStore for transparent encryption at rest.
 export async function storeTokenVault(env: Env, args: {
   org_id: string;

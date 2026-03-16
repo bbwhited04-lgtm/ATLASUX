@@ -34,7 +34,7 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { Switch } from './ui/switch';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { API_BASE } from '../lib/api';
 
 interface Subscription {
   plan: 'starter' | 'professional' | 'business' | 'enterprise';

@@ -28,6 +28,23 @@ import { generateMercerResponse, generateGreeting, MERCER_VOICE_CONFIG } from ".
 import { postAsAgent, getChannelByName } from "../services/slack.js";
 import { synthesizeMercerSpeech } from "./mercerTts.js";
 import { processEndedOutboundCall } from "./mercerPostCall.js";
+import { addToDnc } from "./outboundDialer.js";
+import {
+  startCostTracking,
+  recordLLMUsage,
+  recordTTSUsage,
+  finalizeCostRecord,
+} from "./callCostTracker.js";
+
+// DNC keyword patterns — TCPA compliance
+const DNC_PATTERNS = [
+  /\bdo\s*n[o']?t\s+call\b/i,
+  /\bstop\s+calling\b/i,
+  /\bremove\s+(my|this)\s+number\b/i,
+  /\btake\s+me\s+off\b/i,
+  /\bput\s+me\s+on\s+(the\s+)?do\s*n[o']?t\s+call/i,
+  /\bno\s+more\s+calls\b/i,
+];
 
 let sttClient: SpeechClient | null = null;
 function getSTTClient(): SpeechClient {
@@ -64,6 +81,8 @@ interface OutboundStreamState {
   contactPhone: string;
   contactName: string;
   contactId?: string;
+  contactCompany?: string;
+  contactIndustry?: string;
   ws: WebSocket;
   sttStream: ReturnType<InstanceType<typeof SpeechClient>["streamingRecognize"]> | null;
   sttRestartTimer: ReturnType<typeof setTimeout> | null;
@@ -148,16 +167,63 @@ async function handleLeadUtterance(state: OutboundStreamState, transcript: strin
   if (state.isProcessing) return;
   state.isProcessing = true;
 
+  // ── DNC keyword detection — auto-add to Do Not Call list ──
+  const isDncRequest = DNC_PATTERNS.some(p => p.test(transcript));
+  if (isDncRequest) {
+    console.log(`[mercer-phone] DNC keyword detected from ${state.contactPhone}: "${transcript}"`);
+    await addToDnc(state.contactPhone, "caller_request");
+
+    // Acknowledge and end call gracefully
+    const farewell = "Absolutely, I've removed your number from our list. You won't receive any more calls from us. Sorry to bother you, have a great day.";
+    const farewellAudio = await synthesizeMercerSpeech(farewell);
+    if (farewellAudio && state.ws.readyState === 1) {
+      const mulaw = googleTTSToTwilio(farewellAudio);
+      const chunkSize = 640;
+      for (let i = 0; i < mulaw.length; i += chunkSize) {
+        state.ws.send(JSON.stringify({
+          event: "media",
+          streamSid: state.streamSid,
+          media: { payload: mulaw.slice(i, i + chunkSize) },
+        }));
+      }
+    }
+
+    addTranscriptEntry(state.sessionId, {
+      ts: Date.now(),
+      speaker: "Mercer",
+      speakerRole: "lucy",
+      text: farewell,
+      isFinal: true,
+      source: "phone",
+    });
+
+    // End call after farewell plays
+    setTimeout(() => {
+      try {
+        state.ws.send(JSON.stringify({ event: "stop", streamSid: state.streamSid }));
+        state.ws.close();
+      } catch { /* ignore */ }
+    }, 4000);
+    state.isProcessing = false;
+    return;
+  }
+
   try {
     const response = await generateMercerResponse(
       state.sessionId,
       TENANT_ID,
       transcript,
       state.contactName || state.contactPhone,
+      { company: state.contactCompany, industry: state.contactIndustry },
     );
+
+    // Track LLM usage (estimate tokens from response length)
+    const estimatedTokens = Math.ceil((transcript.length + response.spokenText.length) / 4);
+    recordLLMUsage(state.callSid, estimatedTokens);
 
     // Synthesize with male voice
     const audioContent = await synthesizeMercerSpeech(response.spokenText);
+    recordTTSUsage(state.callSid, response.spokenText.length);
 
     if (audioContent && state.ws.readyState === 1) {
       const mulawBase64 = googleTTSToTwilio(audioContent);
@@ -218,7 +284,7 @@ async function alertOnSlack(message: string): Promise<void> {
 
 export async function handleMercerMediaStream(
   ws: WebSocket,
-  contactInfo: { phone: string; name: string; contactId?: string },
+  contactInfo: { phone: string; name: string; contactId?: string; company?: string; industry?: string },
 ): Promise<void> {
   let state: OutboundStreamState | null = null;
 
@@ -251,6 +317,8 @@ export async function handleMercerMediaStream(
           contactPhone: contactInfo.phone,
           contactName: contactInfo.name,
           contactId: contactInfo.contactId,
+          contactCompany: contactInfo.company,
+          contactIndustry: contactInfo.industry,
           ws,
           sttStream: null,
           sttRestartTimer: null,
@@ -261,8 +329,11 @@ export async function handleMercerMediaStream(
 
         createSTTStream(state);
 
+        // Start cost tracking for this call
+        startCostTracking(callSid, TENANT_ID, "outbound");
+
         // Mercer's opening line
-        const greeting = generateGreeting(contactInfo.name || undefined);
+        const greeting = generateGreeting(contactInfo.name || undefined, contactInfo.company || undefined);
         const greetingAudio = await synthesizeMercerSpeech(greeting);
         if (greetingAudio && ws.readyState === 1) {
           const mulaw = googleTTSToTwilio(greetingAudio);
@@ -275,6 +346,9 @@ export async function handleMercerMediaStream(
             }));
           }
         }
+
+        // Track TTS cost for greeting
+        recordTTSUsage(callSid, greeting.length);
 
         addTranscriptEntry(sessionId, {
           ts: Date.now(),
@@ -306,6 +380,7 @@ export async function handleMercerMediaStream(
           if (state.sttStream) state.sttStream.end();
           if (state.sttRestartTimer) clearTimeout(state.sttRestartTimer);
           if (state.silenceTimer) clearTimeout(state.silenceTimer);
+          finalizeCostRecord(state.callSid).catch(() => {});
           processEndedOutboundCall(state.sessionId).catch(() => {});
           state = null;
         }
@@ -319,6 +394,7 @@ export async function handleMercerMediaStream(
       if (state.sttStream) state.sttStream.end();
       if (state.sttRestartTimer) clearTimeout(state.sttRestartTimer);
       if (state.silenceTimer) clearTimeout(state.silenceTimer);
+      finalizeCostRecord(state.callSid).catch(() => {});
       processEndedOutboundCall(state.sessionId).catch(() => {});
     }
   });

@@ -59,7 +59,7 @@ Creates a Stripe product and price using the server-owned `STRIPE_SECRET_KEY`. H
 **Example:**
 
 ```bash
-curl -s -X POST https://atlas-ux.onrender.com/v1/stripe/products \
+curl -s -X POST https://atlasux.cloud/v1/stripe/products \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID" \
   -H "Content-Type: application/json" \

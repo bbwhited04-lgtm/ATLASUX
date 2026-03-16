@@ -7,14 +7,12 @@ import type { FastifyPluginAsync } from "fastify";
 import AtlasOrchestrationAgent from "../agents/atlas.js";
 import { prisma } from "../db/prisma.js";
 import { meterApiCall } from "../lib/usageMeter.js";
-import { makeSupabase } from "../supabase.js";
 import { loadEnv } from "../env.js";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { sglEvaluate, type Intent } from "../core/sgl.js";
 
 const env = loadEnv(process.env);
-const supabase = makeSupabase(env);
 
 const atlasAgent = new AtlasOrchestrationAgent();
 
@@ -169,24 +167,20 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('atlas_conversations')
-        .select('*')
-        .eq('session_id', session_id)
-        .eq('user_id', userId)
-        .eq('tenant_id', tenantId)
-        .single();
+      const conversation = await prisma.atlasConversation.findFirst({
+        where: { sessionId: session_id, userId, tenantId },
+      });
 
-      if (error || !data) {
-        return reply.code(404).send({ 
-          ok: false, 
-          error: "Conversation not found" 
+      if (!conversation) {
+        return reply.code(404).send({
+          ok: false,
+          error: "Conversation not found"
         });
       }
 
-      return reply.send({ 
-        ok: true, 
-        conversation: data 
+      return reply.send({
+        ok: true,
+        conversation
       });
     } catch (error) {
       return reply.code(500).send({ 
@@ -398,15 +392,17 @@ export const atlasRoutes: FastifyPluginAsync = async (app) => {
       const health = await atlasAgent.healthCheck();
       
       // Get additional analytics
-      const { data: conversations } = await supabase
-        .from('atlas_conversations')
-        .select('created_at, conversation_history')
-        .eq('tenant_id', tenantId)
-        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+      const conversations = await prisma.atlasConversation.findMany({
+        where: {
+          tenantId,
+          createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        },
+        select: { createdAt: true, conversationHistory: true },
+      });
 
-      const totalConversations = conversations?.length || 0;
-      const avgMessagesPerConversation = conversations && conversations.length > 0 
-        ? conversations.reduce((sum: number, conv: any) => sum + (conv.conversation_history?.length || 0), 0) / conversations.length
+      const totalConversations = conversations.length;
+      const avgMessagesPerConversation = conversations.length > 0
+        ? conversations.reduce((sum: number, conv: any) => sum + (Array.isArray(conv.conversationHistory) ? conv.conversationHistory.length : 0), 0) / conversations.length
         : 0;
 
       return reply.send({ 

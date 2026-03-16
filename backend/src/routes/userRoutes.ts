@@ -17,7 +17,7 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
 
   /**
    * GET /me — current user profile + memberships.
-   * Auto-provisions a User record on first call if Supabase auth is present.
+   * Auto-provisions a User record on first call if not already present.
    */
   app.get("/me", async (req, reply) => {
     const auth = (req as any).auth;
@@ -25,7 +25,7 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(401).send({ ok: false, error: "not_authenticated" });
     }
 
-    // Auto-provision: create User row from Supabase auth data if missing
+    // Auto-provision: create User row from JWT auth data if missing
     let user = await prisma.user.findUnique({
       where: { id: auth.userId },
       include: {

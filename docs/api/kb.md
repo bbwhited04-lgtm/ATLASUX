@@ -150,7 +150,7 @@ Seeds all workflow definitions from the workflow manifest into KB documents. Saf
 **Example:**
 
 ```bash
-curl -s https://atlas-ux.onrender.com/v1/kb/documents?status=published \
+curl -s https://atlasux.cloud/v1/kb/documents?status=published \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID"
 ```

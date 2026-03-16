@@ -21,7 +21,7 @@ Lightweight no-dependency liveness probe. Returns immediately if the server is r
 **Example:**
 
 ```bash
-curl -s https://atlas-ux.onrender.com/v1/health
+curl -s https://atlasux.cloud/v1/health
 ```
 
 ## Readiness Check
@@ -45,7 +45,7 @@ Dependency readiness probe. Verifies the database connection by executing `SELEC
 **Example:**
 
 ```bash
-curl -s https://atlas-ux.onrender.com/v1/ready
+curl -s https://atlasux.cloud/v1/ready
 ```
 
 ## Runtime Status
@@ -88,7 +88,7 @@ Returns the current state of the AI engine, including whether it is enabled, whe
 **Example:**
 
 ```bash
-curl -s https://atlas-ux.onrender.com/v1/runtime/status \
+curl -s https://atlasux.cloud/v1/runtime/status \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -98,8 +98,8 @@ These endpoints are used by Render health checks and the frontend status bar:
 
 | Endpoint | Purpose |
 |----------|---------|
-| `/v1/health` | Render liveness probe |
-| `/v1/ready` | Render readiness probe |
+| `/v1/health` | Liveness probe |
+| `/v1/ready` | Readiness probe |
 | `/v1/runtime/status` | Frontend engine status indicator |
 
 ## Engine Configuration

@@ -12,24 +12,26 @@ const TG_API = "https://api.telegram.org/bot";
 
 async function getTelegramConfig(tenantId: string): Promise<{ botToken: string; chatId: string } | null> {
   try {
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-    const { data } = await supabase
-      .from("integrations")
-      .select("config")
-      .eq("tenant_id", tenantId)
-      .eq("provider", "telegram")
-      .limit(1)
-      .single();
+    const { loadEnv } = await import("../../../env.js");
+    const { getProviderToken } = await import("../../../lib/tokenStore.js");
+    const { readIntegrationToken } = await import("../../../lib/tokenStore.js");
+    const env = loadEnv(process.env);
 
-    if (!data?.config) return null;
-    const config = typeof data.config === "string" ? JSON.parse(data.config) : data.config;
-    const botToken = config.bot_token || process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = config.chat_id;
-    if (!botToken || !chatId) return null;
+    // Try token_vault first for bot token
+    const botToken = await getProviderToken(env, tenantId, "telegram") ?? process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) return null;
+
+    // Read chat_id from integration table config
+    const { prisma } = await import("../../../db/prisma.js");
+    const row = await prisma.integration.findFirst({
+      where: { tenantId, provider: "telegram" as any, connected: true },
+      select: { config: true },
+    });
+
+    if (!row?.config) return null;
+    const config = typeof row.config === "string" ? JSON.parse(row.config) : row.config;
+    const chatId = (config as any).chat_id;
+    if (!chatId) return null;
     return { botToken, chatId };
   } catch {
     return null;

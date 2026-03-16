@@ -1,40 +1,40 @@
-import { createClient } from "@supabase/supabase-js";
+/**
+ * Self-managed auth — replaces Supabase Auth.
+ * JWT tokens are issued by the backend (POST /v1/login, /v1/register).
+ */
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import { API_BASE } from "./api";
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY env vars. " +
-    "Add them to your .env file (see .env.example).",
-  );
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-const TOKEN_KEY = "supabase_token";
+const TOKEN_KEY = "atlas_token";
 
 export async function supabaseSignIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+  const res = await fetch(`${API_BASE}/v1/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
   });
-  if (error) throw error;
-  const token = data.session?.access_token ?? null;
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Login failed");
+  const token = data.token;
   if (token) {
-    try {
-      localStorage.setItem(TOKEN_KEY, token);
-    } catch {
-      // ignore storage failures
-    }
+    try { localStorage.setItem(TOKEN_KEY, token); } catch {}
   }
-  return { session: data.session, user: data.user };
+  return { session: { access_token: token }, user: { email } };
 }
 
 export async function supabaseSignUp(email: string, password: string) {
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) throw error;
-  return { user: data.user, session: data.session };
+  const res = await fetch(`${API_BASE}/v1/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Registration failed");
+  const token = data.token;
+  if (token) {
+    try { localStorage.setItem(TOKEN_KEY, token); } catch {}
+  }
+  return { session: { access_token: token }, user: { email } };
 }
 
 export function getSupabaseToken(): string | null {
@@ -44,3 +44,22 @@ export function getSupabaseToken(): string | null {
     return null;
   }
 }
+
+/** No-op shim — replaces supabase.auth for session checks */
+export const supabase = {
+  auth: {
+    async getUser(token?: string) {
+      if (!token) return { data: { user: null }, error: null };
+      try {
+        const res = await fetch(`${API_BASE}/v1/user/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return { data: { user: null }, error: null };
+        const d = await res.json();
+        return { data: { user: { id: d.userId, email: d.email } }, error: null };
+      } catch {
+        return { data: { user: null }, error: null };
+      }
+    },
+  },
+};

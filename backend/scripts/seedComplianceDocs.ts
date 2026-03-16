@@ -2,7 +2,7 @@
  * seedComplianceDocs.ts
  *
  * Seeds all compliance policy documents and implementation plans
- * into the KB (kb_documents table) in Supabase for the Dead App Corp tenant.
+ * into the KB (kb_documents table) for the Dead App Corp tenant.
  *
  * Usage: cd backend && npx tsx scripts/seedComplianceDocs.ts
  */

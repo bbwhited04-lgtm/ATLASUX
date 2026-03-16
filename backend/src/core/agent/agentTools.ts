@@ -72,19 +72,12 @@ export type ToolResult = {
 
 async function getM365Token(tenantId: string): Promise<string | null> {
   try {
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-    const { data } = await supabase
-      .from("token_vault")
-      .select("access_token")
-      .eq("org_id", tenantId)
-      .in("provider", ["microsoft", "m365"])
-      .limit(1)
-      .single();
-    return data?.access_token ?? null;
+    const { loadEnv } = await import("../../env.js");
+    const { getProviderToken } = await import("../../lib/tokenStore.js");
+    const env = loadEnv(process.env);
+    const token = await getProviderToken(env, tenantId, "microsoft");
+    if (token) return token;
+    return getProviderToken(env, tenantId, "m365");
   } catch {
     return null;
   }

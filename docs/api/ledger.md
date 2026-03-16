@@ -105,6 +105,6 @@ POST /v1/ledger/entries
 **Example:**
 
 ```bash
-curl -s "https://atlas-ux.onrender.com/v1/ledger/entries?tenantId=$TENANT_ID&limit=20" \
+curl -s "https://atlasux.cloud/v1/ledger/entries?tenantId=$TENANT_ID&limit=20" \
   -H "Authorization: Bearer $TOKEN"
 ```

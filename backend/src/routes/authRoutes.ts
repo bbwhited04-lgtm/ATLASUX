@@ -1,12 +1,16 @@
 /**
- * Auth routes — post-login provisioning for Supabase email/password auth.
+ * Auth routes — self-managed JWT auth.
  *
- * POST /provision — idempotent: ensures user has a tenant + membership.
+ * POST /register — create account, return JWT
+ * POST /login — validate credentials, return JWT
+ * POST /provision — idempotent: ensures user has a tenant + membership
+ * POST /logout — revoke JWT
  */
 
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../db/prisma.js";
 import { TIER_AGENTS, TIER_WORKFLOWS } from "../lib/tierConfig.js";
+import { createHash } from "node:crypto";
 
 /** Seed default agent and workflow configs for a new tenant based on seat tier. */
 async function seedTenantDefaults(tenantId: string, seatTier: string) {
@@ -41,7 +45,7 @@ async function seedTenantDefaults(tenantId: string, seatTier: string) {
 export const authRoutes: FastifyPluginAsync = async (app) => {
   /**
    * POST /provision
-   * Requires a valid Supabase JWT (authPlugin runs first).
+   * Requires a valid JWT (authPlugin runs first).
    * If user has no tenant, creates one + TenantMember (owner, free_beta).
    * If user already has a tenant, returns it.
    * Returns { tenantId, seatType, role }
@@ -143,8 +147,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const { createHash } = await import("node:crypto");
     const tokenHash = createHash("sha256").update(token).digest("hex");
 
-    // JWT max lifetime: 1 hour (Supabase default). Blacklist entry expires after that.
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    // JWT max lifetime: 7 days. Blacklist entry expires after that.
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     await prisma.revokedToken.upsert({
       where: { tokenHash },

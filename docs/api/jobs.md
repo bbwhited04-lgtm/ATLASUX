@@ -48,7 +48,7 @@ Returns up to 200 jobs for the current tenant, ordered by priority (desc) then c
 **Example:**
 
 ```bash
-curl -s https://atlas-ux.onrender.com/v1/jobs/list \
+curl -s https://atlasux.cloud/v1/jobs/list \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID"
 ```
@@ -96,7 +96,7 @@ Enqueues a new job for processing by the engine loop or email worker.
 **Example:**
 
 ```bash
-curl -s -X POST https://atlas-ux.onrender.com/v1/jobs \
+curl -s -X POST https://atlasux.cloud/v1/jobs \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID" \
   -H "Content-Type: application/json" \
@@ -122,7 +122,7 @@ Removes a job that is not currently running. Only jobs with status `queued`, `ca
 **Example:**
 
 ```bash
-curl -s -X DELETE https://atlas-ux.onrender.com/v1/jobs/JOB_UUID \
+curl -s -X DELETE https://atlasux.cloud/v1/jobs/JOB_UUID \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID"
 ```

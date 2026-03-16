@@ -3,7 +3,7 @@
  * (default: http://localhost:8188).
  *
  * Desktop-only: Electron sets COMFYUI_BASE_URL when a local ComfyUI is detected.
- * On cloud (Render/Vercel) all calls return { available: false }.
+ * On cloud deploys all calls return { available: false }.
  */
 
 // ── Types ────────────────────────────────────────────────────────────────────

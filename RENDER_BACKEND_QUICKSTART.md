@@ -1,5 +1,7 @@
 # Render backend quickstart (AtlasUX)
 
+> **DEPRECATED:** Atlas UX has migrated from Render to AWS Lightsail. See `docs/kb/infrastructure-aws-lightsail.md` for current deployment instructions. The information below is kept for historical reference only.
+
 ## 1) Deploy backend to Render
 Use the `backend/` folder as a Render Web Service.
 - Build: `npm install && npm run build`

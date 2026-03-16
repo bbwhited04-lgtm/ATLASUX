@@ -31,8 +31,7 @@ const PROVIDERS: Array<{
     | "twilio"
     | "stripe"
     | "openai"
-    | "deepseek"
-    | "supabase";
+    | "deepseek";
   label: string;
   kind: "oauth" | "apikey" | "internal";
   defaultScopes: string[];
@@ -50,8 +49,6 @@ const PROVIDERS: Array<{
   { key: "deepseek", label: "DeepSeek", kind: "apikey", defaultScopes: [] },
   { key: "stripe", label: "Stripe", kind: "apikey", defaultScopes: [] },
   { key: "twilio", label: "Twilio", kind: "apikey", defaultScopes: [] },
-
-  { key: "supabase", label: "Supabase", kind: "internal", defaultScopes: [] },
 ];
 
 function s(v: unknown): string | null {

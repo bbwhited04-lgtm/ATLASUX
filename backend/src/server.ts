@@ -5,9 +5,9 @@ import rateLimit from "@fastify/rate-limit";
 import websocket from "@fastify/websocket";
 import "dotenv/config";
 import { writeFileSync, existsSync } from "fs";
-import { prisma } from "./db/prisma.js";
+import { prisma, connectWithRetry } from "./db/prisma.js";
 
-// Bootstrap Google credentials from base64 env var (for Render/cloud deploys)
+// Bootstrap Google credentials from base64 env var (for cloud deploys)
 if (process.env.GOOGLE_CREDENTIALS_BASE64 && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
   const credPath = "/tmp/gcloud-credentials.json";
   if (!existsSync(credPath)) {
@@ -71,6 +71,7 @@ import { atlasRoutes } from "./routes/atlasRoutes.js";
 import { complianceRoutes } from "./routes/complianceRoutes.js";
 import { authRoutes } from "./routes/authRoutes.js";
 import { gateRoutes } from "./routes/gateRoutes.js";
+import { leadsRoutes } from "./routes/leadsRoutes.js";
 import { youtubeRoutes } from "./routes/youtubeRoutes.js";
 import { videoRoutes } from "./routes/videoRoutes.js";
 import { outlookRoutes } from "./routes/outlookRoutes.js";
@@ -92,11 +93,15 @@ import { diagnosticsRoutes } from "./routes/diagnosticsRoutes.js";
 import { quickbooksRoutes } from "./routes/quickbooksRoutes.js";
 import { credentialRoutes } from "./routes/credentialRoutes.js";
 
+// Wait for DB before starting Fastify (retries on transient pooler blips)
+await connectWithRetry(5, 3000);
+
 const app = Fastify({
   logger: {
     level: process.env.NODE_ENV === "production" ? "info" : "debug",
     redact: ["req.headers.authorization", "req.headers.cookie"],
   },
+  pluginTimeout: 30_000, // 30s — survive slow DB reconnects
 });
 app.addHook("onSend", async (_req, reply, payload) => {
   // Only touch JSON responses
@@ -196,14 +201,11 @@ await app.register(helmet, {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "https://widget.trustpilot.com", "https://connect.facebook.net"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "blob:", "https://*.supabase.co", "https://atlasux.cloud", "https://www.facebook.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://atlasux.cloud", "https://www.facebook.com", "https://atlasux-files.s3.amazonaws.com"],
       fontSrc: ["'self'"],
       connectSrc: [
         "'self'",
         "https://api.atlasux.cloud",
-        "https://atlas-ux.onrender.com",
-        "https://*.supabase.co",
-        "wss://*.supabase.co",
         "https://www.facebook.com",
       ],
       frameSrc: ["'none'"],
@@ -229,6 +231,55 @@ await app.register(websocket);
 // Gate routes — registered before auth (public validate + admin key-based)
 await app.register(gateRoutes, { prefix: "/v1/gate" });
 
+// Lead capture — public (no auth required)
+await app.register(leadsRoutes, { prefix: "/v1/leads" });
+
+// Public auth endpoints (login/register) — before authPlugin
+await app.register(async (publicAuth) => {
+  const { prisma } = await import("./db/prisma.js");
+  const jose = await import("jose");
+  const { hash: bcryptHash, compare: bcryptCompare } = await import("bcrypt");
+  const { randomUUID } = await import("node:crypto");
+
+  async function signJwt(userId: string, email: string): Promise<string> {
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+    return new jose.SignJWT({ sub: userId, email })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("7d")
+      .sign(secret);
+  }
+
+  publicAuth.post("/register", async (req, reply) => {
+    const { email, password } = (req.body as any) ?? {};
+    if (!email || !password) return reply.code(400).send({ ok: false, error: "email_and_password_required" });
+    if (password.length < 8) return reply.code(400).send({ ok: false, error: "password_too_short" });
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) return reply.code(409).send({ ok: false, error: "email_already_registered" });
+
+    const id = randomUUID();
+    const passwordHash = await bcryptHash(password, 12);
+    await prisma.user.create({ data: { id, email, passwordHash, displayName: email.split("@")[0] } });
+    const token = await signJwt(id, email);
+    return reply.send({ ok: true, token, userId: id });
+  });
+
+  publicAuth.post("/login", async (req, reply) => {
+    const { email, password } = (req.body as any) ?? {};
+    if (!email || !password) return reply.code(400).send({ ok: false, error: "email_and_password_required" });
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user?.passwordHash) return reply.code(401).send({ ok: false, error: "invalid_credentials" });
+
+    const valid = await bcryptCompare(password, user.passwordHash);
+    if (!valid) return reply.code(401).send({ ok: false, error: "invalid_credentials" });
+
+    const token = await signJwt(user.id, user.email);
+    return reply.send({ ok: true, token, userId: user.id });
+  });
+}, { prefix: "/v1/auth" });
+
 // Plugins (order matters)
 await app.register(auditPlugin);
 await app.register(authPlugin);
@@ -236,11 +287,11 @@ await app.register(csrfPlugin);
 await app.register(tenantPlugin);
 await app.register(tenantRateLimitPlugin);
 
-// Auth routes — post-login provisioning (needs authPlugin for JWT, before tenant-dependent routes)
+// Auth routes — provision + logout (needs authPlugin for JWT verification)
 await app.register(authRoutes, { prefix: "/v1/auth" });
 await app.register(engineRoutes, { prefix: "/v1/engine" });
 await app.register(healthRoutes, { prefix: "/v1" });
-// Root-level health check for Render's healthCheckPath: /health
+// Root-level health check
 app.get("/health", async () => ({ ok: true, status: "alive" }));
 await app.register(agentsRoutes, { prefix: "/v1/agents" });
 await app.register(workflowsRoutes, { prefix: "/v1/workflows" });

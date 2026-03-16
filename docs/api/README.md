@@ -5,7 +5,7 @@ API documentation for the Atlas UX backend. All endpoints are served from a Fast
 ## Base URL
 
 ```
-https://atlas-ux.onrender.com/v1
+https://atlasux.cloud/v1
 ```
 
 Local development:

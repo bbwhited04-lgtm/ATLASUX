@@ -124,7 +124,7 @@ export function BusinessManager() {
 
   useEffect(() => {
     if (!activeTenantId) return;
-    const token = localStorage.getItem("supabase_token") || localStorage.getItem("sb-token");
+    const token = localStorage.getItem("atlas_token");
     if (token) {
       // Auth flow — query /me for seat type
       fetch(`${API_BASE}/v1/user/me`, {
@@ -266,9 +266,12 @@ async function disconnect(provider: "google" | "meta" | "x") {
     description?: string;
     color?: string;
   }) {
+    const token = localStorage.getItem("atlas_token");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
     const res = await fetch(`${API_BASE}/v1/tenants`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(payload),
     });
 
@@ -601,7 +604,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                 </div>
 
                 <p className="text-slate-500 text-xs">
-                  Tenant IDs are UUIDs. Find yours in the Businesses list below or in Supabase → tenants table.
+                  Tenant IDs are UUIDs. Find yours in the Businesses list below or in the database tenants table.
                 </p>
               </div>
             )}
@@ -1606,7 +1609,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                         <label className="block text-sm font-medium text-white mb-2">Vendor</label>
                         <input
                           type="text"
-                          placeholder="e.g., Render, Vercel, AWS, Sprout, QuickBooks"
+                          placeholder="e.g., AWS, Sprout, QuickBooks, Stripe"
                           value={newAssetForm.costVendor}
                           onChange={(e) => setNewAssetForm({ ...newAssetForm, costVendor: e.target.value })}
                           className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"
@@ -1787,7 +1790,7 @@ async function queueJob(type: "analytics.refresh" | "integrations.discovery") {
                         <label className="block text-sm font-medium text-white mb-2">Vendor</label>
                         <input
                           type="text"
-                          placeholder="e.g., Render, Vercel, AWS, Sprout, QuickBooks"
+                          placeholder="e.g., AWS, Sprout, QuickBooks, Stripe"
                           value={editAssetForm.costVendor}
                           onChange={(e) => setEditAssetForm({ ...editAssetForm, costVendor: e.target.value })}
                           className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-colors"

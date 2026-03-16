@@ -1,151 +1,216 @@
-# Consulting Frameworks — Atlas UX Quick Reference
+# Strategic Consulting Frameworks
 
-## Purpose
-Mental models for strategic decisions. Use these when you need to think through
-positioning, competition, pricing, or growth — not as academic exercises.
+## When to Use Which Framework
+
+| Situation | Framework | What It Answers |
+|-----------|-----------|----------------|
+| "Should we enter this market?" | Porter's Five Forces + PESTEL | Market attractiveness |
+| "Where should we compete?" | Blue Ocean Strategy | Differentiation strategy |
+| "What's our competitive advantage?" | VRIO Analysis | Sustainable advantages |
+| "How should we prioritize?" | ICE + RICE + MoSCoW | Feature/initiative prioritization |
+| "Is our organization aligned?" | McKinsey 7S | Organizational readiness |
+| "Where do we allocate resources?" | BCG Growth-Share Matrix | Portfolio strategy |
+| "What are macro risks?" | PESTEL | External environment scan |
+| "Why are users choosing us/competitors?" | Jobs-to-be-Done | True user motivations |
+| "Where is the market heading?" | Wardley Mapping | Technology evolution positioning |
+| "What's our flywheel?" | Amazon Flywheel | Self-reinforcing growth loops |
 
 ---
 
-## 1. JOBS TO BE DONE (JTBD) — For Understanding Customers
+## 1. Porter's Five Forces (Market Attractiveness)
 
 ```
-When a trade owner "hires" Lucy, what job are they hiring her for?
+Apply BEFORE entering a market or pricing a product.
 
-FUNCTIONAL JOB: Answer the phone when I can't
-EMOTIONAL JOB: Stop worrying about missing calls
-SOCIAL JOB: Look professional — "my receptionist will schedule you"
+THREAT OF NEW ENTRANTS: [Low/Medium/High]
+- Capital requirements to enter
+- Regulatory barriers
+- Brand loyalty of existing players
+- Network effects (if any)
+→ High barrier = good for you if you're in, bad if you're entering
 
-THE SWITCH:
-- Push (away from current): "I'm tired of checking voicemails at 9pm"
-- Pull (toward new): "Lucy answers instantly and books for me"
-- Anxiety (about switching): "What if the AI says something stupid to my customer?"
-- Habit (keeping old way): "I've always just used voicemail, it's fine"
+SUPPLIER POWER: [Low/Medium/High]
+- How many alternative suppliers exist?
+- How differentiated are supplier offerings?
+- Cost of switching suppliers?
+→ For tech: cloud providers, payment gateways, API dependencies
 
-TO WIN: Pull + Push must be > Anxiety + Habit
-- Increase pull: Demo Lucy on a real call → "holy shit that was good"
-- Decrease anxiety: Free trial, no commitment, easy cancel
+BUYER POWER: [Low/Medium/High]
+- How many alternatives do buyers have?
+- How price-sensitive are they?
+- What's the switching cost for buyers?
+→ Low switching cost = you must constantly deliver value
+
+THREAT OF SUBSTITUTES: [Low/Medium/High]
+- Can users solve this problem differently? (Not just direct competitors)
+- Example: Uber's substitute isn't just Ola — it's public transport, walking, working from home
+
+COMPETITIVE RIVALRY: [Low/Medium/High]
+- Number of competitors, their relative size
+- Market growth rate (growing markets have less rivalry)
+- Product differentiation (commodity = intense rivalry)
+- Exit barriers (hard to leave = desperate competition)
 ```
 
-## 2. PORTER'S FIVE FORCES — For Competitive Strategy
+## 2. PESTEL Analysis (Macro Environment)
 
 ```
-THREAT OF NEW ENTRANTS: HIGH
-- AI voice is getting commoditized (Vapi, Bland, Retell)
-- Low barrier to build a basic AI phone agent
-→ DEFENSE: Trade-specific expertise, pre-built scripts, vertical focus
+Apply to EVERY product to understand external factors.
 
-SUPPLIER POWER: MEDIUM
-- Dependent on telephony (Twilio/Vapi) and AI (Claude/OpenAI) providers
-- They can raise prices, change APIs
-→ DEFENSE: Abstract telephony provider, keep multi-provider option
+POLITICAL: Government stability, trade policies, taxation, regulatory bodies
+ECONOMIC: Growth rate, inflation, exchange rates, disposable income, unemployment
+SOCIAL: Demographics, cultural norms, lifestyle trends, education, health consciousness
+TECHNOLOGICAL: Innovation rate, digital infrastructure, mobile penetration, AI adoption
+ENVIRONMENTAL: Climate policies, sustainability expectations, carbon footprint pressure
+LEGAL: Consumer protection, data privacy, employment law, IP law, industry regulation
 
-BUYER POWER: LOW-MEDIUM
-- Trade owners have low switching costs (can cancel monthly)
-- But also low awareness of alternatives (don't shop for AI tools)
-→ DEFENSE: Retention through value (show ROI monthly) + switching cost (calendar integration)
-
-SUBSTITUTE THREAT: MEDIUM
-- Voicemail (free, universal)
-- Spouse/family answering
-- GoHighLevel missed-call-text-back
-- Hiring a receptionist
-→ DEFENSE: Lucy > all of these. Voicemail loses 80% of callers.
-  Text-back doesn't book. Receptionist costs 25x more.
-
-COMPETITIVE RIVALRY: GROWING
-- Smith.ai, Ruby, Goodcall, Numa all in the space
-- But none focused specifically on trades at $99/mo
-→ DEFENSE: Vertical focus, price point, Mercer bundled
+FOR INDIA SPECIFICALLY:
+- Political: Digital India push, Make in India, startup-friendly policies, state-level variation
+- Economic: Rising middle class, UPI adoption (10B+ monthly transactions), rural digitization
+- Social: Young population (median age 28), mobile-first (not mobile-too), language diversity
+- Technological: 800M+ internet users, Jio effect, India Stack (Aadhaar, UPI, DigiLocker)
+- Environmental: Growing sustainability awareness, government renewable push
+- Legal: DPDP Act, IT Act amendments, RBI digital lending guidelines, SEBI regulations
 ```
 
-## 3. BLUE OCEAN — Four Actions Framework
+## 3. Blue Ocean Strategy (Differentiation)
 
 ```
-What can Atlas UX ELIMINATE that the industry takes for granted?
-- Human operators (Smith.ai, Ruby rely on humans)
-- Business hours limitations
-- Per-minute pricing (competitors charge by minutes used)
-- Long onboarding and setup (competitors take days)
+Apply when competing in a crowded market.
 
-What can Atlas UX REDUCE below industry standard?
-- Price ($99 vs $200-600)
-- Setup time (15 minutes vs days)
-- Complexity (no training required — Lucy learns from business type)
+FOUR ACTIONS FRAMEWORK:
+ELIMINATE: What factors that the industry competes on should be eliminated?
+REDUCE: What factors should be reduced well below the industry standard?
+RAISE: What factors should be raised well above the industry standard?
+CREATE: What factors should be created that the industry has never offered?
 
-What can Atlas UX RAISE above industry standard?
-- Availability (24/7/365 vs business hours)
-- Consistency (AI doesn't have bad days)
-- Speed (answers in 2 rings vs 4-6)
-- Integration with scheduling (books directly, not just takes messages)
+EXAMPLE (budget airline):
+- ELIMINATE: First class, airport lounges, meals
+- REDUCE: Seat comfort, check-in baggage, layover options
+- RAISE: Frequency of flights, on-time performance, direct routes
+- CREATE: Point-to-point routes to secondary airports, web-only booking
 
-What can Atlas UX CREATE that the industry has never offered?
-- Outbound sales agent (Mercer) bundled with inbound receptionist
-- Live streaming of agents working (marketing innovation)
-- Trade-specific scripts and intelligence pre-built
-- Self-serve 15-minute setup (competitors need sales calls)
+Apply this to YOUR product. What does the competition waste effort on that users don't
+actually value? What do users desperately want that no one provides?
 ```
 
-## 4. PESTEL — External Factors
+## 4. Jobs-to-be-Done (User Motivation)
 
 ```
-POLITICAL: AI regulation evolving (FCC rules on AI calling, state-level)
-ECONOMIC: Trade businesses are recession-resilient (people always need plumbers)
-SOCIAL: Increasing comfort with AI assistants (Siri, Alexa normalized it)
-TECHNOLOGICAL: Voice AI quality improving rapidly (cost dropping)
-ENVIRONMENTAL: N/A
-LEGAL: TCPA for Mercer, two-party consent for call recording, CCPA for data
+Apply during Discovery and PRD phases.
+
+FRAMEWORK: Users don't buy products. They hire products to do a job.
+
+JOB STATEMENT FORMAT:
+"When [situation], I want to [motivation], so I can [expected outcome]."
+
+THREE DIMENSIONS:
+- Functional job: The practical task (get food delivered)
+- Emotional job: How they want to feel (not stressed about dinner)
+- Social job: How they want to be perceived (good parent feeding family well)
+
+EXAMPLE:
+Functional: "When I'm working late, I want to order dinner quickly."
+Emotional: "I want to feel like I'm not failing at feeding my family."
+Social: "I want my family to enjoy a good meal even when I'm busy."
+
+→ This changes how you design the product. It's not about fast delivery.
+  It's about removing guilt and maintaining quality of life.
+
+COMPETING AGAINST NON-CONSUMPTION:
+The biggest competitor is often "do nothing" or "manual workaround."
+If 80% of your target market isn't using ANY solution, your real job is to
+convince them the problem is worth solving, not that your solution is better.
 ```
 
-## 5. BCG MATRIX — Product Portfolio
+## 5. McKinsey 7S (Organizational Alignment)
 
 ```
-            High Growth
-                │
-    STAR        │    QUESTION MARK
-    Lucy        │    Mercer
-    (invest)    │    (prove or kill)
-────────────────┼────────────────────
-    CASH COW    │    DOG
-    (future)    │    $39 Limited tier
-                │    (kill if no traction)
-            Low Growth
+Apply when assessing organizational readiness to execute.
 
-Lucy = the product. Everything else supports or extends Lucy.
+HARD ELEMENTS (easier to define and manage):
+- Strategy: The plan to build and sustain competitive advantage
+- Structure: How the organization is arranged (teams, reporting, roles)
+- Systems: Processes and tools (CI/CD, meetings, decision-making frameworks)
+
+SOFT ELEMENTS (harder but more impactful):
+- Shared Values: Core beliefs that drive behavior (speed? quality? user-first?)
+- Skills: Capabilities the team has (and gaps that need filling)
+- Style: Leadership approach and organizational culture
+- Staff: People — hiring, development, retention
+
+ALL 7 MUST ALIGN. Strategy without skills = failure. Structure without culture = dysfunction.
 ```
 
-## 6. PRICING FRAMEWORKS
+## 6. BCG Growth-Share Matrix (Portfolio Strategy)
 
 ```
-VALUE-BASED PRICING:
-- Average missed call value for a salon: $85-$200
-- Lucy catches an average of 4-8 calls/week that would have been missed
-- Monthly value delivered: $1,400-$6,400
-- Price: $99/mo = 1.5-7% of value delivered
-- This is a no-brainer ROI — lead with this in sales
+Apply when managing multiple products or features.
 
-COMPETITIVE PRICING:
-| Competitor | Price | What You Get |
-|-----------|-------|-------------|
-| Voicemail | Free | 80% of callers hang up |
-| GoHighLevel | $97/mo | Text-back only, no voice |
-| Smith.ai | $292/mo | 30 calls, then overage |
-| Ruby | $230/mo | 50 minutes, then overage |
-| Atlas UX | $99/mo | Unlimited Lucy, 24/7 |
+              High Market Growth
+                    |
+    QUESTION MARK   |   STAR
+    (invest or kill) |  (invest heavily)
+                    |
+    ────────────────┼────────────────
+                    |
+    DOG             |   CASH COW
+    (divest/sunset) |  (harvest profits)
+                    |
+              Low Market Growth
+    Low Market Share   High Market Share
 
-PSYCHOLOGICAL PRICING:
-- $99 feels like "under a hundred" (threshold effect)
-- Daily framing: "$3.30/day" (coffee comparison)
-- ROI framing: "Pays for itself with one appointment"
-- Risk reversal: "14-day free trial, cancel anytime"
+STARS: High growth, high share → Invest to maintain position
+CASH COWS: Low growth, high share → Milk for profit, fund stars
+QUESTION MARKS: High growth, low share → Invest selectively or kill
+DOGS: Low growth, low share → Divest, sunset, or pivot
 ```
 
-## When to Use Each Framework
+## 7. RICE / ICE Scoring (Prioritization)
 
 ```
-"Should we enter this market?" → Porter's Five Forces
-"Why do customers buy (or not)?" → JTBD
-"How do we differentiate?" → Blue Ocean
-"What should we charge?" → Value-Based Pricing
-"Which products to invest in?" → BCG Matrix
-"What external risks exist?" → PESTEL
+RICE (for features with data):
+- Reach: How many users will this impact? (per quarter)
+- Impact: How much will it move the target metric? (0.25/0.5/1/2/3)
+- Confidence: How sure are we about the estimates? (0-100%)
+- Effort: How many person-months? (fewer = better)
+RICE Score = (Reach × Impact × Confidence) / Effort
+
+ICE (for ideas with less data):
+- Impact: How much will this move the needle? (1-10)
+- Confidence: How sure are we? (1-10)
+- Ease: How easy to implement? (1-10)
+ICE Score = Impact × Confidence × Ease
+
+MoSCoW (for scope definition):
+- Must have: Product doesn't work without it
+- Should have: Important but not critical for launch
+- Could have: Nice to have, do if time allows
+- Won't have: Explicitly out of scope (for this version)
 ```
+
+## 8. Amazon Flywheel (Self-Reinforcing Growth)
+
+```
+Apply to identify and strengthen virtuous cycles.
+
+Identify your flywheel:
+More users → More data → Better product → More users → ...
+More sellers → More selection → More buyers → More sellers → ...
+More content → Better SEO → More traffic → More content → ...
+
+KEY QUESTIONS:
+- What's the first turn? (How do you start the flywheel with zero momentum?)
+- What's the friction? (Where does the flywheel slow down?)
+- What accelerates it? (What investment has the highest flywheel impact?)
+- Is it defensible? (Can a competitor start their own flywheel easily?)
+```
+
+## How to Apply These
+
+1. **Phase 1 (Discovery)**: Use Porter's + PESTEL + JTBD to understand the market
+2. **Phase 2 (Strategy)**: Use Blue Ocean + BCG Matrix + Flywheel to define positioning
+3. **Phase 3 (PRD)**: Use RICE/ICE/MoSCoW for feature prioritization
+4. **Phase 5 (Engineering)**: Use 7S to assess team readiness
+5. **Phase 8 (Advisor)**: Use VRIO to validate competitive advantages
+6. **Phase 15 (Chief Review)**: Use all frameworks to stress-test the strategy

@@ -153,7 +153,7 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         q: "What is the tech stack behind Atlas UX?",
-        a: "Atlas UX is built on React 18 + Vite + TypeScript for the frontend, Fastify 5 + TypeScript for the backend, PostgreSQL via Prisma ORM hosted on Supabase for the database, and Electron for the desktop app. The AI engine runs as a separate worker process that ticks every 5 seconds, processing the job queue and coordinating agent actions. Frontend is deployed on Vercel, backend on Render.",
+        a: "Atlas UX is built on React 18 + Vite + TypeScript for the frontend, Fastify 5 + TypeScript for the backend, PostgreSQL via Prisma ORM for the database, and Electron for the desktop app. The AI engine runs as a separate worker process that ticks every 5 seconds, processing the job queue and coordinating agent actions. The full stack is deployed on AWS Lightsail.",
       },
       {
         q: "How does multi-tenancy work?",

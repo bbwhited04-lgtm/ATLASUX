@@ -525,7 +525,7 @@ export default function Store() {
           {/* Hero banner */}
           <div className="mb-8 overflow-hidden rounded-2xl border border-cyan-500/20">
             <img
-              src="/atlas-team.png"
+              src="/images/atlas-team.png"
               alt="Atlas UX — AI Agent Workforce"
               className="w-full object-cover"
               loading="eager"

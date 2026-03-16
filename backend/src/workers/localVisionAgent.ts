@@ -1,6 +1,6 @@
 import "dotenv/config";
 /**
- * Local Vision Agent — runs on your machine, polls the Render backend
+ * Local Vision Agent — runs on your machine, polls the backend API
  * for LOCAL_VISION_TASK jobs, uses Playwright CDP to interact with your
  * already-authenticated Edge browser, and uses Claude Vision (Sonnet)
  * to understand what it sees.
@@ -9,7 +9,7 @@ import "dotenv/config";
  *   msedge --remote-debugging-port=9222
  *
  * Env:
- *   ATLAS_API_URL       — Backend URL (e.g. https://atlas-ux.onrender.com)
+ *   ATLAS_API_URL       — Backend URL (e.g. https://api.atlasux.cloud)
  *   ATLAS_TENANT_ID     — Your tenant ID
  *   ATLAS_LOCAL_AGENT_KEY — API key from POST /v1/local-agent/register
  *   ANTHROPIC_API_KEY   — Anthropic API key for Claude Vision
@@ -375,7 +375,7 @@ async function main() {
   // Heartbeat loop (separate interval)
   const heartbeatInterval = setInterval(async () => {
     try {
-      await apiCall("POST", "/heartbeat");
+      await apiCall("POST", "/heartbeat", {});
     } catch (err: any) {
       logError(`Heartbeat failed: ${err?.message}`);
     }
@@ -383,7 +383,7 @@ async function main() {
 
   // Initial heartbeat
   try {
-    const hb = await apiCall("POST", "/heartbeat");
+    const hb = await apiCall("POST", "/heartbeat", {});
     if (!hb.ok) logError(`Initial heartbeat failed: ${JSON.stringify(hb.data)}`);
     else log("Heartbeat OK — agent online");
   } catch (err: any) {

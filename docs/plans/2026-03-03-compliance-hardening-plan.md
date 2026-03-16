@@ -460,7 +460,7 @@ git commit -m "feat(PCI-6.5.9,NIST-SC-23,SOC2-CC6.6): DB-backed CSRF synchronize
 Replace `src/lib/api.ts`:
 
 ```typescript
-const PRODUCTION_API = "https://atlas-ux.onrender.com";
+const PRODUCTION_API = "https://atlasux.cloud";
 
 const isElectron = typeof navigator !== "undefined" && /electron/i.test(navigator.userAgent);
 const envUrl = import.meta.env.VITE_API_BASE_URL || "";
@@ -875,7 +875,7 @@ await app.register(helmet, {
       fontSrc: ["'self'"],
       connectSrc: [
         "'self'",
-        "https://atlas-ux.onrender.com",
+        "https://atlasux.cloud",
         "https://*.supabase.co",
         "wss://*.supabase.co",
       ],

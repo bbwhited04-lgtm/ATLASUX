@@ -9,7 +9,7 @@ import MobilePage from "./routes/mobile";
 
 /**
  * Lazy import with auto-reload on chunk load failure.
- * After a Vercel deploy, old chunk hashes are gone — this catches the
+ * After a deploy, old chunk hashes are gone — this catches the
  * import error and does a single hard reload so the browser fetches
  * the new index.html with updated chunk references.
  */
@@ -67,6 +67,7 @@ const Docs = lazyRetry(() => import("./pages/Docs"));
 const Configure = lazyRetry(() => import("./pages/Configure"));
 const FAQ = lazyRetry(() => import("./pages/FAQ"));
 const GettingStarted = lazyRetry(() => import("./pages/GettingStarted"));
+const Pitch = lazyRetry(() => import("./pages/Pitch"));
 
 /** Minimal loading spinner shown while lazy chunks load */
 function LazyFallback() {
@@ -101,6 +102,7 @@ export const router = createHashRouter([
       { path: "/configure", Component: () => React.createElement(S, null, React.createElement(Configure)) },
       { path: "/faq", Component: () => React.createElement(S, null, React.createElement(FAQ)) },
       { path: "/getting-started", Component: () => React.createElement(S, null, React.createElement(GettingStarted)) },
+      { path: "/pitch", Component: () => React.createElement(S, null, React.createElement(Pitch)) },
       { path: "/blog", Component: () => React.createElement(S, null, React.createElement(BlogHome)) },
       { path: "/blog/category/:category", Component: () => React.createElement(S, null, React.createElement(BlogCategory)) },
       { path: "/blog/:slug", Component: () => React.createElement(S, null, React.createElement(BlogPost)) },

@@ -7,7 +7,7 @@ export type GateOutcome =
 
 export async function preExecuteGate(opts: {
   intent: Intent;
-  // you wire these to your supabase db calls
+  // you wire these to your database calls
   emitAudit: (event: {
     tenantId: string;
     intentType: string;

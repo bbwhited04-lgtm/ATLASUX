@@ -49,7 +49,7 @@ Returns every agent registered in the `agents` database table, ordered by `agent
 **Example:**
 
 ```bash
-curl -s https://atlas-ux.onrender.com/v1/agents \
+curl -s https://atlasux.cloud/v1/agents \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID"
 ```

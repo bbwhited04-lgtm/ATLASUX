@@ -1,14 +1,17 @@
 import type { FastifyPluginAsync } from "fastify";
-import { createClient } from "@supabase/supabase-js";
 import { prisma } from "../db/prisma.js";
+import { createVerify, createPublicKey, createHash } from "node:crypto";
+import * as jose from "jose";
 
+/**
+ * Self-managed JWT auth plugin.
+ * Verifies tokens signed with JWT_SECRET (HS256).
+ */
 export const authPlugin: FastifyPluginAsync = async (app) => {
-  const url = process.env.SUPABASE_URL!;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-  const supabase = createClient(url, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    app.log.warn("JWT_SECRET not set — auth will reject all requests");
+  }
 
   app.decorateRequest("auth", null);
 
@@ -20,13 +23,21 @@ export const authPlugin: FastifyPluginAsync = async (app) => {
       return reply.code(401).send({ ok: false, error: "missing_bearer_token" });
     }
 
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data?.user) {
+    if (!jwtSecret) {
+      return reply.code(503).send({ ok: false, error: "auth_not_configured" });
+    }
+
+    // Verify JWT
+    let payload: jose.JWTPayload;
+    try {
+      const secret = new TextEncoder().encode(jwtSecret);
+      const { payload: p } = await jose.jwtVerify(token, secret);
+      payload = p;
+    } catch {
       return reply.code(401).send({ ok: false, error: "invalid_token" });
     }
 
     // Check token blacklist (HIPAA §164.312(d), NIST IA-11)
-    const { createHash } = await import("node:crypto");
     const tokenHash = createHash("sha256").update(token).digest("hex");
     try {
       const revoked = await prisma.revokedToken.findUnique({ where: { tokenHash } });
@@ -38,8 +49,12 @@ export const authPlugin: FastifyPluginAsync = async (app) => {
       return reply.code(503).send({ ok: false, error: "token_blacklist_unavailable" });
     }
 
-    const userId = data.user.id;
-    const email = data.user.email ?? null;
+    const userId = payload.sub ?? (payload as any).userId;
+    const email = (payload as any).email ?? null;
+
+    if (!userId) {
+      return reply.code(401).send({ ok: false, error: "invalid_token_payload" });
+    }
 
     // Auto-provision User record on first auth (Phase 1)
     try {

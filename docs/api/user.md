@@ -169,7 +169,7 @@ Changes a member's seat type. Requires `admin` or `owner` role.
 **Example:**
 
 ```bash
-curl -s https://atlas-ux.onrender.com/v1/user/me \
+curl -s https://atlasux.cloud/v1/user/me \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID"
 ```

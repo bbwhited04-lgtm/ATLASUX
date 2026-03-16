@@ -167,7 +167,7 @@ async function apiFetch(path, opts = {}) {
 }
 ```
 
-The base URL defaults to `https://atlas-ux.onrender.com`. All API routes are prefixed with `/v1`. The `x-tenant-id` header is required by the backend's `tenantPlugin` for multi-tenant isolation.
+The base URL defaults to `https://atlasux.cloud`. All API routes are prefixed with `/v1`. The `x-tenant-id` header is required by the backend's `tenantPlugin` for multi-tenant isolation.
 
 ---
 

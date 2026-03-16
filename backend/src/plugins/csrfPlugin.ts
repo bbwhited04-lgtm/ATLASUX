@@ -1,7 +1,7 @@
 /**
  * CSRF Protection — DB-backed synchronizer token pattern.
  *
- * Works cross-origin (Vercel frontend → Render backend) without cookies.
+ * Works cross-origin (frontend → backend) without cookies.
  * Uses the oauth_state table for token storage with 1-hour TTL.
  *
  * Flow:

@@ -146,7 +146,7 @@ This table maps each Common Criteria (CC) control to actual code in the Atlas UX
 
 ## 3. Evidence References
 
-### API Endpoints (all under `https://atlas-ux.onrender.com/v1/`)
+### API Endpoints (all under `https://atlasux.cloud/v1/`)
 
 | Endpoint | Method | Purpose | SOC 2 Control |
 |----------|--------|---------|---------------|

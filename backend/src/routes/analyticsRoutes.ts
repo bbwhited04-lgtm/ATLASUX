@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma, withTenant } from "../db/prisma.js";
+import { getMonthlyCallCosts } from "../voice/callCostTracker.js";
 
 export const analyticsRoutes: FastifyPluginAsync = async (app) => {
   /**
@@ -246,5 +247,36 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
     });
 
     return reply.send({ ok: true, snapshot });
+  });
+
+  /**
+   * GET /v1/analytics/call-costs
+   * Returns per-call cost telemetry for the current month:
+   *   - Total calls, total cost, average cost per call
+   *   - Cost breakdown by category (STT, LLM, TTS, telephony)
+   *   - Projected monthly cost
+   */
+  app.get("/call-costs", async (req, reply) => {
+    const tenantId = (req as any).tenantId as string | undefined;
+    if (!tenantId) return reply.code(400).send({ ok: false, error: "tenantId required" });
+
+    const costs = await getMonthlyCallCosts(tenantId);
+
+    return reply.send({
+      ok: true,
+      month: new Date().toISOString().slice(0, 7),
+      totalCalls: costs.totalCalls,
+      totalCost: Number(costs.totalCost.toFixed(4)),
+      avgCostPerCall: Number(costs.avgCostPerCall.toFixed(4)),
+      breakdown: {
+        stt: Number(costs.sttCost.toFixed(4)),
+        llm: Number(costs.llmCost.toFixed(4)),
+        tts: Number(costs.ttsCost.toFixed(4)),
+        telephony: Number(costs.telephonyCost.toFixed(4)),
+      },
+      projectedMonthlyCost: Number(costs.projectedMonthlyCost.toFixed(2)),
+      costTarget: 0.50,
+      onTrack: costs.avgCostPerCall <= 0.50,
+    });
   });
 };

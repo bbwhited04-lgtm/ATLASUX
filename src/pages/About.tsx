@@ -15,8 +15,8 @@ const FOUNDER = {
 
 const STACK = [
   { icon: Layers,    label: "React + Vite",     desc: "TypeScript frontend, hash-routed SPA" },
-  { icon: Zap,       label: "Fastify",           desc: "High-performance Node.js backend on Render" },
-  { icon: Database,  label: "PostgreSQL + Prisma", desc: "Hosted on Supabase with row-level security" },
+  { icon: Zap,       label: "Fastify",           desc: "High-performance Node.js backend on AWS Lightsail" },
+  { icon: Database,  label: "PostgreSQL + Prisma", desc: "Self-hosted on AWS Lightsail" },
   { icon: Cpu,       label: "AI Agents",         desc: "Atlas, Binky, Tina, Larry, Cheryl, Sunday — and 20+ specialist agents" },
   { icon: Shield,    label: "Security-first",    desc: "JWT auth, tenant isolation, Zod validation, audit trail on every action" },
   { icon: Globe,     label: "Cross-platform",    desc: "Web app + Electron desktop build + iOS companion (coming soon)" },
@@ -24,7 +24,7 @@ const STACK = [
 
 const TIMELINE = [
   { year: "2024",  event: "Concept sketched in Figma. First wireframe published." },
-  { year: "Early 2025", event: "Went live — frontend deployed, backend wired to Render." },
+  { year: "Early 2025", event: "Went live — frontend deployed, backend wired up." },
   { year: "Mid 2025",   event: "Agent hierarchy built: Board → Executive → Governor → Specialist → Subagent tiers, 30+ autonomous agents." },
   { year: "Late 2025",  event: "Integrations hub, OAuth flows, KB, Blog, Decisions inbox." },
   { year: "2026 Q1",    event: "Mobile pairing backend, security hardening, desktop Electron build." },

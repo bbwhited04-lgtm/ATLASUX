@@ -143,7 +143,7 @@ Returns stored MetricsSnapshot records.
 **Example:**
 
 ```bash
-curl -s "https://atlas-ux.onrender.com/v1/analytics/summary?range=30d" \
+curl -s "https://atlasux.cloud/v1/analytics/summary?range=30d" \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID"
 ```

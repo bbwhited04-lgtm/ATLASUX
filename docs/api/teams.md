@@ -136,7 +136,7 @@ Sends a cross-agent notification to a Teams channel.
 **Example:**
 
 ```bash
-curl -s -X POST https://atlas-ux.onrender.com/v1/teams/send \
+curl -s -X POST https://atlasux.cloud/v1/teams/send \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID" \
   -H "Content-Type: application/json" \

@@ -111,7 +111,7 @@ Registers the Atlas webhook URL with Telegram.
 **Request Body:**
 
 ```json
-{ "url": "https://atlas-ux.onrender.com/v1/telegram/webhook" }
+{ "url": "https://atlasux.cloud/v1/telegram/webhook" }
 ```
 
 ## Delete Webhook
@@ -141,7 +141,7 @@ Polls for recent incoming messages (auth required). Used when webhook is not con
 **Example:**
 
 ```bash
-curl -s -X POST https://atlas-ux.onrender.com/v1/telegram/send \
+curl -s -X POST https://atlasux.cloud/v1/telegram/send \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID" \
   -H "Content-Type: application/json" \

@@ -8,8 +8,8 @@ Targets
 - Set safe production defaults for URLs
 
 Production URLs
-- Frontend: https://project435.vercel.app
-- Backend:  https://atlas-ux.onrender.com
+- Frontend: https://atlasux.cloud
+- Backend:  https://atlasux.cloud
 
 How to apply
 1) Unzip this patch at repo root.
@@ -19,13 +19,11 @@ How to apply
 3) Commit and push.
 
 Frontend env (recommended)
-- VITE_BACKEND_URL=https://atlas-ux.onrender.com
+- VITE_BACKEND_URL=https://atlasux.cloud
 
 Backend env (required)
-- APP_URL=https://project435.vercel.app
-- ALLOWED_ORIGINS=https://project435.vercel.app,http://localhost:5173
-- SUPABASE_URL=...
-- SUPABASE_SERVICE_ROLE_KEY=...
+- APP_URL=https://atlasux.cloud
+- ALLOWED_ORIGINS=https://atlasux.cloud,http://localhost:5173
 - GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REDIRECT_URI
 - META_APP_ID / META_APP_SECRET / META_REDIRECT_URI
 

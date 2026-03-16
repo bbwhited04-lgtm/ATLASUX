@@ -8,6 +8,7 @@ import PricingSection from "../components/landing/PricingSection";
 import TrustSection from "../components/landing/TrustSection";
 import AgentRoster from "../components/landing/AgentRoster";
 import IntegrationsSection from "../components/landing/IntegrationsSection";
+import VideoShowcase from "../components/landing/VideoShowcase";
 import EarlyAccessForm from "../components/landing/EarlyAccessForm";
 
 export default function Landing() {
@@ -42,6 +43,7 @@ export default function Landing() {
 
       <main className="relative z-10">
         <HeroSection />
+        <VideoShowcase />
         <HowItWorks />
         <VerticalSection />
         <PricingSection />

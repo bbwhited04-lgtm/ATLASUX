@@ -27,12 +27,18 @@ import { generateResponse, lookupCallerByCRM, VOICE_CONFIG } from "./lucyBrain.j
 import { postAsAgent, getChannelByName } from "../services/slack.js";
 import { synthesizeSpeech } from "./ttsEngine.js";
 import { processEndedSession } from "./postCallProcessor.js";
+import {
+  startCostTracking,
+  recordLLMUsage,
+  recordTTSUsage,
+  finalizeCostRecord,
+} from "./callCostTracker.js";
 
 // Lazy-init so dotenv has loaded by the time we create the client
 let sttClient: SpeechClient | null = null;
 function getSTTClient(): SpeechClient {
   if (!sttClient) {
-    // Try inline JSON first (for Render/cloud), then file path (local dev)
+    // Try inline JSON first (for cloud deploys), then file path (local dev)
     const inlineJson = process.env.GOOGLE_CLOUD_SERVICE_ACCOUNT || "";
     const keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
 
@@ -178,8 +184,13 @@ async function handleCallerUtterance(state: StreamState, transcript: string): Pr
       session.callerProfile.name ?? state.callerNumber,
     );
 
+    // Track LLM usage (estimate tokens from input+output length)
+    const estimatedTokens = Math.ceil((transcript.length + response.spokenText.length) / 4);
+    recordLLMUsage(state.callSid, estimatedTokens);
+
     // Synthesize speech via Gemini TTS
     const audioContent = await synthesizeSpeech(response.spokenText, "lucy", TENANT_ID);
+    recordTTSUsage(state.callSid, response.spokenText.length);
 
     // Send audio back to Twilio
     if (audioContent && state.ws.readyState === 1) {
@@ -275,10 +286,13 @@ export async function handleTwilioMediaStream(ws: WebSocket): Promise<void> {
 
         createSTTStream(state);
 
+        // Start cost tracking for inbound call
+        startCostTracking(callSid, TENANT_ID, "inbound");
+
         // Lucy's greeting
         const greeting = crmProfile.name
-          ? `Good ${getTimeOfDay()}, ${crmProfile.name}! This is Lucy at Atlas UX. Great to hear from you again. How can I help you today?`
-          : `Good ${getTimeOfDay()}, thank you for calling Atlas UX. This is Lucy. How can I help you today?`;
+          ? `Good ${getTimeOfDay()}, ${crmProfile.name}! This is Lucy at Atlas UX, and I may jot down a few notes so nothing gets missed. Great to hear from you again. How can I help you today?`
+          : `Good ${getTimeOfDay()}, thank you for calling Atlas UX. This is Lucy, and I may jot down a few notes so nothing gets missed. How can I help you today?`;
 
         const greetingAudio = await synthesizeSpeech(greeting, "lucy", TENANT_ID);
         if (greetingAudio && ws.readyState === 1) {
@@ -292,6 +306,9 @@ export async function handleTwilioMediaStream(ws: WebSocket): Promise<void> {
             }));
           }
         }
+
+        // Track TTS cost for greeting
+        recordTTSUsage(callSid, greeting.length);
 
         addTranscriptEntry(sessionId, {
           ts: Date.now(),
@@ -325,6 +342,7 @@ export async function handleTwilioMediaStream(ws: WebSocket): Promise<void> {
           if (state.sttStream) state.sttStream.end();
           if (state.sttRestartTimer) clearTimeout(state.sttRestartTimer);
           if (state.silenceTimer) clearTimeout(state.silenceTimer);
+          finalizeCostRecord(state.callSid).catch(() => {});
           // Process post-call (async, don't block)
           processEndedSession(state.sessionId).catch(() => {});
           state = null;
@@ -339,6 +357,7 @@ export async function handleTwilioMediaStream(ws: WebSocket): Promise<void> {
       if (state.sttStream) state.sttStream.end();
       if (state.sttRestartTimer) clearTimeout(state.sttRestartTimer);
       if (state.silenceTimer) clearTimeout(state.silenceTimer);
+      finalizeCostRecord(state.callSid).catch(() => {});
       processEndedSession(state.sessionId).catch(() => {});
     }
   });

@@ -58,7 +58,7 @@ Returns all workflows, merging database rows with canonical definitions from the
 **Example:**
 
 ```bash
-curl -s https://atlas-ux.onrender.com/v1/workflows \
+curl -s https://atlasux.cloud/v1/workflows \
   -H "Authorization: Bearer $TOKEN" \
   -H "x-tenant-id: $TENANT_ID"
 ```

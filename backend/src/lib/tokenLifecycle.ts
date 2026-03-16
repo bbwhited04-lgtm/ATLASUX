@@ -478,7 +478,7 @@ export async function revokeToken(
     }
   }
 
-  // Clear token_vault (Supabase)
+  // Clear token_vault
   await clearTokenVault(env, tenantId, provider).catch(() => null);
 
   // Clear integration table tokens (Prisma)
