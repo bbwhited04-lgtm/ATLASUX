@@ -49,13 +49,13 @@ const PLATFORM_SETTINGS: Record<string, Record<string, unknown>> = {
   },
   facebook:  { __type: "facebook" },
   threads:   { __type: "threads" },
-  x:         { __type: "x" },
+  x:         { __type: "x", who_can_reply_post: "everyone" },
   instagram: { __type: "instagram", post_type: "post", collaborators: [] },
   linkedin:  { __type: "linkedin", post_as_images_carousel: false },
   reddit:    { __type: "reddit", subreddit: [] },
-  pinterest: { __type: "pinterest", title: "", link: "", dominant_color: "#000000", board: "" },
+  pinterest: { __type: "pinterest", title: "", link: "https://atlasux.com", dominant_color: "#000000", board: "Atlas UX" },
   tumblr:    { __type: "tumblr" },
-  youtube:   { __type: "youtube", title: "", type: "short", tags: [] },
+  youtube:   { __type: "youtube", title: "", type: "public", tags: [] },
   mastodon:  { __type: "mastodon" },
   bluesky:   { __type: "bluesky" },
   discord:   { __type: "discord", channel: "" },
@@ -197,7 +197,13 @@ export const postizPublishTool: ToolDefinition = {
       });
 
       // Build post body with platform-specific settings
-      const settings = PLATFORM_SETTINGS[platform] ?? { __type: platform };
+      const baseSettings = PLATFORM_SETTINGS[platform] ?? { __type: platform };
+      const settings = { ...baseSettings };
+      const shortTitle = caption.slice(0, 80).replace(/\n.*/s, "").trim() || "Atlas UX Update";
+      if (platform === "youtube" && !settings.title) settings.title = shortTitle;
+      if (platform === "pinterest" && !settings.title) settings.title = shortTitle;
+      if (platform === "medium" && !settings.title) settings.title = shortTitle;
+      if (platform === "devto" && !settings.title) settings.title = shortTitle;
       const postBody = {
         type: "now",
         date: new Date().toISOString(),

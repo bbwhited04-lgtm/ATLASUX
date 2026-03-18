@@ -2980,14 +2980,14 @@ const POSTIZ_PLATFORM_SETTINGS: Record<string, Record<string, unknown>> = {
     video_made_with_ai: true,
     content_posting_method: "UPLOAD",
   },
-  x:         { __type: "x" },
+  x:         { __type: "x", who_can_reply_post: "everyone" },
   facebook:  { __type: "facebook" },
-  reddit:    { __type: "reddit", subreddit: ["atlas-ux-dev", "atlasux", "buffaloherde"] },
+  reddit:    { __type: "reddit", subreddit: [{ value: "atlas-ux-dev" }, { value: "atlasux" }, { value: "buffaloherde" }] },
   threads:   { __type: "threads" },
   linkedin:  { __type: "linkedin", post_as_images_carousel: false },
-  pinterest: { __type: "pinterest", title: "", link: "", dominant_color: "#000000", board: "" },
+  pinterest: { __type: "pinterest", title: "DYNAMIC", link: "https://atlasux.com", dominant_color: "#000000", board: "DYNAMIC" },
   tumblr:    { __type: "tumblr" },
-  youtube:   { __type: "youtube", title: "", type: "short", tags: [] },
+  youtube:   { __type: "youtube", title: "DYNAMIC", type: "public", tags: [] },
   mastodon:  { __type: "mastodon" },
   instagram: { __type: "instagram", post_type: "post", collaborators: [] },
   medium:    { __type: "medium", title: "", subtitle: "", tags: [] },
@@ -3507,7 +3507,17 @@ handlers["WF-212"] = async (ctx) => {
   // ── Parallel fan-out: post to all valid platforms concurrently ─────────
   const postPromises = Array.from(platformMap.entries()).map(async ([platform, integration]) => {
     try {
-      const settings = POSTIZ_PLATFORM_SETTINGS[platform] ?? { __type: platform };
+      const baseSettings = POSTIZ_PLATFORM_SETTINGS[platform] ?? { __type: platform };
+      const settings = { ...baseSettings };
+      // Populate dynamic fields from caption
+      const shortTitle = caption.slice(0, 80).replace(/\n.*/s, "").trim() || "Atlas UX Update";
+      if (platform === "youtube") {
+        settings.title = shortTitle;
+      }
+      if (platform === "pinterest") {
+        settings.title = shortTitle;
+        settings.board = "Atlas UX";
+      }
       const postBody = {
         type: "now",
         date: new Date().toISOString(),
