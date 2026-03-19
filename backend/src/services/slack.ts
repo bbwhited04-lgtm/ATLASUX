@@ -219,16 +219,45 @@ export async function postAsAgent(
   channelId: string,
   agentId: string,
   text: string,
-  options?: { threadTs?: string },
+  options?: { threadTs?: string; tenantId?: string; channelName?: string; skipMend?: boolean },
   token?: string,
 ): Promise<SlackPostResult> {
   try {
+    // ── Self-Mending Layer ──────────────────────────────────────────────────
+    // Validate agent output before posting. Skip for system messages or
+    // when explicitly bypassed (e.g., human-initiated posts).
+    let finalText = text;
+    if (!options?.skipMend && options?.tenantId && options?.channelName) {
+      const { mendCheck } = await import("../core/agent/selfMend.js");
+      const verdict = await mendCheck(text, agentId, options.channelName, options.tenantId);
+
+      if (verdict.action === "BLOCK") {
+        console.log(
+          `[self-mend] BLOCKED @${agentId} in #${options.channelName} (score: ${verdict.score}): ${verdict.reasons.map((r) => r.check).join(", ")}`
+        );
+        return { ok: false, error: `Self-mend blocked: ${verdict.reasons[0]?.detail}` };
+      }
+
+      if (verdict.action === "REWRITE" && verdict.mendedText) {
+        finalText = verdict.mendedText;
+        console.log(
+          `[self-mend] REWRITE @${agentId} in #${options.channelName} (score: ${verdict.score}): ${verdict.reasons.map((r) => r.check).join(", ")}`
+        );
+      }
+
+      if (verdict.action === "FLAG") {
+        console.log(
+          `[self-mend] FLAG @${agentId} in #${options.channelName} (score: ${verdict.score}): ${verdict.reasons.map((r) => r.check).join(", ")}`
+        );
+      }
+    }
+
     const emoji = AGENT_EMOJI[agentId] ?? ":robot_face:";
     const displayName = getAgentDisplayName(agentId);
 
     const body: Record<string, any> = {
       channel: channelId,
-      text,
+      text: finalText,
       username: displayName,
       icon_emoji: emoji,
       unfurl_links: false,

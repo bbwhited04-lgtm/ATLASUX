@@ -653,7 +653,7 @@ async function maybeSpontaneousThought(slackToken?: string): Promise<void> {
       return;
     }
 
-    const result = await postAsAgent(channel.id, agent.id, thought, undefined, slackToken);
+    const result = await postAsAgent(channel.id, agent.id, thought, { tenantId: CURRENT_TENANT_ID, channelName: targetChannelName }, slackToken);
     if (result.ok) {
       console.log(`[slackWorker] Spontaneous thought from ${agent.name} in #${targetChannelName} (${thought.length} chars)`);
     }
@@ -945,7 +945,7 @@ async function tickChannel(channelName: string, slackToken?: string) {
       // Reply in-thread if the human posted in a thread, otherwise top-level
       const threadTs = msg.thread_ts ?? undefined;
       const result = await postAsAgent(channelId, agent.id, reply, {
-        threadTs,
+        threadTs, tenantId: CURRENT_TENANT_ID, channelName,
       }, slackToken);
 
       if (result.ok) {
@@ -1296,7 +1296,7 @@ async function checkThreadReplies(channelId: string, channelName: string, messag
 
       const reply = response.text.trim();
       if (reply && !containsHallucinatedMetrics(reply)) {
-        await postAsAgent(channelId, agent.id, reply, { threadTs: parent.ts }, slackToken);
+        await postAsAgent(channelId, agent.id, reply, { threadTs: parent.ts, tenantId: CURRENT_TENANT_ID, channelName }, slackToken);
         repliedThreads.add(parent.ts);
         console.log(`[slackWorker] ${agent.name} replied in thread (${reply.length} chars) #${channelName}`);
       }

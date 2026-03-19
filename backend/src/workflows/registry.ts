@@ -4106,7 +4106,8 @@ handlers["WF-035"] = async (ctx) => {
     if (intelCh) {
       const routedList = routedAgents.size > 0 ? `\nRouted to: ${[...routedAgents].join(", ")}` : "";
       await postAsAgent(intelCh.id, "daily-intel",
-        `:red_circle: *ESCALATION — ${today} ${String(hour).padStart(2, "0")}:00 UTC*\nSources: ${sources.map(s => s.label).join(", ")}\nClips saved: ${savedClips}${routedList}\n\n${triageResult.slice(0, 1500)}`
+        `:red_circle: *ESCALATION — ${today} ${String(hour).padStart(2, "0")}:00 UTC*\nSources: ${sources.map(s => s.label).join(", ")}\nClips saved: ${savedClips}${routedList}\n\n${triageResult.slice(0, 1500)}`,
+        { tenantId: ctx.tenantId, channelName: "intel" },
       );
     } else {
       await writeStepAudit(ctx, "WF-035.slack-miss", "#intel channel not found for escalation — invite bot to channel");
@@ -4413,7 +4414,7 @@ handlers["WF-300"] = async (ctx) => {
 
   try {
     await postAsAgent(channelId, pick.id, cleanText,
-      replyTarget ? { threadTs: replyTarget.ts } : undefined
+      { ...(replyTarget ? { threadTs: replyTarget.ts } : {}), tenantId: ctx.tenantId, channelName: "water-cooler" },
     );
   } catch (err: any) {
     await writeStepAudit(ctx, "WF-300.error", `Slack post failed: ${err?.message ?? err}`);

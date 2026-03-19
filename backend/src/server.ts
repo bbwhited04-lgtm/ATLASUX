@@ -99,6 +99,7 @@ import supportKbRoutes from "./routes/supportKbRoutes.js";
 import wikiRoutes from "./routes/wikiRoutes.js";
 import wikiKeyRoutes from "./routes/wikiKeyRoutes.js";
 import wikiMcpRoutes from "./routes/wikiMcpRoutes.js";
+import mendRoutes from "./routes/mendRoutes.js";
 
 // Wait for DB before starting Fastify (retries on transient pooler blips)
 await connectWithRetry(5, 3000);
@@ -449,6 +450,7 @@ await app.register(supportKbRoutes, { prefix: "/v1/support" });
 
 // Wiki — public knowledge base at wiki.atlasux.cloud (no auth required)
 await app.register(wikiRoutes, { prefix: "/v1/wiki" });
+await app.register(mendRoutes, { prefix: "/v1/mend" });
 
 // Wiki API Keys — self-service key management (no auth, keys are self-contained)
 await app.register(wikiKeyRoutes, { prefix: "/v1/wiki-keys" });
