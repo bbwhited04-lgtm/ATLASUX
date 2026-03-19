@@ -18,6 +18,8 @@ desktop.ini
 backend/.env
 backend/.env.*
 !backend/.env.example
+.claude/
+.moltbot/credentials/
 
 ########################################
 # Node / JS
