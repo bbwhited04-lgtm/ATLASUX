@@ -114,6 +114,9 @@ function resolveFilePath(section: string, category: string, slug: string): strin
       return path.join(PROJECT_ROOT, "..", "policies", `${slug}.md`);
     case "workflows":
       return path.join(PROJECT_ROOT, "..", "workflows", `${slug}.md`);
+    case "kb-agents":
+      // Flat files in kb/agents/ — slug is the full filename stem
+      return path.join(KB_ROOT, "agents", `${slug}.md`);
     default:
       return category === "_root"
         ? path.join(KB_ROOT, section, `${slug}.md`)
@@ -141,7 +144,10 @@ function resolveAgentPath(category: string, slug: string): string {
 
 async function indexKbSection(section: string): Promise<ArticleMeta[]> {
   const articles: ArticleMeta[] = [];
-  const sectionPath = path.join(KB_ROOT, section);
+  // kb-agents maps to kb/agents/ on disk
+  const sectionPath = section === "kb-agents"
+    ? path.join(KB_ROOT, "agents")
+    : path.join(KB_ROOT, section);
   let entries: string[];
   try { entries = await readdir(sectionPath); } catch { return []; }
 
@@ -157,13 +163,21 @@ async function indexKbSection(section: string): Promise<ArticleMeta[]> {
         category = entry;
         files = (await readdir(entryPath)).filter((f) => f.endsWith(".md") && !isExcluded(f));
       } else if (entry.endsWith(".md")) {
-        category = "_root";
+        // For flat files, derive category from filename prefix (tools-*, workflows-*, ai-ml-*)
+        const prefixMatch = entry.replace(/\.md$/, "").match(/^([a-z]+-[a-z]+)-/);
+        category = prefixMatch ? prefixMatch[1] : "_root";
         files = [entry];
       } else continue;
     } catch { continue; }
 
+    // Flat files: category was derived from prefix, file lives in sectionPath directly
+    // Nested dirs: file lives in sectionPath/category/
+    const isNested = (() => { try { return statSync(path.join(sectionPath, category)).isDirectory(); } catch { return false; } })();
+
     for (const file of files) {
-      const filePath = category === "_root" ? path.join(sectionPath, file) : path.join(sectionPath, category, file);
+      const filePath = isNested
+        ? path.join(sectionPath, category, file)
+        : path.join(sectionPath, file);
       try {
         const raw = await readFile(filePath, "utf-8");
         const { meta, content } = parseFrontmatter(raw);
@@ -269,7 +283,7 @@ async function indexWorkflows(): Promise<ArticleMeta[]> {
 
 // ── Index builder ────────────────────────────────────────────────────────────
 
-const ALL_SECTIONS = ["image-gen", "video-gen", "support", "agents", "policies", "workflows"];
+const ALL_SECTIONS = ["image-gen", "video-gen", "support", "agents", "policies", "workflows", "kb-agents"];
 
 let _cache: { ts: number; articles: ArticleMeta[] } | null = null;
 const CACHE_TTL = 60_000;
@@ -277,16 +291,17 @@ const CACHE_TTL = 60_000;
 async function buildIndex(): Promise<ArticleMeta[]> {
   if (_cache && Date.now() - _cache.ts < CACHE_TTL) return _cache.articles;
 
-  const [imageGen, videoGen, support, agents, policies, workflows] = await Promise.all([
+  const [imageGen, videoGen, support, agents, policies, workflows, kbAgents] = await Promise.all([
     indexKbSection("image-gen"),
     indexKbSection("video-gen"),
     indexKbSection("support"),
     indexAgentDocs(),
     indexPolicies(),
     indexWorkflows(),
+    indexKbSection("kb-agents"),
   ]);
 
-  const articles = [...imageGen, ...videoGen, ...support, ...agents, ...policies, ...workflows];
+  const articles = [...imageGen, ...videoGen, ...support, ...agents, ...policies, ...workflows, ...kbAgents];
   _cache = { ts: Date.now(), articles };
   return articles;
 }
@@ -318,6 +333,10 @@ const SECTION_LABELS: Record<string, { label: string; description: string }> = {
     label: "Workflows",
     description: "Predefined workflow definitions powering Atlas UX automation.",
   },
+  "kb-agents": {
+    label: "Knowledge Base",
+    description: "AI foundations, tooling patterns, workflow design, security, and prompt engineering — 100+ reference articles.",
+  },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -341,6 +360,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   hierarchy: "Hierarchy",
   // policies & workflows
   compliance: "Compliance", definitions: "Definitions",
+  // kb-agents (derived from filename prefixes)
+  "ai-ml": "AI & Machine Learning", tools: "Tooling & Tool Design",
+  workflows: "Workflow Design", "cli-tools": "CLI & Developer Tools",
+  prompts: "Prompts & Prompt Engineering", security: "Security & Compliance",
+  playbook: "Strategic Playbooks", adv: "Advanced Patterns",
   _root: "Overview",
 };
 
