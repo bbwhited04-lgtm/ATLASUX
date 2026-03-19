@@ -2,6 +2,7 @@ import { prisma } from "../db/prisma.js";
 import { checkGuardrails } from "./guardrails.js";
 import { deliverBroadcast, type BroadcastChannel } from "../core/agent/tools/broadcastDelivery.js";
 import { getAgentCalibration, applyCalibration } from "../core/orgBrain/calibration.js";
+import { applyEvolution } from "./evolutionService.js";
 
 export type CreateDecisionMemoInput = {
   tenantId: string;
@@ -145,4 +146,44 @@ export async function rejectDecisionMemo(params: { tenantId: string; memoId: str
     data: { status: "REJECTED", payload: { ...(memo.payload as any), rejectionReason: params.reason ?? "" } },
   });
   return updated;
+}
+
+/**
+ * Execute an approved evolution decision memo.
+ * Called after approveDecisionMemo() succeeds for memos with payload.type === "EVOLUTION".
+ * Applies the evolution change and starts the trial period.
+ */
+export async function executeApprovedEvolution(memo: {
+  id: string;
+  tenantId: string;
+  agent: string;
+  payload: any;
+}) {
+  const payload = memo.payload as { type?: string };
+  if (payload?.type !== "EVOLUTION") return;
+
+  const result = await applyEvolution(memo.tenantId, memo);
+
+  if (!result.ok) {
+    await prisma.auditLog.create({
+      data: {
+        tenantId: memo.tenantId,
+        actorType: "system",
+        actorExternalId: "evolution_service",
+        level: "error",
+        action: "EVOLUTION_APPLY_FAILED",
+        entityType: "decision_memo",
+        entityId: memo.id,
+        message: `Evolution apply failed for ${memo.agent}: ${result.error}`,
+        meta: {
+          memoId: memo.id,
+          agent: memo.agent,
+          error: result.error,
+        },
+        timestamp: new Date(),
+      },
+    } as any).catch(() => null);
+  }
+
+  return result;
 }

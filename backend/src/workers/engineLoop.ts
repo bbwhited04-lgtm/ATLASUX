@@ -2,6 +2,8 @@ import "dotenv/config";
 import { engineTick } from "../core/engine/engine.js";
 import { getSystemState, setSystemState } from "../services/systemState.js";
 import { prisma } from "../db/prisma.js";
+import { moltbookHeartbeatDue, runMoltbookHeartbeat } from "../services/moltbookHeartbeat.js";
+import { getActiveTrials, evaluateTrialCompletion } from "../services/evolutionService.js";
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -41,6 +43,7 @@ async function main() {
   const maxTicksPerCycle = Math.max(1, Math.min(200, Number(process.env.ENGINE_LOOP_MAX_TICKS_PER_CYCLE ?? 25)));
 
   let stopping = false;
+  let loopCount = 0;
   const stop = () => {
     stopping = true;
   };
@@ -88,6 +91,40 @@ async function main() {
         process.stdout.write(`[engineLoop] recovered ${recovered.count} stuck intent(s)\n`);
       }
     } catch { /* non-fatal */ }
+
+    // Moltbook heartbeat (every 30 min, non-blocking)
+    if (moltbookHeartbeatDue()) {
+      try {
+        const result = await runMoltbookHeartbeat();
+        process.stdout.write(`[engineLoop] ${result}\n`);
+      } catch (e: any) {
+        process.stderr.write(`[engineLoop] moltbook error: ${e?.message ?? e}\n`);
+      }
+    }
+
+    // Evolution trial monitoring (every ~400 loops ≈ 5 minutes at 750ms idle)
+    loopCount++;
+    if (loopCount % 400 === 0) {
+      try {
+        const ownerTenantId = process.env.TENANT_ID ?? "";
+        if (ownerTenantId) {
+          const trials = await getActiveTrials(ownerTenantId);
+          for (const trial of trials) {
+            if (trial.tasksCompleted >= trial.tasksRequired) {
+              const result = await evaluateTrialCompletion(ownerTenantId, trial.agentName);
+              if (result) {
+                process.stdout.write(
+                  `[engineLoop] evolution trial ${result.passed ? "PASSED" : "REVERTED"}: ` +
+                  `${result.agentName} v${result.version} (${result.trialScore.toFixed(1)} vs ${result.baselineScore} baseline)\n`
+                );
+              }
+            }
+          }
+        }
+      } catch (e: any) {
+        process.stderr.write(`[engineLoop] trial monitor error: ${e?.message ?? e}\n`);
+      }
+    }
 
     // Drain a batch of intents quickly, then pause.
     let didWork = false;

@@ -92,7 +92,9 @@ import { calibrationRoutes } from "./routes/calibrationRoutes.js";
 import { diagnosticsRoutes } from "./routes/diagnosticsRoutes.js";
 import { quickbooksRoutes } from "./routes/quickbooksRoutes.js";
 import { credentialRoutes } from "./routes/credentialRoutes.js";
+import { evolutionRoutes } from "./routes/evolutionRoutes.js";
 import elevenlabsRoutes from "./routes/elevenlabsRoutes.js";
+import supportKbRoutes from "./routes/supportKbRoutes.js";
 
 // Wait for DB before starting Fastify (retries on transient pooler blips)
 await connectWithRetry(5, 3000);
@@ -437,6 +439,9 @@ await app.register(twilioRoutes, { prefix: "/v1/twilio" });
 // ElevenLabs — conversational AI voice agents, webhooks, phone management
 await app.register(elevenlabsRoutes, { prefix: "/v1/elevenlabs" });
 
+// Support KB — public help center articles (no auth required)
+await app.register(supportKbRoutes, { prefix: "/v1/support" });
+
 // Org Memory — the Organizational Brain persistent memory layer
 await app.register(orgMemoryRoutes, { prefix: "/v1/org-memory" });
 
@@ -449,6 +454,9 @@ await app.register(quickbooksRoutes, { prefix: "/v1/quickbooks" });
 
 // Per-tenant credential management (API keys for third-party providers)
 await app.register(credentialRoutes, { prefix: "/v1/credentials" });
+
+// Agent evolution system — behavior changes, trials, history
+await app.register(evolutionRoutes, { prefix: "/v1/evolution" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma, withTenant } from "../db/prisma.js";
-import { approveDecisionMemo, createDecisionMemo, rejectDecisionMemo, executeApprovedBroadcast } from "../services/decisionMemos.js";
+import { approveDecisionMemo, createDecisionMemo, rejectDecisionMemo, executeApprovedBroadcast, executeApprovedEvolution } from "../services/decisionMemos.js";
 
 const CreateMemoSchema = z.object({
   agent:            z.string().min(1).max(100),
@@ -217,6 +217,13 @@ export const decisionRoutes: FastifyPluginAsync = async (app) => {
     if (res.ok && (res.memo.payload as any)?.type === "broadcast") {
       executeApprovedBroadcast(res.memo).catch(err => {
         app.log.error({ err }, "Broadcast delivery failed after approval");
+      });
+    }
+
+    // If this is an evolution memo, trigger evolution (fire-and-forget)
+    if (res.ok && (res.memo.payload as any)?.type === "EVOLUTION") {
+      executeApprovedEvolution(res.memo).catch(err => {
+        app.log.error({ err }, "Evolution apply failed after approval");
       });
     }
 
