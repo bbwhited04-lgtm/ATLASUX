@@ -69,6 +69,9 @@ model Tenant {
   callCosts                                CallCost[]
   calendarBookings                         CalendarBooking[]
   treatments                               Treatment[]
+  kbEvalQueries                            KbEvalQuery[]
+  kbEvalRuns                               KbEvalRun[]
+  kbHealActions                            KbHealAction[]
 
   @@map("tenants")
 }
@@ -1630,4 +1633,128 @@ model TreatmentClip {
   @@index([treatmentId])
   @@index([status])
   @@map("treatment_clips")
+}
+
+model KbEvalQuery {
+  id                  String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String         @map("tenant_id") @db.Uuid
+  query               String
+  querySource         String         @map("query_source")
+  expectedDocumentIds String[]       @map("expected_document_ids")
+  expectedAnswer      String?        @map("expected_answer")
+  difficulty          String         @default("medium")
+  category            String?
+  tier                String?
+  status              String         @default("candidate")
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  approvedAt          DateTime?      @map("approved_at") @db.Timestamptz(6)
+  retiredAt           DateTime?      @map("retired_at") @db.Timestamptz(6)
+  results             KbEvalResult[]
+  tenant              Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([category])
+  @@map("kb_eval_queries")
+}
+
+model KbEvalRun {
+  id                   String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String         @map("tenant_id") @db.Uuid
+  trigger              String
+  healthScore          Int            @map("health_score")
+  queriesRun           Int            @map("queries_run")
+  issuesFound          Int            @map("issues_found")
+  autoHealed           Int            @map("auto_healed")
+  decisionMemosCreated Int            @map("decision_memos_created")
+  costUsd              Float          @map("cost_usd")
+  durationMs           Int            @map("duration_ms")
+  report               Json           @default("{}")
+  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  results              KbEvalResult[]
+  healActions          KbHealAction[]
+  tenant               Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@map("kb_eval_runs")
+}
+
+model KbEvalResult {
+  id                   String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  runId                String      @map("run_id") @db.Uuid
+  evalQueryId          String      @map("eval_query_id") @db.Uuid
+  retrievedDocumentIds String[]    @map("retrieved_document_ids")
+  answer               String?
+  scores               Json        @default("{}")
+  latencyMs            Int         @map("latency_ms")
+  model                String?
+  createdAt            DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  run                  KbEvalRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  query                KbEvalQuery @relation(fields: [evalQueryId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@index([evalQueryId])
+  @@map("kb_eval_results")
+}
+
+model KbHealAction {
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  runId            String?    @map("run_id") @db.Uuid
+  tenantId         String     @map("tenant_id") @db.Uuid
+  actionType       String     @map("action_type")
+  targetDocumentId String?    @map("target_document_id")
+  targetChunkId    String?    @map("target_chunk_id")
+  riskTier         Int        @map("risk_tier")
+  confidenceScore  Float      @map("confidence_score")
+  estimatedCostUsd Float      @map("estimated_cost_usd")
+  actualCostUsd    Float?     @map("actual_cost_usd")
+  status           String     @default("pending")
+  decisionMemoId   String?    @map("decision_memo_id") @db.Uuid
+  trigger          String
+  description      String?
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  executedAt       DateTime?  @map("executed_at") @db.Timestamptz(6)
+  run              KbEvalRun? @relation(fields: [runId], references: [id])
+  tenant           Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([runId])
+  @@map("kb_heal_actions")
+}
+
+model WikiApiKey {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  email         String
+  keyHash       String    @unique @map("key_hash")
+  keyPrefix     String    @map("key_prefix")
+  tier          String    @default("free") // free, developer, pro
+  permissions   String[]  @default(["wiki:read", "wiki:search"])
+  rateLimit     Int       @default(10) @map("rate_limit")
+  isActive      Boolean   @default(true) @map("is_active")
+  tosAcceptedAt DateTime? @map("tos_accepted_at") @db.Timestamptz(6)
+  lastUsedAt    DateTime? @map("last_used_at") @db.Timestamptz(6)
+  usageCount    Int       @default(0) @map("usage_count")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  credentials WikiKeyCredential[]
+
+  @@index([keyHash])
+  @@index([email])
+  @@map("wiki_api_keys")
+}
+
+model WikiKeyCredential {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  wikiKeyId   String   @map("wiki_key_id") @db.Uuid
+  platform    String   // openai, midjourney, stability, elevenlabs, etc.
+  label       String?  // user-friendly label
+  encryptedKey String  @map("encrypted_key") // AES-256-GCM via TOKEN_ENCRYPTION_KEY
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  wikiKey WikiApiKey @relation(fields: [wikiKeyId], references: [id], onDelete: Cascade)
+
+  @@unique([wikiKeyId, platform])
+  @@index([wikiKeyId])
+  @@map("wiki_key_credentials")
 }

@@ -1,0 +1,980 @@
+{
+  "generatedAt": "2026-03-19T18:30:42.712Z",
+  "scanner": "kbGapAnalyzer.mjs v1.0",
+  "company": "Dead App Corp",
+  "product": "Atlas UX",
+  "totalFiles": 569,
+  "domainsAnalyzed": 15,
+  "gaps": [],
+  "covered": [
+    {
+      "id": "ai-ml-history",
+      "name": "AI/ML History & Foundations (1956–Present)",
+      "description": "The birth of AI at Dartmouth (1956), early symbolic AI, AI winters, shift to ML, Deep Blue, Watson, deep learning revolution, transformers, and the three waves of AI evolution.",
+      "priority": "CRITICAL",
+      "expectedMin": 8,
+      "found": 12,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "src\\kb\\agents\\ai-ml-big-data-deep-learning.md",
+        "src\\kb\\agents\\ai-ml-birth-of-ai-1956.md",
+        "src\\kb\\agents\\ai-ml-deep-blue-watson-era.md",
+        "src\\kb\\agents\\ai-ml-early-systems-expert-systems.md",
+        "src\\kb\\agents\\ai-ml-foundations-symbolic-era.md",
+        "src\\kb\\agents\\ai-ml-llm-era-and-agents.md",
+        "src\\kb\\agents\\ai-ml-shift-to-machine-learning.md",
+        "src\\kb\\agents\\ai-ml-three-waves-evolution.md",
+        "src\\kb\\agents\\ai-ml-transformers-attention-revolution.md",
+        "src\\kb\\agents\\ai-ml-winters-and-resurgences.md",
+        "src\\kb\\agents\\ai-sequence-models-rnn-lstm.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\tina-entity-structuring.md"
+      ],
+      "expectedFiles": [
+        "ai-ml-birth-of-ai-1956.md",
+        "ai-ml-foundations-symbolic-era.md",
+        "ai-ml-early-systems-expert-systems.md",
+        "ai-ml-winters-and-resurgences.md",
+        "ai-ml-shift-to-machine-learning.md",
+        "ai-ml-deep-blue-watson-era.md",
+        "ai-ml-big-data-deep-learning.md",
+        "ai-ml-transformers-attention-revolution.md",
+        "ai-ml-three-waves-evolution.md",
+        "ai-ml-llm-era-and-agents.md"
+      ],
+      "resources": {
+        "links": [
+          {
+            "url": "https://hai.stanford.edu/sites/default/files/2023-03/AI-Index-Report-2023.pdf",
+            "title": "Stanford HAI AI Index Report 2023"
+          },
+          {
+            "url": "https://www.deeplearning.ai/courses/",
+            "title": "DeepLearning.AI Course Catalog (Andrew Ng)"
+          },
+          {
+            "url": "https://arxiv.org/abs/1706.03762",
+            "title": "Attention Is All You Need (Vaswani et al., 2017)"
+          },
+          {
+            "url": "https://en.wikipedia.org/wiki/History_of_artificial_intelligence",
+            "title": "Wikipedia: History of AI"
+          }
+        ],
+        "images": [
+          {
+            "description": "Dartmouth Conference 1956 — birth of AI",
+            "search": "dartmouth conference 1956 artificial intelligence founders"
+          },
+          {
+            "description": "Perceptron diagram (Rosenblatt, 1958)",
+            "search": "rosenblatt perceptron 1958 diagram neural network"
+          },
+          {
+            "description": "Deep Blue vs Kasparov 1997",
+            "search": "deep blue kasparov 1997 chess IBM"
+          },
+          {
+            "description": "IBM Watson Jeopardy 2011",
+            "search": "ibm watson jeopardy 2011"
+          },
+          {
+            "description": "Transformer architecture diagram",
+            "search": "transformer architecture attention mechanism diagram"
+          },
+          {
+            "description": "Three waves of AI evolution timeline",
+            "search": "three waves AI evolution DARPA timeline"
+          },
+          {
+            "description": "AI winter timeline chart",
+            "search": "ai winter timeline chart funding decline"
+          }
+        ],
+        "videos": [
+          {
+            "url": "https://www.youtube.com/watch?v=J4RqCSD--Dg",
+            "title": "The History of Artificial Intelligence (ColdFusion)"
+          },
+          {
+            "url": "https://www.youtube.com/watch?v=aircAruvnKk",
+            "title": "But what is a Neural Network? (3Blue1Brown)"
+          },
+          {
+            "url": "https://www.youtube.com/watch?v=UZDiGooFs54",
+            "title": "The Turing Test — Computerphile"
+          }
+        ]
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "transformer-llm-architecture",
+      "name": "Transformer & LLM Architecture Deep Dive",
+      "description": "Attention mechanisms, BERT, GPT lineage, scaling laws, tokenization, fine-tuning, RLHF, mixture of experts, multimodal models.",
+      "priority": "HIGH",
+      "expectedMin": 5,
+      "found": 11,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "src\\kb\\agents\\ai-autogpt-babyagi-history.md",
+        "src\\kb\\agents\\ai-ml-transformers-attention-revolution.md",
+        "src\\kb\\agents\\ai-reinforcement-learning-foundations.md",
+        "src\\kb\\agents\\ai-reward-modeling-alignment.md",
+        "src\\kb\\agents\\ai-sequence-models-rnn-lstm.md",
+        "src\\kb\\image-gen\\chatgpt-imagegen\\01-chatgpt-imagegen-comprehensive-guide.md",
+        "src\\kb\\image-gen\\chatgpt-imagegen\\02-chatgpt-imagegen-pricing.md",
+        "src\\kb\\image-gen\\chatgpt-imagegen\\03-chatgpt-imagegen-prompting-guide.md",
+        "src\\kb\\image-gen\\chatgpt-imagegen\\04-chatgpt-imagegen-strengths-weaknesses.md",
+        "src\\kb\\image-gen\\chatgpt-imagegen\\05-chatgpt-imagegen-api-integration.md",
+        "src\\kb\\image-gen\\chatgpt-imagegen\\06-chatgpt-imagegen-best-for.md"
+      ],
+      "expectedFiles": [
+        "ai-transformers-attention-explained.md",
+        "ai-gpt-lineage-gpt1-to-gpt4.md",
+        "ai-scaling-laws-chinchilla.md",
+        "ai-rlhf-alignment.md",
+        "ai-tokenization-embeddings.md",
+        "ai-multimodal-models.md"
+      ],
+      "resources": {
+        "links": [
+          {
+            "url": "https://jalammar.github.io/illustrated-transformer/",
+            "title": "The Illustrated Transformer (Jay Alammar)"
+          },
+          {
+            "url": "https://arxiv.org/abs/2203.15556",
+            "title": "Training Compute-Optimal LLMs (Chinchilla paper)"
+          }
+        ],
+        "images": [
+          {
+            "description": "Self-attention mechanism visualization",
+            "search": "self attention mechanism transformer visualization"
+          },
+          {
+            "description": "GPT architecture evolution GPT-1 to GPT-4",
+            "search": "GPT architecture evolution timeline OpenAI"
+          },
+          {
+            "description": "BERT vs GPT architecture comparison",
+            "search": "BERT GPT architecture comparison diagram"
+          },
+          {
+            "description": "Scaling laws compute vs performance",
+            "search": "scaling laws AI compute performance kaplan"
+          },
+          {
+            "description": "RLHF pipeline diagram",
+            "search": "RLHF reinforcement learning human feedback pipeline"
+          }
+        ],
+        "videos": [
+          {
+            "url": "https://www.youtube.com/watch?v=wjZofJX0v4M",
+            "title": "Let's build GPT from scratch (Andrej Karpathy)"
+          },
+          {
+            "url": "https://www.youtube.com/watch?v=zjkBMFhNj_g",
+            "title": "Attention in transformers, visually explained (3Blue1Brown)"
+          }
+        ]
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "computer-vision",
+      "name": "Computer Vision & Visual AI",
+      "description": "CNNs, image classification, object detection, GANs, diffusion models, visual transformers (ViT), CLIP, and how they power image/video generation.",
+      "priority": "HIGH",
+      "expectedMin": 4,
+      "found": 5,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "src\\kb\\video-gen\\comparison-19-ai-video-cost-every-api-compared.md",
+        "src\\kb\\video-gen\\treatments\\extraction-ffmpeg-clipping.md",
+        "src\\kb\\video-gen\\treatments\\shorts-ai-clip-selection.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-organizational-learning.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-organizational-behavior.md"
+      ],
+      "expectedFiles": [
+        "ai-computer-vision-foundations.md",
+        "ai-cnns-to-vision-transformers.md",
+        "ai-gans-generative-adversarial.md",
+        "ai-diffusion-models-explained.md",
+        "ai-clip-contrastive-learning.md"
+      ],
+      "resources": {
+        "links": [
+          {
+            "url": "https://cs231n.stanford.edu/",
+            "title": "Stanford CS231n: CNNs for Visual Recognition"
+          },
+          {
+            "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/",
+            "title": "What are Diffusion Models? (Lilian Weng)"
+          }
+        ],
+        "images": [
+          {
+            "description": "CNN architecture layers visualization",
+            "search": "convolutional neural network layers visualization"
+          },
+          {
+            "description": "GAN generator discriminator diagram",
+            "search": "GAN generative adversarial network generator discriminator"
+          },
+          {
+            "description": "Diffusion model forward reverse process",
+            "search": "diffusion model denoising forward reverse process diagram"
+          },
+          {
+            "description": "CLIP contrastive learning diagram",
+            "search": "CLIP contrastive language image pretraining diagram OpenAI"
+          },
+          {
+            "description": "Vision Transformer ViT patch embedding",
+            "search": "vision transformer ViT patch embedding diagram"
+          }
+        ],
+        "videos": [
+          {
+            "url": "https://www.youtube.com/watch?v=HGOBQPFzWKo",
+            "title": "How Diffusion Models Work (Computerphile)"
+          },
+          {
+            "url": "https://www.youtube.com/watch?v=8L10w1KoOU8",
+            "title": "GANs Explained Simply (Lex Fridman)"
+          }
+        ]
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "nlp-foundations",
+      "name": "NLP & Language Understanding",
+      "description": "Evolution from rule-based NLP to statistical methods to neural NLP. Word embeddings, sequence models, language modeling, sentiment analysis, NER.",
+      "priority": "HIGH",
+      "expectedMin": 3,
+      "found": 4,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "src\\kb\\agents\\ai-language-modeling-fundamentals.md",
+        "src\\kb\\agents\\ai-nlp-evolution-rules-to-neural.md",
+        "src\\kb\\agents\\ai-sequence-models-rnn-lstm.md",
+        "src\\kb\\agents\\ai-word-embeddings-word2vec-glove.md"
+      ],
+      "expectedFiles": [
+        "ai-nlp-evolution-rules-to-neural.md",
+        "ai-word-embeddings-word2vec-glove.md",
+        "ai-sequence-models-rnn-lstm.md",
+        "ai-language-modeling-fundamentals.md"
+      ],
+      "resources": {
+        "links": [
+          {
+            "url": "https://web.stanford.edu/class/cs224n/",
+            "title": "Stanford CS224n: NLP with Deep Learning"
+          },
+          {
+            "url": "https://jalammar.github.io/illustrated-word2vec/",
+            "title": "The Illustrated Word2Vec (Jay Alammar)"
+          }
+        ],
+        "images": [
+          {
+            "description": "Word2Vec vector space visualization",
+            "search": "word2vec vector space king queen analogy"
+          },
+          {
+            "description": "LSTM cell diagram",
+            "search": "LSTM long short term memory cell diagram gates"
+          },
+          {
+            "description": "NLP pipeline stages",
+            "search": "NLP pipeline tokenization POS NER parsing"
+          },
+          {
+            "description": "Seq2Seq encoder decoder",
+            "search": "sequence to sequence encoder decoder attention"
+          },
+          {
+            "description": "Evolution of NLP methods timeline",
+            "search": "NLP evolution timeline rules statistical neural transformer"
+          }
+        ],
+        "videos": [
+          {
+            "url": "https://www.youtube.com/watch?v=viZrOnJclY0",
+            "title": "Word2Vec Explained (StatQuest)"
+          },
+          {
+            "url": "https://www.youtube.com/watch?v=SHvAYCesFq4",
+            "title": "RNN & LSTM Explained (CodeEmporium)"
+          }
+        ]
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "reinforcement-learning",
+      "name": "Reinforcement Learning & Decision Making",
+      "description": "Q-learning, policy gradients, AlphaGo, reward modeling, multi-agent RL, sim-to-real transfer. Foundational for agent decision-making.",
+      "priority": "MEDIUM",
+      "expectedMin": 3,
+      "found": 3,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "src\\kb\\agents\\ai-alphago-deepmind-breakthroughs.md",
+        "src\\kb\\agents\\ai-reinforcement-learning-foundations.md",
+        "src\\kb\\agents\\ai-reward-modeling-alignment.md"
+      ],
+      "expectedFiles": [
+        "ai-reinforcement-learning-foundations.md",
+        "ai-alphago-deepmind-breakthroughs.md",
+        "ai-reward-modeling-alignment.md"
+      ],
+      "resources": {
+        "links": [
+          {
+            "url": "https://spinningup.openai.com/en/latest/",
+            "title": "OpenAI Spinning Up in Deep RL"
+          },
+          {
+            "url": "https://www.deepmind.com/blog/alphago-the-story-so-far",
+            "title": "DeepMind: AlphaGo — The Story So Far"
+          }
+        ],
+        "images": [
+          {
+            "description": "RL agent environment loop",
+            "search": "reinforcement learning agent environment reward loop diagram"
+          },
+          {
+            "description": "AlphaGo vs Lee Sedol 2016",
+            "search": "alphago lee sedol 2016 go game deepmind"
+          },
+          {
+            "description": "Q-learning grid world visualization",
+            "search": "q-learning grid world value function visualization"
+          },
+          {
+            "description": "Policy gradient vs value-based comparison",
+            "search": "policy gradient value based reinforcement learning comparison"
+          },
+          {
+            "description": "Multi-agent RL coordination",
+            "search": "multi-agent reinforcement learning cooperation competition"
+          }
+        ],
+        "videos": [
+          {
+            "url": "https://www.youtube.com/watch?v=WO3kmx4CVgg",
+            "title": "DeepMind's AlphaGo Documentary"
+          },
+          {
+            "url": "https://www.youtube.com/watch?v=2pWv7GOvuf0",
+            "title": "RL Course — David Silver (DeepMind)"
+          }
+        ]
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "ai-safety-alignment",
+      "name": "AI Safety, Alignment & Existential Research",
+      "description": "Constitutional AI, RLHF critique, interpretability, red-teaming, existential risk research, AI governance frameworks, Dead App Corp's alignment stance.",
+      "priority": "HIGH",
+      "expectedMin": 4,
+      "found": 7,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "src\\kb\\agents\\ai-constitutional-ai-anthropic.md",
+        "src\\kb\\agents\\ai-existential-risk-research.md",
+        "src\\kb\\agents\\ai-interpretability-mechanistic.md",
+        "src\\kb\\agents\\ai-red-teaming-adversarial.md",
+        "src\\kb\\agents\\ai-reward-modeling-alignment.md",
+        "src\\kb\\agents\\ai-safety-alignment-landscape.md",
+        "src\\kb\\agents\\prompts-security-red-team.md"
+      ],
+      "expectedFiles": [
+        "ai-safety-alignment-landscape.md",
+        "ai-constitutional-ai-anthropic.md",
+        "ai-interpretability-mechanistic.md",
+        "ai-existential-risk-research.md",
+        "ai-red-teaming-adversarial.md"
+      ],
+      "resources": {
+        "links": [
+          {
+            "url": "https://www.anthropic.com/research",
+            "title": "Anthropic Research — Constitutional AI & Alignment"
+          },
+          {
+            "url": "https://www.alignmentforum.org/",
+            "title": "AI Alignment Forum"
+          },
+          {
+            "url": "https://transformer-circuits.pub/",
+            "title": "Transformer Circuits (Anthropic Interpretability)"
+          }
+        ],
+        "images": [
+          {
+            "description": "Constitutional AI training pipeline",
+            "search": "constitutional AI anthropic training pipeline RLHF"
+          },
+          {
+            "description": "Mechanistic interpretability neuron visualization",
+            "search": "mechanistic interpretability transformer neuron activation"
+          },
+          {
+            "description": "AI alignment taxonomy",
+            "search": "AI alignment taxonomy outer inner alignment"
+          },
+          {
+            "description": "Red teaming adversarial testing flow",
+            "search": "AI red teaming adversarial testing evaluation flow"
+          },
+          {
+            "description": "Existential risk landscape map",
+            "search": "AI existential risk landscape superintelligence timeline"
+          }
+        ],
+        "videos": [
+          {
+            "url": "https://www.youtube.com/watch?v=EUjc1WuyPT8",
+            "title": "AI Alignment Problem Explained (Robert Miles)"
+          },
+          {
+            "url": "https://www.youtube.com/watch?v=bIrEM2FbOLU",
+            "title": "Constitutional AI Explained (Anthropic)"
+          }
+        ]
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "speech-audio-ai",
+      "name": "Speech & Audio AI",
+      "description": "ASR (Whisper), TTS (ElevenLabs architecture), voice cloning, audio generation, music AI. Critical for Lucy's voice pipeline.",
+      "priority": "HIGH",
+      "expectedMin": 3,
+      "found": 4,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "src\\kb\\agents\\ai-speech-recognition-asr-evolution.md",
+        "src\\kb\\agents\\ai-text-to-speech-tts-landscape.md",
+        "src\\kb\\agents\\ai-voice-cloning-ethics-tech.md",
+        "src\\kb\\video-gen\\treatments\\extraction-whisper-transcription.md"
+      ],
+      "expectedFiles": [
+        "ai-speech-recognition-asr-evolution.md",
+        "ai-text-to-speech-tts-landscape.md",
+        "ai-voice-cloning-ethics-tech.md",
+        "ai-audio-generation-music-ai.md"
+      ],
+      "resources": {
+        "links": [
+          {
+            "url": "https://openai.com/research/whisper",
+            "title": "OpenAI Whisper — Robust Speech Recognition"
+          },
+          {
+            "url": "https://elevenlabs.io/docs",
+            "title": "ElevenLabs Documentation"
+          }
+        ],
+        "images": [
+          {
+            "description": "ASR pipeline mel spectrogram to text",
+            "search": "automatic speech recognition pipeline spectrogram transformer"
+          },
+          {
+            "description": "Whisper architecture diagram",
+            "search": "openai whisper architecture encoder decoder"
+          },
+          {
+            "description": "TTS synthesis pipeline",
+            "search": "text to speech neural TTS pipeline vocoder"
+          },
+          {
+            "description": "Voice cloning few-shot learning",
+            "search": "voice cloning few shot learning speaker embedding"
+          },
+          {
+            "description": "Audio waveform vs spectrogram",
+            "search": "audio waveform spectrogram mel comparison"
+          }
+        ],
+        "videos": [
+          {
+            "url": "https://www.youtube.com/watch?v=ABFqbY_rmEk",
+            "title": "How Whisper Works (Yannic Kilcher)"
+          },
+          {
+            "url": "https://www.youtube.com/watch?v=0sR1rU3gLzQ",
+            "title": "The Evolution of Text-to-Speech AI"
+          }
+        ]
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "ai-small-business-trades",
+      "name": "AI for Small Business & Trade Industries",
+      "description": "How AI transforms plumbing, HVAC, salons, electrical, landscaping. ROI case studies, adoption barriers, Dead App Corp market thesis.",
+      "priority": "HIGH",
+      "expectedMin": 4,
+      "found": 5,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "src\\kb\\agents\\ai-receptionist-market-analysis.md",
+        "src\\kb\\agents\\ai-trade-business-transformation.md",
+        "src\\kb\\image-gen\\guides\\01-image-gen-getting-started.md",
+        "src\\kb\\image-gen\\guides\\05-image-gen-for-trade-businesses.md",
+        "src\\kb\\image-gen\\prompt-framework\\04-prompt-templates-by-industry.md"
+      ],
+      "expectedFiles": [
+        "ai-trade-business-transformation.md",
+        "ai-field-service-automation.md",
+        "ai-receptionist-market-analysis.md",
+        "ai-small-business-adoption-barriers.md",
+        "ai-roi-case-studies-trades.md"
+      ],
+      "resources": {
+        "links": [
+          {
+            "url": "https://www.sba.gov/business-guide/grow-your-business/technology",
+            "title": "SBA: Technology for Small Business"
+          },
+          {
+            "url": "https://www.mckinsey.com/capabilities/mckinsey-digital/our-insights/the-economic-potential-of-generative-ai",
+            "title": "McKinsey: Economic Potential of Generative AI"
+          }
+        ],
+        "images": [
+          {
+            "description": "AI receptionist workflow for trades",
+            "search": "AI receptionist workflow plumber HVAC appointment booking"
+          },
+          {
+            "description": "Small business AI adoption curve",
+            "search": "small business AI adoption curve technology"
+          },
+          {
+            "description": "Field service management AI automation",
+            "search": "field service management AI automation scheduling"
+          },
+          {
+            "description": "Missed call revenue loss infographic",
+            "search": "missed call revenue loss small business statistics"
+          },
+          {
+            "description": "AI vs human receptionist cost comparison",
+            "search": "AI receptionist cost comparison human receptionist savings"
+          }
+        ],
+        "videos": [
+          {
+            "url": "https://www.youtube.com/watch?v=jPhJbKBuNnA",
+            "title": "How AI is Changing Small Business Forever"
+          },
+          {
+            "url": "https://www.youtube.com/watch?v=_MPJ13M4YUY",
+            "title": "AI Receptionist for Service Businesses Demo"
+          }
+        ]
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "autonomous-agents-landscape",
+      "name": "Autonomous Agent Landscape & Frameworks",
+      "description": "AutoGPT, CrewAI, LangGraph, Claude Agent SDK, OpenAI Assistants, agent frameworks comparison. Where Atlas UX fits in the ecosystem.",
+      "priority": "HIGH",
+      "expectedMin": 4,
+      "found": 4,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "src\\kb\\agents\\ai-agent-frameworks-comparison.md",
+        "src\\kb\\agents\\ai-agent-sdk-landscape.md",
+        "src\\kb\\agents\\ai-autogpt-babyagi-history.md",
+        "src\\kb\\agents\\ai-crewai-langgraph-swarm.md"
+      ],
+      "expectedFiles": [
+        "ai-agent-frameworks-comparison.md",
+        "ai-autogpt-babyagi-history.md",
+        "ai-crewai-langgraph-swarm.md",
+        "ai-agent-sdk-landscape.md",
+        "ai-atlas-ux-agent-differentiation.md"
+      ],
+      "resources": {
+        "links": [
+          {
+            "url": "https://docs.anthropic.com/en/docs/agents-and-tools/agent-sdk",
+            "title": "Claude Agent SDK Documentation"
+          },
+          {
+            "url": "https://www.crewai.com/",
+            "title": "CrewAI — Multi-Agent Orchestration Framework"
+          }
+        ],
+        "images": [
+          {
+            "description": "Agent framework comparison chart",
+            "search": "AI agent framework comparison AutoGPT CrewAI LangGraph"
+          },
+          {
+            "description": "Multi-agent orchestration architecture",
+            "search": "multi-agent orchestration architecture diagram"
+          },
+          {
+            "description": "ReAct reasoning action loop",
+            "search": "ReAct reasoning action agent loop diagram"
+          },
+          {
+            "description": "Agent memory architecture diagram",
+            "search": "AI agent memory architecture short long term episodic"
+          },
+          {
+            "description": "Atlas UX agent hierarchy (custom)",
+            "search": "atlas ux agent hierarchy CEO CRO receptionist"
+          }
+        ],
+        "videos": [
+          {
+            "url": "https://www.youtube.com/watch?v=sal78ACtGTc",
+            "title": "Building AI Agents — Andrew Ng"
+          },
+          {
+            "url": "https://www.youtube.com/watch?v=DWUdGhRrv2c",
+            "title": "AI Agent Frameworks Compared (2025)"
+          }
+        ]
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "knowledge-graphs-rag",
+      "name": "Knowledge Graphs & Advanced RAG",
+      "description": "Graph RAG, hybrid retrieval, re-ranking, knowledge graph construction, embedding strategies, chunking approaches.",
+      "priority": "MEDIUM",
+      "expectedMin": 3,
+      "found": 4,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "src\\kb\\agents\\ai-advanced-chunking-strategies.md",
+        "src\\kb\\agents\\ai-graph-rag-architecture.md",
+        "src\\kb\\agents\\ai-hybrid-retrieval-reranking.md",
+        "src\\kb\\agents\\ai-knowledge-graphs-fundamentals.md"
+      ],
+      "expectedFiles": [
+        "ai-knowledge-graphs-fundamentals.md",
+        "ai-graph-rag-architecture.md",
+        "ai-advanced-chunking-strategies.md",
+        "ai-hybrid-retrieval-reranking.md"
+      ],
+      "resources": {
+        "links": [
+          {
+            "url": "https://microsoft.github.io/graphrag/",
+            "title": "Microsoft GraphRAG — Knowledge Graph + RAG"
+          },
+          {
+            "url": "https://docs.pinecone.io/guides/get-started/overview",
+            "title": "Pinecone Vector DB Documentation"
+          }
+        ],
+        "images": [
+          {
+            "description": "GraphRAG architecture diagram",
+            "search": "GraphRAG knowledge graph retrieval augmented generation"
+          },
+          {
+            "description": "Chunking strategies comparison",
+            "search": "document chunking strategies fixed recursive semantic"
+          },
+          {
+            "description": "Hybrid retrieval pipeline",
+            "search": "hybrid retrieval sparse dense vector search pipeline"
+          },
+          {
+            "description": "Embedding model comparison chart",
+            "search": "embedding model comparison OpenAI Cohere BGE"
+          },
+          {
+            "description": "Re-ranking pipeline illustration",
+            "search": "cross encoder re-ranking retrieval pipeline"
+          }
+        ],
+        "videos": [
+          {
+            "url": "https://www.youtube.com/watch?v=knLZBh3GRJY",
+            "title": "GraphRAG Explained (Microsoft Research)"
+          },
+          {
+            "url": "https://www.youtube.com/watch?v=T-D1OfcDW1M",
+            "title": "Advanced RAG Techniques (LlamaIndex)"
+          }
+        ]
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "dead-app-corp",
+      "name": "Dead App Corp — Company & Product Knowledge",
+      "description": "Company history, product portfolio (Atlas UX, CallLucy, Ask Essie), mission, Dead App methodology, lessons from shuttered products.",
+      "priority": "HIGH",
+      "expectedMin": 4,
+      "found": 7,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "src\\kb\\agents\\ai-existential-risk-research.md",
+        "src\\kb\\agents\\company-dead-app-corp-story.md",
+        "src\\kb\\agents\\company-dead-app-methodology.md",
+        "src\\kb\\agents\\company-product-portfolio.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\atlas_workflow_diagram.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\prompt-engineering-tips.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\what-is-atlasux.md"
+      ],
+      "expectedFiles": [
+        "company-dead-app-corp-story.md",
+        "company-product-portfolio.md",
+        "company-dead-app-methodology.md",
+        "company-lessons-shuttered-products.md",
+        "company-atlas-ux-genesis.md"
+      ],
+      "resources": {
+        "links": [
+          {
+            "url": "https://atlasux.cloud",
+            "title": "Atlas UX — Official Platform"
+          },
+          {
+            "url": "https://deadapp.info",
+            "title": "Dead App Corp — Company Site"
+          }
+        ],
+        "images": [
+          {
+            "description": "Dead App Corp logo/brand",
+            "search": "Dead App Corp AI company logo"
+          },
+          {
+            "description": "Atlas UX platform dashboard screenshot",
+            "search": "atlas ux ai receptionist platform dashboard"
+          },
+          {
+            "description": "Lucy AI receptionist concept",
+            "search": "AI receptionist Lucy virtual assistant concept"
+          },
+          {
+            "description": "Product portfolio timeline",
+            "search": "startup product portfolio evolution timeline"
+          },
+          {
+            "description": "Dead app graveyard concept",
+            "search": "app graveyard dead products lessons learned startup"
+          }
+        ],
+        "videos": [
+          {
+            "url": "https://www.youtube.com/results?search_query=dead+app+corp+atlas+ux",
+            "title": "Dead App Corp — Search for any existing content"
+          },
+          {
+            "url": "https://www.youtube.com/results?search_query=AI+receptionist+small+business+demo",
+            "title": "AI Receptionist Demos (market comparison)"
+          }
+        ]
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "agent-playbooks",
+      "name": "Agent Playbooks & Operational Docs",
+      "description": "Each named agent (Atlas, Binky, Cheryl, etc.) should have a playbook in the KB.",
+      "priority": "LOW",
+      "expectedMin": 6,
+      "found": 40,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\atlas-ceo-playbook.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-37cfr-part2.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-class-recommendation.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-conflict-search.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-distinctiveness-assessment.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-filing-checklist.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-lanham-act-subch1-principal.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-lanham-act-subch2-supplemental.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-lanham-act-subch3-general.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-lanham-act-subch4-madrid.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-lanham-act.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-nice-classification.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-office-action-response.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-teas-filing-guide.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch100-general-info.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch200-ownership.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch300-representation.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch400-application.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch500-marks.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch600-goods-services.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch700-examination.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-reference.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\binky-cro-playbook.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\cheryl-support-playbook.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\ecommerce-automation-playbook.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mercer-acquisition-playbook.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\petra-pm-playbook.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\sunday-writer-playbook.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\tina-cashflow-management.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\tina-depreciation-strategies.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\tina-entity-structuring.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\tina-gaap-standards.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\tina-ifrs-standards.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\tina-invoicing-ar.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\tina-irs-code.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\tina-pnl-analysis.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\tina-reconciliation.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\tina-tax-planning.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\tina-treasury-regs.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\venny-victor-creative-playbook.md"
+      ],
+      "expectedFiles": [],
+      "resources": {
+        "links": [],
+        "images": [],
+        "videos": []
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "mba-business",
+      "name": "MBA Business Frameworks",
+      "description": "Business strategy, finance, marketing, operations, organizational behavior.",
+      "priority": "LOW",
+      "expectedMin": 12,
+      "found": 15,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-business-analytics.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-business-ethics.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-corporate-finance.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-corporate-strategy.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-economics.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-entrepreneurship.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-financial-accounting.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-innovation-technology.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-international-business.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-marketing-management.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-mergers-acquisitions.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-negotiation.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-operations-management.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-organizational-behavior.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\mba-supply-chain.md"
+      ],
+      "expectedFiles": [],
+      "resources": {
+        "links": [],
+        "images": [],
+        "videos": []
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "legal-compliance",
+      "name": "Legal & Compliance",
+      "description": "Law topics, IP, privacy, regulatory, trademark.",
+      "priority": "LOW",
+      "expectedMin": 20,
+      "found": 39,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\adv-ethical-ai-framework.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\adv-truth-compliance.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\alpha-compliance.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-37cfr-part2.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-class-recommendation.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-conflict-search.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-distinctiveness-assessment.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-filing-checklist.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-lanham-act-subch1-principal.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-lanham-act-subch2-supplemental.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-lanham-act-subch3-general.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-lanham-act-subch4-madrid.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-lanham-act.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-nice-classification.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-office-action-response.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-teas-filing-guide.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch100-general-info.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch200-ownership.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch300-representation.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch400-application.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch500-marks.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch600-goods-services.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-ch700-examination.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\benny-tmep-reference.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\financial-compliance-ai.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-ai-regulation.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-antitrust.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-contract-fundamentals.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-corporate-entities.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-data-privacy.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-dispute-resolution.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-employment.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-intellectual-property.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-international-trade.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-internet-digital.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-regulatory-compliance.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-securities-regulation.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\law-tax-fundamentals.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\legal-ip-basics.md"
+      ],
+      "expectedFiles": [],
+      "resources": {
+        "links": [],
+        "images": [],
+        "videos": []
+      },
+      "status": "COVERED"
+    },
+    {
+      "id": "education-learning",
+      "name": "Education & Learning Science",
+      "description": "Learning theory, instructional design, assessment, educational psychology.",
+      "priority": "LOW",
+      "expectedMin": 10,
+      "found": 12,
+      "coveragePct": 100,
+      "matchingFiles": [
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-adult-learning.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-assessment-evaluation.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-communication-pedagogy.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-curriculum-development.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-educational-psychology.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-educational-technology.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-instructional-design.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-knowledge-management.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-learning-theory.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-organizational-learning.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-research-methods.md",
+        "..\\..\\The Vault\\projects\\atlasux\\docs\\kb\\edu-training-development.md"
+      ],
+      "expectedFiles": [],
+      "resources": {
+        "links": [],
+        "images": [],
+        "videos": []
+      },
+      "status": "COVERED"
+    }
+  ],
+  "summary": {
+    "totalDeficit": 0,
+    "criticalGaps": 0,
+    "highGaps": 0,
+    "mediumGaps": 0,
+    "coveredDomains": 15
+  }
+}

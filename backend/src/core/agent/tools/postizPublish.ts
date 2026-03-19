@@ -194,7 +194,19 @@ export const postizPublishTool: ToolDefinition = {
       const media = await resolveMediaUrls(ctx.tenantId, caption, {
         imageUrl: urlMatch?.[1],
         videoUrl: vidMatch?.[1],
+        platform,
       });
+
+      // HARD GATE: Never publish text-only posts. Every post must have media.
+      if (media.imageUrls.length === 0 && media.videoUrls.length === 0) {
+        return makeResult("postiz_publish", [
+          `BLOCKED: No media attached. Every post must include an image or video.`,
+          `Generate media first, then retry:`,
+          `  - Image: use Flux1, DALL-E, Gemini, or Stability AI`,
+          `  - Video: use Vidu (Q2-pro-fast, $0.055/clip) or another video provider`,
+          `Then re-run with: "post to ${platform} image_url: <url> caption: ${caption.substring(0, 60)}..."`,
+        ].join("\n"));
+      }
 
       // Build post body with platform-specific settings
       const baseSettings = PLATFORM_SETTINGS[platform] ?? { __type: platform };

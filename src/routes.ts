@@ -68,6 +68,8 @@ const Configure = lazyRetry(() => import("./pages/Configure"));
 const FAQ = lazyRetry(() => import("./pages/FAQ"));
 const GettingStarted = lazyRetry(() => import("./pages/GettingStarted"));
 const Pitch = lazyRetry(() => import("./pages/Pitch"));
+const VideoGenComparison = lazyRetry(() => import("./pages/VideoGenComparison"));
+const ImageGenComparison = lazyRetry(() => import("./pages/ImageGenComparison"));
 
 /** Minimal loading spinner shown while lazy chunks load */
 function LazyFallback() {
@@ -103,6 +105,8 @@ export const router = createHashRouter([
       { path: "/faq", Component: () => React.createElement(S, null, React.createElement(FAQ)) },
       { path: "/getting-started", Component: () => React.createElement(S, null, React.createElement(GettingStarted)) },
       { path: "/pitch", Component: () => React.createElement(S, null, React.createElement(Pitch)) },
+      { path: "/vidgencomparison", Component: () => React.createElement(S, null, React.createElement(VideoGenComparison)) },
+      { path: "/imagecomparison", Component: () => React.createElement(S, null, React.createElement(ImageGenComparison)) },
       { path: "/blog", Component: () => React.createElement(S, null, React.createElement(BlogHome)) },
       { path: "/blog/category/:category", Component: () => React.createElement(S, null, React.createElement(BlogCategory)) },
       { path: "/blog/:slug", Component: () => React.createElement(S, null, React.createElement(BlogPost)) },

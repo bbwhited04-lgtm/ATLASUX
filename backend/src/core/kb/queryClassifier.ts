@@ -83,6 +83,35 @@ const PLAYBOOK_PATTERNS: RegExp[] = [
   /\b(conversion (blind spot|problem|fix)|landing page (strategy|fix|audit))\b/i,
 ];
 
+// Patterns that benefit from wiki search — AI foundations, tools, pricing, prompts
+const WIKI_PATTERNS: RegExp[] = [
+  /\b(ai (history|evolution|foundation|winter)|birth of ai|dartmouth|turing test)\b/i,
+  /\b(transformer|attention mechanism|bert|gpt|llm|large language model)\b/i,
+  /\b(image gen|video gen|dall-?e|midjourney|stable diffusion|flux|sora|kling|veo)\b/i,
+  /\b(cli|claude code|cursor|windsurf|aider|codex|gemini cli)\b/i,
+  /\b(mcp|model context protocol|mcp server)\b/i,
+  /\b(api (cost|pricing|price)|cost per (token|image|minute)|budget calculator)\b/i,
+  /\b(prompt (library|template|pattern)|security (prompt|audit))\b/i,
+  /\b(owasp|jwt|csrf|credential|encryption|rate limit)\b.{0,30}\b(prompt|audit|check|scan)\b/i,
+  /\b(nlp|word2vec|embedding|word embedding|speech recognition|tts|text to speech)\b/i,
+  /\b(reinforcement learning|alphago|reward model|rlhf)\b/i,
+  /\b(crewai|langgraph|autogpt|agent framework|agent sdk)\b/i,
+  /\b(dead app|atlas ux|calllucy|ask essie)\b/i,
+  /\b(tool (definition|schema|design|implementation|security|audit))\b/i,
+  /\b(function calling|tool use|tool call|inputSchema|input_schema)\b/i,
+  /\b(bad tool|good tool|tool (anti.?pattern|best practice|pattern))\b/i,
+  /\b(tool (output|response|result|error|pagination|rate limit))\b/i,
+  /\b(vision tool|screenshot tool|ocr tool|image tool|dom inspection)\b/i,
+  /\b(trustworthy (tool|mcp)|vet.{0,10}(tool|mcp|server))\b/i,
+  /\b(workflow (type|pattern|design|automation|engine|platform|tool))\b/i,
+  /\b(sequential workflow|state machine workflow|parallel workflow|rules?.driven workflow)\b/i,
+  /\b(human.in.the.loop|hil|approval (gate|workflow|pattern)|escalation chain)\b/i,
+  /\b(workflow (input|output|transformation|step|action|trigger))\b/i,
+  /\b(workflow (cost|pricing|comparison|platform)|zapier vs|make vs|n8n vs)\b/i,
+  /\b(onboarding workflow|content workflow|service request workflow|it.?sm)\b/i,
+  /\b(workflow (bottleneck|best practice|raci|swimlane))\b/i,
+];
+
 // Patterns that indicate a direct task — no KB needed
 const DIRECT_PATTERNS: RegExp[] = [
   /^(summarize|translate|proofread|fix|edit|rewrite|format|clean up|improve)\b/i,
@@ -117,6 +146,13 @@ export function classifyQuery(query: string, source?: QuerySource): ClassifyResu
   for (const pattern of PLAYBOOK_PATTERNS) {
     if (pattern.test(q)) {
       return { tier: "FULL_RAG", reason: `matched playbook pattern: ${pattern.source.slice(0, 40)}`, searchTiers };
+    }
+  }
+
+  // Wiki-enriched queries — topics covered by the public wiki KB
+  for (const pattern of WIKI_PATTERNS) {
+    if (pattern.test(q)) {
+      return { tier: "FULL_RAG", reason: `matched wiki pattern: ${pattern.source.slice(0, 40)}`, searchTiers };
     }
   }
 

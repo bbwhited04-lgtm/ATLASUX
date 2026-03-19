@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atlas UX Wiki — AI Knowledge Base</title>
+  <meta name="description" content="Atlas UX Wiki — 340+ articles on AI image/video generation, agent directory, compliance docs, and workflows. Free API + MCP server for your agents." />
+  <meta property="og:title" content="Atlas UX Wiki" />
+  <meta property="og:description" content="Comprehensive AI knowledge base — image gen, video gen, and platform guides." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://wiki.atlasux.cloud" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #030712; --bg-card: rgba(255,255,255,0.03); --bg-hover: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.08); --border-hover: rgba(96,165,250,0.3);
+      --text: #e2e8f0; --text-muted: #94a3b8; --text-dim: #64748b;
+      --accent: #60a5fa; --accent-bg: rgba(96,165,250,0.1);
+      --green: #34d399; --green-bg: rgba(52,211,153,0.1);
+      --purple: #a78bfa; --purple-bg: rgba(167,139,250,0.1);
+      --orange: #fb923c; --orange-bg: rgba(251,146,60,0.1);
+      --radius: 12px; --radius-sm: 8px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.6;
+      min-height: 100vh;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Background effects */
+    .bg-glow {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background: linear-gradient(180deg, #061a3a 0%, #041127 40%, #030712 100%);
+    }
+    .bg-glow::before {
+      content: ''; position: absolute; top: -120px; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(96,165,250,0.15) 0%, transparent 70%);
+    }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* Header */
+    .header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(3,7,18,0.85); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 0; flex-wrap: wrap;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.25rem; color: white; cursor: pointer; }
+    .logo-icon { font-size: 1.5rem; }
+    .logo span { color: var(--accent); }
+
+    /* Search */
+    .search-wrap {
+      flex: 1; min-width: 240px; max-width: 480px; position: relative;
+    }
+    .search-wrap input {
+      width: 100%; padding: 10px 16px 10px 40px; border-radius: var(--radius);
+      border: 1px solid var(--border); background: var(--bg-card);
+      color: white; font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap input::placeholder { color: var(--text-dim); }
+    .search-icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      width: 18px; height: 18px; color: var(--text-dim);
+    }
+
+    /* Stats badge */
+    .stats { margin-left: auto; font-size: 0.8rem; color: var(--text-dim); white-space: nowrap; }
+    .stats strong { color: var(--accent); }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      display: flex; align-items: center; gap: 8px; padding: 16px 0 0;
+      font-size: 0.85rem; color: var(--text-dim); flex-wrap: wrap;
+    }
+    .breadcrumb button {
+      background: none; border: none; color: var(--text-muted); cursor: pointer;
+      font-size: inherit; padding: 0;
+    }
+    .breadcrumb button:hover { color: white; }
+    .breadcrumb .sep { color: var(--text-dim); }
+    .breadcrumb .current { color: white; }
+
+    /* Section cards */
+    .hero { text-align: center; padding: 64px 0 40px; }
+    .hero h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 12px; }
+    .hero h1 span { background: linear-gradient(135deg, var(--accent), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+
+    .sections-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; padding-bottom: 40px; }
+    .section-card {
+      border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg-card); padding: 28px; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    }
+    .section-card:hover { border-color: var(--border-hover); background: var(--bg-hover); transform: translateY(-2px); }
+    .section-card .icon { font-size: 2rem; margin-bottom: 12px; }
+    .section-card h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; }
+    .section-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px; }
+    .section-card .count { font-size: 0.8rem; color: var(--accent); font-weight: 600; }
+
+    /* Category grid */
+    .page-title { font-size: 1.75rem; font-weight: 700; margin: 32px 0 8px; }
+    .page-desc { color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem; }
+    .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; padding-bottom: 40px; }
+    .cat-card {
+      display: flex; align-items: center; gap: 12px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--bg-card); padding: 16px 20px; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .cat-card:hover { border-color: var(--border-hover); background: var(--bg-hover); }
+    .cat-card .cat-name { font-weight: 600; flex: 1; }
+    .cat-card .cat-count { font-size: 0.8rem; color: var(--text-dim); }
+    .cat-card .chevron { color: var(--text-dim); transition: color 0.2s; }
+    .cat-card:hover .chevron { color: var(--text-muted); }
+
+    /* Article list */
+    .article-list { display: flex; flex-direction: column; gap: 8px; padding-bottom: 40px; }
+    .article-row {
+      display: flex; align-items: center; gap: 12px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--bg-card); padding: 14px 20px; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .article-row:hover { border-color: var(--border-hover); background: var(--bg-hover); }
+    .article-row .art-title { font-weight: 500; flex: 1; }
+    .article-row .art-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag {
+      font-size: 0.7rem; padding: 2px 8px; border-radius: 999px;
+      background: var(--accent-bg); color: var(--accent); white-space: nowrap;
+    }
+    .tag.green { background: var(--green-bg); color: var(--green); }
+    .tag.purple { background: var(--purple-bg); color: var(--purple); }
+
+    /* Article view */
+    .article-header { margin: 32px 0 24px; }
+    .article-header h1 { font-size: 2rem; font-weight: 700; line-height: 1.3; margin-bottom: 12px; }
+    .article-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .article-body { max-width: 800px; padding-bottom: 60px; }
+    .article-body h1 { font-size: 1.75rem; font-weight: 700; margin: 32px 0 12px; color: white; }
+    .article-body h2 { font-size: 1.4rem; font-weight: 700; margin: 28px 0 10px; color: white; }
+    .article-body h3 { font-size: 1.15rem; font-weight: 600; margin: 24px 0 8px; color: white; }
+    .article-body h4 { font-size: 1rem; font-weight: 600; margin: 20px 0 8px; color: var(--text); }
+    .article-body p { color: var(--text-muted); margin-bottom: 12px; }
+    .article-body ul, .article-body ol { color: var(--text-muted); padding-left: 24px; margin-bottom: 12px; }
+    .article-body li { margin-bottom: 4px; }
+    .article-body strong { color: white; font-weight: 600; }
+    .article-body em { font-style: italic; }
+    .article-body code {
+      background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px;
+      font-size: 0.85em; color: var(--accent); font-family: 'SF Mono', Monaco, monospace;
+    }
+    .article-body pre {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 16px; overflow-x: auto;
+      margin-bottom: 16px;
+    }
+    .article-body pre code { background: none; padding: 0; color: var(--text); }
+    .article-body blockquote {
+      border-left: 3px solid var(--accent); padding-left: 16px;
+      margin: 16px 0; color: var(--text-muted); font-style: italic;
+    }
+    .article-body hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+    .article-body a { color: var(--accent); }
+    .article-body a:hover { text-decoration: underline; }
+    .article-body img { max-width: 100%; border-radius: var(--radius-sm); margin: 12px 0; }
+    .article-body table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    .article-body th, .article-body td {
+      padding: 10px 14px; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .article-body th { color: white; font-weight: 600; background: rgba(255,255,255,0.03); }
+    .article-body td { color: var(--text-muted); }
+
+    /* Search results */
+    .search-result {
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--bg-card); padding: 16px 20px; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s; margin-bottom: 8px;
+    }
+    .search-result:hover { border-color: var(--border-hover); background: var(--bg-hover); }
+    .search-result .sr-section { font-size: 0.75rem; color: var(--accent); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .search-result h3 { font-weight: 600; margin-bottom: 4px; }
+    .search-result .sr-snippet { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; }
+
+    /* Footer */
+    .wiki-footer {
+      border-top: 1px solid var(--border); padding: 32px 0; margin-top: 40px;
+      text-align: center; color: var(--text-dim); font-size: 0.85rem;
+    }
+    .wiki-footer a { color: var(--text-muted); }
+
+    /* Loading */
+    .loading { text-align: center; padding: 60px 0; color: var(--text-dim); }
+    .spinner {
+      width: 32px; height: 32px; border: 3px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Empty state */
+    .empty { text-align: center; padding: 60px 0; color: var(--text-dim); }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 1.75rem; }
+      .sections-grid { grid-template-columns: 1fr; }
+      .cat-grid { grid-template-columns: 1fr; }
+      .header-inner { gap: 10px; }
+      .stats { display: none; }
+      .search-wrap { max-width: 100%; }
+      .article-body { font-size: 0.95rem; }
+      .tier-grid { grid-template-columns: 1fr !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-inner">
+      <div class="logo" onclick="navigate('home')">
+        <span class="logo-icon">📚</span> Atlas UX <span>Wiki</span>
+      </div>
+      <div class="search-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input id="searchInput" type="text" placeholder="Search 340+ articles..." oninput="onSearch(this.value)" />
+      </div>
+      <button onclick="navigate('api')" style="background:var(--accent-bg);border:1px solid rgba(96,165,250,0.3);color:var(--accent);padding:8px 16px;border-radius:var(--radius-sm);cursor:pointer;font-size:0.85rem;font-weight:600;white-space:nowrap">🔑 Get API Key</button>
+      <div class="stats" id="stats"></div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="container" id="app">
+    <div class="loading"><div class="spinner"></div>Loading wiki...</div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="wiki-footer">
+    <div class="container">
+      <p>&copy; 2026 Atlas UX &mdash; <a href="https://atlasux.cloud">atlasux.cloud</a> &middot; <a href="https://atlasux.cloud/#/support">Help Center</a> &middot; <a href="https://atlasux.cloud/#/privacy">Privacy</a></p>
+    </div>
+  </footer>
+
+  <script>
+    // ── Config ────────────────────────────────────────────────────────────────
+    const API = "https://api.atlasux.cloud/v1/wiki";
+    const KEYS_API = API.replace("/wiki", "/wiki-keys");
+
+    // Section icons/colors
+    const SECTION_META = {
+      "image-gen": { icon: "🎨", color: "var(--accent)", accent: "accent" },
+      "video-gen": { icon: "🎬", color: "var(--purple)", accent: "purple" },
+      "support":   { icon: "💬", color: "var(--green)", accent: "green" },
+      "agents":    { icon: "🤖", color: "var(--orange)", accent: "orange" },
+      "policies":  { icon: "🛡️", color: "var(--accent)", accent: "accent" },
+      "workflows": { icon: "⚡", color: "var(--purple)", accent: "purple" },
+    };
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let state = { view: "home", section: null, category: null, slug: null };
+    let sectionsCache = null;
+    let searchTimeout = null;
+
+    // ── API helpers ───────────────────────────────────────────────────────────
+    async function api(path) {
+      const res = await fetch(`${API}${path}`);
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      return res.json();
+    }
+
+    // ── Navigation ────────────────────────────────────────────────────────────
+    function navigate(view, section, category, slug) {
+      state = { view, section: section || null, category: category || null, slug: slug || null };
+
+      // Update URL hash
+      if (view === "home") history.pushState(null, "", "#/");
+      else if (view === "api") history.pushState(null, "", "#/api");
+      else if (view === "section") history.pushState(null, "", `#/${section}`);
+      else if (view === "category") history.pushState(null, "", `#/${section}/${category}`);
+      else if (view === "article") history.pushState(null, "", `#/${section}/${category}/${slug}`);
+      else if (view === "search") history.pushState(null, "", `#/search?q=${encodeURIComponent(section)}`);
+
+      render();
+    }
+
+    // ── Render ─────────────────────────────────────────────────────────────────
+    async function render() {
+      const app = document.getElementById("app");
+
+      try {
+        switch (state.view) {
+          case "home": return renderHome(app);
+          case "api": return renderApi(app);
+          case "section": return renderSection(app);
+          case "category": return renderCategory(app);
+          case "article": return renderArticle(app);
+          case "search": return renderSearch(app);
+        }
+      } catch (err) {
+        app.innerHTML = `<div class="empty"><p>Something went wrong. <button onclick="navigate('home')" style="color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:underline">Go home</button></p></div>`;
+      }
+    }
+
+    // ── Home ──────────────────────────────────────────────────────────────────
+    async function renderHome(app) {
+      app.innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
+
+      if (!sectionsCache) {
+        sectionsCache = await api("/sections");
+      }
+      const sections = sectionsCache;
+      const total = sections.reduce((s, x) => s + x.count, 0);
+      document.getElementById("stats").innerHTML = `<strong>${total}</strong> articles`;
+
+      app.innerHTML = `
+        <div class="hero">
+          <h1>The <span>AI Knowledge Base</span></h1>
+          <p>340+ articles across 20+ AI platforms. Free API &amp; MCP server — plug our knowledge base into your agents.</p>
+        </div>
+        <div class="sections-grid">
+          ${sections.map(s => {
+            const meta = SECTION_META[s.name] || { icon: "📄", accent: "accent" };
+            return `
+              <div class="section-card" onclick="navigate('section','${s.name}')">
+                <div class="icon">${meta.icon}</div>
+                <h2>${s.label}</h2>
+                <p>${s.description}</p>
+                <div class="count">${s.count} articles &rarr;</div>
+              </div>`;
+          }).join("")}
+        </div>`;
+    }
+
+    // ── Section (categories) ─────────────────────────────────────────────────
+    async function renderSection(app) {
+      app.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+      const [cats, sectionInfo] = await Promise.all([
+        api(`/sections/${state.section}`),
+        sectionsCache ? Promise.resolve(sectionsCache.find(s => s.name === state.section)) : api("/sections").then(ss => { sectionsCache = ss; return ss.find(s => s.name === state.section); })
+      ]);
+
+      const meta = SECTION_META[state.section] || { icon: "📄" };
+
+      app.innerHTML = `
+        ${breadcrumb(state.section)}
+        <h1 class="page-title">${meta.icon} ${sectionInfo?.label || state.section}</h1>
+        <p class="page-desc">${sectionInfo?.description || ""}</p>
+        <div class="cat-grid">
+          ${cats.map(c => `
+            <div class="cat-card" onclick="navigate('category','${state.section}','${c.name}')">
+              <span class="cat-name">${c.label}</span>
+              <span class="cat-count">${c.count}</span>
+              <span class="chevron">&rsaquo;</span>
+            </div>`).join("")}
+        </div>`;
+    }
+
+    // ── Category (article list) ──────────────────────────────────────────────
+    async function renderCategory(app) {
+      app.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+      const articles = await api(`/articles?section=${state.section}&category=${state.category}`);
+
+      const catLabel = articles.length > 0 ? formatLabel(state.category) : state.category;
+      const meta = SECTION_META[state.section] || { accent: "accent" };
+
+      app.innerHTML = `
+        ${breadcrumb(state.section, state.category)}
+        <h1 class="page-title">${catLabel}</h1>
+        <p class="page-desc">${articles.length} article${articles.length !== 1 ? "s" : ""}</p>
+        <div class="article-list">
+          ${articles.map(a => `
+            <div class="article-row" onclick="navigate('article','${a.section}','${a.category}','${a.slug}')">
+              <span class="art-title">${a.title}</span>
+              <span class="art-tags">
+                ${(a.tags || []).slice(0, 3).map(t => `<span class="tag ${meta.accent}">${t}</span>`).join("")}
+              </span>
+              <span class="chevron" style="color:var(--text-dim)">&rsaquo;</span>
+            </div>`).join("")}
+        </div>
+        ${articles.length === 0 ? '<div class="empty">No articles in this category.</div>' : ""}`;
+    }
+
+    // ── Article ──────────────────────────────────────────────────────────────
+    async function renderArticle(app) {
+      app.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+      const a = await api(`/articles/${state.section}/${state.category}/${state.slug}`);
+      const meta = SECTION_META[state.section] || { accent: "accent" };
+
+      app.innerHTML = `
+        ${breadcrumb(state.section, state.category, a.title)}
+        <div class="article-header">
+          <h1>${a.title}</h1>
+          <div class="article-meta">
+            <span class="tag ${meta.accent}">${formatLabel(state.section)}</span>
+            <span class="tag">${formatLabel(state.category)}</span>
+            ${a.updated ? `<span style="font-size:0.8rem;color:var(--text-dim)">Updated ${a.updated}</span>` : ""}
+          </div>
+        </div>
+        <div class="article-body">${renderMd(a.content)}</div>`;
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // ── Search ───────────────────────────────────────────────────────────────
+    async function renderSearch(app) {
+      const q = state.section; // reuse section field for query
+      app.innerHTML = '<div class="loading"><div class="spinner"></div>Searching...</div>';
+
+      const results = await api(`/search?q=${encodeURIComponent(q)}`);
+
+      app.innerHTML = `
+        <h1 class="page-title">${results.length} result${results.length !== 1 ? "s" : ""} for "${escHtml(q)}"</h1>
+        ${results.length === 0 ? '<div class="empty">No articles found. Try different keywords.</div>' : ""}
+        ${results.map(r => `
+          <div class="search-result" onclick="navigate('article','${r.section}','${r.category}','${r.slug}')">
+            <div class="sr-section">${formatLabel(r.section)} / ${formatLabel(r.category)}</div>
+            <h3>${r.title}</h3>
+            <p class="sr-snippet">${escHtml(r.snippet)}</p>
+          </div>`).join("")}`;
+    }
+
+    // ── API Key Page (Tiered Access) ─────────────────────────────────────────
+    async function renderApi(app) {
+      var cs = "border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-card);padding:28px;margin-bottom:24px";
+      var inp = "padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-card);color:white;font-size:0.9rem;outline:none;width:100%";
+      var btn = "padding:12px;border-radius:var(--radius-sm);border:none;font-weight:600;cursor:pointer;font-size:0.95rem;width:100%";
+      var pre = "background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;overflow-x:auto;font-size:0.8rem;color:var(--text-muted)";
+
+      app.innerHTML = breadcrumb() + '<div style="max-width:700px;margin:32px auto">'
+        + '<h1 class="page-title">🔑 API Access</h1>'
+        + '<p class="page-desc">Access the Atlas UX Wiki from your applications and AI agents. Start free, deposit platform API keys to unlock more — MCP server access is earned.</p>'
+
+        // Tier comparison
+        + '<div style="' + cs + '">'
+        + '<h3 style="margin-bottom:16px;font-weight:600">Access Tiers</h3>'
+        + '<div class="tier-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">'
+        + '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;text-align:center">'
+        + '<div style="font-size:1.4rem;margin-bottom:6px">🆓</div>'
+        + '<div style="font-weight:600;margin-bottom:4px">Free</div>'
+        + '<div style="font-size:0.8rem;color:var(--text-muted);line-height:1.5">Search only<br>Severely limited<br><span style="color:var(--text-dim)">Just sign up</span></div>'
+        + '</div>'
+        + '<div style="border:1px solid var(--accent);border-radius:var(--radius-sm);padding:16px;text-align:center;background:var(--accent-bg)">'
+        + '<div style="font-size:1.4rem;margin-bottom:6px">🔧</div>'
+        + '<div style="font-weight:600;margin-bottom:4px;color:var(--accent)">Builder</div>'
+        + '<div style="font-size:0.8rem;color:var(--text-muted);line-height:1.5">Search + list + read<br>No MCP access<br><span style="color:var(--accent)">2+ deposited keys</span></div>'
+        + '</div>'
+        + '<div style="border:1px solid var(--purple);border-radius:var(--radius-sm);padding:16px;text-align:center;background:var(--purple-bg)">'
+        + '<div style="font-size:1.4rem;margin-bottom:6px">👑</div>'
+        + '<div style="font-weight:600;margin-bottom:4px;color:var(--purple)">Pro</div>'
+        + '<div style="font-size:0.8rem;color:var(--text-muted);line-height:1.5">Full API + MCP server<br>All tools unlocked<br><span style="color:var(--purple)">5+ deposited keys</span></div>'
+        + '</div>'
+        + '</div></div>'
+
+        // Step 1: Get API key
+        + '<div style="' + cs + '">'
+        + '<h3 style="margin-bottom:16px;font-weight:600">Step 1: Get Your API Key</h3>'
+        + '<div style="display:flex;flex-direction:column;gap:12px">'
+        + '<input id="apiName" type="text" placeholder="Your name or project name" style="' + inp + '" />'
+        + '<input id="apiEmail" type="email" placeholder="your@email.com" style="' + inp + '" />'
+        + '<button onclick="applyForKey()" style="' + btn + ';background:var(--accent);color:black">Generate Free API Key</button>'
+        + '</div>'
+        + '<div id="apiResult" style="margin-top:16px"></div>'
+        + '</div>'
+
+        // Step 2: Accept ToS
+        + '<div style="' + cs + '">'
+        + '<h3 style="margin-bottom:12px;font-weight:600">Step 2: Accept Terms of Service</h3>'
+        + '<p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:12px">Accept our <a href="https://atlasux.cloud/#/terms" target="_blank">Terms of Service</a> and <a href="https://atlasux.cloud/#/privacy" target="_blank">Privacy Policy</a> to start depositing API keys.</p>'
+        + '<div style="display:flex;flex-direction:column;gap:12px">'
+        + '<input id="tosKey" type="text" placeholder="Your API key (wk_...)" style="' + inp + '" />'
+        + '<label style="display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:0.85rem;cursor:pointer">'
+        + '<input type="checkbox" id="tosCheck" /> I accept the Atlas UX Terms of Service and Privacy Policy'
+        + '</label>'
+        + '<button onclick="acceptTos()" style="' + btn + ';background:var(--accent);color:black">Accept Terms</button>'
+        + '</div>'
+        + '<div id="tosResult" style="margin-top:16px"></div>'
+        + '</div>'
+
+        // Step 3: Deposit credentials
+        + '<div style="' + cs + '">'
+        + '<h3 style="margin-bottom:12px;font-weight:600">Step 3: Deposit API Keys → Unlock Tiers</h3>'
+        + '<p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:12px">Deposit platform API keys to climb tiers. <strong style="color:var(--accent)">2 keys → Builder</strong> (search + list + read). <strong style="color:var(--purple)">5 keys → Pro</strong> (full API + MCP server). Keys are AES-256-GCM encrypted at rest.</p>'
+        + '<div style="display:flex;flex-direction:column;gap:12px">'
+        + '<input id="depWikiKey" type="text" placeholder="Your wiki API key (wk_...)" style="' + inp + '" />'
+        + '<select id="depPlatform" style="' + inp + ';appearance:auto">'
+        + '<option value="">Select platform...</option>'
+        + '<option value="openai">OpenAI</option>'
+        + '<option value="anthropic">Anthropic</option>'
+        + '<option value="google">Google (Gemini)</option>'
+        + '<option value="deepseek">DeepSeek</option>'
+        + '<option value="mistral">Mistral</option>'
+        + '<option value="stability">Stability AI</option>'
+        + '<option value="midjourney">Midjourney</option>'
+        + '<option value="leonardo">Leonardo AI</option>'
+        + '<option value="ideogram">Ideogram</option>'
+        + '<option value="flux">Flux / BFL</option>'
+        + '<option value="elevenlabs">ElevenLabs</option>'
+        + '<option value="replicate">Replicate</option>'
+        + '<option value="runway">Runway</option>'
+        + '<option value="pika">Pika</option>'
+        + '<option value="luma">Luma / Dream Machine</option>'
+        + '<option value="huggingface">Hugging Face</option>'
+        + '<option value="fireworks">Fireworks AI</option>'
+        + '<option value="together">Together AI</option>'
+        + '<option value="groq">Groq</option>'
+        + '<option value="cerebras">Cerebras</option>'
+        + '<option value="cohere">Cohere</option>'
+        + '</select>'
+        + '<input id="depApiKey" type="password" placeholder="Platform API key (sk-..., key-..., etc.)" style="' + inp + '" />'
+        + '<input id="depLabel" type="text" placeholder="Label (optional — e.g. personal, work)" style="' + inp + '" />'
+        + '<button onclick="depositCredential()" style="' + btn + ';background:var(--purple);color:white">Deposit Key &amp; Upgrade</button>'
+        + '</div>'
+        + '<div id="depResult" style="margin-top:16px"></div>'
+        + '</div>'
+
+        // REST API docs
+        + '<div style="' + cs + '">'
+        + '<h3 style="margin-bottom:12px;font-weight:600">📡 REST API</h3>'
+        + '<p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:16px">All endpoints require <code>Authorization: Bearer wk_your_key</code></p>'
+        + '<pre style="' + pre + '"><code>'
+        + '# Search (Free)\n'
+        + 'curl https://api.atlasux.cloud/v1/wiki/search?q=midjourney \\\n'
+        + '  -H "Authorization: Bearer wk_your_key"\n\n'
+        + '# List articles (Builder+)\n'
+        + 'curl https://api.atlasux.cloud/v1/wiki/articles?section=image-gen\n\n'
+        + '# Read article (Builder+)\n'
+        + 'curl https://api.atlasux.cloud/v1/wiki/articles/image-gen/midjourney/01-midjourney-comprehensive-guide\n\n'
+        + '# Sections (Pro only)\n'
+        + 'curl https://api.atlasux.cloud/v1/wiki/sections\n\n'
+        + '# Stats (Pro only)\n'
+        + 'curl https://api.atlasux.cloud/v1/wiki/stats'
+        + '</code></pre></div>'
+
+        // MCP config
+        + '<div style="' + cs + '">'
+        + '<h3 style="margin-bottom:12px;font-weight:600">🔌 MCP Server (Pro Tier Only)</h3>'
+        + '<p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:16px">MCP access is exclusive to Pro tier (5+ deposited keys). Add this to Claude Code, Cursor, or any MCP-compatible client:</p>'
+        + '<pre style="' + pre + '"><code>{\n'
+        + '  "mcpServers": {\n'
+        + '    "atlas-wiki": {\n'
+        + '      "url": "https://api.atlasux.cloud/v1/wiki-mcp",\n'
+        + '      "headers": {\n'
+        + '        "Authorization": "Bearer wk_your_key"\n'
+        + '      }\n'
+        + '    }\n'
+        + '  }\n'
+        + '}</code></pre>'
+        + '<p style="color:var(--text-dim);font-size:0.8rem;margin-top:12px">Pro tier gets all 5 tools: <code>wiki_search</code>, <code>wiki_read</code>, <code>wiki_list</code>, <code>wiki_sections</code>, <code>wiki_stats</code></p>'
+        + '</div>'
+
+        // What's in the wiki
+        + '<div style="' + cs + ';margin-bottom:0">'
+        + '<h3 style="margin-bottom:12px;font-weight:600">📋 What\'s in the Wiki</h3>'
+        + '<ul style="color:var(--text-muted);padding-left:20px;font-size:0.9rem;line-height:2">'
+        + '<li><strong style="color:white">AI Image Generation</strong> — 16 platforms: Midjourney, DALL-E, Flux, Stability AI, Leonardo, and more</li>'
+        + '<li><strong style="color:white">AI Video Generation</strong> — Sora 2, Kling, Veo 3, Vidu, Wan + comparisons</li>'
+        + '<li><strong style="color:white">Help Center</strong> — 60 customer support articles</li>'
+        + '<li><strong style="color:white">Agent Directory</strong> — AI agent roles, hierarchy, organizational structure</li>'
+        + '<li><strong style="color:white">Compliance</strong> — GDPR, HIPAA, SOC 2, ISO 27001, PCI-DSS, NIST docs</li>'
+        + '<li><strong style="color:white">Workflows</strong> — Automation workflow definitions</li>'
+        + '</ul></div>'
+
+        + '</div>';
+    }
+
+    // ── API actions ──────────────────────────────────────────────────────────
+    async function applyForKey() {
+      var name = document.getElementById("apiName").value.trim();
+      var email = document.getElementById("apiEmail").value.trim();
+      var r = document.getElementById("apiResult");
+
+      if (!name || !email) { r.innerHTML = '<p style="color:var(--orange)">Please enter your name and email.</p>'; return; }
+      r.innerHTML = '<p style="color:var(--text-dim)">Generating key...</p>';
+
+      try {
+        var res = await fetch(KEYS_API + "/apply", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name, email: email }),
+        });
+        var d = await res.json();
+        if (!d.ok) { r.innerHTML = '<p style="color:var(--orange)">' + d.error + '</p>'; return; }
+
+        r.innerHTML = '<div style="background:var(--green-bg);border:1px solid rgba(52,211,153,0.3);border-radius:var(--radius-sm);padding:16px">'
+          + '<p style="color:var(--green);font-weight:600;margin-bottom:8px">Key generated! Save it now — it won\'t be shown again.</p>'
+          + '<code style="display:block;background:rgba(0,0,0,0.3);padding:12px;border-radius:6px;font-size:0.95rem;color:white;word-break:break-all;user-select:all">' + d.key + '</code>'
+          + '<p style="color:var(--text-muted);font-size:0.85rem;margin-top:10px">Tier: <strong style="color:white">' + d.tier + '</strong> &middot; Tools: <code>' + d.tools.join('</code>, <code>') + '</code></p>'
+          + '<p style="color:var(--accent);font-size:0.85rem;margin-top:6px">' + d.upgrade + '</p>'
+          + '</div>';
+      } catch(e) { r.innerHTML = '<p style="color:var(--orange)">Failed to generate key. Try again.</p>'; }
+    }
+
+    async function acceptTos() {
+      var key = document.getElementById("tosKey").value.trim();
+      var check = document.getElementById("tosCheck").checked;
+      var r = document.getElementById("tosResult");
+
+      if (!key) { r.innerHTML = '<p style="color:var(--orange)">Enter your API key.</p>'; return; }
+      if (!check) { r.innerHTML = '<p style="color:var(--orange)">You must accept the Terms of Service.</p>'; return; }
+      r.innerHTML = '<p style="color:var(--text-dim)">Upgrading...</p>';
+
+      try {
+        var res = await fetch(KEYS_API + "/accept-tos", {
+          method: "POST", headers: { "Authorization": "Bearer " + key },
+        });
+        var d = await res.json();
+        if (!d.ok) { r.innerHTML = '<p style="color:var(--orange)">' + d.error + '</p>'; return; }
+
+        r.innerHTML = '<div style="background:var(--accent-bg);border:1px solid var(--border-hover);border-radius:var(--radius-sm);padding:16px">'
+          + '<p style="color:var(--accent);font-weight:600">' + d.message + '</p>'
+          + '<p style="color:var(--text-muted);font-size:0.85rem;margin-top:6px">Tools: <code>' + d.tools.join('</code>, <code>') + '</code></p>'
+          + (d.nextStep ? '<p style="color:var(--purple);font-size:0.85rem;margin-top:6px">' + d.nextStep + '</p>' : '')
+          + '</div>';
+      } catch(e) { r.innerHTML = '<p style="color:var(--orange)">Failed. Try again.</p>'; }
+    }
+
+    async function depositCredential() {
+      var wikiKey = document.getElementById("depWikiKey").value.trim();
+      var platform = document.getElementById("depPlatform").value;
+      var apiKey = document.getElementById("depApiKey").value.trim();
+      var label = document.getElementById("depLabel").value.trim();
+      var r = document.getElementById("depResult");
+
+      if (!wikiKey) { r.innerHTML = '<p style="color:var(--orange)">Enter your wiki API key.</p>'; return; }
+      if (!platform) { r.innerHTML = '<p style="color:var(--orange)">Select a platform.</p>'; return; }
+      if (!apiKey) { r.innerHTML = '<p style="color:var(--orange)">Enter the platform API key.</p>'; return; }
+      r.innerHTML = '<p style="color:var(--text-dim)">Encrypting and storing...</p>';
+
+      try {
+        var res = await fetch(KEYS_API + "/deposit-credential", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + wikiKey },
+          body: JSON.stringify({ platform: platform, apiKey: apiKey, label: label || undefined }),
+        });
+        var d = await res.json();
+        if (!d.ok) { r.innerHTML = '<p style="color:var(--orange)">' + d.error + '</p>'; return; }
+
+        var isPro = d.tier === "pro";
+        var color = isPro ? "var(--purple)" : "var(--green)";
+        var bg = isPro ? "var(--purple-bg)" : "var(--green-bg)";
+        var border = isPro ? "rgba(167,139,250,0.3)" : "rgba(52,211,153,0.3)";
+
+        r.innerHTML = '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:var(--radius-sm);padding:16px">'
+          + '<p style="color:' + color + ';font-weight:600">' + d.message + '</p>'
+          + '<p style="color:var(--text-muted);font-size:0.85rem;margin-top:6px">Tier: <strong style="color:white">' + d.tier + '</strong> &middot; Credentials deposited: ' + d.credentialsDeposited + '</p>'
+          + '</div>';
+        document.getElementById("depApiKey").value = "";
+        document.getElementById("depLabel").value = "";
+      } catch(e) { r.innerHTML = '<p style="color:var(--orange)">Failed. Try again.</p>'; }
+    }
+
+    // ── Breadcrumb ───────────────────────────────────────────────────────────
+    function breadcrumb(section, category, articleTitle) {
+      let html = `<nav class="breadcrumb"><button onclick="navigate('home')">Wiki</button>`;
+      if (section) {
+        html += `<span class="sep">/</span>`;
+        if (category || articleTitle) {
+          html += `<button onclick="navigate('section','${section}')">${formatLabel(section)}</button>`;
+        } else {
+          html += `<span class="current">${formatLabel(section)}</span>`;
+        }
+      }
+      if (category) {
+        html += `<span class="sep">/</span>`;
+        if (articleTitle) {
+          html += `<button onclick="navigate('category','${section}','${category}')">${formatLabel(category)}</button>`;
+        } else {
+          html += `<span class="current">${formatLabel(category)}</span>`;
+        }
+      }
+      if (articleTitle) {
+        html += `<span class="sep">/</span><span class="current">${escHtml(articleTitle)}</span>`;
+      }
+      html += `</nav>`;
+      return html;
+    }
+
+    // ── Markdown renderer ────────────────────────────────────────────────────
+    function renderMd(md) {
+      if (!md) return "";
+
+      // Pre-process: protect code blocks
+      const codeBlocks = [];
+      md = md.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+        codeBlocks.push({ lang, code });
+        return `%%CODEBLOCK_${codeBlocks.length - 1}%%`;
+      });
+
+      let html = md
+        // Tables
+        .replace(/^\|(.+)\|\s*\n\|[-| :]+\|\s*\n((?:\|.+\|\s*\n?)*)/gm, (_, header, body) => {
+          const ths = header.split("|").filter(Boolean).map(h => `<th>${h.trim()}</th>`).join("");
+          const rows = body.trim().split("\n").map(row => {
+            const tds = row.split("|").filter(Boolean).map(d => `<td>${d.trim()}</td>`).join("");
+            return `<tr>${tds}</tr>`;
+          }).join("");
+          return `<table><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table>`;
+        })
+        // Headers
+        .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        // HR
+        .replace(/^---+$/gm, '<hr />')
+        // Blockquotes
+        .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+        // Images
+        .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" />')
+        // Links
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, href) => {
+          return `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+        })
+        // Bold + italic
+        .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        // Inline code
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        // Unordered lists
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        // Ordered lists
+        .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+        // Paragraphs (lines that don't start with HTML tags)
+        .replace(/^(?!<[hublotip]|<li|<hr|<blockquote|<table|<img|%%CODE)(.+)$/gm, '<p>$1</p>');
+
+      // Group consecutive <li> into <ul>
+      html = html.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, match => `<ul>${match}</ul>`);
+
+      // Merge consecutive blockquotes
+      html = html.replace(/<\/blockquote>\s*<blockquote>/g, '<br/>');
+
+      // Restore code blocks
+      codeBlocks.forEach((block, i) => {
+        html = html.replace(`%%CODEBLOCK_${i}%%`, `<pre><code>${escHtml(block.code)}</code></pre>`);
+        // Also clean up any paragraph wrapping
+        html = html.replace(`<p>%%CODEBLOCK_${i}%%</p>`, `<pre><code>${escHtml(block.code)}</code></pre>`);
+      });
+
+      return html;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function formatLabel(s) {
+      if (!s) return "";
+      if (s === "_root") return "Overview";
+      const labels = {
+        "image-gen": "AI Image Generation",
+        "video-gen": "AI Video Generation",
+        "support": "Help Center",
+        "chatgpt-imagegen": "ChatGPT Image Gen",
+        "dall-e-3": "DALL-E 3",
+        "stability-ai": "Stability AI",
+        "adobe-firefly": "Adobe Firefly",
+        "banana-nano": "Banana Nano",
+        "canva-ai": "Canva AI",
+        "fotor-ai": "Fotor AI",
+        "freepik-ai": "Freepik AI",
+        "google-imagen": "Google Imagen",
+        "leonardo-ai": "Leonardo AI",
+        "prompt-framework": "Prompt Framework",
+        "getting-started": "Getting Started",
+        "phone-sms": "Phone & SMS",
+        "social-media": "Social Media",
+        "security-privacy": "Security & Privacy",
+        "sora2": "Sora 2",
+        "veo3": "Veo 3",
+      };
+      return labels[s] || s.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function escHtml(s) {
+      if (!s) return "";
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // ── Search debounce ─────────────────────────────────────────────────────
+    function onSearch(q) {
+      clearTimeout(searchTimeout);
+      if (!q || q.length < 2) {
+        if (state.view === "search") navigate("home");
+        return;
+      }
+      searchTimeout = setTimeout(() => navigate("search", q), 350);
+    }
+
+    // ── URL routing ─────────────────────────────────────────────────────────
+    function routeFromHash() {
+      const hash = location.hash.replace(/^#\/?/, "");
+      if (!hash || hash === "/") { state = { view: "home" }; return render(); }
+
+      if (hash === "api") { state = { view: "api" }; return render(); }
+
+      if (hash.startsWith("search")) {
+        const q = new URLSearchParams(hash.split("?")[1]).get("q") || "";
+        document.getElementById("searchInput").value = q;
+        state = { view: "search", section: q }; return render();
+      }
+
+      const parts = hash.split("/").filter(Boolean);
+      if (parts.length === 1) { state = { view: "section", section: parts[0] }; return render(); }
+      if (parts.length === 2) { state = { view: "category", section: parts[0], category: parts[1] }; return render(); }
+      if (parts.length >= 3) { state = { view: "article", section: parts[0], category: parts[1], slug: parts[2] }; return render(); }
+
+      state = { view: "home" }; render();
+    }
+
+    // ── Init ────────────────────────────────────────────────────────────────
+    window.addEventListener("popstate", routeFromHash);
+    routeFromHash();
+  </script>
+</body>
+</html>

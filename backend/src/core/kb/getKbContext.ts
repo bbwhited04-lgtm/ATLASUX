@@ -1,9 +1,10 @@
 import { prisma } from "../../db/prisma.js";
 import { queryTiered } from "../../lib/pinecone.js";
 import { recallOrgMemory } from "../agent/orgMemory.js";
+import { emitHealEvent } from "../../lib/kbHealEmitter.js";
 import type { QuerySource } from "./queryClassifier.js";
 
-export type KbContextSource = "governance" | "agent" | "relevant";
+export type KbContextSource = "governance" | "agent" | "relevant" | "wiki";
 
 export type KbContextItem = {
   documentId: string;
@@ -115,6 +116,30 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
         minScore: 0.3,
       });
 
+      // Reactive heal: zero results for a meaningful query
+      if (hits.length === 0 && query.length > 10) {
+        emitHealEvent({
+          trigger: "reactive",
+          query,
+          agentId: args.agentId,
+          tenantId,
+          errorType: "coverage_gap",
+          context: `getKbContext returned 0 hits for query: "${query.slice(0, 100)}"`,
+        });
+      }
+
+      // Reactive heal: all results below useful threshold
+      if (hits.length > 0 && hits.every(h => h.score < 0.35)) {
+        emitHealEvent({
+          trigger: "reactive",
+          query,
+          agentId: args.agentId,
+          tenantId,
+          errorType: "embedding_drift",
+          context: `All ${hits.length} hits below 0.35 score for query: "${query.slice(0, 100)}"`,
+        });
+      }
+
       if (hits.length > 0) {
         // Split: KB doc hits vs org memory hits
         const kbDocIds = [...new Set(
@@ -172,7 +197,24 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
     }
   }
 
-  // De-dupe by doc id, and enforce priority: governance -> agent -> relevant
+  // 4) Wiki pack — search the public wiki for supplementary knowledge.
+  //    Uses internal app.inject-style fetch to /v1/wiki/search.
+  //    This turns the wiki KB (image-gen, video-gen, support, agents docs,
+  //    CLI guides, prompt libraries, API cost analysis, etc.) into a live
+  //    knowledge source for all agents.
+  const wikiEnabled = process.env.KB_WIKI_SEARCH_ENABLED !== "false";
+  let wikiDocs: typeof governance = [];
+  if (wikiEnabled && query && query.length >= 3) {
+    try {
+      const wikiLimit = envInt("KB_WIKI_RESULT_LIMIT", 3);
+      const { searchWikiForAgents } = await import("./wikiKbBridge.js");
+      wikiDocs = await searchWikiForAgents(query, wikiLimit);
+    } catch {
+      // Wiki search is supplementary — never block the pipeline
+    }
+  }
+
+  // De-dupe by doc id, and enforce priority: governance -> agent -> relevant -> wiki
   const picked: Array<{ source: KbContextSource } & (typeof governance)[number]> = [];
   const seen = new Set<string>();
   for (const d of governance) {
@@ -189,6 +231,11 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
     if (seen.has(d.id)) continue;
     seen.add(d.id);
     picked.push({ ...d, source: "relevant" });
+  }
+  for (const d of wikiDocs) {
+    if (seen.has(d.id)) continue;
+    seen.add(d.id);
+    picked.push({ ...d, source: "wiki" });
   }
 
   // Bulk fetch chunks for all picked docs.

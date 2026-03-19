@@ -38,6 +38,15 @@ const EnvSchema = z.object({
   KB_TIER_WEIGHT_INTERNAL: z.string().optional(),
   KB_TIER_WEIGHT_PUBLIC: z.string().optional(),
 
+  // KB Eval + Self-Healing
+  KB_EVAL_CRON: z.string().optional(),
+  KB_EVAL_ENABLED: z.string().optional(),
+  KB_HEAL_MAX_PER_HOUR: z.string().optional(),
+  KB_HEAL_COST_CEILING: z.string().optional(),
+  KB_HEALTH_ALERT_THRESHOLD: z.string().optional(),
+  KB_EVAL_JUDGE_MODEL: z.string().optional(),
+  KB_EVAL_GOLDEN_MIN_COVERAGE: z.string().optional(),
+
   // OAuth providers
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),

@@ -52,7 +52,7 @@ export async function withTenant<T>(
     throw new Error(`Invalid tenantId format: ${tenantId}`);
   }
   return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SET LOCAL app.tenant_id = ${tenantId}`;
+    await tx.$executeRawUnsafe(`SET LOCAL app.tenant_id = '${tenantId}'`);
     return fn(tx);
   });
 }

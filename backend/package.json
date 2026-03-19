@@ -28,6 +28,8 @@
     "kb:seed-ai": "npx tsx src/scripts/seedAiKb.ts",
     "kb:backfill-tiers": "tsx src/scripts/backfillTiers.ts",
     "kb:reindex": "tsx src/scripts/reindexKb.ts",
+    "kb:generate-golden": "npx tsx src/scripts/generateGoldenQueries.ts",
+    "worker:kb-eval": "node dist/workers/kbEvalWorker.js",
     "seed:agents": "npx tsx src/scripts/seedAgents.ts",
     "kb:import-vc": "tsx src/scripts/importVcContacts.ts",
     "lucy:dev": "bash scripts/lucy-dev.sh"

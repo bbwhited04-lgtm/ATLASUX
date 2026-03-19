@@ -1,0 +1,367 @@
+{
+  "image-gen": {
+    "midjourney": {
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Midjourney_Emblem.png",
+      "docs": "https://docs.midjourney.com",
+      "gallery": "https://www.midjourney.com/explore",
+      "youtube": [
+        {"title": "Midjourney Tutorial for Beginners - Full Guide 2026", "url": "https://www.youtube.com/results?search_query=midjourney+tutorial+beginners+2026", "channel": "Skills Factory", "type": "tutorial"},
+        {"title": "The Ultimate Beginner's Guide to Midjourney", "url": "https://www.youtube.com/results?search_query=ultimate+beginners+guide+midjourney+2025", "channel": "AI Art Community", "type": "tutorial"},
+        {"title": "Midjourney V6 Prompting Masterclass", "url": "https://www.youtube.com/results?search_query=midjourney+v6+prompting+masterclass", "channel": "AI Tutorials", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Midjourney Quick Start Guide", "url": "https://docs.midjourney.com/docs/quick-start", "type": "docs"},
+        {"title": "Midjourney Community Showcase", "url": "https://www.midjourney.com/explore", "type": "gallery"}
+      ],
+      "tags": ["midjourney", "ai-image", "image-generation", "discord", "v6", "text-to-image"]
+    },
+    "dall-e-3": {
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
+      "docs": "https://platform.openai.com/docs/guides/images",
+      "gallery": "https://openai.com/index/dall-e-3/",
+      "youtube": [
+        {"title": "DALL-E 3 Complete Tutorial - Generate Images with ChatGPT", "url": "https://www.youtube.com/results?search_query=dall-e+3+complete+tutorial+chatgpt+images", "channel": "OpenAI", "type": "tutorial"},
+        {"title": "DALL-E 3 vs Midjourney vs Flux - Which Is Best?", "url": "https://www.youtube.com/results?search_query=dall-e+3+vs+midjourney+vs+flux+comparison", "channel": "AI Comparisons", "type": "review"}
+      ],
+      "official": [
+        {"title": "DALL-E 3 API Documentation", "url": "https://platform.openai.com/docs/guides/images", "type": "docs"},
+        {"title": "DALL-E 3 Research Page", "url": "https://openai.com/index/dall-e-3/", "type": "showcase"},
+        {"title": "Using DALL-E in ChatGPT", "url": "https://help.openai.com/en/articles/9055440-using-dall-e-in-chatgpt", "type": "docs"}
+      ],
+      "tags": ["dall-e", "dall-e-3", "openai", "chatgpt", "ai-image", "text-to-image", "api"]
+    },
+    "chatgpt-imagegen": {
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
+      "docs": "https://help.openai.com/en/articles/9055440-using-dall-e-in-chatgpt",
+      "gallery": "https://openai.com/index/dall-e-3/",
+      "youtube": [
+        {"title": "ChatGPT Image Generation - Complete Guide", "url": "https://www.youtube.com/results?search_query=chatgpt+image+generation+complete+guide+2025", "channel": "AI Tutorials", "type": "tutorial"},
+        {"title": "ChatGPT GPT-4o Image Generation Tutorial", "url": "https://www.youtube.com/results?search_query=chatgpt+gpt-4o+image+generation+tutorial", "channel": "OpenAI", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "OpenAI Image Generation Guide", "url": "https://platform.openai.com/docs/guides/images", "type": "docs"},
+        {"title": "ChatGPT Help Center", "url": "https://help.openai.com", "type": "docs"}
+      ],
+      "tags": ["chatgpt", "openai", "dall-e", "gpt-4o", "ai-image", "text-to-image"]
+    },
+    "flux": {
+      "logo": "https://blackforestlabs.ai/wp-content/uploads/2024/07/BFL_Logo.png",
+      "docs": "https://docs.bfl.ml",
+      "gallery": "https://blackforestlabs.ai",
+      "youtube": [
+        {"title": "Flux AI Image Generation - Complete Tutorial", "url": "https://www.youtube.com/results?search_query=flux+ai+image+generation+tutorial+2025", "channel": "AI Art", "type": "tutorial"},
+        {"title": "Flux vs Stable Diffusion vs DALL-E - Which AI Model Wins?", "url": "https://www.youtube.com/results?search_query=flux+vs+stable+diffusion+vs+dall-e+comparison", "channel": "AI Reviews", "type": "review"},
+        {"title": "Installing Flux in ComfyUI - Step by Step", "url": "https://www.youtube.com/results?search_query=flux+comfyui+installation+tutorial", "channel": "ComfyUI", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Black Forest Labs - Flux Models", "url": "https://blackforestlabs.ai", "type": "showcase"},
+        {"title": "Flux API Documentation", "url": "https://docs.bfl.ml", "type": "docs"},
+        {"title": "Flux on Hugging Face", "url": "https://huggingface.co/black-forest-labs", "type": "docs"}
+      ],
+      "tags": ["flux", "black-forest-labs", "ai-image", "open-source", "schnell", "dev", "pro", "comfyui"]
+    },
+    "stability-ai": {
+      "logo": "https://upload.wikimedia.org/wikipedia/en/thumb/2/2b/Stability_AI_logo.svg/250px-Stability_AI_logo.svg.png",
+      "docs": "https://platform.stability.ai/docs",
+      "gallery": "https://stability.ai",
+      "youtube": [
+        {"title": "Stable Diffusion 3.5 Tutorial - Complete Beginner's Guide", "url": "https://www.youtube.com/results?search_query=stable+diffusion+3.5+tutorial+beginners", "channel": "SD Tutorials", "type": "tutorial"},
+        {"title": "Stable Diffusion Installation Guide 2025", "url": "https://www.youtube.com/results?search_query=stable+diffusion+installation+guide+2025", "channel": "AI Art", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Stability AI Platform", "url": "https://platform.stability.ai", "type": "docs"},
+        {"title": "Stable Diffusion Web UI", "url": "https://github.com/AUTOMATIC1111/stable-diffusion-webui", "type": "docs"},
+        {"title": "Stable Diffusion Art Tutorials", "url": "https://stable-diffusion-art.com/beginners-guide/", "type": "docs"},
+        {"title": "Civitai Model Hub", "url": "https://civitai.com", "type": "gallery"}
+      ],
+      "tags": ["stability-ai", "stable-diffusion", "sd3", "sd3.5", "sdxl", "ai-image", "open-source", "comfyui"]
+    },
+    "leonardo-ai": {
+      "docs": "https://docs.leonardo.ai",
+      "gallery": "https://app.leonardo.ai/ai-generations",
+      "youtube": [
+        {"title": "Leonardo AI Tutorial for Beginners", "url": "https://www.youtube.com/results?search_query=leonardo+ai+tutorial+beginners+2025", "channel": "Leonardo AI", "type": "tutorial"},
+        {"title": "Leonardo AI Phoenix Model - Complete Guide", "url": "https://www.youtube.com/results?search_query=leonardo+ai+phoenix+model+guide", "channel": "AI Art", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Leonardo AI Learn Hub", "url": "https://leonardo.ai/learn/", "type": "docs"},
+        {"title": "Leonardo AI Webinars", "url": "https://leonardo.ai/webinars/", "type": "docs"},
+        {"title": "Leonardo 101: Beginner's Guide", "url": "https://leonardo.ai/webinars/leonardo-101-welcome-to-leonardo-ai-webinar/", "type": "docs"}
+      ],
+      "tags": ["leonardo-ai", "ai-image", "alchemy", "phoenix", "realtime-canvas", "image-generation"]
+    },
+    "ideogram": {
+      "docs": "https://developer.ideogram.ai/docs",
+      "gallery": "https://ideogram.ai/explore",
+      "youtube": [
+        {"title": "Ideogram AI Tutorial - Text in Images Perfected", "url": "https://www.youtube.com/results?search_query=ideogram+ai+tutorial+text+images+2025", "channel": "AI Reviews", "type": "tutorial"},
+        {"title": "Ideogram 2.0 - Best AI for Typography", "url": "https://www.youtube.com/results?search_query=ideogram+2.0+typography+ai+review", "channel": "AI Art", "type": "review"}
+      ],
+      "official": [
+        {"title": "Ideogram API Documentation", "url": "https://developer.ideogram.ai/docs", "type": "docs"},
+        {"title": "Ideogram Explore Gallery", "url": "https://ideogram.ai/explore", "type": "gallery"}
+      ],
+      "tags": ["ideogram", "ai-image", "text-rendering", "typography", "2.0", "api"]
+    },
+    "adobe-firefly": {
+      "docs": "https://helpx.adobe.com/firefly/using/what-is-firefly.html",
+      "gallery": "https://firefly.adobe.com/gallery",
+      "youtube": [
+        {"title": "Adobe Firefly Tutorial - AI Image Generation in Photoshop", "url": "https://www.youtube.com/results?search_query=adobe+firefly+tutorial+photoshop+2025", "channel": "Adobe", "type": "tutorial"},
+        {"title": "Adobe Firefly Complete Guide for Beginners", "url": "https://www.youtube.com/results?search_query=adobe+firefly+complete+guide+beginners", "channel": "Adobe Creative Cloud", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Adobe Firefly Help Center", "url": "https://helpx.adobe.com/firefly/using/what-is-firefly.html", "type": "docs"},
+        {"title": "Adobe Firefly Gallery", "url": "https://firefly.adobe.com/gallery", "type": "gallery"},
+        {"title": "Firefly Services API", "url": "https://developer.adobe.com/firefly-services/", "type": "docs"}
+      ],
+      "tags": ["adobe-firefly", "ai-image", "creative-cloud", "photoshop", "generative-fill", "commercially-safe"]
+    },
+    "canva-ai": {
+      "docs": "https://www.canva.com/designschool/tutorials/ai-image-generator/",
+      "gallery": "https://www.canva.com/ai-image-generator/",
+      "youtube": [
+        {"title": "Canva AI Image Generator Tutorial", "url": "https://www.youtube.com/results?search_query=canva+ai+image+generator+tutorial+2025", "channel": "Canva", "type": "tutorial"},
+        {"title": "Canva Magic Media - Complete AI Tools Guide", "url": "https://www.youtube.com/results?search_query=canva+magic+media+ai+tools+guide", "channel": "Canva Design School", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Canva Design School - AI Tutorials", "url": "https://www.canva.com/designschool/tutorials/ai-image-generator/", "type": "docs"},
+        {"title": "Canva AI Image Generator", "url": "https://www.canva.com/ai-image-generator/", "type": "gallery"}
+      ],
+      "tags": ["canva", "ai-image", "magic-media", "design", "templates", "drag-and-drop"]
+    },
+    "runway": {
+      "docs": "https://docs.runwayml.com",
+      "gallery": "https://runwayml.com/research",
+      "youtube": [
+        {"title": "Runway Gen-3 Alpha Tutorial - AI Video & Image", "url": "https://www.youtube.com/results?search_query=runway+gen-3+alpha+tutorial+2025", "channel": "Runway", "type": "tutorial"},
+        {"title": "Runway ML Complete Guide for Creators", "url": "https://www.youtube.com/results?search_query=runway+ml+complete+guide+creators", "channel": "AI Video", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Runway Documentation", "url": "https://docs.runwayml.com", "type": "docs"},
+        {"title": "Runway Research", "url": "https://runwayml.com/research", "type": "showcase"},
+        {"title": "Runway Academy", "url": "https://academy.runwayml.com", "type": "docs"}
+      ],
+      "tags": ["runway", "gen-3", "ai-image", "ai-video", "multi-modal", "inpainting", "video-editing"]
+    },
+    "google-imagen": {
+      "docs": "https://cloud.google.com/vertex-ai/docs/generative-ai/image/overview",
+      "gallery": "https://deepmind.google/technologies/imagen-3/",
+      "youtube": [
+        {"title": "Google Imagen 3 - Complete Tutorial", "url": "https://www.youtube.com/results?search_query=google+imagen+3+tutorial+2025", "channel": "Google Cloud", "type": "tutorial"},
+        {"title": "Google AI Image Generation in Gemini", "url": "https://www.youtube.com/results?search_query=google+gemini+image+generation+tutorial", "channel": "Google", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Google Vertex AI - Imagen Overview", "url": "https://cloud.google.com/vertex-ai/docs/generative-ai/image/overview", "type": "docs"},
+        {"title": "DeepMind - Imagen 3", "url": "https://deepmind.google/technologies/imagen-3/", "type": "showcase"},
+        {"title": "Google AI Studio", "url": "https://aistudio.google.com", "type": "docs"}
+      ],
+      "tags": ["google", "imagen", "imagen-3", "vertex-ai", "ai-image", "gemini", "deepmind"]
+    },
+    "nightcafe": {
+      "docs": "https://creator.nightcafe.studio/create",
+      "gallery": "https://creator.nightcafe.studio/explore",
+      "youtube": [
+        {"title": "NightCafe AI Art Generator Tutorial", "url": "https://www.youtube.com/results?search_query=nightcafe+ai+art+generator+tutorial", "channel": "NightCafe", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "NightCafe Creator Studio", "url": "https://creator.nightcafe.studio/create", "type": "docs"},
+        {"title": "NightCafe Explore Gallery", "url": "https://creator.nightcafe.studio/explore", "type": "gallery"}
+      ],
+      "tags": ["nightcafe", "ai-image", "community", "styles", "credits", "neural-style"]
+    },
+    "fotor-ai": {
+      "docs": "https://www.fotor.com/features/ai-image-generator/",
+      "gallery": "https://www.fotor.com/features/ai-image-generator/",
+      "youtube": [
+        {"title": "Fotor AI Image Generator Tutorial", "url": "https://www.youtube.com/results?search_query=fotor+ai+image+generator+tutorial", "channel": "Fotor", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Fotor AI Image Generator", "url": "https://www.fotor.com/features/ai-image-generator/", "type": "docs"}
+      ],
+      "tags": ["fotor", "ai-image", "photo-editing", "online", "free", "templates"]
+    },
+    "freepik-ai": {
+      "docs": "https://www.freepik.com/ai/image-generator",
+      "gallery": "https://www.freepik.com/ai/image-generator",
+      "youtube": [
+        {"title": "Freepik AI Image Generator - Mystic Tutorial", "url": "https://www.youtube.com/results?search_query=freepik+ai+image+generator+mystic+tutorial", "channel": "Freepik", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Freepik AI Image Generator", "url": "https://www.freepik.com/ai/image-generator", "type": "docs"},
+        {"title": "Freepik Mystic", "url": "https://www.freepik.com/ai/image-generator", "type": "gallery"}
+      ],
+      "tags": ["freepik", "ai-image", "stock", "mystic", "flux", "commercial"]
+    },
+    "pixlr": {
+      "docs": "https://pixlr.com/image-generator/",
+      "gallery": "https://pixlr.com/image-generator/",
+      "youtube": [
+        {"title": "Pixlr AI Image Generator Tutorial", "url": "https://www.youtube.com/results?search_query=pixlr+ai+image+generator+tutorial", "channel": "Pixlr", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Pixlr AI Image Generator", "url": "https://pixlr.com/image-generator/", "type": "docs"}
+      ],
+      "tags": ["pixlr", "ai-image", "photo-editing", "online", "free", "browser-based"]
+    },
+    "banana-nano": {
+      "docs": "https://www.banana.dev",
+      "youtube": [
+        {"title": "Banana Dev - Serverless GPU Inference", "url": "https://www.youtube.com/results?search_query=banana+dev+serverless+gpu+inference+tutorial", "channel": "Banana", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Banana Dev Documentation", "url": "https://www.banana.dev", "type": "docs"}
+      ],
+      "tags": ["banana", "nano", "ai-image", "serverless", "gpu", "inference", "api"]
+    }
+  },
+  "video-gen": {
+    "sora2": {
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
+      "docs": "https://openai.com/sora",
+      "gallery": "https://openai.com/index/sora/",
+      "youtube": [
+        {"title": "OpenAI Sora 2 Complete Guide - Features & How to Use", "url": "https://www.youtube.com/results?search_query=openai+sora+2+complete+guide+tutorial+2026", "channel": "OpenAI", "type": "tutorial"},
+        {"title": "Sora 2 Prompting Masterclass - Create Stunning AI Videos", "url": "https://www.youtube.com/results?search_query=sora+2+prompting+masterclass+ai+video", "channel": "AI Video", "type": "tutorial"},
+        {"title": "Sora 2 vs Kling vs Veo 3 - AI Video Comparison", "url": "https://www.youtube.com/results?search_query=sora+2+vs+kling+vs+veo+3+comparison", "channel": "AI Reviews", "type": "review"}
+      ],
+      "official": [
+        {"title": "OpenAI Sora", "url": "https://openai.com/sora", "type": "showcase"},
+        {"title": "Sora Research Paper", "url": "https://openai.com/index/sora/", "type": "docs"},
+        {"title": "Sora 2 Guide - Tutorials & Prompts", "url": "https://sora2.ink/", "type": "docs"}
+      ],
+      "tags": ["sora", "sora-2", "openai", "ai-video", "text-to-video", "video-generation", "1080p"]
+    },
+    "kling": {
+      "docs": "https://klingai.com",
+      "gallery": "https://klingai.com/explore",
+      "youtube": [
+        {"title": "Kling AI Video Generator Tutorial - Complete Guide", "url": "https://www.youtube.com/results?search_query=kling+ai+video+generator+tutorial+2025", "channel": "AI Video", "type": "tutorial"},
+        {"title": "Kling 3.0 - Motion Brush & Advanced Features", "url": "https://www.youtube.com/results?search_query=kling+3.0+motion+brush+advanced+tutorial", "channel": "AI Tutorials", "type": "tutorial"},
+        {"title": "Kling AI Honest Review After 50 Tests", "url": "https://www.youtube.com/results?search_query=kling+ai+honest+review+2025", "channel": "CrePal", "type": "review"}
+      ],
+      "official": [
+        {"title": "Kling AI Platform", "url": "https://klingai.com", "type": "docs"},
+        {"title": "Kling AI Quickstart Guide", "url": "https://app.klingai.com/global/quickstart/image-to-video-guide", "type": "docs"},
+        {"title": "Kling AI Explore Gallery", "url": "https://klingai.com/explore", "type": "gallery"}
+      ],
+      "tags": ["kling", "kling-3", "kuaishou", "ai-video", "text-to-video", "image-to-video", "motion-brush", "lip-sync"]
+    },
+    "veo3": {
+      "docs": "https://deepmind.google/technologies/veo/",
+      "gallery": "https://deepmind.google/technologies/veo/",
+      "youtube": [
+        {"title": "Google Veo 3 - AI Video Generation Tutorial", "url": "https://www.youtube.com/results?search_query=google+veo+3+ai+video+generation+tutorial", "channel": "Google", "type": "tutorial"},
+        {"title": "Veo 3 vs Sora 2 - Which AI Video Generator is Better?", "url": "https://www.youtube.com/results?search_query=veo+3+vs+sora+2+comparison+review", "channel": "AI Reviews", "type": "review"}
+      ],
+      "official": [
+        {"title": "Google DeepMind - Veo", "url": "https://deepmind.google/technologies/veo/", "type": "showcase"},
+        {"title": "Veo on Vertex AI", "url": "https://cloud.google.com/vertex-ai/generative-ai/docs/video/overview", "type": "docs"},
+        {"title": "Google AI Studio", "url": "https://aistudio.google.com", "type": "docs"}
+      ],
+      "tags": ["veo", "veo-3", "google", "deepmind", "ai-video", "vertex-ai", "text-to-video", "4k"]
+    },
+    "vidu": {
+      "docs": "https://www.vidu.studio",
+      "gallery": "https://www.vidu.studio/explore",
+      "youtube": [
+        {"title": "Vidu AI Video Generator Tutorial", "url": "https://www.youtube.com/results?search_query=vidu+ai+video+generator+tutorial+2025", "channel": "AI Video", "type": "tutorial"},
+        {"title": "Vidu - Fast AI Video Generation Review", "url": "https://www.youtube.com/results?search_query=vidu+ai+fast+video+generation+review", "channel": "AI Reviews", "type": "review"}
+      ],
+      "official": [
+        {"title": "Vidu Studio", "url": "https://www.vidu.studio", "type": "docs"},
+        {"title": "Vidu Explore Gallery", "url": "https://www.vidu.studio/explore", "type": "gallery"}
+      ],
+      "tags": ["vidu", "ai-video", "text-to-video", "fast-generation", "4-second", "8-second"]
+    },
+    "wan": {
+      "docs": "https://github.com/Wan-Video/Wan2.1",
+      "gallery": "https://wan-video.github.io",
+      "youtube": [
+        {"title": "Wan 2.1 Video Generation - Self-Hosted Tutorial", "url": "https://www.youtube.com/results?search_query=wan+2.1+video+generation+self+hosted+tutorial", "channel": "AI Self-Hosted", "type": "tutorial"},
+        {"title": "Wan VACE - Video Editing with AI", "url": "https://www.youtube.com/results?search_query=wan+vace+video+editing+ai+tutorial", "channel": "AI Video", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Wan 2.1 GitHub Repository", "url": "https://github.com/Wan-Video/Wan2.1", "type": "docs"},
+        {"title": "Wan Video Project Page", "url": "https://wan-video.github.io", "type": "showcase"},
+        {"title": "Wan on Hugging Face", "url": "https://huggingface.co/Wan-AI", "type": "docs"}
+      ],
+      "tags": ["wan", "wan-2.1", "alibaba", "ai-video", "open-source", "vace", "self-hosted", "14b"]
+    }
+  },
+  "support": {
+    "elevenlabs": {
+      "docs": "https://elevenlabs.io/docs",
+      "youtube": [
+        {"title": "ElevenLabs Conversational AI - Build Voice Agents", "url": "https://www.youtube.com/results?search_query=elevenlabs+conversational+ai+voice+agent+tutorial", "channel": "ElevenLabs", "type": "tutorial"},
+        {"title": "ElevenLabs Conversational AI 2.0 Overview", "url": "https://www.youtube.com/results?search_query=elevenlabs+conversational+ai+2.0+overview", "channel": "ElevenLabs", "type": "showcase"},
+        {"title": "Building AI Phone Agents with ElevenLabs + Twilio", "url": "https://www.youtube.com/results?search_query=elevenlabs+twilio+ai+phone+agent+tutorial", "channel": "AI Dev", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "ElevenLabs Documentation", "url": "https://elevenlabs.io/docs", "type": "docs"},
+        {"title": "Conversational AI Overview", "url": "https://elevenlabs.io/docs/conversational-ai/overview", "type": "docs"},
+        {"title": "ElevenLabs Conversational AI Platform", "url": "https://elevenlabs.io/conversational-ai", "type": "showcase"},
+        {"title": "ElevenAgents Quickstart", "url": "https://elevenlabs.io/docs/eleven-agents/quickstart", "type": "docs"}
+      ],
+      "tags": ["elevenlabs", "voice", "tts", "conversational-ai", "voice-agent", "speech-synthesis"]
+    },
+    "twilio": {
+      "docs": "https://www.twilio.com/docs",
+      "youtube": [
+        {"title": "Twilio Voice & SMS Integration Tutorial", "url": "https://www.youtube.com/results?search_query=twilio+voice+sms+integration+tutorial+2025", "channel": "Twilio", "type": "tutorial"},
+        {"title": "Building an AI Phone System with Twilio", "url": "https://www.youtube.com/results?search_query=ai+phone+system+twilio+tutorial", "channel": "AI Dev", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Twilio Documentation", "url": "https://www.twilio.com/docs", "type": "docs"},
+        {"title": "Twilio Voice API", "url": "https://www.twilio.com/docs/voice", "type": "docs"},
+        {"title": "Twilio SMS API", "url": "https://www.twilio.com/docs/sms", "type": "docs"}
+      ],
+      "tags": ["twilio", "sms", "voice", "phone", "programmable", "webhooks", "twiml"]
+    },
+    "stripe": {
+      "docs": "https://docs.stripe.com",
+      "youtube": [
+        {"title": "Stripe Payments Integration Tutorial", "url": "https://www.youtube.com/results?search_query=stripe+payments+integration+tutorial+2025", "channel": "Stripe", "type": "tutorial"},
+        {"title": "Stripe Checkout & Subscriptions Guide", "url": "https://www.youtube.com/results?search_query=stripe+checkout+subscriptions+guide+tutorial", "channel": "Stripe Dev", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Stripe Documentation", "url": "https://docs.stripe.com", "type": "docs"},
+        {"title": "Stripe API Reference", "url": "https://docs.stripe.com/api", "type": "docs"},
+        {"title": "Stripe Dashboard", "url": "https://dashboard.stripe.com", "type": "docs"}
+      ],
+      "tags": ["stripe", "payments", "billing", "subscriptions", "checkout", "webhooks"]
+    },
+    "postiz": {
+      "docs": "https://docs.postiz.com",
+      "youtube": [
+        {"title": "Postiz Social Media Management Tutorial", "url": "https://www.youtube.com/results?search_query=postiz+social+media+management+tutorial", "channel": "Postiz", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Postiz Documentation", "url": "https://docs.postiz.com", "type": "docs"}
+      ],
+      "tags": ["postiz", "social-media", "scheduling", "publishing", "analytics", "open-source"]
+    },
+    "slack": {
+      "docs": "https://api.slack.com",
+      "youtube": [
+        {"title": "Slack API Bot Tutorial - Build Integrations", "url": "https://www.youtube.com/results?search_query=slack+api+bot+tutorial+build+integrations+2025", "channel": "Slack", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Slack API Documentation", "url": "https://api.slack.com", "type": "docs"},
+        {"title": "Slack Bolt Framework", "url": "https://api.slack.com/bolt", "type": "docs"}
+      ],
+      "tags": ["slack", "notifications", "webhooks", "bot", "integration", "api"]
+    },
+    "google-calendar": {
+      "docs": "https://developers.google.com/calendar",
+      "youtube": [
+        {"title": "Google Calendar API Integration Tutorial", "url": "https://www.youtube.com/results?search_query=google+calendar+api+integration+tutorial+2025", "channel": "Google", "type": "tutorial"}
+      ],
+      "official": [
+        {"title": "Google Calendar API", "url": "https://developers.google.com/calendar", "type": "docs"},
+        {"title": "Google OAuth 2.0", "url": "https://developers.google.com/identity/protocols/oauth2", "type": "docs"}
+      ],
+      "tags": ["google", "calendar", "appointments", "scheduling", "oauth", "api"]
+    }
+  }
+}

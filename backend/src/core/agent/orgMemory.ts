@@ -10,6 +10,7 @@
 
 import { prisma } from "../../db/prisma.js";
 import { embedText, upsertChunks, queryPinecone, queryTiered } from "../../lib/pinecone.js";
+import { emitHealEvent } from "../../lib/kbHealEmitter.js";
 import type { VectorHit } from "../../lib/pinecone.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -143,6 +144,21 @@ export async function recallOrgMemory(params: {
     hits = await queryPinecone({ tenantId, query, topK: topK + 4, minScore, namespace: `tenant-${tenantId}` });
     // Filter to only org-memory vectors
     hits = hits.filter(h => h.chunkId.startsWith("org-mem-"));
+
+    // Reactive heal: detect duplicate memories (>0.95 similarity between top results)
+    if (hits.length >= 2 && hits[0].score > 0.95 && hits[1].score > 0.95) {
+      const scoreDiff = Math.abs(hits[0].score - hits[1].score);
+      if (scoreDiff < 0.02 && hits[0].documentId !== hits[1].documentId) {
+        emitHealEvent({
+          trigger: "reactive",
+          query,
+          agentId: "orgMemory",
+          tenantId,
+          errorType: "memory_corruption",
+          context: `Duplicate memories detected: ${hits[0].documentId} vs ${hits[1].documentId} (scores: ${hits[0].score.toFixed(3)}, ${hits[1].score.toFixed(3)})`,
+        });
+      }
+    }
   } catch {
     // Pinecone unavailable — fall back to SQL
   }

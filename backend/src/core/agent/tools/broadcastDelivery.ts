@@ -296,16 +296,15 @@ export async function deliverBroadcast(ctx: BroadcastContext): Promise<Broadcast
 
   const hasMedia = media.imageUrls.length > 0 || media.videoUrls.length > 0;
 
-  // Only skip media-only platforms when no media is available
-  const eligibleChannels = hasMedia
-    ? ctx.channels
-    : ctx.channels.filter(
-        ch => !MEDIA_ONLY.has((ch.identifier ?? ch.platform ?? "").toLowerCase()),
-      );
-
-  if (!eligibleChannels.length) {
-    return { results: [], summary: "No eligible channels found. Media-only platforms require image or video URLs." };
+  // HARD GATE: Never broadcast text-only posts. Every post must have media.
+  if (!hasMedia) {
+    return {
+      results: [],
+      summary: "BLOCKED: No media attached. Every post must include an image or video. Generate media first (Flux1, DALL-E, Gemini, Vidu), then retry with image/video URLs.",
+    };
   }
+
+  const eligibleChannels = ctx.channels;
 
   const imageUrls = media.imageUrls;
 

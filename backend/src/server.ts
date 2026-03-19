@@ -96,6 +96,9 @@ import { evolutionRoutes } from "./routes/evolutionRoutes.js";
 import { treatmentRoutes } from "./routes/treatmentRoutes.js";
 import elevenlabsRoutes from "./routes/elevenlabsRoutes.js";
 import supportKbRoutes from "./routes/supportKbRoutes.js";
+import wikiRoutes from "./routes/wikiRoutes.js";
+import wikiKeyRoutes from "./routes/wikiKeyRoutes.js";
+import wikiMcpRoutes from "./routes/wikiMcpRoutes.js";
 
 // Wait for DB before starting Fastify (retries on transient pooler blips)
 await connectWithRetry(5, 3000);
@@ -180,6 +183,7 @@ await app.register(async (discordScope) => {
 const allowed = new Set([
   "https://www.atlasux.cloud",
   "https://atlasux.cloud",
+  "https://wiki.atlasux.cloud",
 ]);
 if (process.env.NODE_ENV !== "production") {
   allowed.add("http://localhost:5173");
@@ -442,6 +446,15 @@ await app.register(elevenlabsRoutes, { prefix: "/v1/elevenlabs" });
 
 // Support KB — public help center articles (no auth required)
 await app.register(supportKbRoutes, { prefix: "/v1/support" });
+
+// Wiki — public knowledge base at wiki.atlasux.cloud (no auth required)
+await app.register(wikiRoutes, { prefix: "/v1/wiki" });
+
+// Wiki API Keys — self-service key management (no auth, keys are self-contained)
+await app.register(wikiKeyRoutes, { prefix: "/v1/wiki-keys" });
+
+// Wiki MCP Server — Model Context Protocol for agent access (requires wiki API key)
+await app.register(wikiMcpRoutes, { prefix: "/v1/wiki-mcp" });
 
 // Org Memory — the Organizational Brain persistent memory layer
 await app.register(orgMemoryRoutes, { prefix: "/v1/org-memory" });
