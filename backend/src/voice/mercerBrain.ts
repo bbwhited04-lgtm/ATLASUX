@@ -395,7 +395,7 @@ async function classifyLead(
 async function getRelevantKB(tenantId: string, utterance: string) {
   if (!utterance || utterance.length < 10) return null;
   try {
-    return await getKbContext({ tenantId, agentId: "mercer", query: utterance });
+    return await getKbContext({ tenantId, agentId: "mercer", query: utterance, querySource: "voice" });
   } catch {
     return null;
   }

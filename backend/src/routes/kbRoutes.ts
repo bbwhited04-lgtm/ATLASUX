@@ -85,6 +85,7 @@ export async function kbRoutes(app: FastifyInstance) {
     const q = String((req.query as any)?.q ?? "").trim();
     const statusRaw = String((req.query as any)?.status ?? "").trim();
     const tag = String((req.query as any)?.tag ?? "").trim();
+    const tierFilter = String((req.query as any)?.tier ?? "").trim();
 
     const status = statusRaw ? normalizeStatus(statusRaw) : null;
 
@@ -93,6 +94,7 @@ export async function kbRoutes(app: FastifyInstance) {
         where: {
           tenantId,
           ...(status ? { status } : {}),
+          ...(tierFilter && ["public", "internal", "tenant"].includes(tierFilter) ? { tier: tierFilter as any } : {}),
           ...(q
             ? {
                 OR: [
@@ -125,6 +127,8 @@ export async function kbRoutes(app: FastifyInstance) {
         title: d.title,
         slug: d.slug,
         status: d.status,
+        tier: (d as any).tier ?? "tenant",
+        category: (d as any).category ?? null,
         updatedAt: d.updatedAt,
         createdAt: d.createdAt,
         tags: d.tags.map((t) => t.tag.name),
@@ -319,9 +323,14 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
     const title = String(body?.title ?? "").trim();
     const content = String(body?.body ?? "").trim();
     const status = normalizeStatus(body?.status);
+    const tier = body?.tier ? String(body.tier).trim() : "tenant";
+    const category = body?.category ? String(body.category).trim() : null;
     const tags = Array.isArray(body?.tags) ? body.tags.map((t: any) => String(t).trim()).filter(Boolean) : [];
 
     if (!title) return reply.code(400).send({ ok: false, error: "missing_title" });
+    if (!["public", "internal", "tenant"].includes(tier)) {
+      return reply.code(400).send({ ok: false, error: "invalid_tier" });
+    }
 
     const slug = slugify(body?.slug ? String(body.slug) : title);
 
@@ -334,6 +343,8 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
           slug,
           body: content,
           status,
+          tier: tier as any,
+          ...(category ? { category } : {}),
           createdBy: userId,
         },
       });
@@ -472,6 +483,8 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
     const content = body?.body != null ? String(body.body) : null;
     const status = body?.status != null ? normalizeStatus(body.status) : null;
     const slug = body?.slug != null ? slugify(String(body.slug)) : null;
+    const tier = body?.tier != null ? String(body.tier).trim() : null;
+    const category = body?.category !== undefined ? (body.category != null ? String(body.category).trim() : null) : undefined;
     const tags = body?.tags != null
       ? (Array.isArray(body.tags) ? body.tags.map((t: any) => String(t).trim()).filter(Boolean) : [])
       : null;
@@ -510,6 +523,8 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
           ...(slug ? { slug } : {}),
           ...(content != null ? { body: content } : {}),
           ...(status ? { status } : {}),
+          ...(tier && ["public", "internal", "tenant"].includes(tier) ? { tier: tier as any } : {}),
+          ...(category !== undefined ? { category } : {}),
           updatedBy: userId,
         },
       });
@@ -575,7 +590,7 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
     const result = await withTenant(tenantId, async (tx) => {
       const doc = await tx.kbDocument.findFirst({
         where: { id, tenantId },
-        select: { id: true, title: true, slug: true },
+        select: { id: true, title: true, slug: true, tier: true, category: true },
       });
       if (!doc) return null;
 
@@ -598,6 +613,14 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
       return reply.send({ ok: true, embedded: 0, message: "no_chunks" });
     }
 
+    // Determine Pinecone namespace from doc tier
+    const nsMap: Record<string, string> = {
+      public: "public",
+      internal: "internal",
+      tenant: `tenant-${tenantId}`,
+    };
+    const namespace = nsMap[(doc as any).tier ?? "tenant"] ?? `tenant-${tenantId}`;
+
     const pineconeChunks: PineconeChunk[] = chunks.map(c => ({
       id: `${doc.id}::${c.idx}`,
       content: c.content,
@@ -605,9 +628,11 @@ app.post("/documents/:id/chunks/regenerate", async (req, reply) => {
       documentId: doc.id,
       slug: doc.slug,
       title: doc.title,
+      tier: (doc as any).tier ?? "tenant",
+      category: (doc as any).category ?? undefined,
     }));
 
-    const embedded = await upsertChunks(pineconeChunks);
+    const embedded = await upsertChunks(pineconeChunks, namespace);
 
     return reply.send({ ok: true, documentId: id, embedded });
   });

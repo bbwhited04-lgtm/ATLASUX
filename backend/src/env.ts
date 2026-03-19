@@ -32,6 +32,12 @@ const EnvSchema = z.object({
   PINECONE_API_KEY: z.string().optional(),
   PINECONE_INDEX: z.string().optional(),
 
+  // KB Tiered Search
+  KB_TIERED_SEARCH_ENABLED: z.string().optional(),
+  KB_TIER_WEIGHT_TENANT: z.string().optional(),
+  KB_TIER_WEIGHT_INTERNAL: z.string().optional(),
+  KB_TIER_WEIGHT_PUBLIC: z.string().optional(),
+
   // OAuth providers
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
@@ -225,6 +231,12 @@ const EnvSchema = z.object({
   // Postiz (social media publishing — used by Timmy for TikTok)
   POSTIZ_API_KEY: z.string().optional(),
 
+  // Moltbook (social network for AI agents — Atlas heartbeat)
+  MOLTBOOK_API_KEY: z.string().optional(),
+
+  // Apify (100+ web scrapers — social media, lead gen, search, reviews)
+  APIFY_API_KEY: z.string().optional(),
+
   // Web search providers (multi-provider fallback: You.com → Brave → Exa → Tavily → SerpAPI)
   SERP_API_KEY:          z.string().optional(),
   YOU_COM_API_KEY:       z.string().optional(),
@@ -240,6 +252,9 @@ const EnvSchema = z.object({
   // ElevenLabs (text-to-speech / voice cloning / conversational AI)
   ELEVENLABS_API_KEY: z.string().optional(),
   ELEVENLABS_WEBHOOK_SECRET: z.string().optional(),
+
+  // Vidu (AI video generation — $10/mo plan, cheapest API at $0.0375/sec)
+  VIDU_API_KEY: z.string().optional(),
 
   // QuickBooks OAuth2
   QUICKBOOKS_CLIENT_ID:          z.string().optional(), // sandbox

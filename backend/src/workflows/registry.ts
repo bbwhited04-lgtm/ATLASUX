@@ -599,6 +599,7 @@ const handlers: Record<string, WorkflowHandler> = {
       query: "company overview mission agents capabilities",
       intentId: ctx.intentId,
       requestedBy: ctx.requestedBy,
+      querySource: "engine",
     });
 
     const agentList = workflowCatalogAll
@@ -686,6 +687,7 @@ const handlers: Record<string, WorkflowHandler> = {
       query: `${subject} ${message}`.slice(0, 200),
       intentId: ctx.intentId,
       requestedBy: ctx.requestedBy,
+      querySource: "engine",
     });
 
     // LLM: classify + draft ack + recommend routing
@@ -777,6 +779,7 @@ const handlers: Record<string, WorkflowHandler> = {
       query: `escalation protocol ${summary}`.slice(0, 200),
       intentId: ctx.intentId,
       requestedBy: ctx.requestedBy,
+      querySource: "engine",
     });
 
     const llmText = await safeLLM(ctx, {
@@ -826,6 +829,7 @@ const handlers: Record<string, WorkflowHandler> = {
       query: "daily operations report metrics performance summary",
       intentId: ctx.intentId,
       requestedBy: ctx.requestedBy,
+      querySource: "engine",
     });
 
     const llmText = await safeLLM(ctx, {
@@ -927,6 +931,7 @@ function createPlatformIntelHandler(platformName: string, searchQuery: string): 
       query: `${platformName} content strategy trends`,
       intentId: ctx.intentId,
       requestedBy: ctx.requestedBy,
+      querySource: "engine",
     });
 
     // 3. LLM synthesizes hot-takes report
@@ -1055,6 +1060,7 @@ handlers["WF-106"] = async (ctx) => {
     query: "agent roles workflows platform strategy task assignment",
     intentId: ctx.intentId,
     requestedBy: ctx.requestedBy,
+    querySource: "engine",
   });
 
   // 2. Get real-time macro context via multi-provider web search
@@ -1701,6 +1707,7 @@ handlers["WF-108"] = async (ctx) => {
     query:       topicHint || "blog content strategy AI automation Atlas UX writing guidelines",
     intentId:    ctx.intentId,
     requestedBy: ctx.requestedBy,
+    querySource: "engine",
   });
 
   await writeStepAudit(ctx, "WF-108.kb", `KB loaded (${kb.items.length} docs)`);
@@ -2348,6 +2355,7 @@ handlers["WF-120"] = async (ctx) => {
     query: "brand awareness marketing strategy Atlas UX",
     intentId: ctx.intentId,
     requestedBy: ctx.requestedBy,
+    querySource: "engine",
   });
 
   // 5. LLM compiles brand awareness report
@@ -2463,6 +2471,7 @@ handlers["WF-121"] = async (ctx) => {
     query: "competitive analysis market intelligence AI platform",
     intentId: ctx.intentId,
     requestedBy: ctx.requestedBy,
+    querySource: "engine",
   });
 
   // 3. LLM competitive landscape analysis
@@ -2591,6 +2600,7 @@ handlers["WF-122"] = async (ctx) => {
     query: "SEO strategy blog content optimization",
     intentId: ctx.intentId,
     requestedBy: ctx.requestedBy,
+    querySource: "engine",
   });
 
   const llmText = await safeLLM(ctx, {
@@ -2962,7 +2972,7 @@ const POSTIZ_API = "https://api.postiz.com/public/v1";
 const POSTIZ_AGENT_PLATFORM: Record<string, string> = {
   timmy: "tiktok", kelly: "x", fran: "facebook", donna: "reddit",
   dwight: "threads", link: "linkedin", cornwall: "pinterest", terry: "tumblr",
-  venny: "youtube", emma: "mastodon", archy: "instagram", reynolds: "medium",
+  venny: "youtube", archy: "instagram",
   sunday: "x", // Sunday cross-posts; default to X
 };
 
@@ -2982,7 +2992,7 @@ const POSTIZ_PLATFORM_SETTINGS: Record<string, Record<string, unknown>> = {
   },
   x:         { __type: "x", who_can_reply_post: "everyone" },
   facebook:  { __type: "facebook" },
-  reddit:    { __type: "reddit", subreddit: [{ value: "atlas-ux-dev" }, { value: "atlasux" }, { value: "buffaloherde" }] },
+  reddit:    { __type: "reddit", subreddit: [{ value: "ai_agents" }, { value: "aiforsmallbusiness" }, { value: "indiebiz" }, { value: "buildinpublic" }, { value: "openclaw" }] },
   threads:   { __type: "threads" },
   linkedin:  { __type: "linkedin", post_as_images_carousel: false },
   pinterest: { __type: "pinterest", title: "DYNAMIC", link: "https://atlasux.com", dominant_color: "#000000", board: "DYNAMIC" },
@@ -3131,6 +3141,7 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
         query: `brand playbook mandatory guide voice tone audience pain points banned phrases`,
         intentId: ctx.intentId,
         requestedBy: ctx.requestedBy,
+        querySource: "engine",
       });
 
       const kb = await getKbContext({
@@ -3139,6 +3150,7 @@ function createPostizPublishHandler(platform: string): WorkflowHandler {
         query: `${platform} content strategy trending topics Atlas UX AI receptionist trade business`,
         intentId: ctx.intentId,
         requestedBy: ctx.requestedBy,
+        querySource: "engine",
       });
 
       // 3. Get fresh web trends
@@ -3299,6 +3311,7 @@ handlers["WF-040"] = async (ctx) => {
     query: "brand playbook mandatory guide voice tone audience pain points banned phrases",
     intentId: ctx.intentId,
     requestedBy: ctx.requestedBy,
+    querySource: "engine",
   });
 
   // 3. Get general KB context
@@ -3308,6 +3321,7 @@ handlers["WF-040"] = async (ctx) => {
     query: "Atlas UX AI receptionist trade business Lucy plumber salon HVAC content strategy",
     intentId: ctx.intentId,
     requestedBy: ctx.requestedBy,
+    querySource: "engine",
   });
 
   // 4. Generate content via LLM
@@ -3405,6 +3419,7 @@ handlers["WF-212"] = async (ctx) => {
       tenantId: ctx.tenantId, agentId: "sunday",
       query: "Atlas UX cross-platform social media content",
       intentId: ctx.intentId, requestedBy: ctx.requestedBy,
+      querySource: "engine",
     });
 
     caption = await safeLLM(ctx, {
@@ -4184,6 +4199,7 @@ handlers["WF-033"] = async (ctx) => {
     query: "daily intelligence briefing platform trends security",
     intentId: ctx.intentId,
     requestedBy: ctx.requestedBy,
+    querySource: "engine",
   });
 
   // 4. Fresh web search for morning context

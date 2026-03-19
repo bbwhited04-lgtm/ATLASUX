@@ -207,7 +207,7 @@ export const chatRoutes: FastifyPluginAsync = async (app) => {
 
         } else {
           // FULL_RAG — novel or complex question, go to DB + relevant search (Tier 3)
-          const kb = await getKbContext({ tenantId, agentId, query }).catch(() => null);
+          const kb = await getKbContext({ tenantId, agentId, query, querySource: "chat" }).catch(() => null);
           if (kb?.text) {
             contextParts.push(
               `[KNOWLEDGE BASE — ${kb.items.length} docs, ${kb.totalChars} chars]\n${kb.text}`

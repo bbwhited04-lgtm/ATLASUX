@@ -9,7 +9,7 @@
  */
 
 import { prisma } from "../../db/prisma.js";
-import { embedText, upsertChunks, queryPinecone } from "../../lib/pinecone.js";
+import { embedText, upsertChunks, queryPinecone, queryTiered } from "../../lib/pinecone.js";
 import type { VectorHit } from "../../lib/pinecone.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -61,13 +61,15 @@ export async function storeOrgMemory(params: {
     sourceId, confidence = 0.7, tags = [], validUntil,
   } = params;
 
-  // De-duplicate: check if a very similar memory already exists
+  // De-duplicate: check if a very similar memory already exists (within tenant namespace)
+  const tenantNs = `tenant-${tenantId}`;
   try {
     const existing = await queryPinecone({
       tenantId,
       query: content,
       topK: 1,
       minScore: 0.92,
+      namespace: tenantNs,
     });
 
     const dup = existing.find(
@@ -114,7 +116,8 @@ export async function storeOrgMemory(params: {
       documentId: row.id,
       slug: "org-memory",
       title: `${category}: ${content.slice(0, 80)}`,
-    }]);
+      tier: "tenant",
+    }], `tenant-${tenantId}`);
   } catch {
     // Non-fatal — memory is in Postgres even if embedding fails
   }
@@ -137,7 +140,7 @@ export async function recallOrgMemory(params: {
 
   // Try Pinecone vector search first
   try {
-    hits = await queryPinecone({ tenantId, query, topK: topK + 4, minScore });
+    hits = await queryPinecone({ tenantId, query, topK: topK + 4, minScore, namespace: `tenant-${tenantId}` });
     // Filter to only org-memory vectors
     hits = hits.filter(h => h.chunkId.startsWith("org-mem-"));
   } catch {

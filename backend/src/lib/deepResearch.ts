@@ -13,8 +13,8 @@ import { searchWeb, searchReddit }       from "./webSearch.js";
 import type { WebSearchResult, RedditPost } from "./webSearch.js";
 import { getKbContext }                   from "../core/kb/getKbContext.js";
 import { runLLM, simpleCall }            from "../core/engine/brainllm.js";
-import { queryPinecone }                 from "./pinecone.js";
-import type { VectorHit }               from "./pinecone.js";
+import { queryTiered }                   from "./pinecone.js";
+import type { TieredHit }               from "./pinecone.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -89,7 +89,7 @@ async function executeSearches(
   evidence:    ResearchEvidence[];
   redditPosts: RedditPost[];
   kbText:      string;
-  vectorHits:  VectorHit[];
+  vectorHits:  TieredHit[];
   provider:    string;
 }> {
   const timeout = AbortSignal.timeout(PARALLEL_TIMEOUT_MS);
@@ -111,10 +111,11 @@ async function executeSearches(
     tenantId,
     agentId,
     query: topic.slice(0, 200),
+    querySource: "engine",
   }).catch(() => ({ text: "", items: [], totalChars: 0, budgetChars: 0 }));
 
-  const vectorPromise = queryPinecone({ tenantId, query: topic, topK: 8 })
-    .catch(() => [] as VectorHit[]);
+  const vectorPromise = queryTiered({ tenantId, query: topic, tiers: ["public", "internal", "tenant"], topK: 8 })
+    .catch(() => [] as TieredHit[]);
 
   const [webResults, redditResult, kbResult, vectorResults] = await Promise.all([
     Promise.allSettled(webPromises).then(settled =>
@@ -157,7 +158,7 @@ async function synthesizeReport(
   evidence: ResearchEvidence[],
   redditPosts: RedditPost[],
   kbText: string,
-  vectorHits: VectorHit[],
+  vectorHits: TieredHit[],
   agentId: string,
 ): Promise<string> {
   // Build evidence block

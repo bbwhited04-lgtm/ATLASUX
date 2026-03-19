@@ -244,6 +244,7 @@ async function getRelevantKB(tenantId: string, utterance: string) {
       tenantId,
       agentId: "lucy",
       query: utterance,
+      querySource: "voice",
     });
   } catch {
     return null;

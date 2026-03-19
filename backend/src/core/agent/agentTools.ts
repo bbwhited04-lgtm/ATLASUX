@@ -138,7 +138,7 @@ async function getTeamMembers(tenantId: string): Promise<ToolResult> {
 
 async function searchAtlasUXKnowledge(tenantId: string, query: string): Promise<ToolResult> {
   try {
-    const kb = await getKbContext({ tenantId, agentId: "cheryl", query: query.slice(0, 200) });
+    const kb = await getKbContext({ tenantId, agentId: "cheryl", query: query.slice(0, 200), querySource: "engine" });
     if (!kb.text) return { tool: "search_atlasux_knowledge", data: "No matching docs found.", usedAt: new Date().toISOString() };
     return { tool: "search_atlasux_knowledge", data: `Found ${kb.items.length} relevant docs:\n${kb.text}`, usedAt: new Date().toISOString() };
   } catch (err: any) {
@@ -419,7 +419,7 @@ async function readUserProfile(tenantId: string): Promise<ToolResult> {
 
 async function readPolicyDocs(tenantId: string, query: string): Promise<ToolResult> {
   try {
-    const kb = await getKbContext({ tenantId, agentId: "larry", query: `policy ${query}`.slice(0, 200) });
+    const kb = await getKbContext({ tenantId, agentId: "larry", query: `policy ${query}`.slice(0, 200), querySource: "engine" });
     if (!kb.text) return { tool: "read_policy_docs", data: "No policy documents found.", usedAt: new Date().toISOString() };
     return { tool: "read_policy_docs", data: `Policy docs (${kb.items.length}):\n${kb.text.slice(0, 3000)}`, usedAt: new Date().toISOString() };
   } catch (err: any) {
@@ -431,7 +431,7 @@ async function readPolicyDocs(tenantId: string, query: string): Promise<ToolResu
 
 async function readLegalDocs(tenantId: string, query: string): Promise<ToolResult> {
   try {
-    const kb = await getKbContext({ tenantId, agentId: "jenny", query: `legal ${query}`.slice(0, 200) });
+    const kb = await getKbContext({ tenantId, agentId: "jenny", query: `legal ${query}`.slice(0, 200), querySource: "engine" });
     if (!kb.text) return { tool: "read_legal_docs", data: "No legal documents found.", usedAt: new Date().toISOString() };
     return { tool: "read_legal_docs", data: `Legal docs (${kb.items.length}):\n${kb.text.slice(0, 3000)}`, usedAt: new Date().toISOString() };
   } catch (err: any) {
@@ -660,6 +660,7 @@ async function searchMyMemories(
       tenantId,
       agentId,
       query: q.slice(0, 200),
+      querySource: "engine",
     }).catch(() => ({ text: "", items: [], totalChars: 0, budgetChars: 0 }));
     if (kb.items.length) {
       const kbTitles = kb.items.slice(0, 8).map((d) => `  • ${d.title ?? d.slug ?? "untitled"}`);

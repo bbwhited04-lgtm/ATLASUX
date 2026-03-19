@@ -132,6 +132,9 @@ async function main() {
         },
       };
 
+      // Determine tier: most seeded docs are public product knowledge
+      const tier = "public" as any;
+
       await prisma.kbDocument.upsert({
         where: { tenantId_slug: { tenantId: TENANT_ID, slug } },
         create: {
@@ -140,6 +143,8 @@ async function main() {
           title,
           body: content,
           status: "published",
+          tier,
+          category,
           createdBy: SEED_CREATED_BY,
           tags: { create: { tag: tagConnect } },
         },
@@ -147,6 +152,8 @@ async function main() {
           title,
           body: content,
           status: "published",
+          tier,
+          category,
           updatedBy: SEED_CREATED_BY,
           tags: {
             deleteMany: {},

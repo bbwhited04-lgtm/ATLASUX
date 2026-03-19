@@ -26,6 +26,8 @@
     "kb:chunk-docs": "ts-node scripts/chunkKbDocuments.ts",
     "kb:seed-docs": "npx tsx src/scripts/seedKbFromDocs.ts",
     "kb:seed-ai": "npx tsx src/scripts/seedAiKb.ts",
+    "kb:backfill-tiers": "tsx src/scripts/backfillTiers.ts",
+    "kb:reindex": "tsx src/scripts/reindexKb.ts",
     "seed:agents": "npx tsx src/scripts/seedAgents.ts",
     "kb:import-vc": "tsx src/scripts/importVcContacts.ts",
     "lucy:dev": "bash scripts/lucy-dev.sh"

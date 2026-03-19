@@ -351,6 +351,8 @@ model KbDocument {
   body             String
   featuredImageUrl String?           @map("featured_image_url")
   status           KbDocumentStatus  @default(draft)
+  tier             KbTier            @default(tenant)
+  category         String?           @map("category")
   createdBy        String            @map("created_by") @db.Uuid
   updatedBy        String?           @map("updated_by") @db.Uuid
   createdAt        DateTime          @default(now()) @map("created_at")
@@ -1025,6 +1027,14 @@ enum KbDocumentStatus {
   archived
 
   @@map("kb_document_status")
+}
+
+enum KbTier {
+  public
+  internal
+  tenant
+
+  @@map("kb_tier")
 }
 
 enum audit_level {

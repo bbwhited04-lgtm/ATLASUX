@@ -1,28 +1,35 @@
 /**
- * Query Classifier — decides how much context a question needs.
+ * Query Classifier — decides how much context a question needs
+ * and which KB tiers to search.
  *
- * Before firing a full KB RAG query + LLM call, classify the question.
- * Most agent tasks are routine — they don't need 60,000 chars of context.
- *
- * Tiers:
+ * Context tiers:
  *   SKILL_ONLY    → Answer from SKILL.md alone. No DB, no LLM overhead.
- *                   e.g., "draft a tweet", "what hashtags should I use"
- *
  *   HOT_CACHE     → Governance + agent docs from memory cache. No full RAG.
- *                   e.g., "what is Atlas UX?", "who does Kelly report to?"
- *
  *   FULL_RAG      → Full KB query + relevant search. Novel or complex questions.
- *                   e.g., "what's the OpenClaw situation?", "what's our pricing?"
- *
  *   DIRECT        → No KB needed at all. Pure task execution.
- *                   e.g., "summarize this text", "translate this"
+ *
+ * Search tiers (Pinecone namespaces):
+ *   public        → Product docs, guides, comparisons (all tenants)
+ *   internal      → Governance, policies, agent comms (platform owner only)
+ *   tenant        → Customer configs, agent-scoped docs, org memories
  */
 
 export type QueryTier = "SKILL_ONLY" | "HOT_CACHE" | "FULL_RAG" | "DIRECT";
 
+export type QuerySource = "voice" | "chat" | "engine" | "admin";
+
 type ClassifyResult = {
   tier: QueryTier;
   reason: string;
+  searchTiers: Array<"public" | "internal" | "tenant">;
+};
+
+// Default search tiers by query source
+const DEFAULT_SEARCH_TIERS: Record<QuerySource, Array<"public" | "internal" | "tenant">> = {
+  voice: ["public", "tenant"],
+  chat: ["public", "tenant"],
+  engine: ["public", "internal", "tenant"],
+  admin: ["public", "internal"],
 };
 
 // Patterns that can be answered from SKILL.md alone (agent knows how to do this)
@@ -83,9 +90,11 @@ const DIRECT_PATTERNS: RegExp[] = [
   /\b(this text|the following|above|below)\b.{0,30}\b(summarize|rewrite|translate|fix)\b/i,
 ];
 
-export function classifyQuery(query: string): ClassifyResult {
+export function classifyQuery(query: string, source?: QuerySource): ClassifyResult {
+  const searchTiers = DEFAULT_SEARCH_TIERS[source ?? "engine"];
+
   if (!query || query.trim().length < 3) {
-    return { tier: "HOT_CACHE", reason: "empty or very short query" };
+    return { tier: "HOT_CACHE", reason: "empty or very short query", searchTiers };
   }
 
   const q = query.trim();
@@ -93,38 +102,38 @@ export function classifyQuery(query: string): ClassifyResult {
   // Direct tasks — no KB at all
   for (const pattern of DIRECT_PATTERNS) {
     if (pattern.test(q)) {
-      return { tier: "DIRECT", reason: `matched direct pattern: ${pattern.source.slice(0, 40)}` };
+      return { tier: "DIRECT", reason: `matched direct pattern: ${pattern.source.slice(0, 40)}`, searchTiers };
     }
   }
 
   // Org memory queries — need vector search (FULL_RAG)
   for (const pattern of ORG_MEMORY_PATTERNS) {
     if (pattern.test(q)) {
-      return { tier: "FULL_RAG", reason: `matched org-memory pattern: ${pattern.source.slice(0, 40)}` };
+      return { tier: "FULL_RAG", reason: `matched org-memory pattern: ${pattern.source.slice(0, 40)}`, searchTiers };
     }
   }
 
   // Playbook strategic queries — need full KB search to find playbook docs
   for (const pattern of PLAYBOOK_PATTERNS) {
     if (pattern.test(q)) {
-      return { tier: "FULL_RAG", reason: `matched playbook pattern: ${pattern.source.slice(0, 40)}` };
+      return { tier: "FULL_RAG", reason: `matched playbook pattern: ${pattern.source.slice(0, 40)}`, searchTiers };
     }
   }
 
   // SKILL.md-resolvable
   for (const pattern of SKILL_PATTERNS) {
     if (pattern.test(q)) {
-      return { tier: "SKILL_ONLY", reason: `matched skill pattern: ${pattern.source.slice(0, 40)}` };
+      return { tier: "SKILL_ONLY", reason: `matched skill pattern: ${pattern.source.slice(0, 40)}`, searchTiers };
     }
   }
 
   // Hot cache resolvable
   for (const pattern of HOT_CACHE_PATTERNS) {
     if (pattern.test(q)) {
-      return { tier: "HOT_CACHE", reason: `matched cache pattern: ${pattern.source.slice(0, 40)}` };
+      return { tier: "HOT_CACHE", reason: `matched cache pattern: ${pattern.source.slice(0, 40)}`, searchTiers };
     }
   }
 
   // Default: full RAG for novel questions
-  return { tier: "FULL_RAG", reason: "no pattern matched — novel question" };
+  return { tier: "FULL_RAG", reason: "no pattern matched — novel question", searchTiers };
 }

@@ -21,12 +21,14 @@ async function upsertDoc(doc: Doc) {
       title: doc.title,
       body: doc.body,
       status: "published",
+      tier: "public" as any,
       createdBy: SEED_CREATED_BY,
     },
     update: {
       title: doc.title,
       body: doc.body,
       status: "published",
+      tier: "public" as any,
       updatedBy: SEED_CREATED_BY,
     },
   });

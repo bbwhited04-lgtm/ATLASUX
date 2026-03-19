@@ -1,6 +1,7 @@
-import { prisma } from "../../prisma.js";
-import { queryPinecone } from "../../lib/pinecone.js";
+import { prisma } from "../../db/prisma.js";
+import { queryTiered } from "../../lib/pinecone.js";
 import { recallOrgMemory } from "../agent/orgMemory.js";
+import type { QuerySource } from "./queryClassifier.js";
 
 export type KbContextSource = "governance" | "agent" | "relevant";
 
@@ -46,6 +47,7 @@ type GetKbContextArgs = {
   tenantId: string;
   agentId: string; // "binky", "archy", etc.
   query?: string;
+  querySource?: QuerySource;
   // for audit logging (optional)
   requestedBy?: string;
   intentId?: string;
@@ -59,6 +61,7 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
   const budgetChars = envInt("KB_CONTEXT_CHAR_BUDGET", 60000);
   const maxDocChars = envInt("KB_CONTEXT_MAX_DOC_CHARS", 12000);
   const relevantLimit = envInt("KB_CONTEXT_RELEVANT_LIMIT", 5);
+  const tieredEnabled = process.env.KB_TIERED_SEARCH_ENABLED !== "false";
 
   if (!tenantId) {
     return { text: "", items: [], totalChars: 0, budgetChars };
@@ -70,6 +73,7 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
   const governance = await prisma.kbDocument.findMany({
     where: {
       tenantId,
+      ...(tieredEnabled ? { tier: "internal" as any } : {}),
       OR: [
         { slug: { startsWith: "atlas-policy" } },
         { slug: { startsWith: "soul-lock" } },
@@ -90,16 +94,24 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
     select: { id: true, slug: true, title: true, body: true, updatedAt: true },
   });
 
-  // 3) Relevant pack — vector-first with SQL fallback
+  // 3) Relevant pack — tiered vector search with SQL fallback
   let relevant: typeof governance = [];
   let orgMemoryBlock = "";
   if (query && query.length >= 3) {
+    // Determine search tiers from query source
+    const searchTiers: Array<"public" | "internal" | "tenant"> =
+      args.querySource === "voice" || args.querySource === "chat"
+        ? ["public", "tenant"]
+        : args.querySource === "admin"
+          ? ["public", "internal"]
+          : ["public", "internal", "tenant"];
+
     try {
-      // Vector search: KB docs + org memories in one Pinecone call
-      const hits = await queryPinecone({
+      const hits = await queryTiered({
         tenantId,
         query,
-        topK: relevantLimit + 5, // over-fetch to account for org-mem hits
+        tiers: searchTiers,
+        topK: relevantLimit + 5,
         minScore: 0.3,
       });
 
@@ -127,7 +139,7 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
         }
       }
     } catch {
-      // Pinecone unavailable — fall back to SQL ILIKE
+      // Tiered search unavailable — fall back to SQL ILIKE
     }
 
     // SQL fallback if vector search returned nothing
@@ -175,15 +187,12 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
   }
   for (const d of relevant) {
     if (seen.has(d.id)) continue;
-    // Avoid pulling massive unrelated docs when query overlaps governance/agent already handled
     seen.add(d.id);
     picked.push({ ...d, source: "relevant" });
   }
 
   // Bulk fetch chunks for all picked docs.
   const docIds = picked.map((d) => d.id);
-  // NOTE: kb_chunks table may not exist in all deployments. Fall back to empty
-  // gracefully — getKbContext will then use the document body field directly.
   let chunks: any[] = [];
   if (docIds.length) {
     try {
@@ -199,7 +208,6 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
         order by document_id asc, idx asc
       `) as any[];
     } catch {
-      // Table doesn't exist yet — fall through to body-field fallback below.
       chunks = [];
     }
   }
@@ -241,7 +249,6 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
     // Prefer fresh chunks when present
     const docChunks = chunksByDoc.get(d.id) ?? [];
     const freshChunks = docChunks.filter((c: any) => {
-      // exact match is safest; DB stores timestamps with ms precision
       return new Date(c.sourceUpdatedAt).getTime() === new Date(d.updatedAt).getTime();
     });
 
@@ -272,7 +279,6 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
 
     pushBlock(header, content);
 
-    const charCount = Math.min(content.length + header.length, budgetChars - (used - (content.length + header.length)));
     items.push({
       documentId: d.id,
       slug: d.slug,

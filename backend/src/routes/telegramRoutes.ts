@@ -156,7 +156,7 @@ async function runTelegramChat(
   if (toolContext) contextParts.push(toolContext);
 
   // KB context for complex questions
-  const kb = await getKbContext({ tenantId, agentId: effectiveAgentId, query: userText.slice(0, 200) }).catch(() => null);
+  const kb = await getKbContext({ tenantId, agentId: effectiveAgentId, query: userText.slice(0, 200), querySource: "chat" }).catch(() => null);
   if (kb?.text) {
     contextParts.push(`[KNOWLEDGE BASE — ${kb.items.length} docs]\n${kb.text.slice(0, 4000)}`);
   }
