@@ -22,6 +22,7 @@
     "worker:watchdog": "node dist/workers/watchdogWorker.js",
     "worker:local-vision": "tsx src/workers/localVisionAgent.ts",
     "worker:slack": "tsx watch src/workers/slackWorker.ts",
+    "worker:treatment": "tsx src/workers/treatmentWorker.ts",
     "kb:chunk-docs": "ts-node scripts/chunkKbDocuments.ts",
     "kb:seed-docs": "npx tsx src/scripts/seedKbFromDocs.ts",
     "kb:seed-ai": "npx tsx src/scripts/seedAiKb.ts",

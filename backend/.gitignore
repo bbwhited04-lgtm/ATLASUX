@@ -3,3 +3,7 @@ node_modules
 .env
 
 /src/generated/prisma
+
+# Treatment pipeline media files
+data/treatments/*
+!data/treatments/.gitkeep

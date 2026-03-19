@@ -93,6 +93,7 @@ import { diagnosticsRoutes } from "./routes/diagnosticsRoutes.js";
 import { quickbooksRoutes } from "./routes/quickbooksRoutes.js";
 import { credentialRoutes } from "./routes/credentialRoutes.js";
 import { evolutionRoutes } from "./routes/evolutionRoutes.js";
+import { treatmentRoutes } from "./routes/treatmentRoutes.js";
 import elevenlabsRoutes from "./routes/elevenlabsRoutes.js";
 import supportKbRoutes from "./routes/supportKbRoutes.js";
 
@@ -457,6 +458,7 @@ await app.register(credentialRoutes, { prefix: "/v1/credentials" });
 
 // Agent evolution system — behavior changes, trials, history
 await app.register(evolutionRoutes, { prefix: "/v1/evolution" });
+await app.register(treatmentRoutes, { prefix: "/v1" });
 
 const port = Number(process.env.PORT ?? 8787);
 const host = "0.0.0.0";

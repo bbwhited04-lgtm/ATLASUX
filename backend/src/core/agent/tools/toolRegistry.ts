@@ -28,6 +28,8 @@ import { postizPublishTool }    from "./postizPublish.js";
 import { postizAnalyticsTool }  from "./postizAnalytics.js";
 import { postizBroadcastTool }  from "./postizBroadcast.js";
 import { slackChatTool }        from "./slackChat.js";
+import { apifyScraperTool }    from "./apifyScraper.js";
+import { treatmentTool }       from "./treatmentTool.js";
 
 // ── Tool registry ────────────────────────────────────────────────────────────
 
@@ -47,6 +49,8 @@ const ALL_TOOLS: ToolDefinition[] = [
   postizAnalyticsTool,
   postizBroadcastTool,
   slackChatTool,
+  apifyScraperTool,
+  treatmentTool,
 ];
 
 export function getAllTools(): ToolDefinition[] {

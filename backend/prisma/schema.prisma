@@ -68,6 +68,7 @@ model Tenant {
   dncPhones                                DncPhone[]
   callCosts                                CallCost[]
   calendarBookings                         CalendarBooking[]
+  treatments                               Treatment[]
 
   @@map("tenants")
 }
@@ -999,6 +1000,25 @@ enum LedgerCategory {
   @@map("ledger_category")
 }
 
+enum treatment_status {
+  queued
+  downloading
+  transcribing
+  detecting
+  scoring
+  awaiting_approval
+  extracting
+  treating
+  formatting
+  awaiting_publish
+  delivering
+  completed
+  failed
+  cancelled
+
+  @@map("treatment_status")
+}
+
 enum KbDocumentStatus {
   draft
   published
@@ -1555,4 +1575,49 @@ model CalendarBooking {
   @@index([tenantId, businessId, scheduledAt])
   @@index([tenantId, status])
   @@map("calendar_bookings")
+}
+
+model Treatment {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String            @map("tenant_id") @db.Uuid
+  tenant        Tenant            @relation(fields: [tenantId], references: [id])
+  requestedBy   String?           @map("requested_by") @db.Uuid
+  sourceUrl     String            @map("source_url")
+  sourceTitle   String?           @map("source_title")
+  duration      Int?
+  status        treatment_status  @default(queued)
+  stage         String            @default("download")
+  costEstimate  Float?            @map("cost_estimate")
+  costActual    Float?            @map("cost_actual")
+  clipCount     Int?              @map("clip_count")
+  error         String?
+  metadata      Json?
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  clips         TreatmentClip[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@map("treatments")
+}
+
+model TreatmentClip {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  treatmentId  String    @map("treatment_id") @db.Uuid
+  treatment    Treatment @relation(fields: [treatmentId], references: [id])
+  startTime    Float     @map("start_time")
+  endTime      Float     @map("end_time")
+  score        Float?
+  transcript   String?
+  status       String    @default("pending")
+  viduModel    String?   @map("vidu_model")
+  viduCost     Float?    @map("vidu_cost")
+  outputPath   String?   @map("output_path")
+  error        String?
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([treatmentId])
+  @@index([status])
+  @@map("treatment_clips")
 }
