@@ -110,6 +110,21 @@ const WIKI_PATTERNS: RegExp[] = [
   /\b(workflow (cost|pricing|comparison|platform)|zapier vs|make vs|n8n vs)\b/i,
   /\b(onboarding workflow|content workflow|service request workflow|it.?sm)\b/i,
   /\b(workflow (bottleneck|best practice|raci|swimlane))\b/i,
+  // LLM knowledge base
+  /\b(llm|large language model|language model|foundation model)\b.{0,30}\b(architecture|structure|deploy|cost|pricing|security|governance)\b/i,
+  /\b(transformer|attention mechanism|self.attention|multi.head attention|positional encoding)\b/i,
+  /\b(next.word prediction|autoregressive|token prediction|softmax|beam search|nucleus sampling)\b/i,
+  /\b(prompt engineering|system prompt|few.shot|zero.shot|chain.of.thought|tree.of.thought)\b/i,
+  /\b(deep learning|neural network|backpropagation|gradient descent|activation function)\b/i,
+  /\b(hallucination|prompt injection|rlhf|constitutional ai|alignment)\b/i,
+  /\b(gpt.4|claude|gemini|llama|mistral|deepseek|grok|cohere|qwen|phi.4|jamba|perplexity|nova)\b.{0,20}\b(model|pricing|cost|api|benchmark|comparison)\b/i,
+  /\b(llm (cost|price|pricing|comparison|benchmark)|cost per (1000|million|1m) tokens)\b/i,
+  /\b(openai vs|anthropic vs|google vs|meta vs|mistral vs|deepseek vs)\b/i,
+  /\b(enterprise (ai|llm)|small business (ai|llm)|ai receptionist)\b/i,
+  /\b(neurophysics|neuro.?inspired|biological neural|hebbian learning|predictive coding)\b/i,
+  /\b(quantization|gguf|gptq|awq|vllm|ollama|llama\.cpp|edge deployment)\b/i,
+  /\b(moe|mixture of experts|sparse (model|attention)|scaling law|chinchilla)\b/i,
+  /\b(self.supervised learning|in.context learning|emergent abilit|transfer learning)\b/i,
 ];
 
 // Patterns that indicate a direct task — no KB needed

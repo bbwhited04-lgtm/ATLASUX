@@ -164,8 +164,17 @@ async function indexKbSection(section: string): Promise<ArticleMeta[]> {
         files = (await readdir(entryPath)).filter((f) => f.endsWith(".md") && !isExcluded(f));
       } else if (entry.endsWith(".md")) {
         // For flat files, derive category from filename prefix (tools-*, workflows-*, ai-ml-*)
-        const prefixMatch = entry.replace(/\.md$/, "").match(/^([a-z]+-[a-z]+)-/);
-        category = prefixMatch ? prefixMatch[1] : "_root";
+        const stem = entry.replace(/\.md$/, "");
+        // LLM files: llm-provider-* → llm-providers, llm-prompt-* → llm-prompts, llm-* → llm-core
+        const llmMatch = stem.match(/^llm-provider-/);
+        const llmPromptMatch = stem.match(/^llm-prompt-/);
+        const llmCostMatch = stem.match(/^llm-cost-/);
+        const prefixMatch = stem.match(/^([a-z]+-[a-z]+)-/);
+        category = llmMatch ? "llm-providers"
+          : llmPromptMatch ? "llm-prompts"
+          : llmCostMatch ? "llm-analysis"
+          : stem.startsWith("llm-") ? "llm-core"
+          : prefixMatch ? prefixMatch[1] : "_root";
         files = [entry];
       } else continue;
     } catch { continue; }
@@ -365,6 +374,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   workflows: "Workflow Design", "cli-tools": "CLI & Developer Tools",
   prompts: "Prompts & Prompt Engineering", security: "Security & Compliance",
   playbook: "Strategic Playbooks", adv: "Advanced Patterns",
+  // LLM knowledge base
+  "llm-core": "LLM Fundamentals", "llm-providers": "LLM Providers & Pricing",
+  "llm-prompts": "Prompt Engineering", "llm-analysis": "Cost Analysis",
   _root: "Overview",
 };
 
