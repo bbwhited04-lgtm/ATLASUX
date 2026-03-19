@@ -44,16 +44,16 @@ if [[ "$TARGET" == "backend" || "$TARGET" == "all" ]]; then
   $SCP -r ./backend/prisma "$HOST:$REMOTE_DIR/backend/"
 
   echo ">> Installing deps + generating Prisma client on server..."
-  $SSH "cd $REMOTE_DIR/backend && npm ci --omit=dev && npx prisma generate"
+  $SSH "export PATH=\$PATH:/home/bitnami/.nvm/versions/node/\$(ls /home/bitnami/.nvm/versions/node/ | tail -1)/bin && cd $REMOTE_DIR/backend && npm ci --omit=dev && npx prisma generate"
 
   echo ">> Running pending migrations..."
-  $SSH "cd $REMOTE_DIR/backend && npx prisma migrate deploy"
+  $SSH "export PATH=\$PATH:/home/bitnami/.nvm/versions/node/\$(ls /home/bitnami/.nvm/versions/node/ | tail -1)/bin && cd $REMOTE_DIR/backend && npx prisma migrate deploy"
 
   echo ">> Restarting PM2 processes..."
-  $SSH "cd $REMOTE_DIR/backend && pm2 restart all"
+  $SSH "export PATH=\$PATH:/home/bitnami/.nvm/versions/node/\$(ls /home/bitnami/.nvm/versions/node/ | tail -1)/bin && cd $REMOTE_DIR/backend && pm2 restart all"
 
   # Add slack-worker if not already registered
-  $SSH "pm2 describe slack-worker > /dev/null 2>&1 || (cd $REMOTE_DIR/backend && pm2 start dist/workers/slackWorker.js --name slack-worker && pm2 save)"
+  $SSH "export PATH=\$PATH:/home/bitnami/.nvm/versions/node/\$(ls /home/bitnami/.nvm/versions/node/ | tail -1)/bin && pm2 describe slack-worker > /dev/null 2>&1 || (cd $REMOTE_DIR/backend && pm2 start dist/workers/slackWorker.js --name slack-worker && pm2 save)"
 
   echo ">> Backend deployed."
 fi
