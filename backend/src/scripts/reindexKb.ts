@@ -48,10 +48,65 @@ function findRelatedByTagOverlap(doc: DocWithMeta, allDocs: DocWithMeta[]): stri
   return allDocs
     .filter(d => {
       if (d.id === doc.id) return false;
+      // Lower threshold: even 1 shared tag creates a connection
       const overlap = d.tags.filter(t => docTags.has(t)).length;
-      return overlap >= 2;
+      return overlap >= 1;
+    })
+    .sort((a, b) => {
+      // Rank by overlap count descending
+      const overlapA = a.tags.filter(t => docTags.has(t)).length;
+      const overlapB = b.tags.filter(t => docTags.has(t)).length;
+      return overlapB - overlapA;
     })
     .slice(0, 5)
+    .map(d => d.slug);
+}
+
+/** Match docs sharing a slug prefix (e.g. "saas-metrics" ↔ "saas-pricing") */
+function findRelatedBySlugPrefix(doc: DocWithMeta, allDocs: DocWithMeta[]): string[] {
+  const parts = doc.slug.replace(/[_/]/g, "-").split("-");
+  if (parts.length < 2) return [];
+  // Try longest prefix first, then shorter
+  for (let len = Math.min(parts.length - 1, 3); len >= 1; len--) {
+    const prefix = parts.slice(0, len).join("-");
+    if (prefix.length < 3) continue; // skip trivial prefixes
+    const matches = allDocs
+      .filter(d => d.id !== doc.id && d.slug.replace(/[_/]/g, "-").startsWith(prefix))
+      .slice(0, 5)
+      .map(d => d.slug);
+    if (matches.length > 0) return matches;
+  }
+  return [];
+}
+
+/** Lightweight keyword overlap — extract top terms from title and match */
+function findRelatedByKeywords(doc: DocWithMeta, allDocs: DocWithMeta[]): string[] {
+  const stopWords = new Set(["the", "a", "an", "and", "or", "of", "in", "to", "for", "is", "on", "at", "by", "with", "from", "as", "how", "what", "why"]);
+  const extractTerms = (text: string) =>
+    text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/)
+      .filter(w => w.length > 2 && !stopWords.has(w));
+
+  const docTerms = new Set(extractTerms(`${doc.title} ${doc.slug.replace(/[-_]/g, " ")}`));
+  if (docTerms.size === 0) return [];
+
+  const scored = allDocs
+    .filter(d => d.id !== doc.id)
+    .map(d => {
+      const terms = extractTerms(`${d.title} ${d.slug.replace(/[-_]/g, " ")}`);
+      const overlap = terms.filter(t => docTerms.has(t)).length;
+      return { slug: d.slug, score: overlap };
+    })
+    .filter(d => d.score >= 2)
+    .sort((a, b) => b.score - a.score);
+
+  return scored.slice(0, 5).map(d => d.slug);
+}
+
+/** Last resort — connect to nearest docs in same tier */
+function findRelatedByTierCohort(doc: DocWithMeta, allDocs: DocWithMeta[]): string[] {
+  return allDocs
+    .filter(d => d.id !== doc.id && d.tier === doc.tier && d.tenantId === doc.tenantId)
+    .slice(0, 3)
     .map(d => d.slug);
 }
 
@@ -106,15 +161,39 @@ async function main() {
   // Process each document
   let totalVectors = 0;
   let processed = 0;
+  let orphanCount = 0;
+  let rescuedOrphans = 0;
   const nsCounts: Record<string, number> = {};
 
   for (const doc of allDocs) {
-    const related = [
+    // Layer 1: Category + tag overlap (strongest signals)
+    let related = [
       ...new Set([
         ...findRelatedByCategory(doc, allDocs),
         ...findRelatedByTagOverlap(doc, allDocs),
       ]),
     ];
+
+    // Layer 2: Slug prefix similarity (if under 3 links)
+    if (related.length < 3) {
+      const slugRelated = findRelatedBySlugPrefix(doc, allDocs);
+      related = [...new Set([...related, ...slugRelated])];
+    }
+
+    // Layer 3: Keyword overlap from title (if still under 3)
+    if (related.length < 3) {
+      const kwRelated = findRelatedByKeywords(doc, allDocs);
+      related = [...new Set([...related, ...kwRelated])];
+    }
+
+    // Layer 4: Tier cohort fallback (no doc left behind)
+    if (related.length === 0) {
+      orphanCount++;
+      related = findRelatedByTierCohort(doc, allDocs);
+      if (related.length > 0) rescuedOrphans++;
+    }
+
+    related = related.slice(0, 5);
 
     const header = buildContextHeader(doc, related);
     const ns = namespaceForDoc(doc);
@@ -169,6 +248,9 @@ async function main() {
   for (const [ns, count] of Object.entries(nsCounts).sort()) {
     console.log(`  ${ns}: ${count} vectors`);
   }
+  console.log(`\nOrphan report: ${orphanCount} docs had no category/tag links`);
+  console.log(`  Rescued via tier-cohort fallback: ${rescuedOrphans}`);
+  console.log(`  Truly isolated (no peers in tier): ${orphanCount - rescuedOrphans}`);
 
   if (DRY_RUN) {
     console.log("\nDRY RUN complete. No vectors written. Run without --dry-run to write.");

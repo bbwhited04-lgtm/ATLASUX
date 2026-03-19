@@ -50,6 +50,7 @@ export async function embedText(text: string): Promise<number[]> {
   const res = await getOpenAI().embeddings.create({
     model: "text-embedding-3-small",
     input: text.slice(0, 8000),
+    dimensions: 1024,
   });
   return res.data[0].embedding;
 }
