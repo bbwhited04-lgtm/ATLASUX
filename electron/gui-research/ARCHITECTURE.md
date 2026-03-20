@@ -203,6 +203,41 @@ S(edu-*)          = 180 days    — learning science is stable
 S(mba-*)          = 180 days    — business frameworks rarely change
 ```
 
+### Unified Memory Equation
+
+Single equation governing all memory retention across STM, LTM, and KDR:
+
+```
+M(I, t) = P_kdr(I) + (1 - P_kdr(I)) · e^(-t/S(I)) · [w₁·freq(I) + w₂·impact(I) + w₃·conn(I)] · (1 + β·P_ltm(I))
+```
+
+| Term | What it does |
+|------|-------------|
+| P_kdr(I) | KDR anchor — if 1, memory is permanent, decay eliminated |
+| (1 - P_kdr(I)) | Only apply decay to non-anchored memories |
+| e^(-t/S(I)) | Ebbinghaus decay with domain-specific strength S |
+| w₁·freq(I) | Frequency — how often this information was accessed |
+| w₂·impact(I) | Impact — did actions using this succeed or fail? |
+| w₃·conn(I) | Connections — graph degree, how many other memories reference this |
+| (1 + β·P_ltm(I)) | LTM boost — if also in Pinecone/Neo4j, decay slows |
+
+**Output:** M(I, t) ∈ [0, 1] — memory availability at time t
+
+```
+M = 1.0  → fully available (KDR-anchored or very fresh + important)
+M > 0.7  → reliably retrievable
+M < 0.3  → fading, may not surface in retrieval
+M = 0.0  → forgotten
+```
+
+**Session gap recovery:**
+
+```
+M_recovery(I, t_new) = P_kdr(I) + (1 - P_kdr(I)) · e^(-t_gap/S(I)) · α(I) · (1 + β·P_ltm(I))
+```
+
+KDR memories return at 1.0 regardless of gap length. LTM memories return at their decay rate. Pure STM with no anchor is lost. This is why KDRs exist — they defeat the forgetting curve by anchoring critical state outside the model's context window.
+
 ### Combined Equations: Governance + Memory
 
 The two equations govern different dimensions:
@@ -217,11 +252,21 @@ The two equations govern different dimensions:
 Mₜ₊₁ = { Mₜ ∪ {Iₜ*} if R(Iₜ*,τ) ≥ θ₁ | Mₜ \ {Iₜ*} if R(Iₜ*,τ) < θ₂ | Mₜ otherwise }
 ```
 
-Together they form a complete governance framework:
-- The action equation decides WHAT to do (with confidence gating)
-- The memory equation decides WHAT to know (with freshness gating)
-- Both have thresholds that prevent reckless behavior
-- Both have fallbacks (HIL for actions, decision memos for memory changes)
+Together they form a complete governance framework — four equations:
+
+```
+1. ACTION:  τ̂ᵢ,ₜ = f_θ(g, sₜᵛⁱˢ, sₜᵛᵘᵉ, Aₜ, τᵢ) · 𝟙[c ≥ γ(r)]     — what to DO
+2. MEMORY:  M(I,t) = P_kdr + (1-P_kdr)·e^(-t/S)·α(I)·(1+β·P_ltm)   — what to KNOW
+3. ERROR:   ε = ∏ᵢ(1-λᵢ) → 0.0006%                                   — how RELIABLE
+4. ENRICH:  H(D) → S(D) via E(D) = Σⱼ wⱼ·eⱼ(d), Q(S) ≥ θ_q         — how to LEARN
+```
+
+- Equation 1 decides WHAT to do (with confidence gating)
+- Equation 2 decides WHAT to know (with KDR anchoring defeating decay)
+- Equation 3 proves HOW reliable (compound error elimination)
+- Equation 4 governs HOW to learn (unstructured → structured with quality gate)
+- All four have thresholds that prevent reckless behavior
+- All four have fallbacks (HIL, decision memos, human review)
 
 ## Key Innovation: Vue >> Screenshots
 
