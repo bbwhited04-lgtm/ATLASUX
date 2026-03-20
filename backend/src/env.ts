@@ -53,6 +53,14 @@ const EnvSchema = z.object({
   KB_INJECTION_DRY_RUN: z.string().optional(),
   KB_INJECTION_MAX_PER_RUN: z.string().optional(),
 
+  // GraphRAG (Neo4j knowledge graph)
+  NEO4J_URI: z.string().optional(),
+  NEO4J_USER: z.string().optional(),
+  NEO4J_PASSWORD: z.string().optional(),
+  GRAPHRAG_ENABLED: z.string().optional(),
+  GRAPHRAG_EXTRACTION_MODEL: z.string().optional(),
+  GRAPHRAG_QUERY_MODEL: z.string().optional(),
+
   // OAuth providers
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
