@@ -1,6 +1,5 @@
 User-agent: *
 Allow: /
-Sitemap: https://atlasux.cloud/sitemap.xml
 
 User-agent: GPTBot
 Allow: /
@@ -13,3 +12,12 @@ Allow: /
 
 User-agent: ClaudeBot
 Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+Sitemap: https://atlasux.cloud/sitemap.xml
+Sitemap: https://wiki.atlasux.cloud/sitemap.xml
