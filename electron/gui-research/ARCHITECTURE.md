@@ -69,6 +69,59 @@ electron/gui-research/
 └── research-logs/            ← session data, observations, rewards
 ```
 
+## Formal Policy Equation
+
+```
+τ̂ᵢ,ₜ = f_θ(g, sₜ, Aₜ, τᵢ)
+```
+
+| Symbol | Meaning | Source |
+|--------|---------|--------|
+| τ̂ᵢ,ₜ | Predicted action at step t for task i | Policy output |
+| f_θ | Policy model (parameterized by θ) | Vision model + CoT |
+| g | Guidance (retrieved KB context) | RAG-GUI via GraphRAG |
+| sₜ | Current screen state (dual stream) | Vision-watcher |
+| Aₜ | Action history (prior steps) | Session log |
+| τᵢ | Task instruction (intent) | MCP descriptor |
+
+### Dual State Innovation
+
+Most papers: `f(sₜ, τᵢ)` — screen + instruction (2 inputs)
+RAG-GUI adds: `f(g, sₜ, Aₜ, τᵢ)` — guidance + screen + history + instruction (4 inputs)
+
+**Our formulation expands sₜ into dual streams:**
+
+```
+sₜ = {sₜᵛⁱˢ, sₜᵛᵘᵉ}
+
+where:
+  sₜᵛⁱˢ = screenshot (pixel observation — what a human sees)
+  sₜᵛᵘᵉ = Vue component tree (exact app state — what the app knows)
+```
+
+**Full expanded equation:**
+
+```
+τ̂ᵢ,ₜ = f_θ(g, sₜᵛⁱˢ, sₜᵛᵘᵉ, Aₜ, τᵢ)
+```
+
+Five inputs. No existing paper uses all five. This is the publishable contribution:
+- **g** eliminates cold-start reasoning (agent knows the playbook)
+- **sₜᵛⁱˢ** provides visual context (layout, colors, spatial relationships)
+- **sₜᵛᵘᵉ** provides exact state (DOM positions, reactive values, disabled flags)
+- **Aₜ** provides temporal context (what was done, what worked, what failed)
+- **τᵢ** provides goal direction (what the human wants accomplished)
+
+### Comparison of Policy Formulations
+
+| Framework | Equation | Inputs | Limitation |
+|-----------|----------|--------|------------|
+| Basic GUI agent | f(sₜ, τᵢ) | 2 | No memory, no guidance |
+| UI-TARS | f(sₜ, Aₜ, τᵢ) | 3 | No retrieval, screenshot only |
+| Step-GUI | f(sₜ, Aₜ, τᵢ) | 3 | CSRS training but no KB guidance |
+| RAG-GUI | f(g, sₜ, Aₜ, τᵢ) | 4 | Screenshot only, no DOM access |
+| **Atlas GUI** | **f(g, sₜᵛⁱˢ, sₜᵛᵘᵉ, Aₜ, τᵢ)** | **5** | **Research stage** |
+
 ## Key Innovation: Vue >> Screenshots
 
 | Dimension | Screenshot (UI-TARS approach) | Vue Internals (our approach) |
