@@ -112,6 +112,41 @@ Five inputs. No existing paper uses all five. This is the publishable contributi
 - **Aₜ** provides temporal context (what was done, what worked, what failed)
 - **τᵢ** provides goal direction (what the human wants accomplished)
 
+### Governance-Gated Policy
+
+The raw policy proposes. The governance gate disposes:
+
+```
+τ̂ᵢ,ₜ = f_θ(g, sₜᵛⁱˢ, sₜᵛᵘᵉ, Aₜ, τᵢ) · 𝟙[c(τ̂ᵢ,ₜ) ≥ γ(rᵢ)]
+```
+
+| Symbol | Meaning |
+|--------|---------|
+| c(τ̂ᵢ,ₜ) | Confidence score of proposed action [0, 1] |
+| γ(rᵢ) | Risk-adaptive confidence threshold |
+| 𝟙[...] | Indicator — action executes ONLY if confidence ≥ threshold |
+
+**Risk-adaptive thresholds:**
+
+```
+γ(rᵢ) = { 0.60  if rᵢ = low        (navigation, reading, scrolling)
+         { 0.75  if rᵢ = medium     (forms, settings, toggles)
+         { 0.90  if rᵢ = high       (payments, deletions, publishing)
+         { 1.00  if rᵢ = restricted  (→ ALWAYS escalate to human)
+```
+
+**When confidence falls below threshold:**
+
+```
+if c(τ̂ᵢ,ₜ) < γ(rᵢ):
+    τ̂ᵢ,ₜ → HIL(τ̂ᵢ,ₜ, c, sₜ)    // escalate with full context
+```
+
+The agent proposes the action, scores its own confidence, checks against
+the risk-appropriate threshold, and either executes or escalates. No
+action is taken without passing the governance gate. Constitutional HIL
+encoded as a mathematical constraint, not a suggestion.
+
 ### Comparison of Policy Formulations
 
 | Framework | Equation | Inputs | Limitation |
