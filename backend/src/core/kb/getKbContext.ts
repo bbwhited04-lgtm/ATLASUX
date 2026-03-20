@@ -3,6 +3,7 @@ import { queryTiered } from "../../lib/pinecone.js";
 import { recallOrgMemory } from "../agent/orgMemory.js";
 import { emitHealEvent } from "../../lib/kbHealEmitter.js";
 import type { QuerySource } from "./queryClassifier.js";
+import type { HybridResult } from "./graphrag/hybridQuery.js";
 
 export type KbContextSource = "governance" | "agent" | "relevant" | "wiki";
 
@@ -108,13 +109,44 @@ export async function getKbContext(args: GetKbContextArgs): Promise<KbContextRes
           : ["public", "internal", "tenant"];
 
     try {
-      const hits = await queryTiered({
-        tenantId,
-        query,
-        tiers: searchTiers,
-        topK: relevantLimit + 5,
-        minScore: 0.3,
-      });
+      // GraphRAG hybrid search: when enabled, use Pinecone + Neo4j graph traversal
+      const graphragEnabled = process.env.GRAPHRAG_ENABLED === "true";
+      let hits: Awaited<ReturnType<typeof queryTiered>>;
+
+      if (graphragEnabled) {
+        try {
+          const { hybridSearch } = await import("./graphrag/hybridQuery.js");
+          const hybrid: HybridResult = await hybridSearch(query, tenantId, relevantLimit + 5);
+          // Map HybridChunk[] → TieredHit-compatible shape
+          hits = hybrid.chunks
+            .filter(c => c.score >= 0.3)
+            .map(c => ({
+              chunkId: c.id,
+              content: c.text,
+              score: c.score,
+              documentId: c.source,
+              tier: "public" as string,
+              weightedScore: c.score,
+            }));
+        } catch {
+          // Neo4j down or GraphRAG failure — fall back to Pinecone-only
+          hits = await queryTiered({
+            tenantId,
+            query,
+            tiers: searchTiers,
+            topK: relevantLimit + 5,
+            minScore: 0.3,
+          });
+        }
+      } else {
+        hits = await queryTiered({
+          tenantId,
+          query,
+          tiers: searchTiers,
+          topK: relevantLimit + 5,
+          minScore: 0.3,
+        });
+      }
 
       // Reactive heal: zero results for a meaningful query
       if (hits.length === 0 && query.length > 10) {
