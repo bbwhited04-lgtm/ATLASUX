@@ -157,6 +157,72 @@ encoded as a mathematical constraint, not a suggestion.
 | RAG-GUI | f(g, sₜ, Aₜ, τᵢ) | 4 | Screenshot only, no DOM access |
 | **Atlas GUI** | **f(g, sₜᵛⁱˢ, sₜᵛᵘᵉ, Aₜ, τᵢ)** | **5** | **Research stage** |
 
+## Memory Retention Equation (Ebbinghaus-Derived)
+
+From SAGE (arXiv:2409.00872) — memory update rule governing what the KB remembers, refreshes, or lets decay:
+
+```
+         ⎧ Mₜ ∪ {Iₜ*}    if R(Iₜ*, τ) ≥ θ₁     — ADD/REFRESH: retention high, keep it
+Mₜ₊₁ =  ⎨ Mₜ \ {Iₜ*}    if R(Iₜ*, τ) < θ₂     — REMOVE/FLAG: retention too low, decay
+         ⎩ Mₜ             otherwise               — HOLD: in the middle, leave alone
+```
+
+Where retention follows the Ebbinghaus forgetting curve:
+
+```
+R(I*, τ) = e^(-τ/S)
+```
+
+| Symbol | Meaning | Production Implementation |
+|--------|---------|--------------------------|
+| Mₜ | Current memory state (KB) | 536-doc knowledge base |
+| Iₜ* | Specific information unit | Individual KB article |
+| R(I*, τ) | Retention score after time τ | Freshness = f(file_age, maxAgeDays) |
+| τ | Time since last update | Days since file modification |
+| S | Strength (domain volatility) | `maxAgeDays` per category in source registry |
+| θ₁ | Upper threshold (fresh) | Article within maxAge — no action needed |
+| θ₂ | Lower threshold (stale) | Article past maxAge — injection pipeline triggers |
+| Mₜ ∪ {I*} | Add/refresh memory | kbInjectionWorker fetches fresh content, patches article |
+| Mₜ \ {I*} | Remove/flag memory | kbHealer flags for decision memo or auto-removes |
+| Mₜ (hold) | No change | Article in acceptable range — leave alone |
+
+### Strength Parameter S by Domain
+
+```
+S(llm-provider-*) = 14 days     — high volatility (pricing, models change weekly)
+S(api-cost-*)     = 14 days     — prices shift constantly
+S(kb-*)           = 30 days     — architecture evolves monthly
+S(image-gen/*)    = 21 days     — platforms update features frequently
+S(video-gen/*)    = 21 days     — same as image gen
+S(mcp-*)          = 21 days     — MCP ecosystem growing fast
+S(tools-*)        = 30 days     — tooling evolves monthly
+S(workflows-*)    = 30 days     — workflow patterns evolve monthly
+S(law-*)          = 60 days     — regulation changes quarterly
+S(support/*)      = 90 days     — help docs are stable
+S(edu-*)          = 180 days    — learning science is stable
+S(mba-*)          = 180 days    — business frameworks rarely change
+```
+
+### Combined Equations: Governance + Memory
+
+The two equations govern different dimensions:
+
+**Action governance** — should the agent ACT?
+```
+τ̂ᵢ,ₜ = f_θ(g, sₜᵛⁱˢ, sₜᵛᵘᵉ, Aₜ, τᵢ) · 𝟙[c(τ̂ᵢ,ₜ) ≥ γ(rᵢ)]
+```
+
+**Memory governance** — should the KB REMEMBER?
+```
+Mₜ₊₁ = { Mₜ ∪ {Iₜ*} if R(Iₜ*,τ) ≥ θ₁ | Mₜ \ {Iₜ*} if R(Iₜ*,τ) < θ₂ | Mₜ otherwise }
+```
+
+Together they form a complete governance framework:
+- The action equation decides WHAT to do (with confidence gating)
+- The memory equation decides WHAT to know (with freshness gating)
+- Both have thresholds that prevent reckless behavior
+- Both have fallbacks (HIL for actions, decision memos for memory changes)
+
 ## Key Innovation: Vue >> Screenshots
 
 | Dimension | Screenshot (UI-TARS approach) | Vue Internals (our approach) |
