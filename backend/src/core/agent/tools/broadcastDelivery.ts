@@ -87,6 +87,12 @@ async function postizPost(endpoint: string, body: unknown, tenantId: string): Pr
 }
 
 // Platform-specific Postiz post settings
+/** Derive a short title from post content (first sentence, max 80 chars) */
+function deriveTitle(content: string): string {
+  const first = content.split(/[.!\n]/)[0]?.trim() ?? "Atlas UX Update";
+  return first.length > 80 ? first.slice(0, 77) + "..." : first;
+}
+
 const PLATFORM_SETTINGS: Record<string, Record<string, unknown>> = {
   x:         { __type: "x", who_can_reply_post: "everyone" },
   facebook:  { __type: "facebook" },
@@ -95,14 +101,16 @@ const PLATFORM_SETTINGS: Record<string, Record<string, unknown>> = {
   "instagram-standalone": { __type: "instagram", post_type: "post", collaborators: [] },
   linkedin:  { __type: "linkedin", post_as_images_carousel: false },
   "linkedin-page": { __type: "linkedin-page", post_as_images_carousel: false },
-  reddit:    { __type: "reddit", subreddit: [] },
+  reddit:    { __type: "reddit", subreddit: [{ value: "atlasux" }] },
   tumblr:    { __type: "tumblr" },
   mastodon:  { __type: "mastodon" },
   bluesky:   { __type: "bluesky" },
+  pinterest: { __type: "pinterest", title: "Atlas UX", link: "https://atlasux.cloud", dominant_color: "#000000", board: "Atlas UX" },
+  youtube:   { __type: "youtube", title: "Atlas UX Update", type: "public", tags: ["AI", "automation", "atlasux"] },
   discord:   { __type: "discord", channel: "" },
   telegram:  { __type: "telegram" },
-  medium:    { __type: "medium", title: "", subtitle: "", tags: [] },
-  devto:     { __type: "devto", title: "", tags: [] },
+  medium:    { __type: "medium", title: "Atlas UX Update", subtitle: "", tags: ["AI", "automation"] },
+  devto:     { __type: "devto", title: "Atlas UX Update", tags: ["ai", "automation"] },
   slack:     { __type: "slack", channel: "" },
 };
 
@@ -178,7 +186,13 @@ async function tryTier2(
   }
 
   const platform = (channel.identifier ?? channel.platform ?? "").toLowerCase();
-  const settings = PLATFORM_SETTINGS[platform] ?? { __type: platform };
+  const baseSettings = PLATFORM_SETTINGS[platform] ?? { __type: platform };
+
+  // Inject content-derived titles for platforms that need them
+  const settings = { ...baseSettings };
+  if (platform === "youtube" || platform === "medium" || platform === "devto" || platform === "pinterest") {
+    settings.title = deriveTitle(content);
+  }
 
   try {
     const postBody = {
