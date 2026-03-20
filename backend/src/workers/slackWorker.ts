@@ -639,7 +639,7 @@ async function maybeSpontaneousThought(slackToken?: string): Promise<void> {
         },
         {
           role: "user",
-          content: `Share a brief thought, observation, or interesting find related to your role as ${agent.name} (${agent.title}). 1-2 sentences max. Be casual and conversational — this is the #${targetChannelName} channel. Don't start with "Hey" or greetings. Just share something you're thinking about, working on, or noticed. IMPORTANT: Do NOT make up any numbers, metrics, percentages, or claim any algorithm is boosting our content. Opinions only — no fabricated data.`,
+          content: `Share a brief thought, observation, or interesting find related to your role as ${agent.name} (${agent.title}). 1-2 sentences max. Be casual and conversational — this is the #${targetChannelName} channel. Don't start with "Hey" or greetings. Just share something you're thinking about or noticed.\n\nRULES:\n- Do NOT make up numbers, metrics, or percentages\n- Do NOT pretend you have real customers, prospects, or users\n- Do NOT reference sales calls, support tickets, booking calls, or demos that never happened\n- Do NOT claim content is getting engagement you can't verify\n- Keep it to IDEAS, OPINIONS, or QUESTIONS about your domain — not fictional activity reports\n- You are an AI agent on a platform in beta. Be honest about that context.`,
         },
       ],
     });
