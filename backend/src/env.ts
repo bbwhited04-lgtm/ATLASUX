@@ -47,6 +47,12 @@ const EnvSchema = z.object({
   KB_EVAL_JUDGE_MODEL: z.string().optional(),
   KB_EVAL_GOLDEN_MIN_COVERAGE: z.string().optional(),
 
+  // KB Injection Pipeline
+  KB_INJECTION_ENABLED: z.string().optional(),
+  KB_INJECTION_CRON: z.string().optional(),
+  KB_INJECTION_DRY_RUN: z.string().optional(),
+  KB_INJECTION_MAX_PER_RUN: z.string().optional(),
+
   // OAuth providers
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
