@@ -630,8 +630,8 @@ async function maybeSpontaneousThought(slackToken?: string): Promise<void> {
       agent: agent.id.toUpperCase(),
       purpose: "spontaneous_thought",
       route: "DRAFT_GENERATION_FAST",
-      preferredProvider: "anthropic",
-      preferredModel: "claude-sonnet-4-20250514",
+      preferredProvider: "deepseek",
+      preferredModel: "deepseek-chat",
       messages: [
         {
           role: "system",
@@ -1286,8 +1286,8 @@ async function checkThreadReplies(channelId: string, channelName: string, messag
         agent: agent.id.toUpperCase(),
         purpose: "slack_chat",
         route: "DRAFT_GENERATION_FAST",
-        preferredProvider: "anthropic",
-        preferredModel: "claude-sonnet-4-20250514",
+        preferredProvider: "deepseek",
+        preferredModel: "deepseek-chat",
         messages: [
           { role: "system", content: buildSystemPrompt(agent, channelName) },
           { role: "user", content: `Thread in #${channelName}:\n${threadContext}\n\nReply to this thread naturally. Keep it short.` },
